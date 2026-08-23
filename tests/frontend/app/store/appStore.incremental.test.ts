@@ -17,14 +17,14 @@ const code: AppInfo = {
 	canUninstall: false,
 }
 
-function client(): AppsClient {
+function client(overrides: Partial<AppsClient> = {}): AppsClient {
 	return {
 		getApps: vi.fn().mockResolvedValue({
 			apps: [code],
 			hasCache: true,
 			generation: 2,
 		}),
-		refreshApps: vi.fn().mockResolvedValue([code]),
+		refreshApps: vi.fn().mockResolvedValue({ apps: [code], generation: 3 }),
 		cancelScan: vi.fn().mockResolvedValue(undefined),
 		launchApp: vi.fn().mockResolvedValue(undefined),
 		closeApps: vi.fn().mockResolvedValue({
@@ -50,8 +50,8 @@ function client(): AppsClient {
 			mechanism: 'registered_command',
 		}),
 		uninstallApp: vi.fn().mockResolvedValue(undefined),
-		onAppsUpdated: vi.fn().mockResolvedValue(() => undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
+		...overrides,
 	}
 }
 
@@ -122,5 +122,59 @@ describe('incremental app store updates', () => {
 		})
 
 		expect(store.getState().firstSeenAt['new-tool']).toBeGreaterThan(0)
+	})
+})
+
+// A scan strips every icon from the records it returns and writes them back only through
+// hydration. Committing that result verbatim blanked the whole grid, and because the commit
+// also left the store on the previous generation, every patch the same scan produced was
+// discarded as stale — so the icons never came back until the next launch.
+describe('committing a scan result', () => {
+	const cached = { ...code, iconBase64: 'data:image/png;base64,cached' }
+	const scanned = { ...code, iconBase64: null }
+
+	function storeWithCachedIcon() {
+		return createAppStore(
+			client({
+				getApps: vi.fn().mockResolvedValue({
+					apps: [cached],
+					hasCache: true,
+					generation: 2,
+				}),
+				refreshApps: vi
+					.fn()
+					.mockResolvedValue({ apps: [scanned], generation: 3 }),
+			}),
+		)
+	}
+
+	it('keeps the cached icon when the scan result carries none', async () => {
+		const store = storeWithCachedIcon()
+		await store.getState().load()
+
+		await store.getState().refresh()
+
+		expect(store.getState().apps[0].iconBase64).toBe(
+			'data:image/png;base64,cached',
+		)
+	})
+
+	it('applies the hydration patches emitted by the scan that just ran', async () => {
+		const store = storeWithCachedIcon()
+		await store.getState().load()
+
+		await store.getState().refresh()
+		store.getState().applyPatches([
+			{
+				id: 'code',
+				generation: 3,
+				iconBase64: 'data:image/png;base64,hydrated',
+			},
+		])
+
+		expect(store.getState().catalogGeneration).toBe(3)
+		expect(store.getState().apps[0].iconBase64).toBe(
+			'data:image/png;base64,hydrated',
+		)
 	})
 })

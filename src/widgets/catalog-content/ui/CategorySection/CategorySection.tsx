@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { CatalogAppCard } from '../CatalogAppCard/CatalogAppCard'
 import { CategoryNameEditor } from '../../../../features/manage-category'
 import { useProgressiveList } from '../../../../shared/hooks/useProgressiveList'
+import { DANGER_ICON_BUTTON } from '../../../../shared/ui/buttonVariants'
 import { CollapsiblePanel } from '../../../../shared/ui/CollapsiblePanel'
 import { ConfirmDialog } from '../../../../shared/ui/ConfirmDialog'
 import { CategoryHeader } from './CategoryHeader'
@@ -60,14 +61,14 @@ export function CategorySection({
 						onEdit={() => setEditing(true)}
 					/>
 				)}
-				{!definition.builtIn && (
+				{!definition.builtIn && !editing && (
 					<button
 						type="button"
 						aria-label={`Delete ${label} category`}
 						onClick={() => setDeleting(true)}
-						className="grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-red-100 hover:text-red-700 focus-visible:outline-2 focus-visible:outline-red-500"
+						className={DANGER_ICON_BUTTON}
 					>
-						<Trash2 size={15} />
+						<Trash2 size={15} aria-hidden="true" />
 					</button>
 				)}
 			</div>

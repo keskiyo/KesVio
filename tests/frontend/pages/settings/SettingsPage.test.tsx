@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SettingsPage } from '../../../../src/pages/settings/ui/SettingsPage'
+import type { UpdaterState } from '../../../../src/features/update-app'
 import type { SystemClient } from '../../../../src/entities/system'
 
 async function openAdvancedSettings() {
@@ -34,9 +35,26 @@ describe('SettingsPage', () => {
 		openAppsSettings: vi.fn().mockResolvedValue(undefined),
 	})
 
+	const updaterState = (
+		overrides: Partial<UpdaterState> = {},
+	): UpdaterState => ({
+		update: null,
+		installing: false,
+		progress: null,
+		downloadedBytes: 0,
+		totalBytes: null,
+		phase: 'idle',
+		error: null,
+		status: 'idle',
+		checkNow: vi.fn().mockResolvedValue(undefined),
+		install: vi.fn().mockResolvedValue(undefined),
+		dismiss: vi.fn(),
+		...overrides,
+	})
+
 	it('opens the Windows installed apps settings page', async () => {
 		const client = systemClient()
-		render(<SettingsPage client={client} />)
+		render(<SettingsPage client={client} updater={updaterState()} />)
 		await screen.findByText('Version 0.1.0')
 
 		await userEvent.click(
@@ -52,20 +70,12 @@ describe('SettingsPage', () => {
 		// The update dialog lives on App's updater; if the button checked on a private
 		// instance, a dismissed update could never be reopened from Settings.
 		const checkNow = vi.fn().mockResolvedValue(undefined)
-		const updater = {
-			update: null,
-			installing: false,
-			progress: null,
-			downloadedBytes: 0,
-			totalBytes: null,
-			phase: 'idle' as const,
-			error: null,
-			status: 'idle' as const,
-			checkNow,
-			install: vi.fn().mockResolvedValue(undefined),
-			dismiss: vi.fn(),
-		}
-		render(<SettingsPage client={systemClient()} updater={updater} />)
+		render(
+			<SettingsPage
+				client={systemClient()}
+				updater={updaterState({ checkNow })}
+			/>,
+		)
 		await screen.findByText('Version 0.1.0')
 
 		await userEvent.click(
@@ -78,6 +88,7 @@ describe('SettingsPage', () => {
 	it('places catalog maintenance beside uninstall history', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
@@ -100,6 +111,7 @@ describe('SettingsPage', () => {
 	it('keeps infrequent settings in a collapsed Advanced section', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
@@ -120,6 +132,7 @@ describe('SettingsPage', () => {
 	it('does not render catalog visibility counts outside scan diagnostics', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
@@ -136,6 +149,7 @@ describe('SettingsPage', () => {
 	it('keeps scan diagnostics collapsed until toggled', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				catalogDiagnostics={{
@@ -176,6 +190,7 @@ describe('SettingsPage', () => {
 	it('reports a source that is serving older data', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				catalogDiagnostics={{
@@ -218,6 +233,7 @@ describe('SettingsPage', () => {
 	it('shows no source table when the cache predates source health', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				catalogDiagnostics={{
@@ -246,6 +262,7 @@ describe('SettingsPage', () => {
 	it('reports how far the launch-target rule diverged from the one it replaced', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				catalogDiagnostics={{
@@ -285,6 +302,7 @@ describe('SettingsPage', () => {
 	it('shows no launch-target panel when the cache predates the diff', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				catalogDiagnostics={{
@@ -313,6 +331,7 @@ describe('SettingsPage', () => {
 	it('does not render manual icon-maintenance controls', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
@@ -331,6 +350,7 @@ describe('SettingsPage', () => {
 		const onForceFullScan = vi.fn().mockResolvedValue(undefined)
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={onForceFullScan}
 			/>,
@@ -352,6 +372,7 @@ describe('SettingsPage', () => {
 	it('returns focus to the full scan trigger when confirmation closes', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
@@ -368,6 +389,7 @@ describe('SettingsPage', () => {
 	it('uses readable dark text in the catalog maintenance confirmation', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
@@ -390,6 +412,7 @@ describe('SettingsPage', () => {
 		const onResetCatalogCache = vi.fn().mockResolvedValue(undefined)
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				onResetCatalogCache={onResetCatalogCache}
@@ -413,6 +436,7 @@ describe('SettingsPage', () => {
 	it('replaces the open confirmation instead of stacking a second one', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				onResetCatalogCache={vi.fn().mockResolvedValue(undefined)}
@@ -458,6 +482,7 @@ describe('SettingsPage', () => {
 	it('keeps focus on the trigger that opened the confirmation when swapping', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				onResetCatalogCache={vi.fn().mockResolvedValue(undefined)}
@@ -480,6 +505,7 @@ describe('SettingsPage', () => {
 	it('uses dark-theme-safe settings surfaces and danger controls', async () => {
 		render(
 			<SettingsPage
+				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 				onResetCatalogCache={vi.fn().mockResolvedValue(undefined)}
@@ -539,7 +565,7 @@ describe('SettingsPage', () => {
 			openGithub: vi.fn().mockResolvedValue(undefined),
 			openAppsSettings: vi.fn().mockResolvedValue(undefined),
 		}
-		render(<SettingsPage client={client} />)
+		render(<SettingsPage client={client} updater={updaterState()} />)
 		expect(await screen.findByText('Version 0.1.0')).toBeInTheDocument()
 		expect(screen.getByText('Win+Shift+Q')).toBeInTheDocument()
 		await userEvent.click(
@@ -599,7 +625,7 @@ describe('SettingsPage', () => {
 			openGithub: vi.fn().mockResolvedValue(undefined),
 			openAppsSettings: vi.fn().mockResolvedValue(undefined),
 		}
-		render(<SettingsPage client={client} />)
+		render(<SettingsPage client={client} updater={updaterState()} />)
 		await screen.findByText('Version 0.1.0')
 		await openAdvancedSettings()
 		await userEvent.click(
@@ -625,7 +651,7 @@ describe('SettingsPage', () => {
 				result: 'succeeded',
 			},
 		])
-		render(<SettingsPage client={client} />)
+		render(<SettingsPage client={client} updater={updaterState()} />)
 		await openAdvancedSettings()
 		expect(
 			await screen.findByText('Visual Studio Code'),

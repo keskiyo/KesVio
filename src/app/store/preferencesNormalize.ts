@@ -6,7 +6,7 @@ import {
 } from './preferencesFields'
 import { normalizeScenarios } from './preferencesScenarios'
 import {
-	type AppPreferencesV16,
+	type AppPreferencesV17,
 	DEFAULT_PREFERENCES,
 	type LegacyCanonicalPreferences,
 } from './preferencesSchema'
@@ -69,11 +69,13 @@ function readLegacy(
 	}
 }
 
-export function normalizePreferences(value: unknown): AppPreferencesV16 {
+export function normalizePreferences(value: unknown): AppPreferencesV17 {
 	if (!value || typeof value !== 'object')
 		return structuredClone(DEFAULT_PREFERENCES)
 	const raw = value as Record<string, unknown>
-	const categories = normalizeDefinitions(raw.categories)
+	const version = typeof raw.version === 'number' ? raw.version : 0
+	const keepsStoredAccents = version >= 17
+	const categories = normalizeDefinitions(raw.categories, keepsStoredAccents)
 	const known = new Set(categories.map(category => category.id))
 	const savedOrder = uniqueStrings(raw.categoryOrder).filter(id =>
 		known.has(id),
@@ -84,7 +86,6 @@ export function normalizePreferences(value: unknown): AppPreferencesV16 {
 			.map(category => category.id)
 			.filter(id => !savedOrder.includes(id)),
 	]
-	const version = typeof raw.version === 'number' ? raw.version : 0
 	const hasDurableIdentities = version >= 7
 	const hasInstallerMarks = version >= 9
 	const hasDocumentMarks = version >= 16
@@ -97,7 +98,7 @@ export function normalizePreferences(value: unknown): AppPreferencesV16 {
 		),
 	)
 	return {
-		version: 16,
+		version: 17,
 		categories,
 		categoryOrder,
 		favoriteAppIds: uniqueStrings(raw.favoriteAppIds),

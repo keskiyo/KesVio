@@ -1,0 +1,302 @@
+{
+  "commands": {
+    "close_apps": {
+      "blocked": 1,
+      "closed": 2,
+      "failed": 0,
+      "notRunning": 1,
+      "unavailable": 0
+    },
+    "force_full_scan": {
+      "apps": [
+        {
+          "artifactKind": "application",
+          "canUninstall": true,
+          "canonicalIdentity": "identity:microsoft-visual-studio-code",
+          "category": "other",
+          "categoryReasons": [
+            "executable_product_match"
+          ],
+          "closeRisk": "safe",
+          "description": "Code editing. Redefined.",
+          "iconBase64": "data:image/png;base64,sample",
+          "id": "editor",
+          "installLocation": "C:\\Program Files\\Code",
+          "launchKind": "executable",
+          "name": "Visual Studio Code",
+          "originalFilename": "Code.exe",
+          "path": "C:\\Program Files\\Code\\Code.exe",
+          "preferenceIdentity": "preference:microsoft-visual-studio-code",
+          "productName": "Visual Studio Code",
+          "publisher": "Microsoft Corporation",
+          "sourceKind": "registry",
+          "targetAvailability": "present",
+          "version": "1.95.0",
+          "visibilityClass": "primary",
+          "visibilityReasons": [
+            "registered_product"
+          ],
+          "visibilityScore": 0
+        }
+      ],
+      "generation": 7
+    },
+    "get_app_details": {
+      "architecture": "x64",
+      "canOpenFolder": true,
+      "executableExists": true,
+      "fileCreatedAt": 1700000000,
+      "fileModifiedAt": 1700000100,
+      "fileSizeBytes": 184320,
+      "installLocationExists": true,
+      "signature": "verified"
+    },
+    "get_apps": {
+      "apps": [
+        {
+          "artifactKind": "application",
+          "canUninstall": true,
+          "canonicalIdentity": "identity:microsoft-visual-studio-code",
+          "category": "other",
+          "categoryReasons": [
+            "executable_product_match"
+          ],
+          "closeRisk": "safe",
+          "description": "Code editing. Redefined.",
+          "iconBase64": "data:image/png;base64,sample",
+          "id": "editor",
+          "installLocation": "C:\\Program Files\\Code",
+          "launchKind": "executable",
+          "name": "Visual Studio Code",
+          "originalFilename": "Code.exe",
+          "path": "C:\\Program Files\\Code\\Code.exe",
+          "preferenceIdentity": "preference:microsoft-visual-studio-code",
+          "productName": "Visual Studio Code",
+          "publisher": "Microsoft Corporation",
+          "sourceKind": "registry",
+          "targetAvailability": "present",
+          "version": "1.95.0",
+          "visibilityClass": "primary",
+          "visibilityReasons": [
+            "registered_product"
+          ],
+          "visibilityScore": 0
+        }
+      ],
+      "diagnostics": null,
+      "generation": 7,
+      "hasCache": true
+    },
+    "get_system_settings": {
+      "autostartEnabled": true,
+      "fixedDrives": [
+        "C:\\"
+      ],
+      "scanSettings": {
+        "autoScanFixedDrives": true,
+        "catalogPortableFingerprintV1": true,
+        "catalogTargetAvailabilityV1": true,
+        "excludedPaths": [],
+        "includedPaths": []
+      },
+      "shortcut": {
+        "available": false,
+        "error": "The shortcut has not been registered yet.",
+        "label": "Win+Shift+Q"
+      },
+      "version": "0.3.7"
+    },
+    "get_uninstall_history": [
+      {
+        "appName": "Visual Studio Code",
+        "id": "editor",
+        "mechanism": "registered_command",
+        "publisher": "Microsoft Corporation",
+        "result": "succeeded",
+        "timestamp": 1700000200
+      }
+    ],
+    "get_uninstall_preview": {
+      "appName": "Visual Studio Code",
+      "mechanism": "msix",
+      "publisher": "Microsoft Corporation",
+      "source": "registry"
+    },
+    "refresh_apps": {
+      "apps": [
+        {
+          "artifactKind": "application",
+          "canUninstall": true,
+          "canonicalIdentity": "identity:microsoft-visual-studio-code",
+          "category": "other",
+          "categoryReasons": [
+            "executable_product_match"
+          ],
+          "closeRisk": "safe",
+          "description": "Code editing. Redefined.",
+          "iconBase64": "data:image/png;base64,sample",
+          "id": "editor",
+          "installLocation": "C:\\Program Files\\Code",
+          "launchKind": "executable",
+          "name": "Visual Studio Code",
+          "originalFilename": "Code.exe",
+          "path": "C:\\Program Files\\Code\\Code.exe",
+          "preferenceIdentity": "preference:microsoft-visual-studio-code",
+          "productName": "Visual Studio Code",
+          "publisher": "Microsoft Corporation",
+          "sourceKind": "registry",
+          "targetAvailability": "present",
+          "version": "1.95.0",
+          "visibilityClass": "primary",
+          "visibilityReasons": [
+            "registered_product"
+          ],
+          "visibilityScore": 0
+        }
+      ],
+      "generation": 7
+    },
+    "reset_catalog_cache": {
+      "apps": [
+        {
+          "artifactKind": "application",
+          "canUninstall": true,
+          "canonicalIdentity": "identity:microsoft-visual-studio-code",
+          "category": "other",
+          "categoryReasons": [
+            "executable_product_match"
+          ],
+          "closeRisk": "safe",
+          "description": "Code editing. Redefined.",
+          "iconBase64": "data:image/png;base64,sample",
+          "id": "editor",
+          "installLocation": "C:\\Program Files\\Code",
+          "launchKind": "executable",
+          "name": "Visual Studio Code",
+          "originalFilename": "Code.exe",
+          "path": "C:\\Program Files\\Code\\Code.exe",
+          "preferenceIdentity": "preference:microsoft-visual-studio-code",
+          "productName": "Visual Studio Code",
+          "publisher": "Microsoft Corporation",
+          "sourceKind": "registry",
+          "targetAvailability": "present",
+          "version": "1.95.0",
+          "visibilityClass": "primary",
+          "visibilityReasons": [
+            "registered_product"
+          ],
+          "visibilityScore": 0
+        }
+      ],
+      "generation": 7
+    },
+    "save_preferences_backup": true,
+    "set_scan_settings": {
+      "autoScanFixedDrives": true,
+      "catalogPortableFingerprintV1": true,
+      "catalogTargetAvailabilityV1": true,
+      "excludedPaths": [],
+      "includedPaths": []
+    },
+    "stale_copy_status": {
+      "installLocation": "C:\\Program Files\\Windows Apps",
+      "installedVersion": "0.3.8"
+    }
+  },
+  "error": {
+    "code": "LAUNCH_UNAVAILABLE",
+    "message": "This application is not available for launch."
+  },
+  "events": {
+    "catalog://changed": {
+      "added": 1,
+      "removed": 0,
+      "updated": 0
+    },
+    "catalog://delta": {
+      "generation": 7,
+      "removedIds": [],
+      "summary": {
+        "added": 1,
+        "removed": 0,
+        "updated": 0
+      },
+      "upserted": [
+        {
+          "artifactKind": "application",
+          "canUninstall": true,
+          "canonicalIdentity": "identity:microsoft-visual-studio-code",
+          "category": "other",
+          "categoryReasons": [
+            "executable_product_match"
+          ],
+          "closeRisk": "safe",
+          "description": "Code editing. Redefined.",
+          "iconBase64": "data:image/png;base64,sample",
+          "id": "editor",
+          "installLocation": "C:\\Program Files\\Code",
+          "launchKind": "executable",
+          "name": "Visual Studio Code",
+          "originalFilename": "Code.exe",
+          "path": "C:\\Program Files\\Code\\Code.exe",
+          "preferenceIdentity": "preference:microsoft-visual-studio-code",
+          "productName": "Visual Studio Code",
+          "publisher": "Microsoft Corporation",
+          "sourceKind": "registry",
+          "targetAvailability": "present",
+          "version": "1.95.0",
+          "visibilityClass": "primary",
+          "visibilityReasons": [
+            "registered_product"
+          ],
+          "visibilityScore": 0
+        }
+      ]
+    },
+    "catalog://diagnostics": {
+      "added": 0,
+      "completedAt": 0,
+      "durationMs": 0,
+      "mode": "",
+      "removed": 0,
+      "sourceCounts": {},
+      "sources": [],
+      "targetAvailability": {
+        "byReason": {},
+        "keptByNewRule": 0
+      },
+      "totalApps": 0,
+      "updated": 0,
+      "visibilityCounts": {}
+    },
+    "catalog://patches": [
+      {
+        "canUninstall": true,
+        "description": "Code editing. Redefined.",
+        "generation": 7,
+        "iconBase64": "data:image/png;base64,sample",
+        "id": "editor",
+        "installLocation": "C:\\Program Files\\Code",
+        "originalFilename": "Code.exe",
+        "productName": "Visual Studio Code",
+        "publisher": "Microsoft Corporation",
+        "version": "1.95.0"
+      }
+    ],
+    "close://progress": {
+      "running": 0,
+      "secondsLeft": 3,
+      "stage": "waiting"
+    },
+    "launch://status": {
+      "id": "editor",
+      "state": "ready"
+    },
+    "scan://progress": {
+      "completedRoots": 1,
+      "location": "C:\\Program Files",
+      "stage": "Windows applications",
+      "totalRoots": 3
+    }
+  }
+}

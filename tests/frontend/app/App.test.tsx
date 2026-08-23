@@ -56,7 +56,7 @@ function renderApp(
 ) {
 	const client: AppsClient = {
 		getApps: vi.fn().mockResolvedValue({ apps, hasCache: true }),
-		refreshApps: vi.fn().mockResolvedValue(apps),
+		refreshApps: vi.fn().mockResolvedValue({ apps, generation: 1 }),
 		cancelScan: vi.fn().mockResolvedValue(undefined),
 		launchApp: vi.fn().mockResolvedValue(undefined),
 		closeApps: vi.fn().mockResolvedValue({
@@ -72,7 +72,6 @@ function renderApp(
 			mechanism: 'registered_command',
 		}),
 		uninstallApp: vi.fn().mockResolvedValue(undefined),
-		onAppsUpdated: vi.fn().mockResolvedValue(() => undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 		...overrides,
 		getAppDetails:

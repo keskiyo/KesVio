@@ -26,4 +26,5 @@ export interface ScenarioRunListProps {
 	scenarioName: string
 	apps: AppInfo[]
 	unavailable: UnavailableScenarioApp[]
+	collapsible?: boolean
 }

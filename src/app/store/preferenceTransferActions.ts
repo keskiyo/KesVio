@@ -3,7 +3,7 @@ import {
 	parsePreferenceImport,
 	readPreferenceBackup,
 	serializePreferences,
-	type AppPreferencesV16,
+	type AppPreferencesV17,
 	type PreferenceTransferResult,
 } from './preferences'
 import { reconcileMarks } from './reconciliation'
@@ -29,9 +29,9 @@ type PreferenceTransferActions = Pick<
 	| 'restorePreferencesBackup'
 >
 
-function preferencesFromState(state: AppState): AppPreferencesV16 {
+function preferencesFromState(state: AppState): AppPreferencesV17 {
 	return {
-		version: 16,
+		version: 17,
 		categories: state.categories,
 		categoryOrder: state.categoryOrder,
 		favoriteAppIds: state.favoriteAppIds,
@@ -55,7 +55,7 @@ function preferencesFromState(state: AppState): AppPreferencesV16 {
 	}
 }
 
-function preferenceState(preferences: AppPreferencesV16) {
+function preferenceState(preferences: AppPreferencesV17) {
 	return {
 		categories: preferences.categories,
 		categoryOrder: preferences.categoryOrder,
@@ -87,7 +87,7 @@ export function createPreferenceTransferActions({
 	storage,
 }: PreferenceTransferOptions): PreferenceTransferActions {
 	function applyPreferences(
-		preferences: AppPreferencesV16,
+		preferences: AppPreferencesV17,
 	): PreferenceTransferResult {
 		if (hasNewerStoredPreferences(storage)) {
 			return {

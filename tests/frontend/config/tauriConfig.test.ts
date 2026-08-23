@@ -11,8 +11,8 @@ describe('Tauri window configuration', () => {
 	it('opens at the chosen size and still lets the user resize', () => {
 		const window = tauriConfig.app.windows[0]
 
-		expect(window?.width).toBe(1132)
-		expect(window?.height).toBe(715)
+		expect(window?.width).toBe(1250)
+		expect(window?.height).toBe(720)
 		expect(window?.resizable).toBe(true)
 		expect(window?.width).toBeGreaterThanOrEqual(window?.minWidth ?? 0)
 		expect(window?.height).toBeGreaterThanOrEqual(window?.minHeight ?? 0)

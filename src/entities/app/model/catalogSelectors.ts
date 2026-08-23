@@ -53,12 +53,14 @@ export function filterVisibleApps(
 }
 
 export interface SearchScopeCounts {
+	all: number
 	auxiliary: number
 	hidden: number
 	installersDocs: number
 }
 
 const NO_SCOPE_MATCHES: SearchScopeCounts = {
+	all: 0,
 	auxiliary: 0,
 	hidden: 0,
 	installersDocs: 0,
@@ -72,6 +74,7 @@ export function selectSearchScopeCounts(
 	if (!query.trim()) return NO_SCOPE_MATCHES
 	const hidden = new Set(hiddenAppIds)
 	const buckets: Record<keyof SearchScopeCounts, AppInfo[]> = {
+		all: [],
 		auxiliary: [],
 		hidden: [],
 		installersDocs: [],
@@ -81,8 +84,10 @@ export function selectSearchScopeCounts(
 		else if (isCatalogArtifact(app)) buckets.installersDocs.push(app)
 		else if (app.visibilityClass === 'auxiliary')
 			buckets.auxiliary.push(app)
+		else buckets.all.push(app)
 	}
 	return {
+		all: filterAppsByQuery(buckets.all, query).length,
 		auxiliary: filterAppsByQuery(buckets.auxiliary, query).length,
 		hidden: filterAppsByQuery(buckets.hidden, query).length,
 		installersDocs: filterAppsByQuery(buckets.installersDocs, query).length,

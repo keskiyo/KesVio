@@ -3,17 +3,7 @@ import type {
 	CustomCategoryAccent,
 } from '../../../../entities/category'
 
-type CategoryAccent =
-	| 'yellow'
-	| 'cyan'
-	| 'pink'
-	| 'green'
-	| 'blue'
-	| 'orange'
-	| 'purple'
-	| 'red'
-	| 'slate'
-	| 'neutral'
+type CategoryAccent = CustomCategoryAccent | 'slate' | 'neutral'
 
 export const navigationCategoryRowClass =
 	'navigation-category-row relative flex w-full items-center rounded-lg border border-(--border-neutral) border-l-2 bg-(--surface-panel) px-3 py-2 text-left text-sm text-(--text-primary)'
@@ -30,12 +20,13 @@ const BUILT_IN_CATEGORY_ACCENTS: Record<string, CategoryAccent> = {
 	browsers: 'purple',
 	media: 'red',
 	communication: 'orange',
-	file_cloud: 'cyan',
-	security: 'green',
-	utilities: 'purple',
+	file_cloud: 'azure',
+	security: 'teal',
+	utilities: 'lime',
+	installers_docs: 'amber',
 	system: 'slate',
 	windows_features: 'slate',
-	other: 'purple',
+	other: 'neutral',
 }
 
 export function categoryAccent(

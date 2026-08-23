@@ -11,6 +11,7 @@ export interface SearchScopeArea {
 
 export interface SearchScopeHintProps {
 	counts: SearchScopeCounts
+	activeView: AppView
 	onSelectView(view: AppView): void
 }
 

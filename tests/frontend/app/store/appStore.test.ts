@@ -14,6 +14,18 @@ import type {
 	AppsClient,
 	CatalogDiagnostics,
 } from '../../../../src/entities/app'
+import {
+	CUSTOM_CATEGORY_ACCENTS,
+	stableCustomCategoryAccent,
+} from '../../../../src/entities/category'
+
+function memoryStorage(): Storage {
+	const values = new Map<string, string>()
+	return {
+		getItem: (key: string) => values.get(key) ?? null,
+		setItem: (key: string, value: string) => void values.set(key, value),
+	} as unknown as Storage
+}
 
 function app(
 	value: Partial<AppInfo> &
@@ -62,8 +74,12 @@ const apps: AppInfo[] = [
 function client(overrides: Partial<AppsClient> = {}): AppsClient {
 	return {
 		getApps: vi.fn().mockResolvedValue({ apps, hasCache: true }),
-		refreshApps: vi.fn().mockResolvedValue(apps.slice().reverse()),
-		resetCatalogCache: vi.fn().mockResolvedValue([apps[2]]),
+		refreshApps: vi
+			.fn()
+			.mockResolvedValue({ apps: apps.slice().reverse(), generation: 1 }),
+		resetCatalogCache: vi
+			.fn()
+			.mockResolvedValue({ apps: [apps[2]], generation: 2 }),
 		hydrateVisibleIcons: vi.fn().mockResolvedValue(undefined),
 		cancelScan: vi.fn().mockResolvedValue(undefined),
 		launchApp: vi.fn().mockResolvedValue(undefined),
@@ -80,7 +96,6 @@ function client(overrides: Partial<AppsClient> = {}): AppsClient {
 			mechanism: 'registered_command',
 		}),
 		uninstallApp: vi.fn().mockResolvedValue(undefined),
-		onAppsUpdated: vi.fn().mockResolvedValue(() => undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 		...overrides,
 		getAppDetails:
@@ -128,7 +143,7 @@ describe('app store', () => {
 			importedField: 'kept',
 		})
 		expect(JSON.parse(store.getState().exportPreferences())).toMatchObject({
-			version: 16,
+			version: 17,
 			favoriteAppIds: ['code'],
 			hiddenAppIds: ['chrome'],
 			importedField: 'kept',
@@ -162,9 +177,73 @@ describe('app store', () => {
 		expect(store.getState().favoriteAppIds).toEqual(['before'])
 	})
 
+	it('carries a custom category through an export and back', () => {
+		const stable = stableCustomCategoryAccent('custom:work')
+		const chosen = CUSTOM_CATEGORY_ACCENTS.find(
+			accent => accent !== stable,
+		)!
+		const store = createAppStore(client(), memoryStorage())
+		store.setState({
+			categories: [
+				...store.getState().categories,
+				{
+					id: 'custom:work',
+					label: 'Work',
+					builtIn: false,
+					accent: chosen,
+				},
+			],
+			categoryOrder: [...store.getState().categoryOrder, 'custom:work'],
+		})
+
+		const restored = createAppStore(client(), memoryStorage())
+		expect(
+			restored
+				.getState()
+				.importPreferences(store.getState().exportPreferences()),
+		).toEqual({ ok: true })
+
+		expect(restored.getState().categories).toContainEqual({
+			id: 'custom:work',
+			label: 'Work',
+			builtIn: false,
+			accent: chosen,
+		})
+		expect(restored.getState().categoryOrder).toContain('custom:work')
+	})
+
+	it('redeals accents from a backup written before the palette widened', () => {
+		const store = createAppStore(client(), memoryStorage())
+
+		expect(
+			store.getState().importPreferences(
+				JSON.stringify({
+					version: 16,
+					categories: [
+						{
+							id: 'custom:work',
+							label: 'Work',
+							builtIn: false,
+							accent: 'red',
+						},
+					],
+					categoryOrder: ['custom:work'],
+				}),
+			),
+		).toEqual({ ok: true })
+
+		expect(store.getState().categories).toContainEqual({
+			id: 'custom:work',
+			label: 'Work',
+			builtIn: false,
+			accent: stableCustomCategoryAccent('custom:work'),
+		})
+		expect(store.getState().categoryOrder).toContain('custom:work')
+	})
+
 	it('refuses import and restore when local preferences use a newer schema', () => {
 		const future = JSON.stringify({
-			version: 17,
+			version: 18,
 			favoriteAppIds: ['keep'],
 		})
 		const values = new Map<string, string>([
@@ -666,12 +745,15 @@ describe('app store', () => {
 				getApps: vi
 					.fn()
 					.mockResolvedValue({ apps: [first], hasCache: true }),
+				refreshApps: vi
+					.fn()
+					.mockResolvedValue({ apps: [replacement], generation: 1 }),
 			}),
 			localStorage,
 		)
 
 		await store.getState().load()
-		store.getState().replaceApps([replacement])
+		await store.getState().refresh()
 
 		expect(
 			selectVisibleApps(store.getState()).map(item => item.id),
@@ -815,9 +897,9 @@ describe('app store', () => {
 
 		expect(api.getApps).toHaveBeenCalledOnce()
 		expect(api.startBackgroundSync).toHaveBeenCalledOnce()
-		expect(api.onAppsUpdated).toHaveBeenCalledOnce()
+		expect(api.onScanProgress).toHaveBeenCalledOnce()
 		firstDispose()
-		expect(api.onAppsUpdated).toHaveBeenCalledOnce()
+		expect(api.onScanProgress).toHaveBeenCalledOnce()
 		secondDispose()
 	})
 
@@ -842,17 +924,16 @@ describe('app store', () => {
 
 		expect(disposeDelta).toHaveBeenCalledOnce()
 		expect(disposePatches).toHaveBeenCalledOnce()
-		expect(api.onAppsUpdated).not.toHaveBeenCalled()
+		expect(api.onScanProgress).not.toHaveBeenCalled()
 	})
 
 	it('detaches every earlier listener when the last subscription fails', async () => {
-		const disposers = [vi.fn(), vi.fn(), vi.fn(), vi.fn(), vi.fn()]
+		const disposers = [vi.fn(), vi.fn(), vi.fn(), vi.fn()]
 		const api = client({
 			onCatalogDelta: vi.fn().mockResolvedValue(disposers[0]),
 			onCatalogPatches: vi.fn().mockResolvedValue(disposers[1]),
 			onCatalogChanged: vi.fn().mockResolvedValue(disposers[2]),
-			onAppsUpdated: vi.fn().mockResolvedValue(disposers[3]),
-			onScanProgress: vi.fn().mockResolvedValue(disposers[4]),
+			onScanProgress: vi.fn().mockResolvedValue(disposers[3]),
 			onLaunchStatus: vi
 				.fn()
 				.mockRejectedValue(new Error('late failure')),
@@ -919,11 +1000,15 @@ describe('app store', () => {
 					apps: [apps[0], duplicate, apps[1]],
 					hasCache: true,
 				}),
+				refreshApps: vi.fn().mockResolvedValue({
+					apps: [apps[0], duplicate, apps[1]],
+					generation: 1,
+				}),
 			}),
 		)
 
 		await store.getState().load()
-		store.getState().replaceApps([apps[0], duplicate, apps[1]])
+		await store.getState().refresh()
 		store.getState().applyDelta({
 			generation: 1,
 			upserted: [apps[0], duplicate],
@@ -1255,7 +1340,9 @@ describe('app store', () => {
 						apps: [original],
 						hasCache: true,
 					}),
-					refreshApps: vi.fn().mockResolvedValue([moved]),
+					refreshApps: vi
+						.fn()
+						.mockResolvedValue({ apps: [moved], generation: 1 }),
 				}),
 				storage,
 			)
@@ -1417,20 +1504,6 @@ describe('app store', () => {
 			'The operation could not be completed. Try again.',
 		)
 		expect(store.getState().isLoading).toBe(false)
-	})
-
-	it('subscribes to background updates', async () => {
-		let update: ((next: AppInfo[]) => void) | undefined
-		const api = client({
-			onAppsUpdated: vi.fn(async handler => {
-				update = handler
-				return () => undefined
-			}),
-		})
-		const store = createAppStore(api)
-		await store.getState().subscribe()
-		update?.([apps[1]])
-		expect(store.getState().apps).toEqual([apps[1]])
 	})
 
 	it('toggles favorites, persists them, and filters the favorites view', () => {

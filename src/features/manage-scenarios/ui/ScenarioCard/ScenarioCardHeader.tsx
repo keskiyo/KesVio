@@ -1,11 +1,12 @@
 import { Pencil, Play, Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import {
+	DANGER_ICON_BUTTON,
+	ICON_BUTTON,
+} from '../../../../shared/ui/buttonVariants'
 import { FavoriteStar } from '../../../../shared/ui/FavoriteStar'
 import { ScenarioNameEditor } from '../ScenarioNameEditor'
 import type { ScenarioCardHeaderProps } from './types'
-
-const ICON_BUTTON =
-	'grid size-8 shrink-0 place-items-center rounded-lg border border-(--border-neutral) hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) disabled:cursor-not-allowed disabled:opacity-60'
 
 export function ScenarioCardHeader({
 	scenario,
@@ -77,7 +78,7 @@ export function ScenarioCardHeader({
 				aria-label={`Delete ${scenario.name}`}
 				disabled={running}
 				onClick={() => onDelete(scenario.id)}
-				className={`danger-button ${ICON_BUTTON}`}
+				className={DANGER_ICON_BUTTON}
 			>
 				<Trash2 size={15} aria-hidden="true" />
 			</button>

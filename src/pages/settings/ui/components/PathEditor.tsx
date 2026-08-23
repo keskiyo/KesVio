@@ -1,5 +1,6 @@
 import { FolderSearch, Trash2 } from 'lucide-react'
 import { useSpotlight } from '../../../../shared/hooks/useSpotlight'
+import { DANGER_ICON_BUTTON } from '../../../../shared/ui/buttonVariants'
 import { SpotlightLayer } from '../../../../shared/ui/SpotlightLayer'
 import type { PathEditorProps } from '../../types'
 
@@ -55,9 +56,9 @@ export function PathEditor(props: PathEditorProps) {
 							type="button"
 							aria-label={`Remove ${path}`}
 							onClick={() => props.onRemove(path)}
-							className="grid size-7 place-items-center rounded-md hover:bg-red-100 hover:text-red-700"
+							className={DANGER_ICON_BUTTON}
 						>
-							<Trash2 size={14} aria-hidden="true" />
+							<Trash2 size={15} aria-hidden="true" />
 						</button>
 					</li>
 				))}

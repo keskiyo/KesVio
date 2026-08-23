@@ -9,6 +9,14 @@ pub(crate) struct StaleCopy {
     install_location: String,
 }
 
+#[cfg(test)]
+pub(super) fn stale_copy_sample() -> StaleCopy {
+    StaleCopy {
+        installed_version: "0.3.8".into(),
+        install_location: r"C:\Program Files\Windows Apps".into(),
+    }
+}
+
 #[tauri::command]
 pub(crate) async fn open_telegram() -> Result<(), AppError> {
     tauri::async_runtime::spawn_blocking(|| launcher::shell_execute("https://t.me/keskiyo"))

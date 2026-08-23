@@ -1,0 +1,323 @@
+import { describe, expect, it } from 'vitest'
+import recorded from '../../../src-tauri/tests/fixtures/ipc/contract.json'
+import type {
+	AppDetails,
+	AppHydrationPatch,
+	AppInfo,
+	CatalogChangeSummary,
+	CatalogDelta,
+	CatalogScanResult,
+	CatalogSnapshot,
+	CloseAppsResult,
+	CloseProgress,
+	LaunchStatus,
+	ScanProgress,
+	UninstallPreview,
+} from '../../../src/entities/app'
+import type {
+	ScanSettings,
+	StaleCopyInfo,
+	SystemSettings,
+	UninstallHistoryEntry,
+} from '../../../src/entities/system'
+
+const contract = recorded as unknown as {
+	commands: Record<string, unknown>
+	events: Record<string, unknown>
+	error: unknown
+}
+
+// Marks the interface owns outright: the catalog never sends them, the store writes them from
+// preferences. They belong to the type but must not appear on the wire.
+const FRONTEND_ONLY: Record<string, string[]> = {
+	AppInfo: ['userPromoted', 'userPlacedArtifact'],
+}
+
+// Rollback switches the backend reads from disk and refuses to take from the window
+// (`the_availability_rollback_flag_comes_from_disk_not_from_the_window` in commands/settings.rs).
+// They ride along on the wire, and the interface deliberately does not offer them.
+const BACKEND_ONLY: Record<string, string[]> = {
+	ScanSettings: [
+		'catalogTargetAvailabilityV1',
+		'catalogPortableFingerprintV1',
+	],
+}
+
+function expectWireShape(
+	payload: unknown,
+	declared: Record<string, unknown>,
+	name: string,
+) {
+	const frontendOnly = FRONTEND_ONLY[name] ?? []
+	const expected = [
+		...Object.keys(declared).filter(key => !frontendOnly.includes(key)),
+		...(BACKEND_ONLY[name] ?? []),
+	].sort()
+
+	expect(Object.keys(payload as object).sort(), name).toEqual(expected)
+}
+
+const appInfo: Required<AppInfo> = {
+	id: '',
+	name: '',
+	path: '',
+	iconBase64: null,
+	artifactKind: 'application',
+	category: '',
+	launchKind: 'executable',
+	sourceKind: 'registry',
+	description: null,
+	version: null,
+	publisher: null,
+	productName: null,
+	originalFilename: null,
+	installLocation: null,
+	canUninstall: false,
+	canonicalIdentity: null,
+	preferenceIdentity: null,
+	userPromoted: false,
+	userPlacedArtifact: false,
+	visibilityClass: 'primary',
+	visibilityScore: 0,
+	visibilityReasons: [],
+	targetAvailability: null,
+	categoryReasons: [],
+	closeRisk: null,
+}
+
+const scanSettings: Required<ScanSettings> = {
+	autoScanFixedDrives: false,
+	includedPaths: [],
+	excludedPaths: [],
+}
+
+// The frontend and the backend describe the same payloads in two languages, and nothing compiled
+// them together: a scan command changed its response shape while the typed fake kept returning the
+// old one, and every icon in the catalog went blank in a shipped build. This fixture is recorded
+// from the Rust structs themselves, so the two descriptions can no longer drift apart in silence.
+describe('IPC wire contract', () => {
+	describe('command responses', () => {
+		it('describes a catalog record the way the interface does', () => {
+			const snapshot = contract.commands.get_apps as CatalogSnapshot
+			expectWireShape(snapshot.apps[0], appInfo, 'AppInfo')
+		})
+
+		it('describes the startup snapshot', () => {
+			const declared: Required<CatalogSnapshot> = {
+				apps: [],
+				hasCache: false,
+				generation: 0,
+				diagnostics: null,
+			}
+			expectWireShape(
+				contract.commands.get_apps,
+				declared,
+				'CatalogSnapshot',
+			)
+		})
+
+		it('describes every scan result as records plus the generation that made them', () => {
+			const declared: Required<CatalogScanResult> = {
+				apps: [],
+				generation: 0,
+			}
+			for (const command of [
+				'refresh_apps',
+				'force_full_scan',
+				'reset_catalog_cache',
+			])
+				expectWireShape(
+					contract.commands[command],
+					declared,
+					`CatalogScanResult.${command}`,
+				)
+		})
+
+		it('describes application details', () => {
+			const declared: Required<AppDetails> = {
+				fileSizeBytes: null,
+				fileCreatedAt: null,
+				fileModifiedAt: null,
+				architecture: 'unknown',
+				signature: 'unavailable',
+				executableExists: null,
+				installLocationExists: null,
+				canOpenFolder: false,
+			}
+			expectWireShape(
+				contract.commands.get_app_details,
+				declared,
+				'AppDetails',
+			)
+		})
+
+		it('describes the uninstall preview', () => {
+			const declared: Required<UninstallPreview> = {
+				appName: '',
+				publisher: null,
+				source: 'registry',
+				mechanism: 'msix',
+			}
+			expectWireShape(
+				contract.commands.get_uninstall_preview,
+				declared,
+				'UninstallPreview',
+			)
+		})
+
+		it('describes the close result', () => {
+			const declared: Required<CloseAppsResult> = {
+				closed: 0,
+				notRunning: 0,
+				unavailable: 0,
+				blocked: 0,
+				failed: 0,
+			}
+			expectWireShape(
+				contract.commands.close_apps,
+				declared,
+				'CloseAppsResult',
+			)
+		})
+
+		it('describes uninstall history', () => {
+			const declared: Required<UninstallHistoryEntry> = {
+				id: '',
+				timestamp: 0,
+				appName: '',
+				publisher: null,
+				mechanism: 'msix',
+				result: 'succeeded',
+			}
+			const entries = contract.commands
+				.get_uninstall_history as UninstallHistoryEntry[]
+			expectWireShape(entries[0], declared, 'UninstallHistoryEntry')
+		})
+
+		it('describes system settings and the scan settings inside them', () => {
+			const declared: Required<SystemSettings> = {
+				version: '',
+				autostartEnabled: false,
+				shortcut: { available: false, label: '', error: null },
+				scanSettings,
+				fixedDrives: [],
+			}
+			const settings = contract.commands
+				.get_system_settings as SystemSettings
+			expectWireShape(settings, declared, 'SystemSettings')
+			expectWireShape(settings.scanSettings, scanSettings, 'ScanSettings')
+			expectWireShape(
+				contract.commands.set_scan_settings,
+				scanSettings,
+				'ScanSettings',
+			)
+		})
+
+		it('describes the stale installed copy', () => {
+			const declared: Required<StaleCopyInfo> = {
+				installedVersion: '',
+				installLocation: '',
+			}
+			expectWireShape(
+				contract.commands.stale_copy_status,
+				declared,
+				'StaleCopyInfo',
+			)
+		})
+
+		it('answers the preferences backup with a single flag', () => {
+			expect(typeof contract.commands.save_preferences_backup).toBe(
+				'boolean',
+			)
+		})
+	})
+
+	describe('events', () => {
+		it('describes the catalog delta', () => {
+			const declared: Required<CatalogDelta> = {
+				generation: 0,
+				upserted: [],
+				removedIds: [],
+				summary: { added: 0, removed: 0, updated: 0 },
+			}
+			const delta = contract.events['catalog://delta'] as CatalogDelta
+			expectWireShape(delta, declared, 'CatalogDelta')
+			expectWireShape(delta.upserted[0], appInfo, 'AppInfo')
+		})
+
+		it('describes the change summary', () => {
+			const declared: Required<CatalogChangeSummary> = {
+				added: 0,
+				removed: 0,
+				updated: 0,
+			}
+			expectWireShape(
+				contract.events['catalog://changed'],
+				declared,
+				'CatalogChangeSummary',
+			)
+		})
+
+		it('describes a hydration patch', () => {
+			const declared: Required<AppHydrationPatch> = {
+				id: '',
+				generation: 0,
+				iconBase64: '',
+				description: '',
+				version: '',
+				publisher: '',
+				productName: '',
+				originalFilename: '',
+				installLocation: '',
+				canUninstall: false,
+			}
+			const patches = contract.events[
+				'catalog://patches'
+			] as AppHydrationPatch[]
+			expectWireShape(patches[0], declared, 'AppHydrationPatch')
+		})
+
+		it('describes scan progress', () => {
+			const declared: Required<ScanProgress> = {
+				stage: '',
+				location: null,
+				completedRoots: 0,
+				totalRoots: 0,
+			}
+			expectWireShape(
+				contract.events['scan://progress'],
+				declared,
+				'ScanProgress',
+			)
+		})
+
+		it('describes launch status', () => {
+			const declared: Required<LaunchStatus> = { id: '', state: 'ready' }
+			expectWireShape(
+				contract.events['launch://status'],
+				declared,
+				'LaunchStatus',
+			)
+		})
+
+		it('describes close progress', () => {
+			const declared: Required<CloseProgress> = {
+				stage: 'waiting',
+				running: 0,
+				secondsLeft: 0,
+			}
+			expectWireShape(
+				contract.events['close://progress'],
+				declared,
+				'CloseProgress',
+			)
+		})
+	})
+
+	it('answers a failure with the code and the safe message only', () => {
+		expect(Object.keys(contract.error as object).sort()).toEqual([
+			'code',
+			'message',
+		])
+	})
+})

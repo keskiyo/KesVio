@@ -1,7 +1,6 @@
 import { Plus } from 'lucide-react'
 import type { ScenarioListRowProps } from '../types'
-import { ScenarioAppTile } from './ScenarioAppTile'
-import { UnavailableScenarioAppTile } from './UnavailableScenarioAppTile'
+import { ScenarioTileRow } from './ScenarioTileRow/ScenarioTileRow'
 
 export function ScenarioListRow({
 	list,
@@ -16,44 +15,28 @@ export function ScenarioListRow({
 	identityOf,
 }: ScenarioListRowProps) {
 	return (
-		<div className="flex min-w-0 flex-col gap-2 rounded-xl border border-(--border-neutral) bg-(--surface-inset) p-3 sm:flex-row sm:items-center">
-			<span className="w-20 shrink-0 text-xs font-semibold tracking-[.12em] text-(--text-subtle) uppercase">
+		<div className="flex min-w-0 flex-col gap-2 rounded-xl border border-(--border-neutral) bg-(--surface-inset) p-3 sm:flex-row sm:items-start">
+			<span className="w-20 shrink-0 pt-2 text-xs font-semibold tracking-[.12em] text-(--text-subtle) uppercase">
 				{label}
 			</span>
-			<ul
-				aria-label={`${label} list of ${scenarioName}`}
-				className="flex min-w-0 flex-1 flex-wrap items-center gap-2"
-			>
-				{apps.map(app => (
-					<ScenarioAppTile
-						key={app.id}
-						app={app}
-						mark={markOf?.(app) ?? null}
-						remove={{
-							label: `Remove ${app.name} from the ${label} list of ${scenarioName}`,
-							disabled,
-							onRemove: () => onRemove(list, identityOf(app)),
-						}}
-					/>
-				))}
-				{unavailable.map(entry => (
-					<UnavailableScenarioAppTile
-						key={entry.identity}
-						entry={entry}
-						remove={{
-							label: `Remove ${entry.name} from the ${label} list of ${scenarioName}`,
-							disabled,
-							onRemove: () => onRemove(list, entry.identity),
-						}}
-					/>
-				))}
-			</ul>
+			<ScenarioTileRow
+				label={label}
+				scenarioName={scenarioName}
+				apps={apps}
+				unavailable={unavailable}
+				collapsible
+				disabled={disabled}
+				markOf={markOf}
+				identityOf={identityOf}
+				onRemove={identity => onRemove(list, identity)}
+				listClassName="flex min-w-0 flex-wrap items-start gap-2"
+			/>
 			<button
 				type="button"
 				aria-label={`Add an app to the ${label} list of ${scenarioName}`}
 				disabled={disabled}
 				onClick={() => onAdd(list)}
-				className="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-lg border border-(--border-neutral) bg-(--surface-panel) px-3 text-xs font-medium text-(--text-primary) transition-colors hover:border-(--accent) hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto"
+				className="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-lg border border-(--border-neutral) bg-(--surface-panel) px-3 text-xs font-medium text-(--text-primary) transition-colors hover:border-(--accent) hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) disabled:cursor-not-allowed disabled:opacity-60"
 			>
 				<Plus size={14} aria-hidden="true" />
 				Add

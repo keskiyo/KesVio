@@ -80,12 +80,14 @@ export function FavoriteScenarioCard({
 						scenarioName={scenario.name}
 						apps={launch.apps}
 						unavailable={launch.unavailable}
+						collapsible
 					/>
 					<ScenarioRunList
 						label="Close"
 						scenarioName={scenario.name}
 						apps={close.apps}
 						unavailable={close.unavailable}
+						collapsible
 					/>
 				</div>
 			</CollapsiblePanel>

@@ -77,6 +77,19 @@ jobs:
             - name: Lint frontend
               run: npm run lint
 
+            - name: Check frontend formatting
+              run: npm run format:check
+
+            # A tag can be pushed from a branch `verify.yml` never ran on, so the boundary scripts
+            # that gate a merge have to gate a publication too.
+            - name: Verify frontend dependency boundaries
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/verify-frontend-boundaries.ps1
+
+            - name: Verify Windows API ownership boundary
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/verify-platform-boundaries.ps1
+
             - name: Run frontend tests
               run: npm test
 

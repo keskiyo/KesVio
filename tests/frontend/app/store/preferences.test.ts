@@ -40,7 +40,7 @@ describe('preferences', () => {
 			ok: false,
 			error: 'The selected file is not a Windows Apps backup.',
 		})
-		expect(parsePreferenceImport(JSON.stringify({ version: 17 }))).toEqual({
+		expect(parsePreferenceImport(JSON.stringify({ version: 18 }))).toEqual({
 			ok: false,
 			error: 'This backup was created by a newer version of Windows Apps.',
 		})
@@ -109,7 +109,7 @@ describe('preferences', () => {
 
 	it('uses complete defaults', () => {
 		expect(DEFAULT_PREFERENCES).toMatchObject({
-			version: 16,
+			version: 17,
 			favoriteScenarioIds: [],
 			categoryOrder: CATEGORY_ORDER,
 			favoriteAppIds: [],
@@ -140,7 +140,10 @@ describe('preferences', () => {
 		expect(normalized.categoryOrder).toContain('installers_docs')
 	})
 
-	it('migrates v7 custom categories with stable accents and durable identities', () => {
+	// Eight accents repeated visibly once a user had more than a handful of categories. The palette
+	// is wider now, and a document written before it keeps no accent of its own so every category is
+	// redealt across the whole range; a document already on the wide palette keeps what it has.
+	it('redeals accents stored before the palette widened', () => {
 		const migrated = normalizePreferences({
 			version: 7,
 			categories: [
@@ -156,7 +159,7 @@ describe('preferences', () => {
 		})
 
 		expect(migrated).toMatchObject({
-			version: 16,
+			version: 17,
 			favoriteAppIdentities: ['identity:codex'],
 		})
 		expect(migrated.categories).toContainEqual(
@@ -166,6 +169,27 @@ describe('preferences', () => {
 			}),
 		)
 		expect(migrated.categories).toContainEqual(
+			expect.objectContaining({
+				id: 'custom:personal',
+				accent: stableCustomCategoryAccent('custom:personal'),
+			}),
+		)
+	})
+
+	it('keeps an accent chosen on the wide palette', () => {
+		const normalized = normalizePreferences({
+			version: 17,
+			categories: [
+				{
+					id: 'custom:personal',
+					label: 'Personal',
+					builtIn: false,
+					accent: 'red',
+				},
+			],
+		})
+
+		expect(normalized.categories).toContainEqual(
 			expect.objectContaining({ id: 'custom:personal', accent: 'red' }),
 		)
 	})
@@ -179,7 +203,7 @@ describe('preferences', () => {
 				collapsedCategories: ['other'],
 			}),
 		).toMatchObject({
-			version: 16,
+			version: 17,
 			favoriteAppIds: ['codex'],
 			collapsedCategories: ['other'],
 			categoryOverrides: {},
@@ -197,7 +221,7 @@ describe('preferences', () => {
 		})
 
 		expect(normalized).toMatchObject({
-			version: 16,
+			version: 17,
 			favoriteAppIds: ['code'],
 			unknownFields: {
 				experimentalLayout: { density: 'compact' },
@@ -231,7 +255,7 @@ describe('preferences', () => {
 		).toBe(true)
 
 		expect(JSON.parse(values.get(PREFERENCES_KEY) ?? '{}')).toMatchObject({
-			version: 16,
+			version: 17,
 			favoriteAppIds: ['code', 'editor'],
 			experimentalLayout: { density: 'compact' },
 		})
@@ -261,7 +285,7 @@ describe('preferences', () => {
 		})
 		// The id-keyed map is preserved (the store folds it into identities on the next catalog
 		// load); the new identity map defaults to empty so nothing is lost on upgrade.
-		expect(normalized.version).toBe(16)
+		expect(normalized.version).toBe(17)
 		expect(normalized.categoryOverrides).toEqual({ codex: 'ai' })
 		expect(normalized.categoryOverrideIdentities).toEqual({})
 	})
@@ -282,7 +306,7 @@ describe('preferences', () => {
 		})
 
 		expect(normalized).toMatchObject({
-			version: 16,
+			version: 17,
 			favoriteAppIds: ['cmd-shortcut'],
 			favoriteAppIdentities: [],
 			hiddenAppIds: ['cmd-shortcut'],
@@ -331,7 +355,7 @@ describe('preferences', () => {
 
 		// v8 could not carry the marks, so the upgrade must default them rather than invent any,
 		// and every field the older document did carry has to survive untouched.
-		expect(normalized.version).toBe(16)
+		expect(normalized.version).toBe(17)
 		expect(normalized.installerAppIds).toEqual([])
 		expect(normalized.installerAppIdentities).toEqual([])
 		expect(normalized.legacyCanonicalPreferences.installer).toEqual([])
@@ -367,7 +391,7 @@ describe('preferences', () => {
 
 		// v9 could not carry stamps, so a value under that key is not ours to trust; the store
 		// refills the map from the next catalog load.
-		expect(normalized.version).toBe(16)
+		expect(normalized.version).toBe(17)
 		expect(normalized.firstSeenAt).toEqual({})
 		expect(normalized.installerAppIdentities).toEqual(['preference:setup'])
 	})
@@ -397,7 +421,7 @@ describe('preferences', () => {
 		})
 
 		// v10 could not carry scenarios, so a value under that key is not ours to trust.
-		expect(normalized.version).toBe(16)
+		expect(normalized.version).toBe(17)
 		expect(normalized.scenarios).toEqual([])
 		expect(normalized.firstSeenAt).toEqual({
 			'preference:code': 1700000000000,
@@ -451,7 +475,7 @@ describe('preferences', () => {
 			],
 		})
 
-		expect(normalized.version).toBe(16)
+		expect(normalized.version).toBe(17)
 		expect(normalized.scenarios).toEqual([
 			{
 				id: 'work',
@@ -472,7 +496,7 @@ describe('preferences', () => {
 			scenarios: [{ id: 'work', name: 'Work', createdAt: 1700000000000 }],
 		})
 
-		expect(normalized.version).toBe(16)
+		expect(normalized.version).toBe(17)
 		expect(normalized.favoriteScenarioIds).toEqual([])
 		expect(normalized.scenarios).toHaveLength(1)
 	})
@@ -583,7 +607,7 @@ describe('preferences', () => {
 				collapsedCategories: ['games', 'invalid'],
 			}),
 		).toEqual({
-			version: 16,
+			version: 17,
 			categories: DEFAULT_PREFERENCES.categories,
 			categoryOrder: [
 				'browsers',
@@ -628,7 +652,7 @@ describe('preferences', () => {
 			documentAppIdentities: ['identity:handbook'],
 		})
 
-		expect(normalized.version).toBe(16)
+		expect(normalized.version).toBe(17)
 		expect(normalized.installerAppIds).toEqual(['setup'])
 		expect(normalized.installerAppIdentities).toEqual(['identity:setup'])
 		expect(normalized.documentAppIds).toEqual([])
@@ -693,11 +717,11 @@ describe('preferences', () => {
 		).toEqual(['a'])
 	})
 
-	// A newer build may have written a version 17 document; this build (v16) must not overwrite it
+	// A newer build may have written a version 18 document; this build (v17) must not overwrite it
 	// with the older shape and strip the fields it does not know about.
 	it('does not overwrite a document written by a newer version', () => {
 		const future = JSON.stringify({
-			version: 17,
+			version: 18,
 			favoriteAppIds: ['keep'],
 			futureField: 'preserved',
 		})

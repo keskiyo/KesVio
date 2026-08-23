@@ -1,11 +1,11 @@
 import type {
 	AppDetails,
 	AppHydrationPatch,
-	AppInfo,
 	AppsClient,
 	CatalogChangeSummary,
 	CatalogDelta,
 	CatalogDiagnostics,
+	CatalogScanResult,
 	CatalogSnapshot,
 	CloseAppsResult,
 	CloseProgress,
@@ -20,6 +20,8 @@ import {
 	listenIfTauri,
 } from '../../../shared/api/tauri/client'
 
+const EMPTY_SCAN: CatalogScanResult = { apps: [], generation: 0 }
+
 export const tauriAppsClient: AppsClient = {
 	getApps: () =>
 		isTauriRuntime()
@@ -27,16 +29,16 @@ export const tauriAppsClient: AppsClient = {
 			: Promise.resolve({ apps: [], hasCache: false }),
 	refreshApps: () =>
 		isTauriRuntime()
-			? invokeTauri<AppInfo[]>('refresh_apps')
-			: Promise.resolve([]),
+			? invokeTauri<CatalogScanResult>('refresh_apps')
+			: Promise.resolve(EMPTY_SCAN),
 	forceFullScan: () =>
 		isTauriRuntime()
-			? invokeTauri<AppInfo[]>('force_full_scan')
-			: Promise.resolve([]),
+			? invokeTauri<CatalogScanResult>('force_full_scan')
+			: Promise.resolve(EMPTY_SCAN),
 	resetCatalogCache: () =>
 		isTauriRuntime()
-			? invokeTauri<AppInfo[]>('reset_catalog_cache')
-			: Promise.resolve([]),
+			? invokeTauri<CatalogScanResult>('reset_catalog_cache')
+			: Promise.resolve(EMPTY_SCAN),
 	clearIconCache: () =>
 		isTauriRuntime()
 			? invokeTauri<void>('clear_icon_cache')
@@ -58,9 +60,6 @@ export const tauriAppsClient: AppsClient = {
 	getUninstallPreview: id =>
 		invokeIfTauri<UninstallPreview>('get_uninstall_preview', { id }),
 	uninstallApp: id => invokeIfTauri<void>('uninstall_app', { id }),
-	async onAppsUpdated(handler) {
-		return listenIfTauri<AppInfo[]>('apps://updated', handler)
-	},
 	async onCatalogDelta(handler) {
 		return listenIfTauri<CatalogDelta>('catalog://delta', handler)
 	},

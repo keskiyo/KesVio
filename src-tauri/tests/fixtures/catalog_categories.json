@@ -1376,5 +1376,144 @@
 		"productName": "Microsoft.Todos",
 		"installLocation": "C:\\Program Files\\WindowsApps\\Microsoft.Todos_2.132.2465.0_x64__8wekyb3d8bbwe",
 		"expected": "productivity"
+	},
+	{
+		"_comment": "Inbox Store applications whose localised display name shares no word with the package that identifies them; each package family is named explicitly rather than by a blanket Microsoft prefix, so a developer tool from the same publisher stays out of Windows features.",
+		"name": "Портал смешанной реальности",
+		"path": "Microsoft.MixedReality.Portal_8wekyb3d8bbwe!App",
+		"source": "msix",
+		"publisher": "Microsoft",
+		"productName": "Microsoft.MixedReality.Portal",
+		"description": "Microsoft.MixedReality.Portal",
+		"originalFilename": "MixedRealityPortal.exe",
+		"installLocation": "C:\\Program Files\\WindowsApps\\Microsoft.MixedReality.Portal_2000.21051.1282.0_x64__8wekyb3d8bbwe",
+		"expected": "windows_features"
+	},
+	{
+		"name": "Советы",
+		"path": "Microsoft.Getstarted_8wekyb3d8bbwe!App",
+		"source": "msix",
+		"publisher": "Microsoft",
+		"productName": "Microsoft.Getstarted",
+		"description": "Microsoft.Getstarted",
+		"originalFilename": "WhatsNew.Store.exe",
+		"installLocation": "C:\\Program Files\\WindowsApps\\Microsoft.Getstarted_10.2312.1.0_x64__8wekyb3d8bbwe",
+		"expected": "windows_features"
+	},
+	{
+		"name": "Средство 3D-просмотра",
+		"path": "Microsoft.Microsoft3DViewer_8wekyb3d8bbwe!Microsoft.Microsoft3DViewer",
+		"source": "msix",
+		"publisher": "Microsoft",
+		"productName": "Microsoft.Microsoft3DViewer",
+		"description": "Microsoft.Microsoft3DViewer",
+		"originalFilename": "3DViewer.exe",
+		"installLocation": "C:\\Program Files\\WindowsApps\\Microsoft.Microsoft3DViewer_7.2602.8012.0_x64__8wekyb3d8bbwe",
+		"expected": "windows_features"
+	},
+	{
+		"_comment": "Paint 3D ships as Microsoft.MSPaint, which the classic Paint needle does not cover.",
+		"name": "Paint 3D",
+		"path": "Microsoft.MSPaint_8wekyb3d8bbwe!Microsoft.MSPaint",
+		"source": "msix",
+		"publisher": "Microsoft",
+		"productName": "Microsoft.MSPaint",
+		"description": "Microsoft.MSPaint",
+		"installLocation": "C:\\Program Files\\WindowsApps\\Microsoft.MSPaint_6.2410.13017.0_x64__8wekyb3d8bbwe",
+		"expected": "windows_features"
+	},
+	{
+		"_comment": "Cortana's package family is an opaque identifier, so the product name has to be recognised as well.",
+		"name": "Cortana",
+		"path": "Microsoft.549981C3F5F10_8wekyb3d8bbwe!App",
+		"source": "msix",
+		"publisher": "Microsoft",
+		"productName": "Microsoft.549981C3F5F10",
+		"description": "Microsoft.549981C3F5F10",
+		"originalFilename": "Cortana.exe",
+		"installLocation": "C:\\Program Files\\WindowsApps\\Microsoft.549981C3F5F10_4.2308.1005.0_x64__8wekyb3d8bbwe",
+		"expected": "windows_features"
+	},
+	{
+		"_comment": "A packaged game from the same publisher must not follow the inbox applications into Windows features.",
+		"name": "Solitaire & Casual Games",
+		"path": "Microsoft.MicrosoftSolitaireCollection_8wekyb3d8bbwe!App",
+		"source": "msix",
+		"publisher": "Microsoft",
+		"productName": "Microsoft.MicrosoftSolitaireCollection",
+		"description": "Microsoft.MicrosoftSolitaireCollection",
+		"installLocation": "C:\\Program Files\\WindowsApps\\Microsoft.MicrosoftSolitaireCollection_4.26.7290.0_x64__8wekyb3d8bbwe",
+		"expected": "games"
+	},
+	{
+		"_comment": "Clinical software names its domain rather than a vendor: the record carries no publisher at all.",
+		"name": "АРМ «Поликлиника»",
+		"path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\MIS\\АРМ «Поликлиника».lnk",
+		"source": "start_menu",
+		"installLocation": "C:\\Users\\User\\MIS\\bin",
+		"expected": "productivity"
+	},
+	{
+		"name": "ПК-Здравоохранение",
+		"path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\Комтек\\ПК-Здравоохранение.lnk",
+		"source": "start_menu",
+		"installLocation": "C:\\Komtek\\PK_ZDRAV",
+		"expected": "productivity"
+	},
+	{
+		"name": "WHO AnthroPlus",
+		"path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\WHO AnthroPlus\\WHO AnthroPlus.lnk",
+		"source": "start_menu",
+		"publisher": "bi",
+		"productName": "WHOAnthroPlus.PC",
+		"description": "WHOAnthroPlus.PC",
+		"originalFilename": "WHO AnthroPlus.exe",
+		"installLocation": "C:\\Program Files (x86)\\WHO\\WHO AnthroPlus\\",
+		"expected": "productivity"
+	},
+	{
+		"_comment": "A medical image viewer is recognised by the imaging standard it implements and by its vendor, not by a product name unique to one machine.",
+		"name": "RadiAnt DICOM Viewer (64-bit)",
+		"path": "C:\\RadiAntViewer64bit\\RadiAntViewer.exe",
+		"source": "portable",
+		"publisher": "Medixant",
+		"productName": "RadiAnt DICOM Viewer (64-bit)",
+		"description": "RadiAnt DICOM Viewer (64-bit)",
+		"originalFilename": "RadiAntViewer.exe",
+		"expected": "editors"
+	},
+	{
+		"_comment": "The executable is named Kernel and carries no extension, so the vendor and the surveillance acronym are the only evidence.",
+		"name": "CCTV \"Line\"",
+		"path": "C:\\DevLine\\DevLine\\Linia SKW\\Kernel.exe",
+		"source": "portable",
+		"publisher": "DevLine",
+		"productName": "CCTV \"Line\"",
+		"description": "Realtime server part of CCTV \"Line\"",
+		"originalFilename": "Kernel",
+		"installLocation": "C:\\DevLine\\DevLine\\Linia SKW",
+		"expected": "media"
+	},
+	{
+		"name": "GooseDesktop",
+		"path": "C:\\Portable\\Desktop Goose v0.31\\DesktopGoose v0.31\\GooseDesktop.exe",
+		"source": "portable",
+		"productName": "GooseDesktop",
+		"description": "GooseDesktop",
+		"originalFilename": "GooseDesktop.exe",
+		"installLocation": "C:\\Portable\\Desktop Goose v0.31\\DesktopGoose v0.31",
+		"expected": "utilities"
+	},
+	{
+		"_comment": "Deliberately unclassified: publisher, product and description all repeat the same invented name, and the install root adds no domain word. A rule that caught this would fit one machine only.",
+		"name": "GreenAPP.Launcher",
+		"path": "C:\\GreenAPP\\Client\\GreenAPP.Launcher.exe",
+		"source": "portable",
+		"publisher": "GreenAPP.Launcher",
+		"productName": "GreenAPP.Launcher",
+		"description": "GreenAPP.Launcher",
+		"originalFilename": "GreenAPP.Launcher.exe",
+		"installLocation": "C:\\GreenAPP\\Client",
+		"expected": "other"
 	}
 ]

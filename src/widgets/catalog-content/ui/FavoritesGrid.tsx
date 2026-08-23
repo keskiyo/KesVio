@@ -36,7 +36,7 @@ export function FavoritesGrid({
 							? 'No matching favorites'
 							: 'No favorites yet'}
 					</h2>
-					<p className="mt-2 text-sm text-slate-600">
+					<p className="mt-2 text-sm text-(--text-muted)">
 						{hasQuery
 							? 'Try a different search.'
 							: 'Use the star on an app or scenario card to add it here.'}

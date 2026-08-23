@@ -9,6 +9,12 @@ export const CUSTOM_CATEGORY_ACCENTS = [
 	'orange',
 	'purple',
 	'red',
+	'amber',
+	'lime',
+	'teal',
+	'azure',
+	'indigo',
+	'magenta',
 ] as const satisfies readonly CustomCategoryAccent[]
 
 export function isCustomCategoryAccent(

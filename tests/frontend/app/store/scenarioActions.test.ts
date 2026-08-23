@@ -10,7 +10,7 @@ import type { AppInfo, AppsClient } from '../../../../src/entities/app'
 function client(): AppsClient {
 	return {
 		getApps: vi.fn().mockResolvedValue({ apps: [], hasCache: true }),
-		refreshApps: vi.fn().mockResolvedValue([]),
+		refreshApps: vi.fn().mockResolvedValue({ apps: [], generation: 1 }),
 		cancelScan: vi.fn().mockResolvedValue(undefined),
 		launchApp: vi.fn().mockResolvedValue(undefined),
 		closeApps: vi.fn().mockResolvedValue({
@@ -23,7 +23,6 @@ function client(): AppsClient {
 		openAppFolder: vi.fn().mockResolvedValue(undefined),
 		getUninstallPreview: vi.fn(),
 		uninstallApp: vi.fn().mockResolvedValue(undefined),
-		onAppsUpdated: vi.fn().mockResolvedValue(() => undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 	}
 }

@@ -12,9 +12,9 @@ export function EmptyState({ hasQuery }: { hasQuery: boolean }) {
 				<h2 className="text-lg font-semibold">
 					{hasQuery ? 'No apps found' : 'No applications available'}
 				</h2>
-				<p className="mt-2 text-sm text-slate-600">
+				<p className="mt-2 text-sm text-(--text-muted)">
 					{hasQuery
-						? 'Try an app name, publisher, version, or install location.'
+						? 'Try a different search.'
 						: 'Refresh to scan Windows again.'}
 				</p>
 			</div>

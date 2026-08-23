@@ -33,7 +33,7 @@ export function TitleBar() {
 					type="button"
 					aria-label="Close"
 					onClick={controls.close}
-					className="grid h-9 w-11 place-items-center text-slate-500 transition-colors hover:bg-red-500 hover:text-white"
+					className="grid h-9 w-11 place-items-center text-slate-500 transition-colors hover:bg-red-500/65 hover:text-white"
 				>
 					<X size={16} />
 				</button>

@@ -78,22 +78,26 @@ describe('search matches outside the current view', () => {
 	})
 	const everything = [...catalog, tool, hiddenApp, installer]
 
-	it('counts matches per area that the main catalog does not show', () => {
+	it('counts matches per area', () => {
 		expect(
 			selectSearchScopeCounts(everything, 'backup', ['buried']),
-		).toEqual({ auxiliary: 1, hidden: 1, installersDocs: 1 })
+		).toEqual({ all: 0, auxiliary: 1, hidden: 1, installersDocs: 1 })
 	})
 
 	it('reports nothing without a query', () => {
 		expect(selectSearchScopeCounts(everything, '   ', ['buried'])).toEqual({
+			all: 0,
 			auxiliary: 0,
 			hidden: 0,
 			installersDocs: 0,
 		})
 	})
 
-	it('excludes applications the main catalog already shows', () => {
+	// The main catalog is a scope like any other, so a narrowed view can point back at it. Which
+	// area to leave out is the reader's current view, and that belongs to the hint, not here.
+	it('counts the main catalog as a scope of its own', () => {
 		expect(selectSearchScopeCounts(everything, 'steam', [])).toEqual({
+			all: 1,
 			auxiliary: 0,
 			hidden: 0,
 			installersDocs: 0,
@@ -102,6 +106,7 @@ describe('search matches outside the current view', () => {
 
 	it('counts a hidden auxiliary tool once, as hidden', () => {
 		expect(selectSearchScopeCounts([tool], 'backup', ['tool'])).toEqual({
+			all: 0,
 			auxiliary: 0,
 			hidden: 1,
 			installersDocs: 0,

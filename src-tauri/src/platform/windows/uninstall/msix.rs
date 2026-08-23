@@ -77,6 +77,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "system test: drives the real deployment API; run manually before a release"]
     fn removing_an_absent_package_reaches_deployment_without_an_interpreter() {
         let outcome = remove("WindowsApps.Absent_0.0.0.0_x64__0000000000000");
 

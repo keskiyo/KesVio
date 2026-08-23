@@ -2,6 +2,8 @@ use crate::error::AppError;
 
 pub(crate) mod catalog;
 pub(crate) mod close;
+#[cfg(test)]
+mod contract;
 pub(crate) mod details;
 pub(crate) mod diagnostics;
 pub(crate) mod launch;

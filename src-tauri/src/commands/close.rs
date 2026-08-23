@@ -56,6 +56,25 @@ struct CloseRequest {
     blocked: usize,
 }
 
+#[cfg(test)]
+pub(super) fn response_sample() -> CloseAppsResponse {
+    CloseAppsResponse {
+        closed: 2,
+        not_running: 1,
+        unavailable: 0,
+        blocked: 1,
+        failed: 0,
+    }
+}
+
+#[cfg(test)]
+pub(super) fn progress_sample() -> serde_json::Value {
+    serde_json::to_value(CloseProgressPayload::from(closer::CloseStage::Waiting {
+        seconds_left: 3,
+    }))
+    .expect("the close progress payload serializes")
+}
+
 fn resolve_close_targets(state: &AppState, ids: Vec<String>) -> Result<CloseRequest, AppError> {
     let stored = state
         .close_targets

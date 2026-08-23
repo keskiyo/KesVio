@@ -36,7 +36,7 @@ function client(apps: AppInfo[]): AppsClient {
 		getApps: vi
 			.fn()
 			.mockResolvedValue({ apps, hasCache: true, generation: 3 }),
-		refreshApps: vi.fn().mockResolvedValue(apps),
+		refreshApps: vi.fn().mockResolvedValue({ apps, generation: 1 }),
 		cancelScan: vi.fn().mockResolvedValue(undefined),
 		launchApp: vi.fn().mockResolvedValue(undefined),
 		closeApps: vi.fn().mockResolvedValue({
@@ -62,7 +62,6 @@ function client(apps: AppInfo[]): AppsClient {
 			mechanism: 'registered_command',
 		}),
 		uninstallApp: vi.fn().mockResolvedValue(undefined),
-		onAppsUpdated: vi.fn().mockResolvedValue(() => undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 	}
 }

@@ -178,13 +178,20 @@ fn promote_artifact(app: &mut AppInfo, places: &crate::catalog::machine::Machine
     crate::catalog::visibility::apply_visibility(app);
 }
 
-fn stored_schema_version(app_data_dir: &Path) -> Option<u32> {
+fn stored_field(app_data_dir: &Path, field: &str) -> Option<u64> {
     let bytes = fs::read(app_data_dir.join(CACHE_FILE)).ok()?;
     serde_json::from_slice::<serde_json::Value>(&bytes)
         .ok()?
-        .get("schemaVersion")?
+        .get(field)?
         .as_u64()
-        .and_then(|version| u32::try_from(version).ok())
+}
+
+fn stored_schema_version(app_data_dir: &Path) -> Option<u32> {
+    stored_field(app_data_dir, "schemaVersion").and_then(|version| u32::try_from(version).ok())
+}
+
+pub(crate) fn stored_generation(app_data_dir: &Path) -> Option<u64> {
+    stored_field(app_data_dir, "generation")
 }
 
 pub(crate) fn has_newer_schema(app_data_dir: &Path) -> bool {
@@ -221,12 +228,15 @@ pub(crate) fn write_document(app_data_dir: &Path, document: &CatalogCache) -> io
 }
 
 pub(crate) fn reset(app_data_dir: &Path) -> io::Result<()> {
-    let cache = app_data_dir.join(CACHE_FILE);
-    let temporary = app_data_dir.join("apps-cache.json.tmp");
-    let backup = app_data_dir.join("apps-cache.json.bak");
-    for path in [cache, temporary, backup] {
-        if path.exists() {
-            fs::remove_file(path)?;
+    let Ok(entries) = fs::read_dir(app_data_dir) else {
+        return Ok(());
+    };
+    for entry in entries.flatten() {
+        if !entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            continue;
+        }
+        if entry.file_name().to_string_lossy().starts_with(CACHE_FILE) {
+            fs::remove_file(entry.path())?;
         }
     }
     Ok(())
@@ -874,19 +884,35 @@ mod tests {
         assert!(migrated.app_details.is_empty());
     }
 
+    // A reset that names the files it knows leaves behind the ones an earlier build wrote. One such
+    // sibling was still occupying eight megabytes on a real machine long after nothing read it.
     #[test]
     fn reset_removes_cache_files_without_touching_preferences() {
         let dir = tempfile::tempdir().unwrap();
         std::fs::write(dir.path().join(CACHE_FILE), "{}").unwrap();
         std::fs::write(dir.path().join("apps-cache.json.tmp"), "{}").unwrap();
         std::fs::write(dir.path().join("apps-cache.json.bak"), "{}").unwrap();
+        std::fs::write(dir.path().join("apps-cache.json.firstrun-backup"), "{}").unwrap();
         std::fs::write(dir.path().join("scan-settings.json"), "{}").unwrap();
+        std::fs::write(dir.path().join("uninstall-history.json"), "[]").unwrap();
+        std::fs::create_dir(dir.path().join("icons")).unwrap();
+        std::fs::write(dir.path().join("icons").join("a.png"), "").unwrap();
 
         reset(dir.path()).unwrap();
 
         assert!(!dir.path().join(CACHE_FILE).exists());
         assert!(!dir.path().join("apps-cache.json.tmp").exists());
         assert!(!dir.path().join("apps-cache.json.bak").exists());
+        assert!(!dir.path().join("apps-cache.json.firstrun-backup").exists());
         assert!(dir.path().join("scan-settings.json").exists());
+        assert!(dir.path().join("uninstall-history.json").exists());
+        assert!(dir.path().join("icons").join("a.png").exists());
+    }
+
+    #[test]
+    fn reset_on_a_missing_directory_is_not_a_failure() {
+        let dir = tempfile::tempdir().unwrap();
+
+        assert!(reset(&dir.path().join("absent")).is_ok());
     }
 }

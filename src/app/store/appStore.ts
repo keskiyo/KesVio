@@ -11,11 +11,11 @@ import { createPersist } from './persist'
 import { createPreferenceTransferActions } from './preferenceTransferActions'
 import { createScenarioActions } from './scenarioActions'
 import { readPreferences } from './preferences'
-import type { AppPreferencesV16 } from './preferences'
+import type { AppPreferencesV17 } from './preferences'
 import type { AppsClient } from '../../entities/app'
 import type { AppState } from './types'
 
-function initialState(preferences: AppPreferencesV16) {
+function initialState(preferences: AppPreferencesV17) {
 	return {
 		apps: [],
 		query: '',
@@ -69,7 +69,7 @@ export function createAppStore(
 			...initialState(preferences),
 			...createLifecycleActions({ set, get, client }),
 			...createCatalogActions({ set, get, client, persist }),
-			...createCatalogSyncActions({ set, get, client, persist }),
+			...createCatalogSyncActions({ set, get, persist }),
 			...createIconActions({ get, client }),
 			...createLaunchActions({ set, get, client }),
 			...createAppMarkActions({ set, get, persist }),

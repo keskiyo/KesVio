@@ -2,7 +2,7 @@
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Windows Apps",
 	"mainBinaryName": "WindowsApps",
-	"version": "0.3.7",
+	"version": "0.3.8",
 	"identifier": "dev.neiroslop.windowsapps",
 	"build": {
 		"frontendDist": "../dist",
@@ -14,8 +14,8 @@
 		"windows": [
 			{
 				"title": "Windows Apps",
-				"width": 1132,
-				"height": 715,
+				"width": 1250,
+				"height": 720,
 				"minWidth": 560,
 				"minHeight": 520,
 				"center": true,

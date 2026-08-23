@@ -2,6 +2,7 @@ import type { AppView } from '../../../../entities/app'
 import type { SearchScopeArea } from '../../types'
 
 export const SEARCH_SCOPE_AREAS: SearchScopeArea[] = [
+	{ key: 'all', view: 'all' as AppView, label: 'All apps' },
 	{ key: 'auxiliary', view: 'auxiliary' as AppView, label: 'Tools' },
 	{ key: 'hidden', view: 'hidden' as AppView, label: 'Hidden' },
 	{

@@ -2,7 +2,6 @@ import {
 	type SettingsArea,
 	useSystemSettings,
 } from '../../../features/edit-settings'
-import { useUpdater } from '../../../features/update-app'
 import { CatalogMaintenance } from './sections/CatalogMaintenance'
 import { AdvancedSettings } from './sections/AdvancedSettings'
 import { GeneralSettings } from './sections/GeneralSettings'
@@ -25,7 +24,7 @@ export function SettingsPage({
 	categories,
 	categoryOrder,
 	onMoveApp,
-	updater: sharedUpdater,
+	updater,
 }: SettingsPageProps) {
 	const {
 		settings,
@@ -43,8 +42,6 @@ export function SettingsPage({
 		forceFullScan,
 		resetCatalogCache,
 	} = useSystemSettings({ client, onForceFullScan, onResetCatalogCache })
-	const localUpdater = useUpdater({ autoCheck: false })
-	const updater = sharedUpdater ?? localUpdater
 	const areaError = (area: SettingsArea) =>
 		error && errorArea === area ? (
 			<p role="alert" className="mt-3 text-sm text-red-700">

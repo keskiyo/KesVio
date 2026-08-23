@@ -56,9 +56,6 @@ export function createLifecycleActions({
 								set({ catalogDiagnostics: diagnostics }),
 						)
 						disposers.push(
-							await client.onAppsUpdated(get().replaceApps),
-						)
-						disposers.push(
 							await client.onScanProgress(scanProgress =>
 								set({ scanProgress }),
 							),

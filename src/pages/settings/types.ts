@@ -45,7 +45,7 @@ export interface SettingsPageProps {
 	categories?: CategoryDefinition[]
 	categoryOrder?: AppCategory[]
 	onMoveApp?(appId: string, category: AppCategory): void
-	updater?: UpdaterState
+	updater: UpdaterState
 }
 
 export interface GeneralSettingsProps {

@@ -13,6 +13,7 @@ export type {
 	CatalogChangeSummary,
 	CatalogDelta,
 	CatalogDiagnostics,
+	CatalogScanResult,
 	CatalogSnapshot,
 	CloseAppsResult,
 	CloseProgress,

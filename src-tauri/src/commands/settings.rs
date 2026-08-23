@@ -31,6 +31,17 @@ pub(crate) struct SystemSettings {
     fixed_drives: Vec<String>,
 }
 
+#[cfg(test)]
+pub(super) fn settings_sample() -> SystemSettings {
+    SystemSettings {
+        version: env!("CARGO_PKG_VERSION"),
+        autostart_enabled: true,
+        shortcut: global_shortcut::Status::default(),
+        scan_settings: catalog::scan_settings::ScanSettings::default(),
+        fixed_drives: vec![r"C:\".into()],
+    }
+}
+
 fn normalize_scan_settings(
     settings: catalog::scan_settings::ScanSettings,
     stored: &catalog::scan_settings::ScanSettings,

@@ -106,12 +106,9 @@ export interface AppState {
 		artifact?: CatalogArtifactKind,
 	): void
 	toggleCategory(category: AppCategory): void
-	replaceApps(apps: AppInfo[]): void
 	applyDelta(delta: CatalogDelta): void
 	applyPatches(patches: AppHydrationPatch[]): void
 	clearCatalogChange(): void
-	subscribe(): Promise<() => void>
-	subscribeScanProgress(): Promise<() => void>
 }
 
 export type SetAppState = StoreApi<AppState>['setState']

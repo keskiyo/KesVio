@@ -16,6 +16,40 @@ pub(crate) struct CatalogSnapshot {
     diagnostics: Option<cache::CatalogDiagnostics>,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CatalogScanResult {
+    apps: Vec<CatalogAppDto>,
+    generation: u64,
+}
+
+impl From<crate::catalog::sync::ScanCommit> for CatalogScanResult {
+    fn from(commit: crate::catalog::sync::ScanCommit) -> Self {
+        Self {
+            apps: commit.apps.iter().map(CatalogAppDto::from).collect(),
+            generation: commit.generation,
+        }
+    }
+}
+
+#[cfg(test)]
+pub(super) fn snapshot_sample(app: &crate::catalog::AppInfo) -> CatalogSnapshot {
+    CatalogSnapshot {
+        apps: vec![CatalogAppDto::from(app)],
+        has_cache: true,
+        generation: 7,
+        diagnostics: None,
+    }
+}
+
+#[cfg(test)]
+pub(super) fn scan_result_sample(app: &crate::catalog::AppInfo) -> CatalogScanResult {
+    CatalogScanResult {
+        apps: vec![CatalogAppDto::from(app)],
+        generation: 7,
+    }
+}
+
 const MAX_HYDRATION_IDS: usize = 128;
 const MAX_HYDRATION_ID_LENGTH: usize = 512;
 
@@ -55,8 +89,8 @@ pub(crate) async fn get_apps(app: tauri::AppHandle) -> Result<CatalogSnapshot, A
 }
 
 #[tauri::command]
-pub(crate) async fn refresh_apps(app: tauri::AppHandle) -> Result<Vec<CatalogAppDto>, AppError> {
-    let apps = tauri::async_runtime::spawn_blocking(move || {
+pub(crate) async fn refresh_apps(app: tauri::AppHandle) -> Result<CatalogScanResult, AppError> {
+    let commit = tauri::async_runtime::spawn_blocking(move || {
         run_coordinated_scan(&app, SyncRequest::Refresh, true)?.ok_or(AppError::Coalesced {
             what: "Application refresh",
         })
@@ -66,12 +100,12 @@ pub(crate) async fn refresh_apps(app: tauri::AppHandle) -> Result<Vec<CatalogApp
         context: "Application scanning",
         source: error.to_string(),
     })??;
-    Ok(apps.iter().map(CatalogAppDto::from).collect())
+    Ok(CatalogScanResult::from(commit))
 }
 
 #[tauri::command]
-pub(crate) async fn force_full_scan(app: tauri::AppHandle) -> Result<Vec<CatalogAppDto>, AppError> {
-    let apps = tauri::async_runtime::spawn_blocking(move || {
+pub(crate) async fn force_full_scan(app: tauri::AppHandle) -> Result<CatalogScanResult, AppError> {
+    let commit = tauri::async_runtime::spawn_blocking(move || {
         run_coordinated_scan(&app, SyncRequest::Force, true)?.ok_or(AppError::Coalesced {
             what: "Application scan",
         })
@@ -81,14 +115,14 @@ pub(crate) async fn force_full_scan(app: tauri::AppHandle) -> Result<Vec<Catalog
         context: "Application scanning",
         source: error.to_string(),
     })??;
-    Ok(apps.iter().map(CatalogAppDto::from).collect())
+    Ok(CatalogScanResult::from(commit))
 }
 
 #[tauri::command]
 pub(crate) async fn reset_catalog_cache(
     app: tauri::AppHandle,
-) -> Result<Vec<CatalogAppDto>, AppError> {
-    let apps = tauri::async_runtime::spawn_blocking(move || {
+) -> Result<CatalogScanResult, AppError> {
+    let commit = tauri::async_runtime::spawn_blocking(move || {
         let app_data_dir = app
             .path()
             .app_data_dir()
@@ -113,7 +147,7 @@ pub(crate) async fn reset_catalog_cache(
         context: "Catalog reset",
         source: error.to_string(),
     })??;
-    Ok(apps.iter().map(CatalogAppDto::from).collect())
+    Ok(CatalogScanResult::from(commit))
 }
 
 #[tauri::command]
@@ -283,5 +317,29 @@ mod tests {
         assert!(app.get("launchArguments").is_none());
         assert!(app.get("resolvedPath").is_none());
         assert!(app.get("shortcutIconPath").is_none());
+    }
+
+    #[test]
+    fn a_scan_result_carries_the_generation_that_produced_it() {
+        let mut app = cached_app("Editor", r"C:\Editor\editor.exe");
+        app.id = "editor".into();
+        app.launch_arguments = Some("TOP_SECRET_SCAN_LAUNCH_ARGUMENTS".into());
+        app.resolved_path = Some("TOP_SECRET_SCAN_RESOLVED_TARGET".into());
+
+        let json =
+            serde_json::to_value(CatalogScanResult::from(crate::catalog::sync::ScanCommit {
+                apps: vec![app],
+                generation: 7,
+            }))
+            .unwrap();
+
+        assert_eq!(json["generation"], 7);
+        assert_eq!(json["apps"][0]["id"], "editor");
+        for secret in [
+            "TOP_SECRET_SCAN_LAUNCH_ARGUMENTS",
+            "TOP_SECRET_SCAN_RESOLVED_TARGET",
+        ] {
+            assert!(!json.to_string().contains(secret));
+        }
     }
 }

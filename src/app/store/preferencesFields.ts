@@ -34,7 +34,10 @@ export function normalizeOverrideMap(
 	) as Record<string, AppCategory>
 }
 
-export function normalizeDefinitions(value: unknown): CategoryDefinition[] {
+export function normalizeDefinitions(
+	value: unknown,
+	keepsStoredAccents = true,
+): CategoryDefinition[] {
 	const saved = Array.isArray(value) ? value : []
 	const labels = new Set<string>()
 	const categories = DEFAULT_CATEGORIES.map(category => {
@@ -66,9 +69,10 @@ export function normalizeDefinitions(value: unknown): CategoryDefinition[] {
 			id,
 			label,
 			builtIn: false,
-			accent: isCustomCategoryAccent(raw.accent)
-				? raw.accent
-				: stableCustomCategoryAccent(id),
+			accent:
+				keepsStoredAccents && isCustomCategoryAccent(raw.accent)
+					? raw.accent
+					: stableCustomCategoryAccent(id),
 		})
 		labels.add(label.toLocaleLowerCase())
 	}

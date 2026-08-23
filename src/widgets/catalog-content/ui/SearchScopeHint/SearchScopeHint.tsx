@@ -3,9 +3,12 @@ import { SEARCH_SCOPE_AREAS } from './data'
 
 export function SearchScopeHint({
 	counts,
+	activeView,
 	onSelectView,
 }: SearchScopeHintProps) {
-	const areas = SEARCH_SCOPE_AREAS.filter(area => counts[area.key] > 0)
+	const areas = SEARCH_SCOPE_AREAS.filter(
+		area => area.view !== activeView && counts[area.key] > 0,
+	)
 	if (areas.length === 0) return null
 	return (
 		<p className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-sm text-(--text-muted)">

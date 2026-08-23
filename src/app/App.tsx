@@ -1,10 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { toast, Toaster } from 'sonner'
+import { useCallback, useRef } from 'react'
+import { Toaster } from 'sonner'
 import { useStore } from 'zustand'
-import {
-	catalogChangeMessage,
-	useCatalogView,
-} from '../widgets/catalog-content'
+import { useCatalogView } from '../widgets/catalog-content'
 import {
 	AppDrawer,
 	AppSidebar,
@@ -18,6 +15,7 @@ import { Header } from '../widgets/app-header'
 import { useAppFeedback } from './model/useAppFeedback'
 import { useActivityStatus } from './model/useActivityStatus'
 import { useAppDerivations } from './model/useAppDerivations'
+import { useCatalogChangeToast } from './model/useCatalogChangeToast'
 import { useCatalogDialogs } from './model/useCatalogDialogs'
 import { AppDialogs } from './layout/AppDialogs'
 import { AppViews } from './layout/AppViews'
@@ -102,14 +100,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		onFocusSearch: useCallback(() => searchInputRef.current?.focus(), []),
 	})
 
-	useEffect(() => {
-		if (!catalogChange) return
-		if (!isRefreshing) {
-			const message = catalogChangeMessage(catalogChange)
-			if (message) toast.success(message)
-		}
-		clearCatalogChange()
-	}, [catalogChange, clearCatalogChange, isRefreshing])
+	useCatalogChangeToast({ catalogChange, clearCatalogChange, isRefreshing })
 
 	const isCatalogView =
 		activeView !== 'settings' &&

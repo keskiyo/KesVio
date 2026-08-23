@@ -1,13 +1,13 @@
 import { normalizePreferences } from './preferencesNormalize'
 import {
-	type AppPreferencesV16,
+	type AppPreferencesV17,
 	CURRENT_PREFERENCES_VERSION,
 	PREFERENCES_BACKUP_KEY,
 	PREFERENCES_KEY,
 	type PreferenceImportResult,
 } from './preferencesSchema'
 
-export function serializePreferences(preferences: AppPreferencesV16): string {
+export function serializePreferences(preferences: AppPreferencesV17): string {
 	const { unknownFields = {}, ...knownFields } = preferences
 	return JSON.stringify({ ...unknownFields, ...knownFields })
 }
@@ -58,7 +58,7 @@ export function readPreferenceBackup(storage: Storage): PreferenceImportResult {
 	}
 }
 
-export function readPreferences(storage: Storage): AppPreferencesV16 {
+export function readPreferences(storage: Storage): AppPreferencesV17 {
 	return (
 		readSlot(storage, PREFERENCES_KEY) ??
 		readSlot(storage, PREFERENCES_BACKUP_KEY) ??
@@ -66,7 +66,7 @@ export function readPreferences(storage: Storage): AppPreferencesV16 {
 	)
 }
 
-function readSlot(storage: Storage, key: string): AppPreferencesV16 | null {
+function readSlot(storage: Storage, key: string): AppPreferencesV17 | null {
 	try {
 		const value = storage.getItem(key)
 		return value ? normalizePreferences(JSON.parse(value)) : null
@@ -77,7 +77,7 @@ function readSlot(storage: Storage, key: string): AppPreferencesV16 | null {
 
 export function writePreferences(
 	storage: Storage,
-	preferences: AppPreferencesV16,
+	preferences: AppPreferencesV17,
 ): boolean {
 	if (hasNewerStoredPreferences(storage)) {
 		return true

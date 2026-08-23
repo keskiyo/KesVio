@@ -88,6 +88,11 @@ export interface CatalogSnapshot {
 	diagnostics?: CatalogDiagnostics | null
 }
 
+export interface CatalogScanResult {
+	apps: AppInfo[]
+	generation: number
+}
+
 export type SourceHealthState =
 	| 'never_run'
 	| 'fresh'
@@ -190,9 +195,9 @@ export interface CloseProgress {
 
 export interface AppsClient {
 	getApps(): Promise<CatalogSnapshot>
-	refreshApps(): Promise<AppInfo[]>
-	forceFullScan?(): Promise<AppInfo[]>
-	resetCatalogCache?(): Promise<AppInfo[]>
+	refreshApps(): Promise<CatalogScanResult>
+	forceFullScan?(): Promise<CatalogScanResult>
+	resetCatalogCache?(): Promise<CatalogScanResult>
 	clearIconCache?(): Promise<void>
 	hydrateVisibleIcons?(ids: string[]): Promise<void>
 	startBackgroundSync?(): Promise<void>
@@ -203,7 +208,6 @@ export interface AppsClient {
 	openAppFolder(id: string): Promise<void>
 	getUninstallPreview(id: string): Promise<UninstallPreview>
 	uninstallApp(id: string): Promise<void>
-	onAppsUpdated(handler: (apps: AppInfo[]) => void): Promise<() => void>
 	onCatalogDelta?(handler: (delta: CatalogDelta) => void): Promise<() => void>
 	onCatalogPatches?(
 		handler: (patches: AppHydrationPatch[]) => void,

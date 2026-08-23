@@ -12,7 +12,7 @@ mod watcher;
 pub(crate) use delta::{compute_delta, CatalogDelta, CatalogDeltaDto};
 pub(crate) use document::{load_sanitized_cache, load_sanitized_document};
 pub(crate) use hydration::enqueue_hydration;
-pub(crate) use scan::run_coordinated_scan;
+pub(crate) use scan::{run_coordinated_scan, ScanCommit};
 pub(crate) use watcher::restart_change_watcher;
 
 use crate::catalog::cache::CatalogCache;

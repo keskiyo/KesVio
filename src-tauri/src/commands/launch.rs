@@ -11,6 +11,14 @@ pub(crate) struct LaunchStatusPayload {
     state: &'static str,
 }
 
+#[cfg(test)]
+pub(super) fn status_sample() -> LaunchStatusPayload {
+    LaunchStatusPayload {
+        id: "editor".into(),
+        state: "ready",
+    }
+}
+
 fn wait_for_launch_ready(handle: &launcher::OwnedProcessHandle) -> &'static str {
     launcher::wait_for_input_idle(handle, 12000);
     "ready"

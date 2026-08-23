@@ -99,6 +99,14 @@ describe('AuxiliaryGrid', () => {
 		).toHaveClass('min-[1601px]:grid-cols-3')
 	})
 
+	it('keeps tools in the same compact content column as scenarios', () => {
+		render(<AuxiliaryGrid {...props()} />)
+
+		const tool = screen.getByRole('button', { name: 'Launch Alpha' })
+		expect(tool.parentElement?.parentElement).toHaveClass('mx-auto')
+		expect(tool.parentElement?.parentElement).toHaveClass('max-w-3xl')
+	})
+
 	it('keeps the way back when no tool matches the search', async () => {
 		const onBack = vi.fn()
 		render(

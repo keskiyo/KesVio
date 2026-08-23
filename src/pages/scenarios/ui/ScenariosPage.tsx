@@ -38,10 +38,7 @@ export function ScenariosPage({
 		: undefined
 
 	return (
-		<section
-			aria-labelledby="scenarios-title"
-			className="mx-auto max-w-3xl min-[1900px]:max-w-[80rem]"
-		>
+		<section aria-labelledby="scenarios-title" className="w-full">
 			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 				<div className="min-w-0 sm:flex-1">
 					<CatalogViewHeader
@@ -77,47 +74,50 @@ export function ScenariosPage({
 					)}
 				</div>
 			</div>
-			{newestFirst.length ? (
-				<div className="grid grid-cols-1 items-start gap-3 min-[1900px]:grid-cols-2">
-					{newestFirst.map(scenario => (
-						<ScenarioCard
-							key={scenario.id}
-							scenario={scenario}
-							apps={apps}
-							selectableApps={selectableApps}
-							categories={categories}
-							running={runningId === scenario.id}
-							isScenarioRunning={isScenarioRunning}
-							runningStatus={
-								runningId === scenario.id
-									? runningStatus
-									: undefined
-							}
-							isFavorite={favoriteScenarioIds.includes(
-								scenario.id,
-							)}
-							onToggleFavorite={onToggleFavorite}
-							onRename={onRename}
-							onDelete={onDelete}
-							onAddApp={onAddApp}
-							onRemoveApp={onRemoveApp}
-							onRun={onRun}
-						/>
-					))}
-				</div>
-			) : (
-				<div className="grid min-h-[40vh] place-items-center text-center">
-					<div className="max-w-sm">
-						<h2 className="text-lg font-semibold">
-							No scenarios yet
-						</h2>
-						<p className="mt-2 text-sm text-(--text-muted)">
-							A scenario starts the apps in its launch list and
-							closes the ones in its close list, in one click.
-						</p>
+			<div className="mx-auto max-w-3xl min-[1900px]:max-w-[80rem]">
+				{newestFirst.length ? (
+					<div className="grid grid-cols-1 items-start gap-3 min-[1900px]:grid-cols-2">
+						{newestFirst.map(scenario => (
+							<ScenarioCard
+								key={scenario.id}
+								scenario={scenario}
+								apps={apps}
+								selectableApps={selectableApps}
+								categories={categories}
+								running={runningId === scenario.id}
+								isScenarioRunning={isScenarioRunning}
+								runningStatus={
+									runningId === scenario.id
+										? runningStatus
+										: undefined
+								}
+								isFavorite={favoriteScenarioIds.includes(
+									scenario.id,
+								)}
+								onToggleFavorite={onToggleFavorite}
+								onRename={onRename}
+								onDelete={onDelete}
+								onAddApp={onAddApp}
+								onRemoveApp={onRemoveApp}
+								onRun={onRun}
+							/>
+						))}
 					</div>
-				</div>
-			)}
+				) : (
+					<div className="grid min-h-[40vh] place-items-center text-center">
+						<div className="max-w-sm">
+							<h2 className="text-lg font-semibold">
+								No scenarios yet
+							</h2>
+							<p className="mt-2 text-sm text-(--text-muted)">
+								A scenario starts the apps in its launch list
+								and closes the ones in its close list, in one
+								click.
+							</p>
+						</div>
+					</div>
+				)}
+			</div>
 		</section>
 	)
 }

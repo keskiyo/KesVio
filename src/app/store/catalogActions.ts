@@ -1,6 +1,6 @@
 import { toAppClientError } from '../../shared/api/tauri/errors'
-import { reconcileFirstSeen, reconcileMarks } from './reconciliation'
-import type { AppInfo, AppsClient } from '../../entities/app'
+import { mergeIcon, reconcileFirstSeen, reconcileMarks } from './reconciliation'
+import type { AppsClient, CatalogScanResult } from '../../entities/app'
 import type {
 	AppState,
 	GetAppState,
@@ -37,12 +37,24 @@ export function createCatalogActions({
 	client,
 	persist,
 }: CatalogActionOptions): CatalogActions {
-	function commitScan(apps: AppInfo[]) {
-		const previous = get().firstSeenAt
-		const firstSeenAt = reconcileFirstSeen(apps, previous, Date.now())
+	function commitScan(scan: CatalogScanResult) {
+		const previousFirstSeen = get().firstSeenAt
+		const previous = new Map(get().apps.map(app => [app.id, app]))
+		const apps = scan.apps.map(app => mergeIcon(previous.get(app.id), app))
+		const firstSeenAt = reconcileFirstSeen(
+			apps,
+			previousFirstSeen,
+			Date.now(),
+		)
 		const marks = reconcileMarks(get(), apps)
-		set({ apps, hasCache: true, firstSeenAt, ...marks })
-		if (firstSeenAt !== previous || marks) persist()
+		set({
+			apps,
+			hasCache: true,
+			catalogGeneration: scan.generation,
+			firstSeenAt,
+			...marks,
+		})
+		if (firstSeenAt !== previousFirstSeen || marks) persist()
 	}
 
 	return {
@@ -80,23 +92,23 @@ export function createCatalogActions({
 		async forceFullScan() {
 			set({ isRefreshing: true, error: null })
 			try {
-				const apps = client.forceFullScan
-					? await client.forceFullScan()
-					: await client.refreshApps()
-				commitScan(apps)
+				commitScan(
+					client.forceFullScan
+						? await client.forceFullScan()
+						: await client.refreshApps(),
+				)
 			} finally {
 				set({ isRefreshing: false, scanProgress: null })
 			}
 		},
 		async resetCatalogCache() {
+			if (!client.resetCatalogCache) {
+				await get().forceFullScan()
+				return
+			}
 			set({ isRefreshing: true, error: null })
 			try {
-				const apps = client.resetCatalogCache
-					? await client.resetCatalogCache()
-					: await get()
-							.forceFullScan()
-							.then(() => get().apps)
-				commitScan(apps)
+				commitScan(await client.resetCatalogCache())
 			} finally {
 				set({ isRefreshing: false, scanProgress: null })
 			}

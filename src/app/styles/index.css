@@ -24,12 +24,18 @@
 	--category-orange: oklch(0.75 0.14 45);
 	--category-purple: oklch(0.72 0.12 300);
 	--category-red: oklch(0.7 0.14 25);
+	--category-amber: oklch(0.79 0.14 65);
+	--category-lime: oklch(0.79 0.15 122);
+	--category-teal: oklch(0.74 0.1 182);
+	--category-azure: oklch(0.73 0.12 228);
+	--category-indigo: oklch(0.68 0.13 272);
+	--category-magenta: oklch(0.71 0.14 348);
 	--category-slate: var(--text-muted);
 	--category-neutral: var(--accent);
 	/* One tile size for the whole catalog. The grid track below is the same value, so a card can
 	   never disagree with the column it sits in. */
-	--app-card-width: 8.75rem;
-	--app-card-height: 8.625rem;
+	--app-card-width: 8rem;
+	--app-card-height: 7.875rem;
 	--app-card-gap: 0.625rem;
 	--color-telegram: #229ed9;
 	--color-telegram-text: #5cc8f5;
@@ -141,6 +147,30 @@
 
 .navigation-category-row[data-category-accent='red'] {
 	--navigation-category-accent: var(--category-red);
+}
+
+.navigation-category-row[data-category-accent='amber'] {
+	--navigation-category-accent: var(--category-amber);
+}
+
+.navigation-category-row[data-category-accent='lime'] {
+	--navigation-category-accent: var(--category-lime);
+}
+
+.navigation-category-row[data-category-accent='teal'] {
+	--navigation-category-accent: var(--category-teal);
+}
+
+.navigation-category-row[data-category-accent='azure'] {
+	--navigation-category-accent: var(--category-azure);
+}
+
+.navigation-category-row[data-category-accent='indigo'] {
+	--navigation-category-accent: var(--category-indigo);
+}
+
+.navigation-category-row[data-category-accent='magenta'] {
+	--navigation-category-accent: var(--category-magenta);
 }
 
 .navigation-category-row[data-category-accent='slate'] {

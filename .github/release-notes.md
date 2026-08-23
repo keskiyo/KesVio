@@ -2,12 +2,11 @@ Windows Apps is a fast, private application catalog and launcher for Windows 10 
 
 ## Highlights
 
-- **A scan starts no interpreter** — Start Menu entries, Store packages and packaged-app removal go through Windows directly, so nothing launches `powershell.exe` behind the catalog.
-- **More software is recognised** — vendor install trees, localized names and Store package families now answer for records whose own name says nothing, including 1C:Enterprise, Cheat Engine, Equalizer APO and Office's advertised shortcuts.
-- **Programs start in their own folder** — a launched application receives its install directory, so files it writes beside itself no longer land in the catalog's folder.
-- **Focus returns where you left it** — every dialog hands the keyboard back to the control that opened it, including the application information dialog.
+- **Icons stay visible** — refreshing the catalog no longer resets cards; new icons are correctly matched to the latest scan.
+- **Search points to other results** — empty views now show matches from other catalog sections.
+- **Long scenarios stay compact** — apps remain on one row, with the rest hidden behind a counter and opened on demand.
 
 ## Install
 
-1. Download `Windows.Apps_0.3.7_x64-setup.exe`.
+1. Download `Windows.Apps_0.3.8_x64-setup.exe`.
 2. Run it. The installer is not Authenticode-signed, so SmartScreen may show **Windows protected your PC**; choose **More info -> Run anyway**.

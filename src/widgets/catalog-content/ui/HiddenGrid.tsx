@@ -44,7 +44,7 @@ export function HiddenGrid(props: HiddenGridProps) {
 								? 'No matching hidden apps'
 								: 'No hidden apps'}
 						</h2>
-						<p className="mt-2 text-sm text-slate-600">
+						<p className="mt-2 text-sm text-(--text-muted)">
 							{props.hasQuery
 								? 'Try a different search.'
 								: 'Apps hidden from the catalog will appear here.'}

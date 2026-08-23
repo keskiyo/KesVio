@@ -10,7 +10,7 @@ import { triggerIntersection } from '../setup'
 function emptyClient(): AppsClient {
 	return {
 		getApps: vi.fn().mockResolvedValue({ apps: [], hasCache: true }),
-		refreshApps: vi.fn().mockResolvedValue([]),
+		refreshApps: vi.fn().mockResolvedValue({ apps: [], generation: 1 }),
 		cancelScan: vi.fn().mockResolvedValue(undefined),
 		launchApp: vi.fn().mockResolvedValue(undefined),
 		closeApps: vi.fn().mockResolvedValue({
@@ -36,7 +36,6 @@ function emptyClient(): AppsClient {
 			mechanism: 'registered_command',
 		}),
 		uninstallApp: vi.fn().mockResolvedValue(undefined),
-		onAppsUpdated: vi.fn().mockResolvedValue(() => undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 	}
 }
@@ -71,6 +70,7 @@ function renderGrid(size: number) {
 				hasQuery={false}
 				activeView="all"
 				searchScopeCounts={{
+					all: 0,
 					auxiliary: 0,
 					hidden: 0,
 					installersDocs: 0,

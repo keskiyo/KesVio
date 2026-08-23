@@ -4,9 +4,15 @@ use crate::app_state::{cached_details_for_catalog, remember_catalog, AppState};
 use crate::catalog::cache;
 use crate::catalog::scan_coordinator::{ScanJob, Submission};
 use crate::catalog::sync::{compute_delta, CatalogDeltaDto, SyncRequest};
-use crate::catalog::{self, AppInfo, CatalogAppDto};
+use crate::catalog::{self, AppInfo};
 use crate::error::AppError;
 use tauri::{Emitter, Manager};
+
+#[derive(Clone)]
+pub(crate) struct ScanCommit {
+    pub apps: Vec<AppInfo>,
+    pub generation: u64,
+}
 
 struct ScanOutcome {
     apps: Vec<AppInfo>,
@@ -18,7 +24,7 @@ struct ScanOutcome {
 
 fn write_catalog_under_lock(
     app: &tauri::AppHandle,
-    job: &ScanJob<Vec<AppInfo>>,
+    job: &ScanJob<ScanCommit>,
 ) -> Result<ScanOutcome, AppError> {
     let state = app.state::<AppState>();
     let _guard = state
@@ -66,8 +72,8 @@ fn write_catalog_under_lock(
 
 fn synchronize_catalog_once(
     app: &tauri::AppHandle,
-    job: &ScanJob<Vec<AppInfo>>,
-) -> Result<Vec<AppInfo>, AppError> {
+    job: &ScanJob<ScanCommit>,
+) -> Result<ScanCommit, AppError> {
     let outcome = write_catalog_under_lock(app, job)?;
     if let Some(diagnostics) = &outcome.diagnostics {
         let _ = app.emit("catalog://diagnostics", diagnostics);
@@ -76,14 +82,6 @@ fn synchronize_catalog_once(
     if summary.added + summary.removed + summary.updated > 0 {
         let _ = app.emit("catalog://delta", CatalogDeltaDto::from(&outcome.delta));
         let _ = app.emit("catalog://changed", summary);
-    }
-    if job.request.is_interactive() {
-        let apps = outcome
-            .apps
-            .iter()
-            .map(CatalogAppDto::from)
-            .collect::<Vec<_>>();
-        let _ = app.emit("apps://updated", apps);
     }
     let hydration_ids = if job.request == SyncRequest::Watch {
         outcome
@@ -102,14 +100,17 @@ fn synchronize_catalog_once(
         hydration_ids,
         false,
     );
-    Ok(outcome.apps)
+    Ok(ScanCommit {
+        apps: outcome.apps,
+        generation: outcome.generation,
+    })
 }
 
 pub(crate) fn run_coordinated_scan(
     app: &tauri::AppHandle,
     request: SyncRequest,
     wants_result: bool,
-) -> Result<Option<Vec<AppInfo>>, AppError> {
+) -> Result<Option<ScanCommit>, AppError> {
     let state = app.state::<AppState>();
     let coordinator = &state.scan_coordinator;
     match coordinator.submit(request, wants_result) {
@@ -139,7 +140,7 @@ pub(crate) fn run_coordinated_scan(
     }
 }
 
-fn process_scan_chain(app: &tauri::AppHandle, mut job: ScanJob<Vec<AppInfo>>) {
+fn process_scan_chain(app: &tauri::AppHandle, mut job: ScanJob<ScanCommit>) {
     let state = app.state::<AppState>();
     loop {
         let result = synchronize_catalog_once(app, &job);

@@ -18,7 +18,20 @@ export const CATEGORY_ORDER = [
 export type BuiltInCategory = (typeof CATEGORY_ORDER)[number]
 export type AppCategory = string
 export type CustomCategoryAccent =
-	'yellow' | 'cyan' | 'pink' | 'green' | 'blue' | 'orange' | 'purple' | 'red'
+	| 'yellow'
+	| 'cyan'
+	| 'pink'
+	| 'green'
+	| 'blue'
+	| 'orange'
+	| 'purple'
+	| 'red'
+	| 'amber'
+	| 'lime'
+	| 'teal'
+	| 'azure'
+	| 'indigo'
+	| 'magenta'
 
 export interface CategoryDefinition {
 	id: AppCategory

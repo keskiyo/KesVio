@@ -24,7 +24,7 @@ export function UpdateBanner({
 			<button
 				type="button"
 				onClick={onOpen}
-				className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-400 focus-visible:outline-2 focus-visible:outline-violet-300"
+				className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-violet-500/70 px-3 py-1.5 text-xs font-medium text-white hover:bg-violet-500/85 focus-visible:outline-2 focus-visible:outline-violet-500"
 			>
 				<ArrowUpCircle size={14} aria-hidden="true" />
 				View update

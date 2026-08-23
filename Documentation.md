@@ -142,7 +142,21 @@ IPC changes update all of these together:
 2. command registration in `src-tauri/src/lib.rs`;
 3. owning entity TypeScript type, public API and client method;
 4. every complete client fake used by tests;
-5. event listener teardown and stale-generation behavior where applicable.
+5. event listener teardown and stale-generation behavior where applicable;
+6. the recorded wire contract, `src-tauri/tests/fixtures/ipc/contract.json`.
+
+The sixth point is what makes the other five checkable. Both sides described the
+same payloads in two languages and nothing compiled them together, so a scan
+command could change the shape of its answer while the typed fake kept returning
+the old one — which is how a build shipped with every icon in the catalog blank.
+The fixture is serialized from the Rust types themselves; a Rust-side test
+compares the wire shape against it and names each added or removed field, and a
+frontend test reads the same file and holds it against the interfaces through
+`Required<T>` literals the compiler checks. Fields that legitimately live on one
+side only — the store's own marks, the backend's rollback switches — are listed
+by name in the frontend test rather than passed over in silence. Record a new
+contract with `WINDOWSAPPS_CONTRACT_UPDATE=1` and review the diff before
+committing it.
 
 Events use `namespace://name`. Catalog synchronization emits full updates,
 deltas, change counts, hydration patches, diagnostics and coarse scan progress.
@@ -176,6 +190,17 @@ retains a bounded 32 KiB name/icon snapshot per app identity so unavailable
 entries remain identifiable and removable; it is presentation data, never a
 launch target.
 
+A scenario's launch and close lists keep one row of tiles on screen and hold the
+rest behind a count and a control that opens them. Which tiles fit is read from
+where the browser actually placed them rather than calculated from widths, so
+the count follows the window as it is resized and the row never wraps to a
+second line while collapsed. Every tile stays in the list and stays laid out
+whatever is hidden — a reading taken from a list that had already been shortened
+would only confirm the shorter list and take another tile away on each pass —
+and the ones past the first row are clipped by height and removed from the focus
+order rather than unmounted. The run dialog never collapses: it states what is
+about to happen, so it may not hide half the answer.
+
 Filing an application into Installers & Docs by hand records which half it
 belongs to. The category holds one bucket per artifact kind, so a placement that
 only said "Installers & Docs" had to pick installer, and a reference document
@@ -186,10 +211,21 @@ it already recognised as an installer or a document is not offered a move, and
 upgrading a document written before this split leaves every existing placement an
 installer.
 
+A category carries an accent colour. The fifteen built-in rows each hold a
+distinct hue, except System and Windows Features, which deliberately share one
+muted tone to say the software there is not the user's own. A category the user
+creates takes a free accent from the same palette and keeps it. The palette was
+eight hues and repeated visibly once a machine held more than a handful of
+categories, so it is fourteen now; a preference document written before the
+palette widened keeps no accent of its own, and every category it holds is
+redealt across the full range on first read. The accent is derived from the
+category id rather than drawn at random, so the colour a category lands on
+survives every later start.
+
 Marks — favorites, hidden, promoted and manual artifact placements — and category
 overrides are reconciled against the catalog on every full replacement, not only
-at startup. The initial load, a refresh, a forced scan, an `apps://updated`
-snapshot, a `catalog://delta` and a preferences import all run the same
+at startup. The initial load, the result a refresh, a forced scan or a cache
+reset returns, a `catalog://delta` and a preferences import all run the same
 reconciliation. A mark matches a record by catalog ID **or** by its durable
 identity, so a rescan that reassigns IDs cannot silently clear favorites or
 reveal hidden applications. Reconciliation persists only when a set actually
@@ -208,6 +244,17 @@ write succeeds. A cache file written by a newer schema version is never
 overwritten by an older build: the catalog treats it as absent, scans into
 memory, and skips the write so the file survives intact for the newer build.
 This mirrors the equivalent preference rule above.
+
+The document a load hands back carries no icons, because hydration owns them and
+fills them in afterwards. The copy on disk keeps them. Sanitizing a loaded
+document writes it back only when sanitizing actually changed something, so a
+catalog that has settled is read and never rewritten; stripping the icons before
+that comparison made every load look like a change and rewrote the whole file to
+throw away the icons hydration had just persisted.
+
+Resetting the catalog removes every file belonging to the cache, including
+siblings left by earlier builds, and leaves scan settings, uninstall history and
+the icon store untouched.
 Cache/index and generated icons are separate; clearing icons does not remove the
 catalog, and resetting the catalog does not remove user preferences.
 
@@ -221,7 +268,11 @@ failed or stale sources retain their last valid snapshot where safe.
 Normal startup is cache-first. Background validation and incremental scans keep
 the UI usable while source work runs. A force scan explicitly bypasses the
 previous filesystem index. Scan work is cancellable, generation-aware and
-bounded; no stale result may overwrite a newer generation.
+bounded; no stale result may overwrite a newer generation. The rule holds in
+both directions, so a scan hands its records and the generation that produced
+them back as one value: the interface adopts that generation with the records,
+and the hydration patches the same scan queues can never be mistaken for stale
+work from an earlier one.
 
 Scanning starts no interpreter. Start Apps and packaged applications are read
 through the shell itself: `platform/windows/apps_folder.rs` enumerates
@@ -252,8 +303,13 @@ rest, so a transliterated hit never displaces an exact one. Transliteration is
 letter-for-letter and does not resolve loanwords whose spelling diverges.
 
 Search stays inside the active view, and a query that also matches records
-outside it reports those counts for Tools, Hidden and Installers & docs with a
-direct link to the owning view, rather than leaving the matches invisible.
+outside it reports those counts with a direct link to the owning view, rather
+than leaving the matches invisible. Every catalog view answers this way, not
+only the main one: the whole catalog, Favorites, Tools, Hidden and Installers &
+docs are each a scope, and a view offers every scope except the one being read.
+Searching inside Favorites therefore points back at the rest of the catalog
+instead of ending at an empty grid. Each count equals what the destination will
+show once opened, so the number never disagrees with the view it leads to.
 Typing into search from Settings, More or Scenarios switches to the catalog.
 Empty user categories are not rendered while a query is active. The command
 palette opened with an empty query lists favorites first, then recently added
@@ -436,9 +492,10 @@ Windows feature, and a product named after a maintenance verb is still a
 product.
 
 A second report, 29 records from an unrelated Windows install, was replayed the
-same way. Five needed nothing: four Microsoft Store packages were already
-answered by the package-family path, and the catalog recognised itself by
-publisher. The other 24 fell into three shapes. A versioned vendor tree names a
+same way. Five needed no product name of their own: three Microsoft Store
+packages were already answered by their package family, Dev Home is filed by the
+`devhome` executable behind its localized title, and the catalog recognised
+itself by publisher. The other 24 fell into three shapes. A versioned vendor tree names a
 family its executables never do — `1cestart`, `1cv8`, `1cv8c` and `1cv8s` say
 nothing, while `\1cv8\` and the publisher spelled in both Cyrillic and Latin say
 1C:Enterprise. A component names its own install root instead of itself:
@@ -454,6 +511,25 @@ software; its own publisher and executable outrank the path and keep it with the
 maintenance tools. The reverse guard already existed for Windows features, and
 this is the same rule seen from the other side: a path answers only for a record
 that has nothing else to say.
+
+A third report, 13 records from a clinic workstation, closed the loop from the
+other direction. Five were inbox Store applications whose localized display name
+shares no word with the package identifying them — `Портал смешанной
+реальности`, `Советы`, `Средство 3D-просмотра`, `Paint 3D` and `Cortana`. Paint
+3D ships as `Microsoft.MSPaint`, which the classic `microsoft.paint` needle does
+not cover, and Cortana's family is the opaque `Microsoft.549981C3F5F10`, so its
+product name is recognised as well. Naming each family explicitly rather than
+through a blanket Microsoft prefix is what lets `Solitaire & Casual Games`, a
+packaged game from that same publisher, stay a game.
+
+The remaining records name a professional domain instead of a vendor. Clinical
+software arrives with no publisher at all, so `поликлиника` and
+`здравоохранение` are what identify it; a medical image viewer is read from the
+DICOM standard it implements and from `Medixant`, never from a product name
+unique to one machine. One record stays in `Other` deliberately:
+`GreenAPP.Launcher` repeats a single invented name as publisher, product and
+description, and its install root adds no domain word — it is a fixture that
+asserts no category, so a later rule cannot claim it by accident.
 
 A query that names a category also returns the applications filed under it,
 after the entries matched by name. The catalog search and the scenario picker

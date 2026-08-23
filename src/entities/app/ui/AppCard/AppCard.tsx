@@ -45,7 +45,7 @@ export function AppCard({
 				aria-busy={launching}
 				disabled={launching}
 				title={launching ? 'Launching…' : app.name}
-				className="relative z-1 flex size-full flex-col items-center justify-center gap-3 px-3 py-4 text-center focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-violet-500 disabled:cursor-progress"
+				className="relative z-1 flex size-full flex-col items-center justify-center gap-2.5 px-2.5 py-3 text-center focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-violet-500 disabled:cursor-progress"
 			>
 				<CardIcon iconBase64={app.iconBase64} launching={launching} />
 				<CardLabel

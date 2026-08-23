@@ -117,6 +117,23 @@ describe('ScenariosPage', () => {
 		expect(view.onBack).toHaveBeenCalled()
 	})
 
+	it('uses the same available width as auxiliary tools', () => {
+		render(<ScenariosPage {...props([gaming])} />)
+
+		const page = screen.getByRole('region', { name: 'Scenarios' })
+		expect(page).toHaveClass('w-full')
+		expect(page).not.toHaveClass('mx-auto')
+		expect(page).not.toHaveClass('max-w-3xl')
+	})
+
+	it('keeps scenario cards in the compact content column', () => {
+		render(<ScenariosPage {...props([gaming])} />)
+
+		const card = screen.getByRole('region', { name: 'Gaming' })
+		expect(card.parentElement?.parentElement).toHaveClass('mx-auto')
+		expect(card.parentElement?.parentElement).toHaveClass('max-w-3xl')
+	})
+
 	it('shows the current operation count for the running scenario', () => {
 		render(
 			<ScenariosPage

@@ -8,7 +8,7 @@ import type { Scenario } from '../../entities/scenario'
 
 export const PREFERENCES_KEY = 'windows-apps.preferences.v1'
 
-export const CURRENT_PREFERENCES_VERSION = 16
+export const CURRENT_PREFERENCES_VERSION = 17
 
 export const PREFERENCES_BACKUP_KEY = 'windows-apps.preferences.v1.bak'
 
@@ -21,8 +21,8 @@ export interface LegacyCanonicalPreferences {
 	categoryOverrides: Record<string, AppCategory>
 }
 
-export interface AppPreferencesV16 {
-	version: 16
+export interface AppPreferencesV17 {
+	version: 17
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
 	favoriteAppIds: string[]
@@ -49,10 +49,10 @@ export type PreferenceTransferResult =
 	{ ok: true } | { ok: false; error: string }
 
 export type PreferenceImportResult =
-	{ ok: true; preferences: AppPreferencesV16 } | { ok: false; error: string }
+	{ ok: true; preferences: AppPreferencesV17 } | { ok: false; error: string }
 
-export const DEFAULT_PREFERENCES: AppPreferencesV16 = {
-	version: 16,
+export const DEFAULT_PREFERENCES: AppPreferencesV17 = {
+	version: 17,
 	categories: DEFAULT_CATEGORIES.map(category => ({ ...category })),
 	categoryOrder: [...CATEGORY_ORDER],
 	favoriteAppIds: [],

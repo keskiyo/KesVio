@@ -11,7 +11,8 @@ pub(crate) use uninstall::{execute_and_record, preview_for, UninstallPreview, Un
 
 use crate::catalog::cache::CachedAppDetails;
 use crate::catalog::scan_coordinator::ScanCoordinator;
-use crate::catalog::{self, AppDetailsTarget, AppInfo, LaunchKind};
+use crate::catalog::sync::ScanCommit;
+use crate::catalog::{self, AppDetailsTarget, LaunchKind};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
@@ -39,7 +40,7 @@ pub(crate) struct AppState {
     pub(crate) app_details_cache: Mutex<HashMap<String, CachedAppDetails>>,
     pub(crate) launch_waits: Arc<LaunchWaitLimiter>,
     pub(crate) sync_lock: Mutex<()>,
-    pub(crate) scan_coordinator: ScanCoordinator<Vec<AppInfo>>,
+    pub(crate) scan_coordinator: ScanCoordinator<ScanCommit>,
     pub(crate) hydration_queue: Mutex<catalog::hydration::HydrationQueue>,
     pub(crate) change_watcher:
         Mutex<Option<crate::platform::windows::change_watcher::WatcherGuard>>,
@@ -49,8 +50,8 @@ pub(crate) struct AppState {
 }
 
 #[cfg(test)]
-pub(crate) fn cached_app(name: &str, path: &str) -> AppInfo {
-    use crate::catalog::SourceKind;
+pub(crate) fn cached_app(name: &str, path: &str) -> catalog::AppInfo {
+    use crate::catalog::{AppInfo, SourceKind};
     AppInfo {
         id: path.into(),
         name: name.into(),
