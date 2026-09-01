@@ -12,7 +12,6 @@ async function openAdvancedSettings() {
 describe('SettingsPage', () => {
 	const settings = {
 		version: '0.1.0',
-		autostartEnabled: false,
 		shortcut: { available: true, label: 'Win+Shift+Q', error: null },
 		scanSettings: {
 			autoScanFixedDrives: true,
@@ -24,7 +23,6 @@ describe('SettingsPage', () => {
 
 	const systemClient = (): SystemClient => ({
 		getSettings: vi.fn().mockResolvedValue(settings),
-		setAutostart: vi.fn().mockResolvedValue(undefined),
 		setScanSettings: vi.fn().mockImplementation(async value => value),
 		getUninstallHistory: vi.fn().mockResolvedValue([]),
 		clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
@@ -64,6 +62,24 @@ describe('SettingsPage', () => {
 		)
 
 		expect(client.openAppsSettings).toHaveBeenCalledTimes(1)
+	})
+
+	// Kaspersky PDM scored the HKCU Run value this toggle used to write. The product creates no
+	// startup persistence any more, so the control must not come back.
+	it('offers no Windows startup control', async () => {
+		render(
+			<SettingsPage client={systemClient()} updater={updaterState()} />,
+		)
+		await screen.findByText('Version 0.1.0')
+
+		expect(
+			screen.queryByRole('switch', {
+				name: 'Launch when Windows starts',
+			}),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByText('Launch when Windows starts'),
+		).not.toBeInTheDocument()
 	})
 
 	it('runs the manual update check on the shared updater instance', async () => {
@@ -527,11 +543,10 @@ describe('SettingsPage', () => {
 		).toBeInTheDocument()
 	})
 
-	it('loads system settings and toggles Windows startup', async () => {
+	it('loads system settings and opens the external links', async () => {
 		const client: SystemClient = {
 			getSettings: vi.fn().mockResolvedValue({
 				version: '0.1.0',
-				autostartEnabled: false,
 				shortcut: {
 					available: true,
 					label: 'Win+Shift+Q',
@@ -544,7 +559,6 @@ describe('SettingsPage', () => {
 				},
 				fixedDrives: ['C:\\', 'D:\\', 'E:\\'],
 			}),
-			setAutostart: vi.fn().mockResolvedValue(undefined),
 			setScanSettings: vi
 				.fn()
 				.mockImplementation(async settings => settings),
@@ -568,10 +582,6 @@ describe('SettingsPage', () => {
 		render(<SettingsPage client={client} updater={updaterState()} />)
 		expect(await screen.findByText('Version 0.1.0')).toBeInTheDocument()
 		expect(screen.getByText('Win+Shift+Q')).toBeInTheDocument()
-		await userEvent.click(
-			screen.getByRole('switch', { name: 'Launch when Windows starts' }),
-		)
-		expect(client.setAutostart).toHaveBeenCalledWith(true)
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Open @keskiyo on Telegram' }),
 		)
@@ -600,7 +610,6 @@ describe('SettingsPage', () => {
 		const client: SystemClient = {
 			getSettings: vi.fn().mockResolvedValue({
 				version: '0.1.0',
-				autostartEnabled: false,
 				shortcut: {
 					available: true,
 					label: 'Win+Shift+Q',
@@ -613,7 +622,6 @@ describe('SettingsPage', () => {
 				},
 				fixedDrives: ['C:\\'],
 			}),
-			setAutostart: vi.fn().mockResolvedValue(undefined),
 			setScanSettings: vi
 				.fn()
 				.mockImplementation(async settings => settings),

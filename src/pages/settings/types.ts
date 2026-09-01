@@ -50,9 +50,7 @@ export interface SettingsPageProps {
 
 export interface GeneralSettingsProps {
 	settings: SystemSettings | null
-	saving: boolean
 	updater: UpdaterState
-	onToggleAutostart(): Promise<void>
 	onOpenGithub: SystemClient['openGithub']
 	onOpenTelegram: SystemClient['openTelegram']
 	onOpenAppsSettings: SystemClient['openAppsSettings']

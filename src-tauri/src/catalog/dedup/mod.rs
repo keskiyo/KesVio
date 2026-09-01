@@ -25,6 +25,7 @@ pub(super) use identity::preference_identity;
 #[cfg(test)]
 pub(in crate::catalog) use report::resolved_groups;
 pub(crate) use report::{dev_report_enabled, write_dev_report};
+pub(super) use target::location_holds_target;
 pub(super) use target::normalize_path;
 
 fn canonical_order_key(app: &AppInfo) -> (u8, String) {
@@ -188,6 +189,72 @@ mod tests {
 
     fn resolve(apps: Vec<AppInfo>) -> Vec<AppInfo> {
         deduplicate(apps, |_app| AppCategory::Other, NameScript::Latin)
+    }
+
+    // Visual Studio Code's Start Menu record adopted an install location eight levels inside its
+    // own `node_modules.asar.unpacked` tree. That path carries the per-update folder, so every
+    // update produced a new preference identity and silently orphaned scenarios and marks.
+    #[test]
+    fn an_install_location_that_does_not_hold_the_launch_target_is_refused() {
+        let mut shortcut = app(
+            "Visual Studio Code",
+            r"C:\Users\Example\Start Menu\Visual Studio Code.lnk",
+        );
+        shortcut.launch_kind = LaunchKind::Shortcut;
+        shortcut.source_kind = SourceKind::StartMenu;
+        shortcut.resolved_path = Some(r"D:\Apps\Microsoft VS Code\Code.exe".into());
+        shortcut.product_name = Some("Visual Studio Code".into());
+        shortcut.publisher = Some("Microsoft Corporation".into());
+
+        shortcut.install_location = Some(r"D:\Apps\Microsoft VS Code".into());
+        let honest = preference_identity(&shortcut);
+
+        shortcut.install_location = Some(
+            r"D:\Apps\Microsoft VS Code\08d4889f9e\resources\app\node_modules.asar.unpacked\@github\copilot-win32-x64\ripgrep\bin\win32-x64"
+                .into(),
+        );
+        let nested = preference_identity(&shortcut);
+
+        assert_ne!(honest, nested, "an honest root must still be used");
+        shortcut.install_location = Some(
+            r"D:\Apps\Microsoft VS Code\1f9a2b3c4d\resources\app\node_modules.asar.unpacked\@github\copilot-win32-x64\ripgrep\bin\win32-x64"
+                .into(),
+        );
+        assert_eq!(
+            nested,
+            preference_identity(&shortcut),
+            "a rejected location must not let the update folder reach the identity"
+        );
+    }
+
+    #[test]
+    fn an_install_location_must_contain_the_launch_target_it_claims() {
+        let mut shortcut = app("Visual Studio Code", r"C:\Menu\Visual Studio Code.lnk");
+        shortcut.launch_kind = LaunchKind::Shortcut;
+        shortcut.source_kind = SourceKind::StartMenu;
+        shortcut.resolved_path = Some(r"D:\Apps\Microsoft VS Code\Code.exe".into());
+
+        assert!(location_holds_target(
+            r"D:\Apps\Microsoft VS Code",
+            &shortcut
+        ));
+        assert!(location_holds_target(
+            r"d:\apps\microsoft vs code\",
+            &shortcut
+        ));
+        assert!(!location_holds_target(
+            r"D:\Apps\Microsoft VS Code\08d4889f9e\resources\app\node_modules.asar.unpacked\ripgrep",
+            &shortcut
+        ));
+        assert!(!location_holds_target(r"C:\Program Files\Other", &shortcut));
+        assert!(!location_holds_target("   ", &shortcut));
+
+        let mut packaged = app("Packaged", "Contoso.App_8wekyb3d8bbwe!App");
+        packaged.launch_kind = LaunchKind::AppUserModelId;
+        assert!(
+            location_holds_target(r"C:\Program Files\WindowsApps\Contoso", &packaged),
+            "a record without a file target keeps the location its source reported"
+        );
     }
 
     #[test]

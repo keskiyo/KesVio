@@ -2,7 +2,7 @@
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "Windows Apps",
 	"mainBinaryName": "WindowsApps",
-	"version": "0.3.8",
+	"version": "0.3.9",
 	"identifier": "dev.neiroslop.windowsapps",
 	"build": {
 		"frontendDist": "../dist",
@@ -51,7 +51,8 @@
 			},
 			"nsis": {
 				"installerIcon": "icons/icon.ico",
-				"uninstallerIcon": "icons/icon.ico"
+				"uninstallerIcon": "icons/icon.ico",
+				"installerHooks": "nsis/autostart-shortcut.nsh"
 			}
 		},
 		"icon": [

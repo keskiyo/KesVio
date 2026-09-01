@@ -17,7 +17,7 @@ space has to be percent-encoded in a Markdown image URL and silently breaks when
 | `more.png`      | The More hub: Auxiliary tools, Scenarios, Hidden and Installers & Docs with their previews.  |
 | `scenarios.png` | The Scenarios page with two scenarios expanded, showing launch and close lists.              |
 | `app-info.png`  | The App information dialog — size, dates, architecture, signature, install status.           |
-| `settings.png`  | Settings: discovery, autostart, global shortcut, updates and catalog maintenance.            |
+| `settings.png`  | Settings: discovery, global shortcut, updates and catalog maintenance.                       |
 
 ## Worth adding later
 

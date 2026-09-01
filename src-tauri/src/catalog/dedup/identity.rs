@@ -2,7 +2,7 @@ use super::arguments::meaningful_launch_arguments;
 use super::candidate::CandidateIdentity;
 use super::family::{normalized_product_family, normalized_publisher};
 use super::merge::ResolvedApp;
-use super::target::{launch_target, normalize_path, steam_app_id};
+use super::target::{install_root, launch_target, normalize_path, steam_app_id};
 use crate::catalog::{AppInfo, LaunchKind, SourceKind};
 use sha2::{Digest, Sha256};
 use std::path::Path;
@@ -91,9 +91,7 @@ pub(in crate::catalog) fn preference_identity(app: &AppInfo) -> String {
             .map(normalized_product_family)
             .filter(|value| !value.is_empty());
         let publisher = normalized_publisher(app.publisher.as_deref());
-        let install_root = app.install_location.as_deref().map(normalize_path);
-        if let (Some(product), Some(root)) = (product, install_root.filter(|root| !root.is_empty()))
-        {
+        if let (Some(product), Some(root)) = (product, install_root(app)) {
             if !publisher.is_empty() {
                 format!("product:{publisher}|{product}|{root}")
             } else if app.source_kind == SourceKind::Portable {

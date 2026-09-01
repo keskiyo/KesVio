@@ -12,7 +12,7 @@ use tauri::Manager;
 
 use app_state::{remember_catalog, AppState};
 use catalog::sync::{load_sanitized_cache, restart_change_watcher};
-use platform::windows::{autostart, global_shortcut, install_registry};
+use platform::windows::{global_shortcut, install_registry};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -86,9 +86,6 @@ pub fn run() {
                 let publisher = config.bundle.publisher.clone().unwrap_or_default();
                 let product = config.product_name.clone().unwrap_or_default();
                 install_registry::sync_install_dir(&publisher, &product, &install_dir);
-                if autostart::is_enabled().unwrap_or(false) {
-                    let _ = autostart::set_enabled(true);
-                }
             }
             Ok(())
         })
@@ -110,7 +107,6 @@ pub fn run() {
             commands::uninstall::get_uninstall_history,
             commands::uninstall::clear_uninstall_history,
             commands::settings::get_system_settings,
-            commands::settings::set_autostart,
             commands::settings::set_scan_settings,
             commands::settings::save_preferences_backup,
             commands::links::open_telegram,

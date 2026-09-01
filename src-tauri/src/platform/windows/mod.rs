@@ -1,5 +1,4 @@
 pub(crate) mod apps_folder;
-pub(crate) mod autostart;
 pub(crate) mod change_watcher;
 pub(crate) mod com;
 pub(crate) mod drives;

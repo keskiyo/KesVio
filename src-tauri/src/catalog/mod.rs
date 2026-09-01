@@ -215,7 +215,10 @@ fn attach_registry_metadata(apps: &mut [AppInfo], metadata: &[registry::Registry
             app.publisher = first.publisher.clone();
         }
         if app.install_location.is_none() {
-            app.install_location = first.install_location.clone();
+            app.install_location = first
+                .install_location
+                .clone()
+                .filter(|location| dedup::location_holds_target(location, app));
         }
     }
 }

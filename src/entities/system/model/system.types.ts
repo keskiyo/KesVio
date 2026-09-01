@@ -8,7 +8,6 @@ export interface GlobalShortcutStatus {
 
 export interface SystemSettings {
 	version: string
-	autostartEnabled: boolean
 	shortcut: GlobalShortcutStatus
 	scanSettings: ScanSettings
 	fixedDrives: string[]
@@ -31,7 +30,6 @@ export interface UninstallHistoryEntry {
 
 export interface SystemClient {
 	getSettings(): Promise<SystemSettings>
-	setAutostart(enabled: boolean): Promise<void>
 	setScanSettings(settings: ScanSettings): Promise<ScanSettings>
 	getUninstallHistory(): Promise<UninstallHistoryEntry[]>
 	clearUninstallHistory(): Promise<void>

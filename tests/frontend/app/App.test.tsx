@@ -91,7 +91,6 @@ function renderApp(
 	const systemClient: SystemClient = {
 		getSettings: vi.fn().mockResolvedValue({
 			version: '0.1.0',
-			autostartEnabled: false,
 			shortcut: { available: true, label: 'Win+Shift+Q', error: null },
 			scanSettings: {
 				autoScanFixedDrives: true,
@@ -100,7 +99,6 @@ function renderApp(
 			},
 			fixedDrives: ['C:\\'],
 		}),
-		setAutostart: vi.fn().mockResolvedValue(undefined),
 		setScanSettings: vi.fn().mockImplementation(async settings => settings),
 		getUninstallHistory: vi.fn().mockResolvedValue([]),
 		clearUninstallHistory: vi.fn().mockResolvedValue(undefined),

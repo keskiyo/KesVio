@@ -68,4 +68,35 @@ describe('resolveScenarioApps', () => {
 		expect(resolved.apps.map(entry => entry.id)).toEqual(['code-v2'])
 		expect(resolved.unavailable).toEqual([])
 	})
+
+	// A scenario saved before the record gained a preference identity stored whatever
+	// appIdentity returned then — the canonical identity, or the catalog id. Resolving only
+	// through today's primary key turned those entries into tombstones.
+	it('still resolves an entry stored under an older durable key', () => {
+		const catalog = [
+			app({
+				id: 'code-v3',
+				preferenceIdentity: 'preference:code',
+				canonicalIdentity: 'identity:code',
+			}),
+		]
+
+		for (const stored of ['identity:code', 'code-v3']) {
+			const resolved = resolveScenarioApps([stored], catalog)
+
+			expect(resolved.apps.map(entry => entry.id)).toEqual(['code-v3'])
+			expect(resolved.unavailable).toEqual([])
+		}
+	})
+
+	it('never lets an alias shadow a primary identity of another record', () => {
+		const catalog = [
+			app({ id: 'shared', preferenceIdentity: 'preference:first' }),
+			app({ id: 'second', preferenceIdentity: 'shared' }),
+		]
+
+		const resolved = resolveScenarioApps(['shared'], catalog)
+
+		expect(resolved.apps.map(entry => entry.id)).toEqual(['second'])
+	})
 })

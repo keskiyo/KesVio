@@ -51,6 +51,23 @@ fn expand_windows_env(value: &str) -> String {
 pub(super) fn parent_path(path: &str) -> Option<String> {
     path.rsplit_once('\\').map(|(parent, _)| parent.to_string())
 }
+
+pub(in crate::catalog) fn location_holds_target(location: &str, app: &AppInfo) -> bool {
+    let root = normalize_path(location);
+    if root.is_empty() {
+        return false;
+    }
+    let target = normalize_path(app.resolved_path.as_deref().unwrap_or(&app.path));
+    if !Path::new(&target).is_absolute() {
+        return true;
+    }
+    crate::catalog::path_is_within(&target, &root)
+}
+
+pub(in crate::catalog) fn install_root(app: &AppInfo) -> Option<String> {
+    let location = app.install_location.as_deref()?;
+    location_holds_target(location, app).then(|| normalize_path(location))
+}
 pub(super) fn launch_target(app: &AppInfo) -> Option<&str> {
     let target = app.resolved_path.as_deref()?;
     (!is_generic_interpreter_host(target)).then_some(target)

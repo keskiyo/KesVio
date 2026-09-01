@@ -13,6 +13,9 @@ pub(in crate::catalog) fn should_visit_directory(path: &Path, excluded: &[PathBu
         .unwrap_or_default()
         .to_string_lossy()
         .to_lowercase();
+    if name.ends_with(".asar.unpacked") {
+        return false;
+    }
     !matches!(
         name.as_str(),
         "$recycle.bin"
@@ -213,6 +216,23 @@ mod tests {
         }
         assert!(should_visit_directory(
             Path::new(r"C:\Users\Example\.local"),
+            &[]
+        ));
+    }
+
+    // Electron unpacks native helpers beside the asar archive. Visual Studio Code kept
+    // `node_modules.asar.unpacked` out of the exact-name list, so the walker descended into it and
+    // catalogued ripgrep, conpty and the Copilot helpers as installed applications.
+    #[test]
+    fn skips_directories_unpacked_from_an_electron_archive() {
+        for path in [
+            Path::new(r"D:\Apps\Microsoft VS Code\resources\app\node_modules.asar.unpacked"),
+            Path::new(r"D:\Apps\Vendor\resources\app.asar.unpacked"),
+        ] {
+            assert!(!should_visit_directory(path, &[]), "{}", path.display());
+        }
+        assert!(should_visit_directory(
+            Path::new(r"D:\Apps\Vendor\resources\app"),
             &[]
         ));
     }

@@ -35,7 +35,6 @@ export function SettingsPage({
 		setConfirming,
 		forcing,
 		resetting,
-		toggleAutostart,
 		saveScanSettings,
 		addPath,
 		removePath,
@@ -69,15 +68,12 @@ export function SettingsPage({
 			</div>
 			<GeneralSettings
 				settings={settings}
-				saving={saving}
 				updater={updater}
-				onToggleAutostart={toggleAutostart}
 				onOpenGithub={client.openGithub}
 				onOpenTelegram={client.openTelegram}
 				onOpenAppsSettings={client.openAppsSettings}
 			/>
 			{areaError('settings')}
-			{areaError('startup')}
 			<AdvancedSettings>
 				<SettingsDiscoveryControls
 					settings={settings}

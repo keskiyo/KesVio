@@ -197,7 +197,6 @@ describe('IPC wire contract', () => {
 		it('describes system settings and the scan settings inside them', () => {
 			const declared: Required<SystemSettings> = {
 				version: '',
-				autostartEnabled: false,
 				shortcut: { available: false, label: '', error: null },
 				scanSettings,
 				fixedDrives: [],

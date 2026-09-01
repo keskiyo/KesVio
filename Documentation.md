@@ -38,7 +38,7 @@ enforces the frontend boundary contract.
 | `entities/*` clients | Typed seams between UI and Tauri IPC                                                                |
 | Rust commands        | Validate transport input, resolve trusted targets, delegate, and map safe errors                    |
 | `catalog/*`          | Discovery, classification, deduplication, cache and incremental synchronization                     |
-| `platform/windows/*` | Registry, filesystem, shell, COM, Windows handles, launch, uninstall, shortcut and autostart APIs   |
+| `platform/windows/*` | Registry, filesystem, shell, COM, Windows handles, launch, uninstall and shortcut APIs              |
 | `AppState`           | Process-wide trusted catalog targets, lifecycle and watcher ownership                               |
 
 Runtime path:
@@ -292,6 +292,7 @@ target and lose only the resolved executable.
 | Traversal      | Fixed/local configured roots only; depth, entry, time and cancellation bounds; no reparse-point recursion. |
 | Classification | Artifact, visibility and category decisions are deterministic and explainable.                             |
 | Deduplication  | Canonical identity and launch evidence prevent unrelated same-name applications from merging.              |
+| Install root   | A record keeps an install location only while that location contains its own launch target.                |
 | Cache          | Source-aware generation document; invalid data degrades safely.                                            |
 | Hydration      | Icons/details are lazy, size-limited, trusted-ID-only and processed in bounded batches.                    |
 | Search         | Current view/category only; literal matches rank above corrected, transliterated and fuzzy matches.        |
@@ -314,6 +315,17 @@ Typing into search from Settings, More or Scenarios switches to the catalog.
 Empty user categories are not rendered while a query is active. The command
 palette opened with an empty query lists favorites first, then recently added
 applications.
+
+The install location is part of the durable preference identity, so a wrong one
+does not merely mislabel a card — it silently rewrites the key that favorites,
+hidden state, category overrides and scenario membership are stored under. Two
+rules keep it honest. Traversal skips any directory unpacked from an Electron
+archive (`*.asar.unpacked`), which is where a vendored helper tree would
+otherwise be catalogued as installed software. And a record adopts an install
+location only when that location actually contains its own launch target, so a
+merge or a registry match cannot attach a nested component's directory to a
+product. Without the second rule, an application that updates itself into a
+versioned folder produced a new identity on every update.
 
 Before the first scan the catalog shows what will be scanned, that nothing runs
 automatically at startup, and that the data stays on the device, with the scan
@@ -581,12 +593,22 @@ would have to reintroduce it deliberately.
 
 ### Windows integration and updates
 
-- Tray, startup, global shortcut and window lifecycle are backend-owned.
-- An enabled Windows startup entry launches the installed application with an
-  internal exact `--autostart` argument. That launch hides the main window only
-  after the tray is ready; the tray's **Open Windows Apps** action restores it.
-  A normal launch remains visible, and a tray initialization failure keeps the
-  window visible.
+- Tray, global shortcut and window lifecycle are backend-owned.
+- Startup registration is owned by the installer and by Windows, never by the
+  running program. A fresh install creates one Startup-folder shortcut that
+  passes `--autostart`; the program reads that argument and starts hidden once
+  the tray is ready, and the tray's **Open Windows Apps** action restores it. A
+  tray initialization failure keeps the window visible. The user turns the entry
+  off in **Settings → Apps → Startup**, which is why the application itself
+  offers no toggle: a program that repairs its own persistence is exactly the
+  behaviour that has to stay absent.
+- Both installer hooks are guarded with `$UpdateMode <> 1`, and the guards
+  depend on each other. An update runs the previous uninstaller with `/UPDATE`
+  before the new installer, so an unguarded uninstall hook would delete the
+  shortcut that the guarded install hook then refuses to recreate, switching
+  autostart off on every update. Guarding both leaves an update from touching
+  the entry at all, which also preserves a user who disabled it in Windows —
+  that switch writes to `StartupApproved` and leaves the shortcut in place.
 - WebView2 uses Tauri's silent bootstrapper when missing.
 - The updater checks the signed release manifest on startup. An available
   version is announced by a dismissible banner in the shell notice area beside
@@ -633,10 +655,25 @@ would have to reintroduce it deliberately.
   as `WindowsApps.exe` rather than the Cargo package's generic `app.exe`. The
   NSIS template records `MainBinaryName` in the uninstall key and deletes the
   previously installed binary when the name changes, so an update from a build
-  that shipped `app.exe` leaves nothing behind. The Windows startup value is
-  rewritten to the running executable on every start of an installed copy, so a
-  renamed, moved or updated copy never leaves a startup entry pointing at a
-  path that no longer exists.
+  that shipped `app.exe` leaves nothing behind.
+- Kaspersky's proactive defence module scored the `HKCU` Run value that the
+  former **Launch when Windows starts** toggle wrote, and returned
+  `PDM:Trojan.Win32.Generic` for an unsigned binary with no reputation. What is
+  scored is a running process writing its own persistence, so the ownership
+  moved rather than the feature: the installer registers the Startup shortcut
+  once, and the executable only reads the argument it is launched with. The
+  installer also deletes the legacy Run value on every install, including
+  updates, because Tauri's own uninstall section skips that while updating.
+  `scripts/verify-platform-boundaries.ps1` fails the build if the Run subkey or
+  any Startup-folder location reappears anywhere in the backend.
+- The critical and session process tables that protect Windows from a close
+  scenario are stored as digests of the process names. A release binary
+  therefore does not carry `lsass.exe`, `csrss.exe` or `winlogon.exe` as
+  literals beside its `TerminateProcess` import, which static classifiers read
+  as a credential-dumper signature. The readable names live in test code only.
+- The registered uninstaller runs in a normal console-visible child process. A
+  hidden child process that removes installed software is a scored behaviour and
+  the flag bought nothing but a suppressed console frame.
 
 ## 14. Repository workflow
 
@@ -732,7 +769,7 @@ source is MIT-licensed; third-party notices are recorded in
 | Duplicate or stale entries    | Refresh; then use **Settings → Advanced → Catalog maintenance → Reset catalog cache**.                   |
 | Missing application           | Check permanent local drive/exclusions; add a folder in **Settings → Advanced → Application discovery**. |
 | Old version or icon           | Refresh; missing icons can be repaired from catalog maintenance without losing preferences.              |
-| Shortcut/startup fails        | Re-enable it in Settings; Windows policy or another process can block registration.                      |
+| Global shortcut fails         | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.              |
 | Uninstall unavailable         | The catalog record has no trusted, parseable uninstall target.                                           |
 | Catalog stays on placeholders | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.    |
 | A panel closes by itself      | That dialog failed to render; the failure is in the application log and the catalog is unaffected.       |

@@ -3,6 +3,7 @@ use super::candidate::AppCandidate;
 use super::evidence::score_evidence;
 use super::evidence::Evidence;
 use super::family::{is_32bit_variant, version_key};
+use super::target::location_holds_target;
 use crate::catalog::{AppCategory, AppInfo, ArtifactKind, SourceKind};
 
 #[derive(Clone, Debug)]
@@ -85,7 +86,10 @@ pub(super) fn merge_app(left: AppInfo, right: AppInfo) -> AppInfo {
         primary.category = AppCategory::InstallersDocs;
     }
     if primary.install_location.is_none() {
-        primary.install_location = secondary.install_location;
+        let adopted = secondary
+            .install_location
+            .filter(|location| location_holds_target(location, &primary));
+        primary.install_location = adopted;
     }
     if primary.icon_base64.is_none() {
         primary.icon_base64 = secondary.icon_base64;

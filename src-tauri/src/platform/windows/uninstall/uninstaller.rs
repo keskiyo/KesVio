@@ -1,10 +1,7 @@
 use super::validate::{is_msiexec, validate, Validated};
 use crate::catalog::UninstallTarget;
 use serde::{Deserialize, Serialize};
-use std::os::windows::process::CommandExt;
 use std::process::Command;
-
-const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -45,7 +42,6 @@ pub(crate) fn execute(target: Option<UninstallTarget>) -> Result<UninstallOutcom
         Validated::Process { program, args } => {
             let status = Command::new(&program)
                 .args(&args)
-                .creation_flags(CREATE_NO_WINDOW)
                 .status()
                 .map_err(|error| format!("Could not start the uninstaller: {error}"))?;
             classify_exit(status.code(), status.success())

@@ -6,7 +6,6 @@ import type { SystemSettings } from '../../../../src/entities/system'
 
 const settings: SystemSettings = {
 	version: '0.2.8',
-	autostartEnabled: false,
 	shortcut: { available: true, label: 'Win+Shift+Q', error: null },
 	scanSettings: {
 		autoScanFixedDrives: true,

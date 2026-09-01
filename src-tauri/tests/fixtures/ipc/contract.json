@@ -88,7 +88,6 @@
       "hasCache": true
     },
     "get_system_settings": {
-      "autostartEnabled": true,
       "fixedDrives": [
         "C:\\"
       ],
@@ -104,7 +103,7 @@
         "error": "The shortcut has not been registered yet.",
         "label": "Win+Shift+Q"
       },
-      "version": "0.3.7"
+      "version": "0.3.9"
     },
     "get_uninstall_history": [
       {

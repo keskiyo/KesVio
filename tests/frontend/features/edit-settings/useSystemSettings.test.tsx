@@ -2,12 +2,20 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { useSystemSettings } from '../../../../src/features/edit-settings/model/useSystemSettings'
 import { AppClientError } from '../../../../src/shared/api/tauri/errors'
-import type { SystemClient } from '../../../../src/entities/system'
+import type {
+	ScanSettings,
+	SystemClient,
+} from '../../../../src/entities/system'
+
+const scanSettings: ScanSettings = {
+	autoScanFixedDrives: true,
+	includedPaths: [],
+	excludedPaths: [],
+}
 
 const client: SystemClient = {
 	getSettings: vi.fn().mockResolvedValue({
 		version: '0.2.4',
-		autostartEnabled: false,
 		shortcut: { available: true, label: 'Win+Shift+Q', error: null },
 		scanSettings: {
 			autoScanFixedDrives: true,
@@ -16,7 +24,6 @@ const client: SystemClient = {
 		},
 		fixedDrives: ['C:\\'],
 	}),
-	setAutostart: vi.fn(),
 	setScanSettings: vi.fn(),
 	getUninstallHistory: vi.fn().mockResolvedValue([]),
 	clearUninstallHistory: vi.fn(),
@@ -58,37 +65,37 @@ describe('useSystemSettings', () => {
 			useSystemSettings({
 				client: {
 					...client,
-					setAutostart: vi
+					setScanSettings: vi
 						.fn()
 						.mockRejectedValue(
-							new AppClientError('INTERNAL', 'Startup denied.'),
+							new AppClientError('INTERNAL', 'Discovery denied.'),
 						),
 				},
 			}),
 		)
 		await waitFor(() => expect(result.current.settings).not.toBeNull())
 
-		await act(() => result.current.toggleAutostart())
+		await act(() => result.current.saveScanSettings(scanSettings))
 
-		expect(result.current.error).toBe('Startup denied.')
-		expect(result.current.errorArea).toBe('startup')
+		expect(result.current.error).toBe('Discovery denied.')
+		expect(result.current.errorArea).toBe('discovery')
 	})
 
 	// A stale message used to survive under a later successful action.
-	it('clears an earlier failure once the startup toggle succeeds', async () => {
-		const setAutostart = vi
+	it('clears an earlier failure once a later save succeeds', async () => {
+		const setScanSettings = vi
 			.fn()
 			.mockRejectedValueOnce(new AppClientError('INTERNAL', 'Denied.'))
-			.mockResolvedValue(undefined)
+			.mockImplementation(async value => value)
 		const { result } = renderHook(() =>
-			useSystemSettings({ client: { ...client, setAutostart } }),
+			useSystemSettings({ client: { ...client, setScanSettings } }),
 		)
 		await waitFor(() => expect(result.current.settings).not.toBeNull())
 
-		await act(() => result.current.toggleAutostart())
+		await act(() => result.current.saveScanSettings(scanSettings))
 		expect(result.current.error).toBe('Denied.')
 
-		await act(() => result.current.toggleAutostart())
+		await act(() => result.current.saveScanSettings(scanSettings))
 
 		expect(result.current.error).toBeNull()
 	})

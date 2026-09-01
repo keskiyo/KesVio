@@ -3,7 +3,7 @@ use crate::app_state::AppState;
 use crate::catalog;
 use crate::catalog::sync::restart_change_watcher;
 use crate::error::AppError;
-use crate::platform::windows::{autostart, drives, global_shortcut};
+use crate::platform::windows::{drives, global_shortcut};
 use serde::Serialize;
 use std::path::Path;
 use tauri::Manager;
@@ -25,7 +25,6 @@ fn validate_preferences_backup_contents(contents: &str) -> Result<(), AppError> 
 #[serde(rename_all = "camelCase")]
 pub(crate) struct SystemSettings {
     version: &'static str,
-    autostart_enabled: bool,
     shortcut: global_shortcut::Status,
     scan_settings: catalog::scan_settings::ScanSettings,
     fixed_drives: Vec<String>,
@@ -35,7 +34,6 @@ pub(crate) struct SystemSettings {
 pub(super) fn settings_sample() -> SystemSettings {
     SystemSettings {
         version: env!("CARGO_PKG_VERSION"),
-        autostart_enabled: true,
         shortcut: global_shortcut::Status::default(),
         scan_settings: catalog::scan_settings::ScanSettings::default(),
         fixed_drives: vec![r"C:\".into()],
@@ -80,14 +78,12 @@ pub(crate) async fn get_system_settings(app: tauri::AppHandle) -> Result<SystemS
         .path()
         .app_data_dir()
         .map_err(|error| AppError::AppDataDir(error.to_string()))?;
-    let (autostart_enabled, scan_settings, fixed_drives) =
-        run_blocking("System settings read", move || {
-            let autostart_enabled = autostart::is_enabled()?;
-            let scan_settings = catalog::scan_settings::read(&app_data_dir);
-            let fixed_drives = drives::fixed_drive_roots();
-            Ok::<_, String>((autostart_enabled, scan_settings, fixed_drives))
-        })
-        .await??;
+    let (scan_settings, fixed_drives) = run_blocking("System settings read", move || {
+        let scan_settings = catalog::scan_settings::read(&app_data_dir);
+        let fixed_drives = drives::fixed_drive_roots();
+        Ok::<_, String>((scan_settings, fixed_drives))
+    })
+    .await??;
     let shortcut = app
         .state::<AppState>()
         .shortcut_status
@@ -96,7 +92,6 @@ pub(crate) async fn get_system_settings(app: tauri::AppHandle) -> Result<SystemS
         .unwrap_or_default();
     Ok(SystemSettings {
         version: env!("CARGO_PKG_VERSION"),
-        autostart_enabled,
         shortcut,
         scan_settings,
         fixed_drives: fixed_drives
@@ -130,17 +125,6 @@ pub(crate) async fn set_scan_settings(
 #[tauri::command]
 pub(crate) fn cancel_scan(state: tauri::State<'_, AppState>) {
     state.scan_coordinator.cancel_all();
-}
-
-#[tauri::command]
-pub(crate) async fn set_autostart(enabled: bool) -> Result<(), AppError> {
-    tauri::async_runtime::spawn_blocking(move || autostart::set_enabled(enabled))
-        .await
-        .map_err(|error| AppError::Interrupted {
-            context: "Startup update",
-            source: error.to_string(),
-        })?
-        .map_err(AppError::from)
 }
 
 #[tauri::command]

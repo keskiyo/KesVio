@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/keskiyo/WindowsApps/releases/tag/v0.3.8"><img src="https://img.shields.io/badge/version-0.3.8-7C3AED?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/keskiyo/WindowsApps/releases/tag/v0.3.9"><img src="https://img.shields.io/badge/version-0.3.9-7C3AED?style=flat-square" alt="Version"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&amp;logo=windows11&amp;logoColor=white" alt="Windows">
   <img src="https://img.shields.io/badge/architecture-x64-334155?style=flat-square" alt="Architecture">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&amp;logo=tauri&amp;logoColor=white" alt="Tauri">
@@ -104,18 +104,19 @@ Inspect local file details, architecture, signature status and installation stat
 
 ## Settings and maintenance
 
-![Settings page with startup, shortcut, Windows apps, updates and Advanced controls](.github/images/settings.png)
+![Settings page with shortcut, Windows apps, updates and Advanced controls](.github/images/settings.png)
 
 Everyday settings stay visible. Scanning, backups and maintenance live under Advanced, together
 with the applications no rule recognised: each one lists the signals the classifier read, can be
 moved to a category on the spot, and the whole list copies as plain text. Settings
 export contains preferences only, and import reports an error if Windows Apps cannot persist the
-restored data. When Windows startup is enabled, Windows Apps starts in the system tray; choose
-**Open Windows Apps** from the tray menu when you need the window.
+restored data. The installer adds Windows Apps to startup once, so it is already in the system tray
+after you sign in; choose **Open Windows Apps** there when you need the window. Turn it off the
+same way as any other program, in **Settings → Apps → Startup**.
 
 ## Install
 
-1. Download [**`Windows.Apps_0.3.8_x64-setup.exe`**](https://github.com/keskiyo/WindowsApps/releases/latest).
+1. Download [**`Windows.Apps_0.3.9_x64-setup.exe`**](https://github.com/keskiyo/WindowsApps/releases/latest).
 2. Run the installer.
 3. Start Windows Apps and choose **Scan for apps**.
 

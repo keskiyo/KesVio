@@ -16,7 +16,7 @@ type PathKind = 'includedPaths' | 'excludedPaths'
 
 export type MaintenanceConfirmation = 'force' | 'reset' | null
 
-export type SettingsArea = 'settings' | 'startup' | 'discovery' | 'maintenance'
+export type SettingsArea = 'settings' | 'discovery' | 'maintenance'
 
 export function useSystemSettings({
 	client,
@@ -57,21 +57,6 @@ export function useSystemSettings({
 			active = false
 		}
 	}, [client])
-
-	async function toggleAutostart() {
-		if (!settings || saving) return
-		const enabled = !settings.autostartEnabled
-		setSaving(true)
-		clearError()
-		try {
-			await client.setAutostart(enabled)
-			setSettings({ ...settings, autostartEnabled: enabled })
-		} catch (reason) {
-			reportError('startup', toAppClientError(reason).message)
-		} finally {
-			setSaving(false)
-		}
-	}
 
 	async function saveScanSettings(next: ScanSettings) {
 		if (!settings || saving) return
@@ -155,7 +140,6 @@ export function useSystemSettings({
 		setConfirming,
 		forcing,
 		resetting,
-		toggleAutostart,
 		saveScanSettings,
 		addPath,
 		removePath,

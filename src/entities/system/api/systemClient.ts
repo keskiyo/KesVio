@@ -4,7 +4,6 @@ import { invokeTauri } from '../../../shared/api/tauri/client'
 
 export const tauriSystemClient: SystemClient = {
 	getSettings: () => invokeTauri('get_system_settings'),
-	setAutostart: enabled => invokeTauri('set_autostart', { enabled }),
 	setScanSettings: settings => invokeTauri('set_scan_settings', { settings }),
 	getUninstallHistory: () => invokeTauri('get_uninstall_history'),
 	clearUninstallHistory: () => invokeTauri('clear_uninstall_history'),

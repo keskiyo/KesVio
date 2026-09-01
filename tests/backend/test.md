@@ -4,10 +4,18 @@ The Rust backend has no external integration-test crate. Tests live next to the
 modules they exercise in `#[cfg(test)]` blocks so they can validate private and
 `pub(crate)` behaviour without widening production APIs.
 
-Snapshot: `v0.3.6`.
+Snapshot: `v0.3.9`.
 
-- Rust: **618 test entries** in **92 source files**; one developer-only timing
-  test is ignored in the normal run, so a green suite reports 617 passed.
+- Rust: **627 test entries** in **92 source files**; two developer-only tests
+  are ignored in the normal run, so a green suite reports 625 passed. Moving
+  startup registration to the installer retired `platform/windows/autostart.rs`
+  while `lifecycle/mod.rs` kept its `--autostart` cases: the program still reads
+  the argument, it just no longer writes the entry. `execution/protected.rs`
+  gained the case that pairs every protected-process digest with a readable
+  name.
+  `sources/portable.rs` and `dedup/mod.rs` gained the cases that keep an
+  Electron `*.asar.unpacked` tree out of the catalog and refuse an install
+  location that does not contain its own launch target.
   Splitting `sync`, `incremental`, `app_state`, `icon_extractor`, `hydration`
   and the uninstall validator into focused modules moved each test next to the
   code it exercises without adding or dropping a case, which is why the file
@@ -19,7 +27,7 @@ Snapshot: `v0.3.6`.
   `platform/windows/uninstall/msix.rs`, whose third case asserts the exact
   `ERROR_INSTALL_PACKAGE_NOT_FOUND` the API returns — a different message would
   mean the worker never reached deployment.
-- Frontend: **621 Vitest tests** in **81 files**; it is documented here only to
+- Frontend: **696 Vitest tests** in **85 files**; it is documented here only to
   distinguish the two suites.
 - Two fixture corpora carry the catalog rules rather than the test bodies:
   **218 records** in `catalog_categories.json` and **30** in
@@ -75,7 +83,7 @@ corpus entry can pin down on its own.
 | [`catalog/classify/tables.rs`](../../src-tauri/src/catalog/classify/tables.rs)                       |         5 |
 | [`catalog/close.rs`](../../src-tauri/src/catalog/close.rs)                                           |         6 |
 | [`catalog/dedup/merge.rs`](../../src-tauri/src/catalog/dedup/merge.rs)                               |         4 |
-| [`catalog/dedup/mod.rs`](../../src-tauri/src/catalog/dedup/mod.rs)                                   |        72 |
+| [`catalog/dedup/mod.rs`](../../src-tauri/src/catalog/dedup/mod.rs)                                   |        74 |
 | [`catalog/details/cache.rs`](../../src-tauri/src/catalog/details/cache.rs)                           |         1 |
 | [`catalog/details/read.rs`](../../src-tauri/src/catalog/details/read.rs)                             |         4 |
 | [`catalog/details/target.rs`](../../src-tauri/src/catalog/details/target.rs)                         |         6 |
@@ -94,7 +102,7 @@ corpus entry can pin down on its own.
 | [`catalog/scan/incremental/walk.rs`](../../src-tauri/src/catalog/scan/incremental/walk.rs)           |         1 |
 | [`catalog/scan/settings.rs`](../../src-tauri/src/catalog/scan/settings.rs)                           |         2 |
 | [`catalog/sources/installer_cache.rs`](../../src-tauri/src/catalog/sources/installer_cache.rs)       |         3 |
-| [`catalog/sources/portable.rs`](../../src-tauri/src/catalog/sources/portable.rs)                     |         8 |
+| [`catalog/sources/portable.rs`](../../src-tauri/src/catalog/sources/portable.rs)                     |         9 |
 | [`catalog/sources/registry.rs`](../../src-tauri/src/catalog/sources/registry.rs)                     |        10 |
 | [`catalog/sources/source.rs`](../../src-tauri/src/catalog/sources/source.rs)                         |         4 |
 | [`catalog/sources/start_apps.rs`](../../src-tauri/src/catalog/sources/start_apps.rs)                 |        10 |
@@ -124,13 +132,12 @@ coverage.
 
 These tests validate the only layer that calls Windows APIs: executable and
 folder target validation, launch/close process identity, PE metadata,
-signatures, icons, registry, startup, drive discovery, global shortcut,
-uninstall and watcher lifecycle.
+signatures, icons, registry, drive discovery, global shortcut, uninstall and
+watcher lifecycle.
 
 | Module                                                                                                                       | Tests |
 | ---------------------------------------------------------------------------------------------------------------------------- | ----: |
 | [`platform/windows/apps_folder.rs`](../../src-tauri/src/platform/windows/apps_folder.rs)                                     |     3 |
-| [`platform/windows/autostart.rs`](../../src-tauri/src/platform/windows/autostart.rs)                                         |     1 |
 | [`platform/windows/change_watcher.rs`](../../src-tauri/src/platform/windows/change_watcher.rs)                               |     3 |
 | [`platform/windows/drives.rs`](../../src-tauri/src/platform/windows/drives.rs)                                               |     2 |
 | [`platform/windows/execution/closer/frames.rs`](../../src-tauri/src/platform/windows/execution/closer/frames.rs)             |     2 |
@@ -142,7 +149,7 @@ uninstall and watcher lifecycle.
 | [`platform/windows/execution/folder.rs`](../../src-tauri/src/platform/windows/execution/folder.rs)                           |     3 |
 | [`platform/windows/execution/launcher.rs`](../../src-tauri/src/platform/windows/execution/launcher.rs)                       |     9 |
 | [`platform/windows/execution/pe.rs`](../../src-tauri/src/platform/windows/execution/pe.rs)                                   |     3 |
-| [`platform/windows/execution/protected.rs`](../../src-tauri/src/platform/windows/execution/protected.rs)                     |     8 |
+| [`platform/windows/execution/protected.rs`](../../src-tauri/src/platform/windows/execution/protected.rs)                     |     9 |
 | [`platform/windows/execution/signature.rs`](../../src-tauri/src/platform/windows/execution/signature.rs)                     |     1 |
 | [`platform/windows/icon_extractor/app_id.rs`](../../src-tauri/src/platform/windows/icon_extractor/app_id.rs)                 |     1 |
 | [`platform/windows/icon_extractor/gdi.rs`](../../src-tauri/src/platform/windows/icon_extractor/gdi.rs)                       |     1 |
