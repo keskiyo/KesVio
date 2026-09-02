@@ -1,7 +1,7 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../../../src/app/App'
 import { PREFERENCES_KEY } from '../../../src/app/store/preferences'
 import { createAppStore } from '../../../src/app/store/appStore'
@@ -133,6 +133,8 @@ function setDesktopNavigation(matches: boolean) {
 }
 
 describe('App', () => {
+	afterEach(() => vi.useRealTimers())
+
 	beforeEach(() => {
 		setDesktopNavigation(false)
 		localStorage.clear()
@@ -170,6 +172,22 @@ describe('App', () => {
 		).not.toBeInTheDocument()
 		const settings = screen.getByRole('button', { name: 'Settings' })
 		expect(settings).toHaveTextContent('Settings')
+	})
+
+	it('rehydrates missing icons on the recovery timer', async () => {
+		vi.useFakeTimers({ shouldAdvanceTime: true })
+		const hydrateVisibleIcons = vi.fn().mockResolvedValue(undefined)
+		renderApp({ hydrateVisibleIcons })
+		await screen.findByText('Steam')
+		await waitFor(() => expect(hydrateVisibleIcons).toHaveBeenCalledOnce())
+		hydrateVisibleIcons.mockClear()
+
+		await act(async () => {
+			vi.advanceTimersByTime(3 * 60 * 60 * 1000)
+			await Promise.resolve()
+		})
+
+		expect(hydrateVisibleIcons).toHaveBeenCalledOnce()
 	})
 
 	it('uses the dark Graphite Surface theme and Neon Glass app cards', async () => {

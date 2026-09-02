@@ -1,4 +1,5 @@
 import { toAppClientError } from '../../shared/api/tauri/errors'
+import { reconcileScenarios } from '../../entities/scenario'
 import { mergeIcon, reconcileFirstSeen, reconcileMarks } from './reconciliation'
 import type { AppsClient, CatalogScanResult } from '../../entities/app'
 import type {
@@ -47,14 +48,16 @@ export function createCatalogActions({
 			Date.now(),
 		)
 		const marks = reconcileMarks(get(), apps)
+		const scenarios = reconcileScenarios(get().scenarios, apps)
 		set({
 			apps,
 			hasCache: true,
 			catalogGeneration: scan.generation,
 			firstSeenAt,
 			...marks,
+			...(scenarios ? { scenarios } : {}),
 		})
-		if (firstSeenAt !== previousFirstSeen || marks) persist()
+		if (firstSeenAt !== previousFirstSeen || marks || scenarios) persist()
 	}
 
 	return {
@@ -62,6 +65,10 @@ export function createCatalogActions({
 			set({ isLoading: true, error: null })
 			try {
 				const snapshot = await client.getApps()
+				const scenarios = reconcileScenarios(
+					get().scenarios,
+					snapshot.apps,
+				)
 				set({
 					apps: snapshot.apps,
 					firstSeenAt: reconcileFirstSeen(
@@ -73,6 +80,7 @@ export function createCatalogActions({
 					catalogGeneration: snapshot.generation ?? 0,
 					catalogDiagnostics: snapshot.diagnostics ?? null,
 					...reconcileMarks(get(), snapshot.apps),
+					...(scenarios ? { scenarios } : {}),
 				})
 				persist()
 			} catch (error) {

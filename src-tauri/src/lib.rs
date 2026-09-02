@@ -10,16 +10,16 @@ mod platform;
 use std::sync::Arc;
 use tauri::Manager;
 
-use app_state::{remember_catalog, AppState};
-use catalog::sync::{load_sanitized_cache, restart_change_watcher};
-use platform::windows::{global_shortcut, install_registry};
+use app_state::AppState;
+use lifecycle::window_state;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let lifecycle = Arc::new(lifecycle::LifecycleState::default());
     let starts_hidden_from_autostart = lifecycle::starts_hidden_from_autostart(std::env::args_os());
-    let close_lifecycle = Arc::clone(&lifecycle);
+    let window_lifecycle = Arc::clone(&lifecycle);
     let tray_lifecycle = Arc::clone(&lifecycle);
+    let setup_lifecycle = Arc::clone(&lifecycle);
     let mut builder = tauri::Builder::default().plugin(
         tauri_plugin_log::Builder::default()
             .level(log::LevelFilter::Info)
@@ -40,28 +40,25 @@ pub fn run() {
         .manage(AppState::default())
         .plugin(tauri_plugin_dialog::init())
         .on_window_event(move |window, event| {
-            if window.label() == "main" {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    if close_lifecycle.should_hide_on_close() {
+            if window.label() != "main" {
+                return;
+            }
+            match event {
+                tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => {
+                    window_state::remember(window.app_handle(), &window_lifecycle);
+                }
+                tauri::WindowEvent::CloseRequested { api, .. } => {
+                    window_state::remember(window.app_handle(), &window_lifecycle);
+                    window_state::persist(window.app_handle(), &window_lifecycle);
+                    if window_lifecycle.should_hide_on_close() {
                         api.prevent_close();
                         let _ = window.hide();
                     }
                 }
+                _ => {}
             }
         })
         .setup(move |app| {
-            let registered = global_shortcut::register(app.handle().clone());
-            {
-                let state = app.state::<AppState>();
-                if let Ok(mut status) = state.shortcut_status.lock() {
-                    *status = registered.status;
-                }
-                if let Some(guard) = registered.guard {
-                    if let Ok(mut current) = state.global_shortcut.lock() {
-                        *current = Some(guard);
-                    }
-                }
-            }
             let tray_ready = match lifecycle::setup_tray(app.handle(), Arc::clone(&tray_lifecycle))
             {
                 Ok(()) => true,
@@ -70,23 +67,12 @@ pub fn run() {
                     false
                 }
             };
-            if lifecycle::should_hide_on_autostart(starts_hidden_from_autostart, tray_ready) {
-                lifecycle::hide_main_window(app.handle());
-            }
-            if let Ok(app_data_dir) = app.path().app_data_dir() {
-                if let Some(apps) = load_sanitized_cache(&app_data_dir) {
-                    let state = app.state::<AppState>();
-                    remember_catalog(state.inner(), &apps);
-                }
-                let settings = catalog::scan_settings::read(&app_data_dir);
-                restart_change_watcher(app.handle().clone(), &settings);
-            }
-            if let Some(install_dir) = install_registry::installed_copy_dir() {
-                let config = app.config();
-                let publisher = config.bundle.publisher.clone().unwrap_or_default();
-                let product = config.product_name.clone().unwrap_or_default();
-                install_registry::sync_install_dir(&publisher, &product, &install_dir);
-            }
+            window_state::present_main_window(
+                app.handle(),
+                &setup_lifecycle,
+                lifecycle::should_hide_on_autostart(starts_hidden_from_autostart, tray_ready),
+            );
+            lifecycle::start_background_initialization(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

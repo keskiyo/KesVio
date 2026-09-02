@@ -99,4 +99,48 @@ describe('resolveScenarioApps', () => {
 
 		expect(resolved.apps.map(entry => entry.id)).toEqual(['second'])
 	})
+
+	it('recovers a uniquely named app after its preference identity changes', () => {
+		const catalog = [
+			app({
+				id: 'code-current',
+				name: 'Visual Studio Code',
+				preferenceIdentity: 'preference:current-code',
+			}),
+		]
+
+		const resolved = resolveScenarioApps(['preference:old-code'], catalog, {
+			'preference:old-code': {
+				name: 'Visual Studio Code',
+				iconBase64: null,
+			},
+		})
+
+		expect(resolved.apps.map(entry => entry.id)).toEqual(['code-current'])
+		expect(resolved.unavailable).toEqual([])
+	})
+
+	it('keeps a stale identity unavailable when its snapshot name is ambiguous', () => {
+		const catalog = [
+			app({ id: 'editor-one', name: 'Editor' }),
+			app({ id: 'editor-two', name: 'Editor' }),
+		]
+
+		const resolved = resolveScenarioApps(
+			['preference:old-editor'],
+			catalog,
+			{
+				'preference:old-editor': { name: 'Editor', iconBase64: null },
+			},
+		)
+
+		expect(resolved.apps).toEqual([])
+		expect(resolved.unavailable).toEqual([
+			{
+				identity: 'preference:old-editor',
+				name: 'Editor',
+				iconBase64: null,
+			},
+		])
+	})
 })

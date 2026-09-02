@@ -15,6 +15,7 @@ pub(super) struct PortableScanInput<'a> {
     pub(super) previous_apps: &'a [AppInfo],
     pub(super) previous_index: &'a FilesystemIndex,
     pub(super) roots: &'a [PathBuf],
+    pub(super) retained_roots: &'a [PathBuf],
     pub(super) excluded: &'a [PathBuf],
     pub(super) mode: ScanMode,
     pub(super) max_duration: Duration,
@@ -27,7 +28,15 @@ pub(super) fn scan_roots(
     is_cancelled: &impl Fn() -> bool,
 ) -> PortableScanResult {
     let started_at = Instant::now();
-    let mut apps = BTreeMap::new();
+    let mut apps = input
+        .previous_apps
+        .iter()
+        .filter(|app| {
+            path_is_within_any_root(&app.path, input.retained_roots)
+                && !path_is_within_any_root(&app.path, input.roots)
+        })
+        .map(|app| (app.id.clone(), app.clone()))
+        .collect::<BTreeMap<_, _>>();
     let mut filesystem_index = FilesystemIndex::default();
     let mut stop = None;
     progress(ScanProgress {
@@ -139,6 +148,10 @@ fn path_is_within_root(path: &str, root: &Path) -> bool {
     crate::catalog::path_is_within(&path, &root)
 }
 
+fn path_is_within_any_root(path: &str, roots: &[PathBuf]) -> bool {
+    roots.iter().any(|root| path_is_within_root(path, root))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -240,6 +253,106 @@ mod tests {
     }
 
     #[test]
+    fn retained_root_keeps_apps_without_keeping_its_directory_index() {
+        let retained = tempfile::tempdir().unwrap();
+        let kept = app("kept", &retained.path().join("Kept.exe").to_string_lossy());
+        let previous = vec![kept.clone()];
+        let previous_index = FilesystemIndex {
+            directories: BTreeMap::from([(
+                retained.path().to_string_lossy().to_lowercase(),
+                DirectoryRecord {
+                    modified_nanos: 1,
+                    child_directories: Vec::new(),
+                    apps: vec![kept],
+                    executables: BTreeMap::new(),
+                },
+            )]),
+        };
+        let retained_roots = [retained.path().to_path_buf()];
+
+        let scanned = scan_roots(
+            PortableScanInput {
+                previous_apps: &previous,
+                previous_index: &previous_index,
+                roots: &[],
+                retained_roots: &retained_roots,
+                excluded: &[],
+                mode: ScanMode::Incremental,
+                max_duration: Duration::from_secs(10),
+                verify_fingerprints: true,
+            },
+            &|_| {},
+            &|| false,
+        );
+
+        assert_eq!(
+            scanned
+                .apps
+                .iter()
+                .map(|app| app.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["kept"]
+        );
+        assert!(scanned.filesystem_index.directories.is_empty());
+    }
+
+    #[test]
+    fn scanned_subtree_replaces_stale_apps_inside_a_retained_root() {
+        let retained = tempfile::tempdir().unwrap();
+        let scanned_root = retained.path().join("Tools");
+        std::fs::create_dir_all(&scanned_root).unwrap();
+        let previous = vec![app(
+            "stale",
+            &scanned_root.join("Stale.exe").to_string_lossy(),
+        )];
+        let scanned_roots = [scanned_root];
+        let retained_roots = [retained.path().to_path_buf()];
+
+        let scanned = scan_roots(
+            PortableScanInput {
+                previous_apps: &previous,
+                previous_index: &FilesystemIndex::default(),
+                roots: &scanned_roots,
+                retained_roots: &retained_roots,
+                excluded: &[],
+                mode: ScanMode::Incremental,
+                max_duration: Duration::from_secs(10),
+                verify_fingerprints: true,
+            },
+            &|_| {},
+            &|| false,
+        );
+
+        assert!(scanned.apps.is_empty());
+    }
+
+    #[test]
+    fn no_retained_roots_drop_previous_apps_outside_scanned_folders() {
+        let retained = tempfile::tempdir().unwrap();
+        let previous = vec![app(
+            "removed",
+            &retained.path().join("Removed.exe").to_string_lossy(),
+        )];
+
+        let scanned = scan_roots(
+            PortableScanInput {
+                previous_apps: &previous,
+                previous_index: &FilesystemIndex::default(),
+                roots: &[],
+                retained_roots: &[],
+                excluded: &[],
+                mode: ScanMode::Incremental,
+                max_duration: Duration::from_secs(10),
+                verify_fingerprints: true,
+            },
+            &|_| {},
+            &|| false,
+        );
+
+        assert!(scanned.apps.is_empty());
+    }
+
+    #[test]
     fn zero_total_budget_preserves_every_unvisited_root() {
         let first = tempfile::tempdir().unwrap();
         let second = tempfile::tempdir().unwrap();
@@ -258,6 +371,7 @@ mod tests {
                 previous_apps: &previous,
                 previous_index: &previous_index,
                 roots: &roots,
+                retained_roots: &[],
                 excluded: &[],
                 mode: ScanMode::Incremental,
                 max_duration: Duration::ZERO,

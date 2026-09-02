@@ -166,12 +166,18 @@ listener that calls back into the catalog cannot meet a writer still holding it.
 
 ## 5. Persisted data
 
-Two stores contain user data:
+Three stores contain user data:
 
 | Store         | Owner                          | Rules                                                                                                   |
 | ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------- |
 | Catalog cache | `catalog/storage/cache.rs`     | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                   |
 | Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document for categories, marks, scenarios, first-seen data and unknown fields. |
+| Window state  | `lifecycle/window_state.rs`    | Versioned `window-state.json`; position, size and maximized flag only, written atomically.              |
+
+Window state is presentation-only and deliberately disposable: a missing,
+malformed or newer-versioned document restores nothing and the window opens at
+the configured 1250×720, centered. It is the one store whose loss costs the user
+nothing, so it never falls back to a backup copy and never blocks startup.
 
 Persisted-format changes must bump the appropriate version, upgrade every
 supported version, default new fields, preserve unknown data, safely handle
@@ -261,18 +267,24 @@ catalog, and resetting the catalog does not remove user preferences.
 ## 6. Catalog operation
 
 Sources are Start Menu shortcuts, uninstall registry entries, Start Apps and
-packaged applications, Steam libraries, configured fixed-drive portable scans,
-and watcher-triggered refreshes. Each source reports health independently;
-failed or stale sources retain their last valid snapshot where safe.
+packaged applications, Steam libraries, explicitly configured portable folders,
+optional fixed-drive discovery, and watcher-triggered refreshes. Each source
+reports health independently; failed or stale sources retain their last valid
+snapshot where safe.
 
 Normal startup is cache-first. Background validation and incremental scans keep
-the UI usable while source work runs. A force scan explicitly bypasses the
-previous filesystem index. Scan work is cancellable, generation-aware and
-bounded; no stale result may overwrite a newer generation. The rule holds in
-both directions, so a scan hands its records and the generation that produced
-them back as one value: the interface adopts that generation with the records,
-and the hydration patches the same scan queues can never be mistaken for stale
-work from an earlier one.
+the UI usable while source work runs. Startup, watchers and ordinary refreshes
+scan only explicitly configured portable folders. Fixed-drive discovery is off
+by default and runs only during **Force full scan** when enabled. An ordinary
+refresh retains already discovered fixed-drive portable applications while the
+option remains enabled, but drops their large directory index; disabling the
+option removes those retained records on the next refresh. A force scan bypasses
+the previous filesystem index and shares one 45-second cooperative traversal
+budget across portable roots. Scan work is cancellable and generation-aware; no
+stale result may overwrite a newer generation. The rule holds in both
+directions, so a scan hands its records and the generation that produced them
+back as one value: the interface adopts that generation with the records, and
+hydration patches from the same generation cannot be mistaken for stale work.
 
 Scanning starts no interpreter. Start Apps and packaged applications are read
 through the shell itself: `platform/windows/apps_folder.rs` enumerates
@@ -287,15 +299,15 @@ binaries. The package map is best-effort: when it cannot be read, packaged
 entries keep their name, publisher, version, install location and uninstall
 target and lose only the resolved executable.
 
-| Stage          | Invariant                                                                                                  |
-| -------------- | ---------------------------------------------------------------------------------------------------------- |
-| Traversal      | Fixed/local configured roots only; depth, entry, time and cancellation bounds; no reparse-point recursion. |
-| Classification | Artifact, visibility and category decisions are deterministic and explainable.                             |
-| Deduplication  | Canonical identity and launch evidence prevent unrelated same-name applications from merging.              |
-| Install root   | A record keeps an install location only while that location contains its own launch target.                |
-| Cache          | Source-aware generation document; invalid data degrades safely.                                            |
-| Hydration      | Icons/details are lazy, size-limited, trusted-ID-only and processed in bounded batches.                    |
-| Search         | Current view/category only; literal matches rank above corrected, transliterated and fuzzy matches.        |
+| Stage          | Invariant                                                                                                                                                |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traversal      | Explicit folders on routine scans; optional fixed drives on forced scans; shared time, depth, entry and cancellation bounds; no reparse-point recursion. |
+| Classification | Artifact, visibility and category decisions are deterministic and explainable.                                                                           |
+| Deduplication  | Canonical identity and launch evidence prevent unrelated same-name applications from merging.                                                            |
+| Install root   | A record keeps an install location only while that location contains its own launch target.                                                              |
+| Cache          | Source-aware generation document; invalid data degrades safely.                                                                                          |
+| Hydration      | Icons/details are lazy, size-limited, trusted-ID-only and processed in bounded batches.                                                                  |
+| Search         | Current view/category only; literal matches rank above corrected, transliterated and fuzzy matches.                                                      |
 
 A query token expands into variants before matching: the literal token, the
 token remapped between the English and Russian keyboard layouts, and a
@@ -340,7 +352,10 @@ filled — launch or close — and for which scenario, since both lists open the
 same dialog. It offers exactly the applications the All apps
 view shows: hidden records, installers and auxiliary tools stay out, while an
 entry already stored in a scenario still resolves against the whole catalog so
-it keeps its name and icon. Candidates are ordered by name, case-insensitively
+it keeps its name and icon. If an older release changed an application's
+preference identity during an update, the saved snapshot restores the entry by
+exact name only when the current catalog has one unambiguous match. Candidates
+are ordered by name, case-insensitively
 and with digits compared as numbers, until a query replaces that order with
 relevance ranking; a query that names a category also brings in the applications
 of that category, after the entries the query matched by name. Rows arrive a
@@ -609,7 +624,34 @@ would have to reintroduce it deliberately.
   autostart off on every update. Guarding both leaves an update from touching
   the entry at all, which also preserves a user who disabled it in Windows —
   that switch writes to `StartupApproved` and leaves the shortcut in place.
-- WebView2 uses Tauri's silent bootstrapper when missing.
+- The main window is created hidden and painted with the canvas colour, and it
+  is shown only after saved geometry has been applied. A window created visible
+  first flashed white and then jumped to its restored position; there is nothing
+  to see between those two moments, so it is not shown.
+- Position, size and the maximized flag are remembered per user. The window is
+  restored onto whichever connected monitor holds most of it, clamped inside
+  that monitor and to the minimum window size; geometry that no longer overlaps
+  any monitor — the second display was unplugged — is discarded and the window
+  opens at its configured default instead. A minimized window keeps the last
+  geometry it had, and a maximized one keeps the rectangle it will restore to
+  rather than the screen it currently fills. The geometry is tracked in memory
+  while the window moves and written once, when the window closes or the tray
+  quits. The stored size is the inner size, because `set_size` restores an inner
+  size: storing the outer one instead added the invisible resize border —
+  sixteen pixels wide, nine tall — back on every start, and the window grew by
+  that much each time it was reopened. The position is the outer position, which
+  is what `set_position` takes.
+- Startup does no discovery work on the main thread. Tray creation and the
+  window are the only things `setup` performs; global-shortcut registration,
+  the cached catalog, the change watcher and the installed-copy registry sync
+  run on one background task afterwards. Cache reading in particular used to
+  deserialize the whole catalog, icons included, before the first frame.
+  Settings therefore reports the shortcut as unregistered for the moment before
+  that task completes.
+- WebView2 uses Tauri's bootstrapper when missing, embedded in the installer
+  rather than downloaded by it: an installer that fetches and runs an
+  executable from the network is both a heuristic that antivirus products score
+  and an install that fails behind a restricted network.
 - The updater checks the signed release manifest on startup. An available
   version is announced by a dismissible banner in the shell notice area beside
   the stale-copy and preference-write notices; it never opens a dialog by
@@ -619,6 +661,10 @@ would have to reintroduce it deliberately.
   The private key exists only in CI secrets.
 - Download progress reports real bytes/percentage; verification, installation
   and restart are indeterminate stages. Update failures retain a safe retry UI.
+- The downloaded installer runs in NSIS passive mode: non-interactive, but with
+  a visible progress window. An unsigned installer that runs itself with no
+  window at all is the shape of behaviour that heuristics score, and the user
+  has no way to tell the update apart from something else starting.
 - Update checks are silent offline, when current, and outside the desktop
   runtime used by browser development/tests.
 
@@ -763,16 +809,18 @@ source is MIT-licensed; third-party notices are recorded in
 
 ## 17. Troubleshooting
 
-| Problem                       | First action                                                                                             |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Catalog empty                 | Use **Scan for apps**; the first complete scan is explicit.                                              |
-| Duplicate or stale entries    | Refresh; then use **Settings → Advanced → Catalog maintenance → Reset catalog cache**.                   |
-| Missing application           | Check permanent local drive/exclusions; add a folder in **Settings → Advanced → Application discovery**. |
-| Old version or icon           | Refresh; missing icons can be repaired from catalog maintenance without losing preferences.              |
-| Global shortcut fails         | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.              |
-| Uninstall unavailable         | The catalog record has no trusted, parseable uninstall target.                                           |
-| Catalog stays on placeholders | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.    |
-| A panel closes by itself      | That dialog failed to render; the failure is in the application log and the catalog is unaffected.       |
-| Search finds nothing here     | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.              |
-| Update/download failure       | Retry from the update dialog or use the linked GitHub release.                                           |
-| SmartScreen warning           | Expected for the unsigned NSIS installer; verify the release source and updater signature.               |
+| Problem                        | First action                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Catalog empty                  | Use **Scan for apps**; the first complete scan is explicit.                                                  |
+| Duplicate or stale entries     | Refresh; then use **Settings → Advanced → Catalog maintenance → Reset catalog cache**.                       |
+| Missing application            | Add its folder under **Application discovery**, or enable fixed drives and use **Force full scan**.          |
+| Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.               |
+| Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                  |
+| Uninstall unavailable          | The catalog record has no trusted, parseable uninstall target.                                               |
+| Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.        |
+| A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.           |
+| Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                  |
+| Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                               |
+| SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                   |
+| Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.          |
+| Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque. |

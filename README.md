@@ -110,9 +110,13 @@ Everyday settings stay visible. Scanning, backups and maintenance live under Adv
 with the applications no rule recognised: each one lists the signals the classifier read, can be
 moved to a category on the spot, and the whole list copies as plain text. Settings
 export contains preferences only, and import reports an error if Windows Apps cannot persist the
-restored data. The installer adds Windows Apps to startup once, so it is already in the system tray
+restored data. Normal refreshes scan Windows sources and portable folders you add. Optional
+fixed-drive discovery runs only through **Force full scan**, with a bounded traversal time. The
+installer adds Windows Apps to startup once, so it is already in the system tray
 after you sign in; choose **Open Windows Apps** there when you need the window. Turn it off the
-same way as any other program, in **Settings → Apps → Startup**.
+same way as any other program, in **Settings → Apps → Startup**. The window reopens at the size,
+position and maximized state you left it in, on the monitor it was on; unplug that monitor and it
+comes back to the middle of the one you still have.
 
 ## Install
 
@@ -121,7 +125,7 @@ same way as any other program, in **Settings → Apps → Startup**.
 3. Start Windows Apps and choose **Scan for apps**.
 
 > [!WARNING]
-> The installer is not Authenticode-signed, so SmartScreen may show **Windows protected your PC**. Choose **More info → Run anyway** and download only from this repository's Releases.
+> Released installers are not Authenticode-signed yet, so SmartScreen may show **Windows protected your PC**. Choose **More info → Run anyway** and download only from this repository's Releases. See [Code signing policy](#code-signing-policy).
 
 | Requirement  | Value                           |
 | ------------ | ------------------------------- |
@@ -140,7 +144,7 @@ For implementation and security details, see [Technical Documentation](Documenta
 ## Known limitations
 
 - Windows 10/11 and x64 only.
-- The installer is not Authenticode-signed; SmartScreen may appear.
+- Released installers are not Authenticode-signed yet; SmartScreen may appear.
 - Microsoft Edge WebView2 is required.
 
 ## Development
@@ -157,6 +161,22 @@ See [Technical Documentation](Documentation.md#16-verification-and-releases) for
 ## Contributing
 
 Bug reports and pull requests are welcome. Read [Technical Documentation](Documentation.md) before changing code or workflows.
+
+## Code signing policy
+
+Windows Apps uses free code signing provided by [SignPath.io](https://signpath.io), with a certificate issued by the [SignPath Foundation](https://signpath.org).
+
+Releases up to and including v0.3.9 predate that setup and are not signed; the SmartScreen warning above applies until the first signed release.
+
+| Role     | Person  |
+| -------- | ------- |
+| Author   | keskiyo |
+| Reviewer | keskiyo |
+| Approver | keskiyo |
+
+Every release is built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml`, on GitHub-hosted runners, and each signing request is approved manually.
+
+Windows Apps collects no personal data: it has no telemetry, no account and no network service, and the catalog it builds stays on the local machine. See [Privacy](#privacy).
 
 ## Links
 

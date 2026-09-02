@@ -21,7 +21,9 @@
 				"center": true,
 				"decorations": false,
 				"resizable": true,
-				"fullscreen": false
+				"fullscreen": false,
+				"visible": false,
+				"backgroundColor": "#24262C"
 			}
 		],
 		"security": {
@@ -35,18 +37,23 @@
 			],
 			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ1MDJCMkFGQ0FCRkVEQUUKUldTdTdiL0tyN0lDUlVXNUtKd1pkUG1xOFVrS29Zb1BGTTYzb0p5T29EY3lkZWFlaGJiRWs2SFUK",
 			"windows": {
-				"installMode": "quiet"
+				"installMode": "passive"
 			}
 		}
 	},
 	"bundle": {
 		"active": true,
 		"publisher": "keskiyo",
+		"copyright": "Copyright © 2026 keskiyo. MIT licensed.",
+		"license": "MIT",
+		"homepage": "https://github.com/keskiyo/WindowsApps",
+		"shortDescription": "Private application catalog and launcher for Windows.",
+		"longDescription": "Windows Apps discovers installed and portable applications on this computer, organizes them into categories and scenarios, and launches or uninstalls them. It works entirely offline: no telemetry, no accounts, and no uploads. Only the application itself updates, from signed GitHub releases.",
 		"targets": ["nsis"],
 		"createUpdaterArtifacts": true,
 		"windows": {
 			"webviewInstallMode": {
-				"type": "downloadBootstrapper",
+				"type": "embedBootstrapper",
 				"silent": true
 			},
 			"nsis": {

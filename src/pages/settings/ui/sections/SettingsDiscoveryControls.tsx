@@ -23,10 +23,10 @@ export function SettingsDiscoveryControls({
 				<SettingsSectionHeader
 					icon={HardDrive}
 					title="Application discovery"
-					description="Scan permanent local drives and Steam libraries. Removable and network drives are ignored."
+					description="Ordinary refresh scans Windows sources and added folders. Fixed-drive discovery runs only during Force full scan."
 				/>
 				<SettingsToggle
-					label="Scan all fixed local drives"
+					label="Include fixed drives in Force full scan"
 					checked={
 						settings?.scanSettings.autoScanFixedDrives ?? false
 					}

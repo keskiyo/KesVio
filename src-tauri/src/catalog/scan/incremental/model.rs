@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 pub(crate) const DEFAULT_MAX_DEPTH: usize = 16;
 pub(crate) const DEFAULT_MAX_ENTRIES: usize = 500_000;
 pub(crate) const DEFAULT_MAX_DURATION: Duration = Duration::from_secs(3 * 60);
+pub(crate) const FORCE_MAX_DURATION: Duration = Duration::from_secs(45);
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum ScanMode {

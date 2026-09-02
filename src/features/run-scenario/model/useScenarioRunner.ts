@@ -66,10 +66,12 @@ export function useScenarioRunner({
 			const toLaunch = resolveScenarioApps(
 				scenario.launchIdentities.slice(0, MAX_SCENARIO_ENTRIES),
 				apps,
+				scenario.launchAppSnapshots,
 			)
 			const toClose = resolveScenarioApps(
 				scenario.closeIdentities.slice(0, MAX_SCENARIO_ENTRIES),
 				apps,
+				scenario.closeAppSnapshots,
 			)
 			const summary: ScenarioRunSummary = {
 				scenarioName: scenario.name,

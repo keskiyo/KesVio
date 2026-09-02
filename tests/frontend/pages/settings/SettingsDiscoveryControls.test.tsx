@@ -16,6 +16,30 @@ const settings: SystemSettings = {
 }
 
 describe('SettingsDiscoveryControls', () => {
+	it('explains that fixed drives are scanned only on a forced scan', () => {
+		render(
+			<SettingsDiscoveryControls
+				settings={settings}
+				saving={false}
+				onSaveScanSettings={vi.fn()}
+				onAddPath={vi.fn()}
+				onRemovePath={vi.fn()}
+				onPickFolder={vi.fn()}
+			/>,
+		)
+
+		expect(
+			screen.getByText(
+				'Ordinary refresh scans Windows sources and added folders. Fixed-drive discovery runs only during Force full scan.',
+			),
+		).toBeVisible()
+		expect(
+			screen.getByRole('switch', {
+				name: 'Include fixed drives in Force full scan',
+			}),
+		).toBeVisible()
+	})
+
 	it('saves a selected scan folder through the provided settings actions', async () => {
 		const onAddPath = vi.fn()
 		const onPickFolder = vi.fn().mockResolvedValue(String.raw`F:\Tools`)

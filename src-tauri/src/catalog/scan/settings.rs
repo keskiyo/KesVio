@@ -25,7 +25,7 @@ fn enabled() -> bool {
 impl Default for ScanSettings {
     fn default() -> Self {
         Self {
-            auto_scan_fixed_drives: true,
+            auto_scan_fixed_drives: false,
             included_paths: Vec::new(),
             excluded_paths: Vec::new(),
             catalog_target_availability_v1: true,
@@ -72,6 +72,7 @@ mod tests {
     #[test]
     fn missing_or_invalid_settings_use_safe_defaults() {
         let dir = tempfile::tempdir().unwrap();
+        assert!(!ScanSettings::default().auto_scan_fixed_drives);
         assert_eq!(read(dir.path()), ScanSettings::default());
         std::fs::write(dir.path().join(SETTINGS_FILE), "not json").unwrap();
         assert_eq!(read(dir.path()), ScanSettings::default());

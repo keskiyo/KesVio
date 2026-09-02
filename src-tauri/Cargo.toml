@@ -60,6 +60,11 @@ windows = { version = "0.61", features = [
 minisign-verify = "=0.2.5"
 tempfile = "3.20"
 
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
 [target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
 tauri-plugin-single-instance = "2.4.2"
 tauri-plugin-updater = "2"

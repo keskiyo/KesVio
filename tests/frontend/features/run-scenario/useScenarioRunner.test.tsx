@@ -261,6 +261,32 @@ describe('useScenarioRunner', () => {
 		expect(closeApps).not.toHaveBeenCalled()
 	})
 
+	it('runs the current app when an update changed its stored identity', async () => {
+		const current = {
+			...app('code-current'),
+			name: 'Visual Studio Code',
+			preferenceIdentity: 'preference:current-code',
+		}
+		const { view, launch } = setup({ apps: [current] })
+
+		await act(async () => {
+			await view.result.current.run(
+				scenario({
+					launchIdentities: ['preference:old-code'],
+					launchAppSnapshots: {
+						'preference:old-code': {
+							name: 'Visual Studio Code',
+							iconBase64: null,
+						},
+					},
+				}),
+			)
+		})
+
+		expect(launch).toHaveBeenCalledOnce()
+		expect(launch).toHaveBeenCalledWith(current)
+	})
+
 	// A scenario is a batch: one app that refuses to start must not abort the rest of it.
 	it('keeps going when one entry fails', async () => {
 		const { view, launch } = setup({

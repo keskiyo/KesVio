@@ -256,6 +256,53 @@ describe('scenario actions', () => {
 		})
 	})
 
+	it('rekeys scenario membership after an app update changes its identity', async () => {
+		const oldCode = {
+			id: 'code-old',
+			name: 'Visual Studio Code',
+			path: 'C:\\Apps\\Code.exe',
+			category: 'development',
+			sourceKind: 'registry',
+			launchKind: 'executable',
+			preferenceIdentity: 'preference:old-code',
+		} as AppInfo
+		const currentCode = {
+			...oldCode,
+			id: 'code-current',
+			preferenceIdentity: 'preference:current-code',
+		}
+		const api = client()
+		api.refreshApps = vi.fn().mockResolvedValue({
+			apps: [currentCode],
+			generation: 2,
+		})
+		const { storage, values } = memoryStorage()
+		const store = createAppStore(api, storage, idFactory)
+		store.setState({ apps: [oldCode] })
+		const created = store.getState().createScenario('Development')
+		const id = created.ok ? created.id : ''
+		store
+			.getState()
+			.addScenarioApp(id, 'close', 'preference:old-code')
+
+		await store.getState().refresh()
+
+		expect(store.getState().scenarios[0]).toMatchObject({
+			closeIdentities: ['preference:current-code'],
+			closeAppSnapshots: {
+				'preference:current-code': {
+					name: 'Visual Studio Code',
+					iconBase64: null,
+				},
+			},
+		})
+		expect(
+			JSON.parse(values.get(PREFERENCES_KEY) ?? '{}').scenarios[0],
+		).toMatchObject({
+			closeIdentities: ['preference:current-code'],
+		})
+	})
+
 	it('reports a duplicate rather than adding the same app twice', () => {
 		const store = createAppStore(
 			client(),

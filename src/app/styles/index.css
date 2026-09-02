@@ -528,6 +528,43 @@ button {
 	box-shadow: 0 8px 22px oklch(0.58 0.14 292 / 0.06);
 }
 
+/*
+ * Chromium maps `prefers-reduced-transparency` to Windows Settings -> Personalization -> Colors ->
+ * Transparency effects, which is the switch people turn off on the machines where backdrop-filter
+ * costs the most: Windows 10 on integrated graphics, virtual machines and remote sessions. Blur is
+ * the single most expensive effect on those, and it repaints on every scroll frame, so the same
+ * surfaces become opaque instead. Colors are the blurred backgrounds at full alpha.
+ */
+@media (prefers-reduced-transparency: reduce) {
+	.app-titlebar {
+		background: oklch(0.3 0.012 270);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	.app-panel {
+		background: oklch(0.34 0.012 272);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	.app-header-glass {
+		background: oklch(0.36 0.012 272);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	.app-card-glass {
+		background: linear-gradient(
+			145deg,
+			oklch(0.43 0.014 274),
+			oklch(0.34 0.016 282)
+		);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+}
+
 .theme-graphite-surface [class*='bg-white'],
 .theme-graphite-surface [class*='bg-slate-50'],
 .theme-graphite-surface [class*='bg-slate-100'],

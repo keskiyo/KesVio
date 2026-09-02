@@ -12,6 +12,7 @@ export {
 	type UnavailableScenarioApp,
 	resolveScenarioApps,
 } from './lib/scenarioApps'
+export { reconcileScenarios } from './lib/scenarioReconciliation'
 export {
 	MAX_SCENARIO_SNAPSHOT_ICON_BYTES,
 	normalizeScenarioAppSnapshot,

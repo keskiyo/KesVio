@@ -1,8 +1,12 @@
+mod startup;
+mod state;
+pub(crate) mod window_state;
+
+pub(crate) use startup::spawn as start_background_initialization;
+pub(crate) use state::LifecycleState;
+
 use std::ffi::OsStr;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
+use std::sync::Arc;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -23,32 +27,11 @@ fn tray_action(id: &str) -> Option<TrayAction> {
     }
 }
 
-#[derive(Default)]
-pub(crate) struct LifecycleState {
-    quitting: AtomicBool,
-}
-
-impl LifecycleState {
-    pub(crate) fn mark_quitting(&self) {
-        self.quitting.store(true, Ordering::SeqCst);
-    }
-
-    pub(crate) fn should_hide_on_close(&self) -> bool {
-        !self.quitting.load(Ordering::SeqCst)
-    }
-}
-
 pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
-    }
-}
-
-pub(crate) fn hide_main_window(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.hide();
     }
 }
 
@@ -85,6 +68,7 @@ pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::
         .on_menu_event(move |app, event| match tray_action(event.id().as_ref()) {
             Some(TrayAction::Open) => show_main_window(app),
             Some(TrayAction::Quit) => {
+                window_state::persist(app, &state);
                 state.mark_quitting();
                 app.exit(0);
             }
@@ -112,19 +96,6 @@ pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn normal_close_hides_the_window() {
-        let state = LifecycleState::default();
-        assert!(state.should_hide_on_close());
-    }
-
-    #[test]
-    fn explicit_quit_disables_close_interception() {
-        let state = LifecycleState::default();
-        state.mark_quitting();
-        assert!(!state.should_hide_on_close());
-    }
 
     #[test]
     fn tray_menu_ids_map_to_explicit_actions() {
