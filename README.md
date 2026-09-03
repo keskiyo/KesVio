@@ -25,6 +25,10 @@
 
 ![AppNook catalog with categories, search and application cards](.github/images/catalog.png)
 
+## Windows Apps is now AppNook
+
+Windows Apps is now **AppNook**, starting with version 0.4.0. Releases and documentation are published in this repository under the AppNook name.
+
 ## One catalog for Windows software
 
 Windows keeps applications in several places. AppNook combines:
