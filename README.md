@@ -114,8 +114,8 @@ restored data. Normal refreshes scan Windows sources and portable folders you ad
 fixed-drive discovery runs through **Force full scan**, on by default, with a bounded traversal time. The
 installer adds AppNook to startup once, so it is already in the system tray
 after you sign in; choose **Open AppNook** there when you need the window. Turn it off the
-same way as any other program, in **Settings → Apps → Startup**. Closing the window leaves Windows
-Apps in the notification area; **Keep running in the tray** turns that into a normal quit. The window
+same way as any other program, in **Settings → Apps → Startup**. Closing the window leaves AppNook
+in the notification area; **Keep running in the tray** turns that into a normal quit. The window
 reopens at the size,
 position and maximized state you left it in, on the monitor it was on; unplug that monitor and it
 comes back to the middle of the one you still have.
@@ -166,17 +166,9 @@ Bug reports and pull requests are welcome. Read [Technical Documentation](Docume
 
 ## Code signing policy
 
-AppNook uses free code signing provided by [SignPath.io](https://signpath.io), with a certificate issued by the [SignPath Foundation](https://signpath.org).
+Released installers are not Authenticode-signed. There is no code signing certificate behind this project, so SmartScreen warns on first run and every release starts at zero reputation.
 
-Releases published so far predate that setup and are not signed; the SmartScreen warning above applies until the first signed release.
-
-| Role     | Person                     |
-| -------- | -------------------------- |
-| Author   | Maksim Makhilin (@keskiyo) |
-| Reviewer | Maksim Makhilin (@keskiyo) |
-| Approver | Maksim Makhilin (@keskiyo) |
-
-Every release is built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml`, on GitHub-hosted runners, and each signing request is approved manually.
+What is verified instead: each release is built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml`, on GitHub-hosted runners, and every installer is published with a detached Tauri updater signature (`.sig`). The in-app updater verifies that signature against the public key in `tauri.conf.json` before it installs anything, so an installer altered after publication is rejected as an update. That signature is separate from Authenticode and does not suppress SmartScreen: download only from this repository's Releases.
 
 AppNook collects no personal data: it has no telemetry and no account, and the catalog it builds stays on the local machine. Its only network request is the update check against this repository's Releases, which GitHub serves and logs like any other download. See [Privacy](#privacy).
 
