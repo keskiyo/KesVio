@@ -82,7 +82,7 @@ handler because it belongs to the same arrow-key navigation contract, and
 dismisses only through a control the reader aimed at.
 
 The backend groups each large module by reason to change rather than by file
-size. `catalog/sync/` splits source scanning (`scan_sources.rs`), per-source
+size. `catalog/sync/` splits source scanning (`scan_sources/`), per-source
 health (`health.rs`), the catalog delta (`delta.rs`) and cache assembly
 (`assemble.rs`), leaving `synchronize` as orchestration. `catalog/scan/`
 separates the filesystem walk from the index model and executable fingerprints,
@@ -212,6 +212,17 @@ cache, executable paths, catalog icons, or scan folders. Each Scenario also
 retains a bounded 32 KiB name/icon snapshot per app identity so unavailable
 entries remain identifiable and removable; it is presentation data, never a
 launch target.
+
+Version 0.4.0 changes the application identity from `dev.neiroslop.windowsapps`
+to `dev.neiroslop.appnook`. The old and new installations use separate data
+locations. Export preferences from Windows Apps, import them in AppNook, add scan
+folders again and run a full scan to rebuild the catalog. Confirm the restored
+preferences survive a restart before removing the old installation.
+
+Import applies preferences in memory before attempting to persist them. If the
+write fails, `preferencesPersisted` becomes false and the shell displays the
+unsaved-changes banner. The import action still returns success, so the settings
+panel can show **Settings imported.** while those changes remain unsaved.
 
 A scenario's launch and close lists keep one row of tiles on screen and hold the
 rest behind a count and a control that opens them. Which tiles fit is read from
@@ -675,16 +686,18 @@ would have to reintroduce it deliberately.
   deserialize the whole catalog, icons included, before the first frame.
   Settings therefore reports the shortcut as unregistered for the moment before
   that task completes.
-- WebView2 uses Tauri's bootstrapper when missing, embedded in the installer
-  rather than downloaded by it: an installer that fetches and runs an
-  executable from the network is both a heuristic that antivirus products score
-  and an install that fails behind a restricted network.
-- The updater checks the signed release manifest on startup. An available
+- When WebView2 is missing, the installer runs Tauri's embedded bootstrapper
+  (`embedBootstrapper`). The bootstrapper downloads the runtime from Microsoft,
+  so this installation step requires internet access. A machine with WebView2
+  already installed can use the local catalog offline.
+- The updater fetches the release manifest over HTTPS on startup. An available
   version is announced by a dismissible banner in the shell notice area beside
   the stale-copy and preference-write notices; it never opens a dialog by
   itself. The update dialog opens only from the banner's action, and download,
   verification, installation and restart remain modal from that point.
-- Updater signatures are verified with the public key in `tauri.conf.json`.
+- The manifest contains a detached signature for the installer. The updater
+  verifies the downloaded installer with the public key in `tauri.conf.json`
+  before installation; the signature does not cover the manifest itself.
   The private key exists only in CI secrets.
 - Download progress reports real bytes/percentage; verification, installation
   and restart are indeterminate stages. Update failures retain a safe retry UI.

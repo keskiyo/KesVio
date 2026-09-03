@@ -25,9 +25,20 @@
 
 ![AppNook catalog with categories, search and application cards](.github/images/catalog.png)
 
+Screenshots show AppNook 0.4.0 with an example catalog.
+
 ## Windows Apps is now AppNook
 
 Windows Apps is now **AppNook**, starting with version 0.4.0. Releases and documentation are published in this repository under the AppNook name.
+
+The new application identity installs AppNook alongside Windows Apps. To move your settings:
+
+1. In Windows Apps, open **Settings → Advanced → Backup & restore → Export settings**. Note any folders you added for scanning.
+2. Install AppNook and import the exported file from the same section.
+3. Add your scan folders under **Settings → Advanced → Application discovery**, then run **Catalog maintenance → Force full scan**.
+4. Check your Favorites, categories and Scenarios after restarting AppNook. Once they are saved, uninstall Windows Apps from **Windows Settings → Apps → Installed apps**.
+
+Export transfers preferences, including Favorites, categories and Scenarios. The catalog cache and scan folders are not included; AppNook rebuilds the catalog by scanning.
 
 ## One catalog for Windows software
 
@@ -108,13 +119,16 @@ Inspect local file details, architecture, signature status and installation stat
 
 ## Settings and maintenance
 
-![Settings page with shortcut, Windows apps, updates and Advanced controls](.github/images/settings.png)
+![AppNook 0.4.0 settings with global shortcut, tray behavior and update controls](.github/images/settings.png)
 
 Everyday settings stay visible. Scanning, backups and maintenance live under Advanced, together
 with the applications no rule recognised: each one lists the signals the classifier read, can be
 moved to a category on the spot, and the whole list copies as plain text. Settings
-export contains preferences only, and import reports an error if AppNook cannot persist the
-restored data. Normal refreshes scan Windows sources and portable folders you add. Optional
+export contains preferences only. If storage is full or unavailable, imported settings
+remain active for the current session and the **Your changes are not being saved** banner
+appears. The import can still show **Settings imported.**; those changes may be lost after
+restart. Keep the export until you have confirmed the restored settings persist.
+Normal refreshes scan Windows sources and portable folders you add. Optional
 fixed-drive discovery runs through **Force full scan**, on by default, with a bounded traversal time. The
 installer adds AppNook to startup once, so it is already in the system tray
 after you sign in; choose **Open AppNook** there when you need the window. Turn it off the
@@ -133,17 +147,17 @@ comes back to the middle of the one you still have.
 > [!WARNING]
 > Released installers are not Authenticode-signed yet, so SmartScreen may show **Windows protected your PC**. Choose **More info → Run anyway** and download only from this repository's Releases. See [Code signing policy](#code-signing-policy).
 
-| Requirement  | Value                   |
-| ------------ | ----------------------- |
-| OS           | Windows 10 or 11        |
-| Architecture | x64                     |
-| Runtime      | Microsoft Edge WebView2 |
-| Internet     | Only for update checks  |
-| Account      | Not required            |
+| Requirement  | Value                                                           |
+| ------------ | --------------------------------------------------------------- |
+| OS           | Windows 10 or 11                                                |
+| Architecture | x64                                                             |
+| Runtime      | Microsoft Edge WebView2                                         |
+| Internet     | Update checks and downloads; WebView2 installation when missing |
+| Account      | Not required                                                    |
 
 ## Privacy
 
-AppNook is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine. The one request it makes is the update check against this repository's Releases, which sends nothing about your catalog.
+AppNook is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine. The updater contacts this repository's Releases to check for updates and download an installer when you choose to update. These requests do not include your catalog. If WebView2 is missing, the installer also needs internet access to download the runtime from Microsoft.
 
 For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). AppNook is available under the [MIT License](LICENSE).
 
@@ -174,7 +188,7 @@ Released installers are not Authenticode-signed. There is no code signing certif
 
 What is verified instead: each release is built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml`, on GitHub-hosted runners, and every installer is published with a detached Tauri updater signature (`.sig`). The in-app updater verifies that signature against the public key in `tauri.conf.json` before it installs anything, so an installer altered after publication is rejected as an update. That signature is separate from Authenticode and does not suppress SmartScreen: download only from this repository's Releases.
 
-AppNook collects no personal data: it has no telemetry and no account, and the catalog it builds stays on the local machine. Its only network request is the update check against this repository's Releases, which GitHub serves and logs like any other download. See [Privacy](#privacy).
+AppNook has no telemetry or account, and the catalog it builds stays on the local machine. GitHub serves and logs update checks and installer downloads; Microsoft supplies the WebView2 runtime if it is missing during installation. See [Privacy](#privacy).
 
 ## Links
 

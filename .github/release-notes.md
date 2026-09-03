@@ -4,18 +4,18 @@ AppNook is a fast, private application catalog and launcher for Windows 10 and 1
 
 The project has been renamed. The application, the installer, the window, the tray entry and the repository all carry the new name, and the icon is now the one the README has always shown.
 
-**This release does not update an existing installation.** The rename changes the application identity Windows uses to recognise it, so an installer for this version installs AppNook alongside the old **Windows Apps** entry rather than replacing it.
+**This release installs alongside Windows Apps.** The rename changes the application identity Windows uses to recognise it, so AppNook does not replace the old **Windows Apps** installation or automatically inherit its data.
 
-1. In **Windows Apps**, the version you have now: **Settings → Advanced → Backup & restore → Export settings**.
+1. In **Windows Apps**, open **Settings → Advanced → Backup & restore → Export settings**. Note any folders you added for scanning.
 2. Install AppNook and import that file from the same section.
-3. Uninstall **Windows Apps** from **Settings → Apps → Installed apps**.
-4. Run **Settings → Advanced → Catalog maintenance → Force full scan**.
+3. Add your scan folders under **Settings → Advanced → Application discovery**, then run **Catalog maintenance → Force full scan**.
+4. Check your Favorites, categories and Scenarios after restarting AppNook. Once they are saved, uninstall **Windows Apps** from **Windows Settings → Apps → Installed apps**.
 
-Favorites, categories, scenarios and the catalog cache belong to the old identity and do not carry over. To keep them, use **Settings → Advanced → Backup & restore → Export settings** in the old version before uninstalling it, then import that file in AppNook.
+Export transfers preferences, including Favorites, categories and Scenarios. The catalog cache and scan folders are not included; AppNook rebuilds the catalog by scanning. Keep the export until you have confirmed the restored settings persist. If the **Your changes are not being saved** banner appears, an import can still show **Settings imported.** even though its changes may be lost after restart.
 
 ## Highlights
 
-- **Windows Apps is now AppNook** — this installs the renamed app beside the old one, it does not replace it. Export your settings first, then uninstall Windows Apps.
+- **Windows Apps is now AppNook** — this installs the renamed app beside the old one. Export and import your settings, rebuild the catalog, and confirm the settings persist before uninstalling Windows Apps.
 - **Scans find your applications again** — fixed-drive discovery is on by default, Force full scan has its three-minute budget back, and a scan stopped by a limit keeps what it found instead of discarding the whole run.
 - **A diagnostics log you can hand to someone** — AppNook records what every scan does and writes it out as XML from **Settings → Advanced → Diagnostics log**.
 - **Closing the window is your choice** — decide whether the close button leaves AppNook in the notification area or quits it.
@@ -25,3 +25,4 @@ Favorites, categories, scenarios and the catalog cache belong to the old identit
 
 1. Download `AppNook_0.4.0_x64-setup.exe`.
 2. Run it. The installer is not Authenticode-signed, so SmartScreen may show **Windows protected your PC**; choose **More info -> Run anyway**.
+3. If Microsoft Edge WebView2 is missing, the embedded bootstrapper downloads it from Microsoft and requires internet access.
