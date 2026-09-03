@@ -1,10 +1,10 @@
 [package]
 name = "app"
-version = "0.3.9"
+version = "0.4.0"
 description = "A private application catalog and launcher for Windows 10 and 11"
 authors = ["keskiyo"]
 license = "MIT"
-repository = "https://github.com/keskiyo/WindowsApps"
+repository = "https://github.com/keskiyo/AppNook"
 edition = "2021"
 # Floor imposed by the locked dependency tree, not a preference: `image 0.25.10` (direct) and
 # `time`/`plist`/`darling`/`serde_with` (transitive) all declare rust-version 1.88.0. Verified with

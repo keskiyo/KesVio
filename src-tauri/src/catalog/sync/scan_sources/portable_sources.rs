@@ -1,9 +1,8 @@
 use crate::catalog::cache::CatalogCache;
-use crate::catalog::incremental::{
-    FilesystemIndex, ScanMode, DEFAULT_MAX_DURATION, FORCE_MAX_DURATION,
-};
+use crate::catalog::incremental::{FilesystemIndex, ScanMode, DEFAULT_MAX_DURATION};
 use crate::catalog::scan_settings::ScanSettings;
 use crate::catalog::sync::health::SourceOutcome;
+use crate::catalog::sync::scan_control::StageStop;
 use crate::catalog::sync::{portable, SyncRequest};
 use crate::catalog::{self, AppInfo, ScanProgress};
 use std::path::PathBuf;
@@ -27,6 +26,14 @@ pub(super) fn scan(
         .auto_scan_fixed_drives
         .then(crate::platform::windows::drives::fixed_drive_roots)
         .unwrap_or_default();
+    log::info!(
+        "Fixed drives enumerated: {}",
+        fixed_roots
+            .iter()
+            .map(|root| root.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
     let roots = roots_for(settings, request, fixed_roots);
     let mut excluded = catalog::default_portable_exclusions();
     excluded.extend(settings.excluded_paths.iter().map(PathBuf::from));
@@ -51,13 +58,13 @@ pub(super) fn scan(
             retained_roots: &roots.retained,
             excluded: &excluded,
             mode,
-            max_duration: scan_duration(request),
+            max_duration: DEFAULT_MAX_DURATION,
             verify_fingerprints: settings.catalog_portable_fingerprint_v1,
         },
         progress,
         is_cancelled,
     );
-    let replaced = scan.stop.is_none();
+    let replaced = adopts_results(scan.stop);
     let outcome = SourceOutcome {
         key: "portable",
         stop: scan.stop,
@@ -73,12 +80,8 @@ pub(super) fn scan(
     }
 }
 
-fn scan_duration(request: SyncRequest) -> std::time::Duration {
-    if request == SyncRequest::Force {
-        FORCE_MAX_DURATION
-    } else {
-        DEFAULT_MAX_DURATION
-    }
+fn adopts_results(stop: Option<StageStop>) -> bool {
+    !matches!(stop, Some(StageStop::Cancelled))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -186,8 +189,10 @@ mod tests {
     }
 
     #[test]
-    fn force_scan_uses_the_short_shared_portable_budget() {
-        assert_eq!(scan_duration(SyncRequest::Force), FORCE_MAX_DURATION);
-        assert_eq!(scan_duration(SyncRequest::Refresh), DEFAULT_MAX_DURATION);
+    fn only_a_cancelled_portable_scan_throws_away_what_it_found() {
+        assert!(adopts_results(None));
+        assert!(adopts_results(Some(StageStop::TimedOut)));
+        assert!(adopts_results(Some(StageStop::EntryLimit)));
+        assert!(!adopts_results(Some(StageStop::Cancelled)));
     }
 }

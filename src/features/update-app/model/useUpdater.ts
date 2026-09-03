@@ -38,7 +38,7 @@ interface Options {
 	autoCheck?: boolean
 }
 
-const DISMISSED_UPDATE_KEY = 'windows-apps.dismissed-update-version'
+const DISMISSED_UPDATE_KEY = 'appnook.dismissed-update-version'
 const ACTIVE_UPDATE_PHASES = new Set<UpdateInstallPhase>([
 	'downloading',
 	'verifying',
@@ -112,7 +112,7 @@ function updateErrorMessage(error: unknown): string {
 		normalized.includes('administrator') ||
 		normalized.includes('run as admin')
 	) {
-		return 'The update could not write the new version. Reinstall Windows Apps for the current user or download the installer manually.'
+		return 'The update could not write the new version. Reinstall AppNook for the current user or download the installer manually.'
 	}
 	return 'The update could not be installed. Try again or download it manually.'
 }

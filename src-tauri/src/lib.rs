@@ -3,6 +3,7 @@
 mod app_state;
 mod catalog;
 mod commands;
+mod diagnostics;
 mod error;
 mod lifecycle;
 mod platform;
@@ -20,11 +21,7 @@ pub fn run() {
     let window_lifecycle = Arc::clone(&lifecycle);
     let tray_lifecycle = Arc::clone(&lifecycle);
     let setup_lifecycle = Arc::clone(&lifecycle);
-    let mut builder = tauri::Builder::default().plugin(
-        tauri_plugin_log::Builder::default()
-            .level(log::LevelFilter::Info)
-            .build(),
-    );
+    let mut builder = tauri::Builder::default().plugin(diagnostics::plugin());
     #[cfg(desktop)]
     {
         builder = builder
@@ -38,6 +35,7 @@ pub fn run() {
     }
     builder
         .manage(AppState::default())
+        .manage(Arc::clone(&lifecycle))
         .plugin(tauri_plugin_dialog::init())
         .on_window_event(move |window, event| {
             if window.label() != "main" {
@@ -59,6 +57,19 @@ pub fn run() {
             }
         })
         .setup(move |app| {
+            if let Ok(log_dir) = app.path().app_log_dir() {
+                let removed = diagnostics::prune_expired_logs(
+                    &log_dir,
+                    std::time::SystemTime::now(),
+                    diagnostics::MAX_LOG_AGE,
+                );
+                log::info!(
+                    "AppNook {} starting on {}: log retention {} days, {removed} expired files removed",
+                    app.package_info().version,
+                    std::env::consts::OS,
+                    diagnostics::MAX_LOG_AGE.as_secs() / (24 * 60 * 60)
+                );
+            }
             let tray_ready = match lifecycle::setup_tray(app.handle(), Arc::clone(&tray_lifecycle))
             {
                 Ok(()) => true,
@@ -94,6 +105,7 @@ pub fn run() {
             commands::uninstall::clear_uninstall_history,
             commands::settings::get_system_settings,
             commands::settings::set_scan_settings,
+            commands::settings::set_close_behavior,
             commands::settings::save_preferences_backup,
             commands::links::open_telegram,
             commands::links::open_github,
@@ -101,7 +113,8 @@ pub fn run() {
             commands::links::open_release,
             commands::links::stale_copy_status,
             commands::links::open_installed_copy,
-            commands::diagnostics::log_client_error
+            commands::diagnostics::log_client_error,
+            commands::diagnostics::export_diagnostics_log
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

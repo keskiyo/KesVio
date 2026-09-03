@@ -1,6 +1,6 @@
 ; Startup registration belongs to the installer and to Windows, never to the running program.
 ;
-; Windows Apps up to 0.3.8 wrote an HKCU Run value from the .exe itself while it ran. Kaspersky's
+; AppNook up to 0.3.8 wrote an HKCU Run value from the .exe itself while it ran. Kaspersky's
 ; proactive defence module scores exactly that, and returned PDM:Trojan.Win32.Generic for an
 ; unsigned binary with no reputation. A Startup shortcut created once by the installer is ordinary
 ; installer behaviour, and the user manages it in Settings -> Apps -> Startup like any other entry.

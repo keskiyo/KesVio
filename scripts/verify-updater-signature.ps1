@@ -8,7 +8,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$tempRoot = Join-Path ([IO.Path]::GetTempPath()) "windows-apps-updater-signature-$([Guid]::NewGuid().ToString('N'))"
+$tempRoot = Join-Path ([IO.Path]::GetTempPath()) "appnook-updater-signature-$([Guid]::NewGuid().ToString('N'))"
 
 function ConvertFrom-OuterBase64 {
   param(

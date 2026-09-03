@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $script = Join-Path $repoRoot "scripts/verify-npm-audit.ps1"
-$fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) "windows-apps-npm-audit-test-$([Guid]::NewGuid().ToString('N'))"
+$fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) "appnook-npm-audit-test-$([Guid]::NewGuid().ToString('N'))"
 
 function Write-Fixture {
   param([string]$Name, $Content)

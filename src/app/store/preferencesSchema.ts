@@ -6,11 +6,15 @@ import {
 } from '../../entities/category'
 import type { Scenario } from '../../entities/scenario'
 
-export const PREFERENCES_KEY = 'windows-apps.preferences.v1'
+export const PREFERENCES_KEY = 'appnook.preferences.v1'
 
 export const CURRENT_PREFERENCES_VERSION = 17
 
-export const PREFERENCES_BACKUP_KEY = 'windows-apps.preferences.v1.bak'
+export const PREFERENCES_BACKUP_KEY = 'appnook.preferences.v1.bak'
+
+export const LEGACY_PREFERENCES_KEY = 'windows-apps.preferences.v1'
+
+export const LEGACY_PREFERENCES_BACKUP_KEY = 'windows-apps.preferences.v1.bak'
 
 export interface LegacyCanonicalPreferences {
 	favorite: string[]

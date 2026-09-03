@@ -10,7 +10,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
-const UPDATE_ENV: &str = "WINDOWSAPPS_CONTRACT_UPDATE";
+const UPDATE_ENV: &str = "APPNOOK_CONTRACT_UPDATE";
 
 fn wire(value: impl Serialize) -> Value {
     serde_json::to_value(value).expect("every IPC payload serializes")
@@ -79,8 +79,10 @@ fn commands(app: &AppInfo) -> Value {
         }]),
         "get_system_settings": wire(super::settings::settings_sample()),
         "set_scan_settings": wire(crate::catalog::scan_settings::ScanSettings::default()),
+        "set_close_behavior": wire(true),
         "stale_copy_status": wire(super::links::stale_copy_sample()),
         "save_preferences_backup": wire(true),
+        "export_diagnostics_log": wire(true),
     })
 }
 

@@ -1,5 +1,3 @@
-export {
-	type MaintenanceConfirmation,
-	type SettingsArea,
-	useSystemSettings,
-} from './model/useSystemSettings'
+export { type MaintenanceConfirmation } from './model/useCatalogMaintenance'
+export { type SettingsArea } from './model/useSettingsFeedback'
+export { useSystemSettings } from './model/useSystemSettings'

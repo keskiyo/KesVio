@@ -78,10 +78,7 @@ mod tests {
 
     #[test]
     fn a_missing_registry_root_is_not_a_provider_failure() {
-        let result = entries_from(
-            HKEY_CURRENT_USER,
-            r"Software\WindowsAppsLauncher\NoSuchUninstallRoot",
-        );
+        let result = entries_from(HKEY_CURRENT_USER, r"Software\AppNook\NoSuchUninstallRoot");
 
         assert!(result.is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound));
     }

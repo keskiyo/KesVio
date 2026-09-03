@@ -75,7 +75,7 @@ fn class_icon(extension: &str) -> Option<String> {
     }
     let separator = if extension.is_empty() { "" } else { "." };
     let icon = shell_icon(
-        OsStr::new(&format!("windowsapps-class-probe{separator}{extension}")),
+        OsStr::new(&format!("appnook-class-probe{separator}{extension}")),
         SHGFI_ICON | SHGFI_LARGEICON | SHGFI_USEFILEATTRIBUTES,
     )?;
     icons

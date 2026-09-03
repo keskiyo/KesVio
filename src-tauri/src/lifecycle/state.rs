@@ -2,10 +2,20 @@ use super::window_state::WindowGeometry;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
-#[derive(Default)]
 pub(crate) struct LifecycleState {
     quitting: AtomicBool,
+    hides_to_tray: AtomicBool,
     geometry: Mutex<Option<WindowGeometry>>,
+}
+
+impl Default for LifecycleState {
+    fn default() -> Self {
+        Self {
+            quitting: AtomicBool::new(false),
+            hides_to_tray: AtomicBool::new(true),
+            geometry: Mutex::new(None),
+        }
+    }
 }
 
 impl LifecycleState {
@@ -13,8 +23,16 @@ impl LifecycleState {
         self.quitting.store(true, Ordering::SeqCst);
     }
 
+    pub(crate) fn hides_to_tray(&self) -> bool {
+        self.hides_to_tray.load(Ordering::SeqCst)
+    }
+
+    pub(crate) fn set_hides_to_tray(&self, hides_to_tray: bool) {
+        self.hides_to_tray.store(hides_to_tray, Ordering::SeqCst);
+    }
+
     pub(crate) fn should_hide_on_close(&self) -> bool {
-        !self.quitting.load(Ordering::SeqCst)
+        !self.quitting.load(Ordering::SeqCst) && self.hides_to_tray()
     }
 
     pub(crate) fn geometry(&self) -> Option<WindowGeometry> {
@@ -52,6 +70,26 @@ mod tests {
     fn explicit_quit_disables_close_interception() {
         let state = LifecycleState::default();
         state.mark_quitting();
+        assert!(!state.should_hide_on_close());
+    }
+
+    #[test]
+    fn turning_the_tray_setting_off_makes_close_end_the_program() {
+        let state = LifecycleState::default();
+        assert!(state.hides_to_tray());
+        assert!(state.should_hide_on_close());
+
+        state.set_hides_to_tray(false);
+
+        assert!(!state.should_hide_on_close());
+    }
+
+    #[test]
+    fn quitting_overrides_the_tray_setting_in_both_directions() {
+        let state = LifecycleState::default();
+        state.set_hides_to_tray(true);
+        state.mark_quitting();
+
         assert!(!state.should_hide_on_close());
     }
 

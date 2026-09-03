@@ -1,3 +1,10 @@
+use crate::diagnostics;
+use crate::error::AppError;
+use tauri::Manager;
+use tauri_plugin_dialog::DialogExt;
+
+use super::run_blocking;
+
 const MAX_KIND_LENGTH: usize = 120;
 const MAX_DETAIL_LENGTH: usize = 2000;
 
@@ -19,6 +26,37 @@ pub(crate) fn log_client_error(kind: String, detail: String) {
         return;
     }
     log::error!("Interface recovery: {kind} {detail}");
+}
+
+#[tauri::command]
+pub(crate) async fn export_diagnostics_log(app: tauri::AppHandle) -> Result<bool, AppError> {
+    let directory = app
+        .path()
+        .app_log_dir()
+        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let Some(file) = app
+        .dialog()
+        .file()
+        .set_title("Export diagnostics log")
+        .set_file_name("appnook-logs.xml")
+        .add_filter("XML files", &["xml"])
+        .blocking_save_file()
+    else {
+        return Ok(false);
+    };
+    let path = file
+        .into_path()
+        .map_err(|error| AppError::ExportDiagnostics(error.to_string()))?;
+    run_blocking("Diagnostics log export", move || {
+        let generated = diagnostics::unix_seconds(std::time::SystemTime::now());
+        std::fs::write(
+            path,
+            diagnostics::log_directory_as_xml(&directory, generated),
+        )
+        .map_err(|error| AppError::ExportDiagnostics(error.to_string()))
+    })
+    .await??;
+    Ok(true)
 }
 
 #[cfg(test)]

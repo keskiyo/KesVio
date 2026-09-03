@@ -34,15 +34,15 @@ describe('preferences', () => {
 	it('rejects malformed and newer backup documents', () => {
 		expect(parsePreferenceImport('{')).toEqual({
 			ok: false,
-			error: 'The selected file is not a Windows Apps backup.',
+			error: 'The selected file is not an AppNook backup.',
 		})
 		expect(parsePreferenceImport(JSON.stringify({}))).toEqual({
 			ok: false,
-			error: 'The selected file is not a Windows Apps backup.',
+			error: 'The selected file is not an AppNook backup.',
 		})
 		expect(parsePreferenceImport(JSON.stringify({ version: 18 }))).toEqual({
 			ok: false,
-			error: 'This backup was created by a newer version of Windows Apps.',
+			error: 'This backup was created by a newer version of AppNook.',
 		})
 	})
 
@@ -690,6 +690,32 @@ describe('preferences', () => {
 		values.set(PREFERENCES_KEY, '{truncated')
 
 		expect(readPreferences(storage).favoriteAppIds).toEqual(['code'])
+	})
+
+	it('reads preferences left under the pre-rename storage keys', () => {
+		const stored = JSON.stringify({
+			...DEFAULT_PREFERENCES,
+			favoriteAppIds: ['code'],
+		})
+		const legacyPrimary = new Map<string, string>([
+			['windows-apps.preferences.v1', stored],
+		])
+		const legacyBackup = new Map<string, string>([
+			['windows-apps.preferences.v1.bak', stored],
+		])
+		const asStorage = (values: Map<string, string>) =>
+			({
+				getItem: (key: string) => values.get(key) ?? null,
+				setItem: (key: string, value: string) =>
+					void values.set(key, value),
+			}) as unknown as Storage
+
+		expect(
+			readPreferences(asStorage(legacyPrimary)).favoriteAppIds,
+		).toEqual(['code'])
+		expect(readPreferences(asStorage(legacyBackup)).favoriteAppIds).toEqual(
+			['code'],
+		)
 	})
 
 	it('keeps the backup one step behind the current value', () => {

@@ -58,6 +58,16 @@ pub(super) fn assemble(
         sources: health,
         target_availability,
     };
+    log::info!(
+        "Scan finished: mode={} {}ms apps={} added={} updated={} removed={} sources={:?}",
+        diagnostics.mode,
+        diagnostics.duration_ms,
+        diagnostics.total_apps,
+        diagnostics.added,
+        diagnostics.updated,
+        diagnostics.removed,
+        diagnostics.source_counts
+    );
     let app_details = catalog::details::retain_cached_details(&previous.app_details, &apps);
 
     CatalogCache {

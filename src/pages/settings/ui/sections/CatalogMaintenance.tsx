@@ -1,7 +1,6 @@
 import { RefreshCw, RotateCcw, ScanSearch } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import type { MaintenanceConfirmation } from '../../../../features/edit-settings'
-import { ScanDiagnostics } from './ScanDiagnostics'
 import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
 import { DANGER_VARIANT } from '../../../../shared/ui/buttonVariants'
 import {
@@ -17,7 +16,6 @@ export function CatalogMaintenance({
 	resetting,
 	confirming,
 	canReset,
-	catalogDiagnostics,
 	setConfirming,
 	onForceFullScan,
 	onResetCatalogCache,
@@ -37,7 +35,7 @@ export function CatalogMaintenance({
 	}, [confirming])
 
 	return (
-		<div className="settings-surface rounded-2xl border border-white/85 bg-white/58 p-5">
+		<div className="settings-surface flex flex-col rounded-2xl border border-white/85 bg-white/58 p-5">
 			<div className="flex items-start gap-4">
 				<SettingsSectionHeader
 					icon={RefreshCw}
@@ -45,7 +43,7 @@ export function CatalogMaintenance({
 					description="Discard the incremental scan index and inspect every configured location again. Categories, Favorites and Hidden apps are preserved."
 				/>
 			</div>
-			<div className={`mt-4 ${ACTION_ROW}`}>
+			<div className={`mt-auto pt-4 ${ACTION_ROW}`}>
 				<button
 					ref={forceTriggerRef}
 					type="button"
@@ -73,13 +71,13 @@ export function CatalogMaintenance({
 				<div
 					role="dialog"
 					aria-label="Confirm full scan"
-					className="mt-4 flex flex-col gap-3 rounded-xl border border-violet-400/35 bg-violet-500/8 p-4 shadow-inner shadow-violet-950/10 sm:flex-row sm:items-center"
+					className="mt-4 flex flex-col gap-3 rounded-xl border border-violet-400/35 bg-violet-500/8 p-4 shadow-inner shadow-violet-950/10"
 				>
-					<p className="min-w-0 text-sm leading-6 text-slate-700 sm:flex-1">
+					<p className="text-sm leading-6 text-slate-700">
 						The next scan will take longer than an incremental
 						refresh.
 					</p>
-					<div className={`${ACTION_ROW} sm:shrink-0`}>
+					<div className={ACTION_ROW}>
 						<button
 							type="button"
 							disabled={forcing}
@@ -103,14 +101,14 @@ export function CatalogMaintenance({
 				<div
 					role="dialog"
 					aria-label="Confirm catalog cache reset"
-					className="danger-panel mt-4 flex flex-col gap-3 rounded-xl border border-red-300/70 bg-red-50 p-4 sm:flex-row sm:items-center"
+					className="danger-panel mt-4 flex flex-col gap-3 rounded-xl border border-red-300/70 bg-red-50 p-4"
 				>
-					<p className="min-w-0 text-sm leading-6 text-red-800 sm:flex-1">
+					<p className="text-sm leading-6 text-red-800">
 						This removes the local app cache and icon cache, then
 						scans every configured location again. Favorites, Hidden
 						apps and categories are preserved.
 					</p>
-					<div className={`${ACTION_ROW} sm:shrink-0`}>
+					<div className={ACTION_ROW}>
 						<button
 							type="button"
 							disabled={resetting}
@@ -130,9 +128,6 @@ export function CatalogMaintenance({
 						</button>
 					</div>
 				</div>
-			)}
-			{catalogDiagnostics && (
-				<ScanDiagnostics diagnostics={catalogDiagnostics} />
 			)}
 		</div>
 	)

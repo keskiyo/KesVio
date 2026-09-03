@@ -34,7 +34,11 @@ function reconcileList(
 	const taken = new Set(reserved)
 	let changed = false
 	for (const identity of identities) {
-		const replacement = replacementFor(identity, snapshots[identity], lookup)
+		const replacement = replacementFor(
+			identity,
+			snapshots[identity],
+			lookup,
+		)
 		if (!replacement) {
 			nextIdentities.push(identity)
 			continue

@@ -1,14 +1,18 @@
-import { AppWindow, Keyboard } from 'lucide-react'
+import { AppWindow, Keyboard, Minimize2 } from 'lucide-react'
+import { SettingsToggle } from '../components/SettingsToggle'
 import { SettingsUpdateControls } from './SettingsUpdateControls'
 import type { GeneralSettingsProps } from '../../types'
 
 export function GeneralSettings({
 	settings,
 	updater,
+	saving,
+	onSetCloseBehavior,
 	onOpenGithub,
 	onOpenTelegram,
 	onOpenAppsSettings,
 }: GeneralSettingsProps) {
+	const hideToTray = settings?.hideToTrayOnClose ?? true
 	return (
 		<>
 			<div className="settings-surface mt-5 overflow-hidden rounded-2xl border border-white/85 bg-white/58">
@@ -46,6 +50,27 @@ export function GeneralSettings({
 					>
 						Open
 					</button>
+				</div>
+				<div className="flex items-center gap-4 border-b border-slate-200 p-5">
+					<span className="grid size-10 place-items-center rounded-xl bg-slate-200/70 text-violet-700 shadow-inner">
+						<Minimize2 size={19} aria-hidden="true" />
+					</span>
+					<div className="min-w-0 flex-1">
+						<h2 className="font-medium">
+							Keep running in the tray
+						</h2>
+						<p className="mt-1 text-sm text-slate-600">
+							{hideToTray
+								? 'Closing the window leaves AppNook in the notification area.'
+								: 'Closing the window quits AppNook.'}
+						</p>
+					</div>
+					<SettingsToggle
+						label="Keep running in the tray when the window is closed"
+						checked={hideToTray}
+						disabled={!settings || saving}
+						onToggle={() => void onSetCloseBehavior(!hideToTray)}
+					/>
 				</div>
 				<SettingsUpdateControls
 					updater={updater}

@@ -11,7 +11,7 @@ use report::GoldenReport;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-const UPDATE_ENV: &str = "WINDOWSAPPS_GOLDEN_UPDATE";
+const UPDATE_ENV: &str = "APPNOOK_GOLDEN_UPDATE";
 
 fn pinned_diagnostics() -> BTreeMap<String, String> {
     BTreeMap::from([

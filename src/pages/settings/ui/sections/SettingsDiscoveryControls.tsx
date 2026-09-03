@@ -23,13 +23,11 @@ export function SettingsDiscoveryControls({
 				<SettingsSectionHeader
 					icon={HardDrive}
 					title="Application discovery"
-					description="Ordinary refresh scans Windows sources and added folders. Fixed-drive discovery runs only during Force full scan."
+					description="Ordinary refresh scans Windows sources and added folders. Fixed drives are walked during Force full scan, which is on by default."
 				/>
 				<SettingsToggle
 					label="Include fixed drives in Force full scan"
-					checked={
-						settings?.scanSettings.autoScanFixedDrives ?? false
-					}
+					checked={settings?.scanSettings.autoScanFixedDrives ?? true}
 					disabled={disabled}
 					onToggle={() =>
 						settings &&

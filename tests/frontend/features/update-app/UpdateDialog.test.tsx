@@ -42,7 +42,7 @@ describe('UpdateDialog', () => {
 				version="0.2.2"
 				date="2026-07-11T10:00:00Z"
 				packageSize={5_600_000}
-				releaseUrl="https://github.com/keskiyo/WindowsApps/releases/tag/v0.2.2"
+				releaseUrl="https://github.com/keskiyo/AppNook/releases/tag/v0.2.2"
 				notes={
 					'## Highlights\n- **Automatic updates** - signed update.'
 				}
@@ -70,7 +70,7 @@ describe('UpdateDialog', () => {
 			screen.getByRole('link', { name: 'View full release notes' }),
 		).toHaveAttribute(
 			'href',
-			'https://github.com/keskiyo/WindowsApps/releases/tag/v0.2.2',
+			'https://github.com/keskiyo/AppNook/releases/tag/v0.2.2',
 		)
 		await userEvent.click(
 			screen.getByRole('link', { name: 'View full release notes' }),

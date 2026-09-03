@@ -45,6 +45,12 @@ pub(super) fn scan_roots(
         completed_roots: 0,
         total_roots: input.roots.len(),
     });
+    log::info!(
+        "Portable scan starting: {} roots to walk, {} retained, budget {}s",
+        input.roots.len(),
+        input.retained_roots.len(),
+        input.max_duration.as_secs()
+    );
     for (index, root) in input.roots.iter().enumerate() {
         if is_cancelled() {
             stop = Some(StageStop::Cancelled);
@@ -52,6 +58,14 @@ pub(super) fn scan_roots(
         }
         let remaining = input.max_duration.saturating_sub(started_at.elapsed());
         let root_duration = root_duration(remaining, input.roots.len() - index);
+        log::info!(
+            "Portable root {}/{} entering {} with {}s",
+            index + 1,
+            input.roots.len(),
+            root.display(),
+            root_duration.as_secs()
+        );
+        let root_at = Instant::now();
         let scanned = scan_root_with_duration(
             root,
             input.previous_index,
@@ -68,6 +82,21 @@ pub(super) fn scan_roots(
         };
         let cancelled = is_cancelled();
         let complete_root = root_stop.is_none() && !cancelled;
+        match scanned.limit_reached {
+            Some(limit) => log::warn!(
+                "Portable root {} stopped on {} after {}ms with {} applications",
+                root.display(),
+                limit.message(),
+                root_at.elapsed().as_millis(),
+                scanned.apps.len()
+            ),
+            None => log::info!(
+                "Portable root {} finished in {}ms with {} applications",
+                root.display(),
+                root_at.elapsed().as_millis(),
+                scanned.apps.len()
+            ),
+        }
         if stop.is_none() {
             stop = cancelled.then_some(StageStop::Cancelled).or(root_stop);
         }

@@ -13,10 +13,11 @@ const settings: SystemSettings = {
 		excludedPaths: [],
 	},
 	fixedDrives: ['C:\\'],
+	hideToTrayOnClose: true,
 }
 
 describe('SettingsDiscoveryControls', () => {
-	it('explains that fixed drives are scanned only on a forced scan', () => {
+	it('explains that fixed drives are scanned on a forced scan by default', () => {
 		render(
 			<SettingsDiscoveryControls
 				settings={settings}
@@ -30,7 +31,7 @@ describe('SettingsDiscoveryControls', () => {
 
 		expect(
 			screen.getByText(
-				'Ordinary refresh scans Windows sources and added folders. Fixed-drive discovery runs only during Force full scan.',
+				'Ordinary refresh scans Windows sources and added folders. Fixed drives are walked during Force full scan, which is on by default.',
 			),
 		).toBeVisible()
 		expect(

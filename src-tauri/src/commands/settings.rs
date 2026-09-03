@@ -3,9 +3,11 @@ use crate::app_state::AppState;
 use crate::catalog;
 use crate::catalog::sync::restart_change_watcher;
 use crate::error::AppError;
+use crate::lifecycle::{window_state, LifecycleState};
 use crate::platform::windows::{drives, global_shortcut};
 use serde::Serialize;
 use std::path::Path;
+use std::sync::Arc;
 use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
 
@@ -28,6 +30,7 @@ pub(crate) struct SystemSettings {
     shortcut: global_shortcut::Status,
     scan_settings: catalog::scan_settings::ScanSettings,
     fixed_drives: Vec<String>,
+    hide_to_tray_on_close: bool,
 }
 
 #[cfg(test)]
@@ -37,6 +40,7 @@ pub(super) fn settings_sample() -> SystemSettings {
         shortcut: global_shortcut::Status::default(),
         scan_settings: catalog::scan_settings::ScanSettings::default(),
         fixed_drives: vec![r"C:\".into()],
+        hide_to_tray_on_close: true,
     }
 }
 
@@ -98,7 +102,32 @@ pub(crate) async fn get_system_settings(app: tauri::AppHandle) -> Result<SystemS
             .into_iter()
             .map(|path| path.to_string_lossy().into_owned())
             .collect(),
+        hide_to_tray_on_close: app.state::<Arc<LifecycleState>>().hides_to_tray(),
     })
+}
+
+#[tauri::command]
+pub(crate) async fn set_close_behavior(
+    app: tauri::AppHandle,
+    hide_to_tray: bool,
+) -> Result<bool, AppError> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let lifecycle = Arc::clone(&app.state::<Arc<LifecycleState>>());
+    let previous = lifecycle.hides_to_tray();
+    lifecycle.set_hides_to_tray(hide_to_tray);
+    let preferences = window_state::preferences_of(&lifecycle);
+    let written = run_blocking("Window settings update", move || {
+        window_state::write(&app_data_dir, &preferences)
+    })
+    .await?;
+    if let Err(error) = written {
+        lifecycle.set_hides_to_tray(previous);
+        return Err(AppError::SaveWindowSettings(error.to_string()));
+    }
+    Ok(hide_to_tray)
 }
 
 #[tauri::command]
@@ -137,7 +166,7 @@ pub(crate) async fn save_preferences_backup(
         .dialog()
         .file()
         .set_title("Export settings")
-        .set_file_name("windows-apps-settings.json")
+        .set_file_name("appnook-settings.json")
         .add_filter("JSON files", &["json"])
         .blocking_save_file()
     else {

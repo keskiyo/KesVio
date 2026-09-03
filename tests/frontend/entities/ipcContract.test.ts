@@ -200,6 +200,7 @@ describe('IPC wire contract', () => {
 				shortcut: { available: false, label: '', error: null },
 				scanSettings,
 				fixedDrives: [],
+				hideToTrayOnClose: false,
 			}
 			const settings = contract.commands
 				.get_system_settings as SystemSettings

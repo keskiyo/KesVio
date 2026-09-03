@@ -3,6 +3,8 @@ import {
 	useSystemSettings,
 } from '../../../features/edit-settings'
 import { CatalogMaintenance } from './sections/CatalogMaintenance'
+import { DiagnosticsLogExport } from './sections/DiagnosticsLogExport'
+import { ScanDiagnostics } from './sections/ScanDiagnostics'
 import { AdvancedSettings } from './sections/AdvancedSettings'
 import { GeneralSettings } from './sections/GeneralSettings'
 import { PreferencesBackup } from './sections/PreferencesBackup/PreferencesBackup'
@@ -36,6 +38,7 @@ export function SettingsPage({
 		forcing,
 		resetting,
 		saveScanSettings,
+		setCloseBehavior,
 		addPath,
 		removePath,
 		forceFullScan,
@@ -52,7 +55,7 @@ export function SettingsPage({
 			<div className="mb-8 flex items-center gap-4">
 				<img
 					src="/app-icon.png"
-					alt="Windows Apps logo"
+					alt="AppNook logo"
 					className="size-16 rounded-2xl ring-1 ring-violet-400/25"
 				/>
 				<div>
@@ -69,6 +72,8 @@ export function SettingsPage({
 			<GeneralSettings
 				settings={settings}
 				updater={updater}
+				saving={saving}
+				onSetCloseBehavior={setCloseBehavior}
 				onOpenGithub={client.openGithub}
 				onOpenTelegram={client.openTelegram}
 				onOpenAppsSettings={client.openAppsSettings}
@@ -96,19 +101,26 @@ export function SettingsPage({
 							onRestore={onRestorePreferencesBackup}
 						/>
 					)}
-				{onForceFullScan && (
-					<CatalogMaintenance
-						forcing={forcing}
-						resetting={resetting}
-						confirming={confirming}
-						canReset={Boolean(onResetCatalogCache)}
-						catalogDiagnostics={catalogDiagnostics}
-						setConfirming={setConfirming}
-						onForceFullScan={forceFullScan}
-						onResetCatalogCache={resetCatalogCache}
+				<div className="grid gap-5 sm:grid-cols-2">
+					{onForceFullScan && (
+						<CatalogMaintenance
+							forcing={forcing}
+							resetting={resetting}
+							confirming={confirming}
+							canReset={Boolean(onResetCatalogCache)}
+							setConfirming={setConfirming}
+							onForceFullScan={forceFullScan}
+							onResetCatalogCache={resetCatalogCache}
+						/>
+					)}
+					<DiagnosticsLogExport
+						onExport={client.exportDiagnosticsLog}
 					/>
-				)}
+				</div>
 				{areaError('maintenance')}
+				{catalogDiagnostics && (
+					<ScanDiagnostics diagnostics={catalogDiagnostics} />
+				)}
 				{unclassifiedApps &&
 					categories &&
 					categoryOrder &&

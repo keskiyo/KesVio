@@ -4,7 +4,7 @@ mod walk;
 
 pub(crate) use model::{
     FilesystemIndex, IncrementalScanResult, ScanLimit, ScanLimits, ScanMode, ScanStatistics,
-    DEFAULT_MAX_DURATION, FORCE_MAX_DURATION,
+    DEFAULT_MAX_DURATION,
 };
 
 #[cfg(test)]

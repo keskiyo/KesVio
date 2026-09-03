@@ -92,7 +92,7 @@ export function createPreferenceTransferActions({
 		if (hasNewerStoredPreferences(storage)) {
 			return {
 				ok: false,
-				error: 'Settings cannot be replaced by this version of Windows Apps.',
+				error: 'Settings cannot be replaced by this version of AppNook.',
 			}
 		}
 		set(preferenceState(preferences))

@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { toAppClientError } from '../../../shared/api/tauri/errors'
+import { useCatalogMaintenance } from './useCatalogMaintenance'
+import { useSettingsFeedback } from './useSettingsFeedback'
+import type { SettingsArea } from './useSettingsFeedback'
 import type {
 	ScanSettings,
 	SystemClient,
@@ -14,33 +17,19 @@ interface Options {
 
 type PathKind = 'includedPaths' | 'excludedPaths'
 
-export type MaintenanceConfirmation = 'force' | 'reset' | null
-
-export type SettingsArea = 'settings' | 'discovery' | 'maintenance'
-
 export function useSystemSettings({
 	client,
 	onForceFullScan,
 	onResetCatalogCache,
 }: Options) {
 	const [settings, setSettings] = useState<SystemSettings | null>(null)
-	const [error, setError] = useState<string | null>(null)
-	const [errorArea, setErrorArea] = useState<SettingsArea | null>(null)
-
-	function reportError(area: SettingsArea, message: string) {
-		setError(message)
-		setErrorArea(area)
-	}
-
-	function clearError() {
-		setError(null)
-		setErrorArea(null)
-	}
 	const [saving, setSaving] = useState(false)
-	const [confirming, setConfirming] = useState<MaintenanceConfirmation>(null)
-	const [forcing, setForcing] = useState(false)
-	const [resetting, setResetting] = useState(false)
-	const maintenanceInFlight = useRef(false)
+	const { error, errorArea, reportError, clearError } = useSettingsFeedback()
+	const maintenance = useCatalogMaintenance({
+		reporter: { reportError, clearError },
+		onForceFullScan,
+		onResetCatalogCache,
+	})
 
 	useEffect(() => {
 		let active = true
@@ -56,20 +45,37 @@ export function useSystemSettings({
 		return () => {
 			active = false
 		}
-	}, [client])
+	}, [client, reportError])
 
-	async function saveScanSettings(next: ScanSettings) {
+	async function persist(
+		area: SettingsArea,
+		apply: () => Promise<Partial<SystemSettings>>,
+	) {
 		if (!settings || saving) return
 		setSaving(true)
 		clearError()
 		try {
-			const scanSettings = await client.setScanSettings(next)
-			setSettings({ ...settings, scanSettings })
+			const patch = await apply()
+			setSettings(current =>
+				current ? { ...current, ...patch } : current,
+			)
 		} catch (reason) {
-			reportError('discovery', toAppClientError(reason).message)
+			reportError(area, toAppClientError(reason).message)
 		} finally {
 			setSaving(false)
 		}
+	}
+
+	async function saveScanSettings(next: ScanSettings) {
+		await persist('discovery', async () => ({
+			scanSettings: await client.setScanSettings(next),
+		}))
+	}
+
+	async function setCloseBehavior(hideToTray: boolean) {
+		await persist('settings', async () => ({
+			hideToTrayOnClose: await client.setCloseBehavior(hideToTray),
+		}))
 	}
 
 	function addPath(kind: PathKind, value: string) {
@@ -95,55 +101,15 @@ export function useSystemSettings({
 		})
 	}
 
-	async function forceFullScan() {
-		if (!onForceFullScan || maintenanceInFlight.current) return
-		maintenanceInFlight.current = true
-		setForcing(true)
-		clearError()
-		try {
-			await onForceFullScan()
-			setConfirming(null)
-		} catch (reason) {
-			const clientError = toAppClientError(reason)
-			if (clientError.code !== 'SCAN_CANCELLED')
-				reportError('maintenance', clientError.message)
-		} finally {
-			maintenanceInFlight.current = false
-			setForcing(false)
-		}
-	}
-
-	async function resetCatalogCache() {
-		if (!onResetCatalogCache || maintenanceInFlight.current) return
-		maintenanceInFlight.current = true
-		setResetting(true)
-		clearError()
-		try {
-			await onResetCatalogCache()
-			setConfirming(null)
-		} catch (reason) {
-			const clientError = toAppClientError(reason)
-			if (clientError.code !== 'SCAN_CANCELLED')
-				reportError('maintenance', clientError.message)
-		} finally {
-			maintenanceInFlight.current = false
-			setResetting(false)
-		}
-	}
-
 	return {
 		settings,
 		error,
 		errorArea,
 		saving,
-		confirming,
-		setConfirming,
-		forcing,
-		resetting,
 		saveScanSettings,
+		setCloseBehavior,
 		addPath,
 		removePath,
-		forceFullScan,
-		resetCatalogCache,
+		...maintenance,
 	}
 }

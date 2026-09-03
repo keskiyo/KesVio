@@ -51,6 +51,8 @@ export interface SettingsPageProps {
 export interface GeneralSettingsProps {
 	settings: SystemSettings | null
 	updater: UpdaterState
+	saving: boolean
+	onSetCloseBehavior(hideToTray: boolean): Promise<void>
 	onOpenGithub: SystemClient['openGithub']
 	onOpenTelegram: SystemClient['openTelegram']
 	onOpenAppsSettings: SystemClient['openAppsSettings']
@@ -61,10 +63,13 @@ export interface CatalogMaintenanceProps {
 	resetting: boolean
 	confirming: MaintenanceConfirmation
 	canReset: boolean
-	catalogDiagnostics?: CatalogDiagnostics | null
 	setConfirming(value: MaintenanceConfirmation): void
 	onForceFullScan(): Promise<void>
 	onResetCatalogCache(): Promise<void>
+}
+
+export interface DiagnosticsLogExportProps {
+	onExport(): Promise<boolean>
 }
 
 export interface ScanDiagnosticsProps {

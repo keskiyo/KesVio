@@ -115,7 +115,7 @@ jobs:
               shell: pwsh
               run: |
                   $releases = gh api "repos/$env:REPOSITORY/releases" | ConvertFrom-Json
-                  $staleName = "Windows Apps $env:RELEASE_TAG"
+                  $staleName = "AppNook $env:RELEASE_TAG"
                   $stale = $releases | Where-Object {
                     $_.draft -and $_.name -eq $staleName
                   }
@@ -136,7 +136,7 @@ jobs:
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
               with:
                   tagName: ${{ github.ref_name }}
-                  releaseName: 'Windows Apps ${{ github.ref_name }}'
+                  releaseName: 'AppNook ${{ github.ref_name }}'
                   releaseDraft: true
                   prerelease: false
 
@@ -167,8 +167,8 @@ jobs:
               run: |
                   $version = $env:RELEASE_TAG.TrimStart('v')
                   New-Item -ItemType Directory -Force -Path release-assets | Out-Null
-                  Copy-Item -LiteralPath "src-tauri/target/release/bundle/nsis/Windows Apps_${version}_x64-setup.exe" -Destination release-assets
-                  Copy-Item -LiteralPath "src-tauri/target/release/bundle/nsis/Windows Apps_${version}_x64-setup.exe.sig" -Destination release-assets
+                  Copy-Item -LiteralPath "src-tauri/target/release/bundle/nsis/AppNook_${version}_x64-setup.exe" -Destination release-assets
+                  Copy-Item -LiteralPath "src-tauri/target/release/bundle/nsis/AppNook_${version}_x64-setup.exe.sig" -Destination release-assets
 
             - name: Verify updater signature
               shell: pwsh
@@ -176,7 +176,7 @@ jobs:
                 RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   $version = $env:RELEASE_TAG.TrimStart('v')
-                  $setupPath = "release-assets/Windows Apps_${version}_x64-setup.exe"
+                  $setupPath = "release-assets/AppNook_${version}_x64-setup.exe"
                   powershell -NoProfile -File scripts/verify-updater-signature.ps1 `
                     -InstallerPath $setupPath `
                     -SignaturePath "$setupPath.sig"

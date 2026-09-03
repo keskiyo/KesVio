@@ -41,7 +41,7 @@ export function SettingsUpdateControls({
 					</button>
 					<button
 						type="button"
-						aria-label="Open Windows Apps on GitHub"
+						aria-label="Open AppNook on GitHub"
 						onClick={() => void onOpenGithub()}
 						className="inline-flex items-center gap-2 rounded-xl border border-slate-300/70 px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-violet-500"
 					>

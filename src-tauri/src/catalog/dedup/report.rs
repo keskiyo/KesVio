@@ -48,9 +48,7 @@ pub(crate) fn write_dev_report(apps: &[AppInfo]) {
     let Ok(base) = std::env::var("LOCALAPPDATA") else {
         return;
     };
-    let path = Path::new(&base)
-        .join("WindowsApps")
-        .join("dedup-report.json");
+    let path = Path::new(&base).join("AppNook").join("dedup-report.json");
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }

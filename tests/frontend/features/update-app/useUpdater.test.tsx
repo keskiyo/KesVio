@@ -20,7 +20,7 @@ function update(version: string) {
 		body: '## Highlights\n- Test update.',
 		rawJson: {
 			packageSize: 5_600_000,
-			releaseUrl: `https://github.com/keskiyo/WindowsApps/releases/tag/v${version}`,
+			releaseUrl: `https://github.com/keskiyo/AppNook/releases/tag/v${version}`,
 		},
 		download: vi.fn(),
 		install: vi.fn(),
@@ -54,9 +54,9 @@ describe('useUpdater', () => {
 
 		await waitFor(() => expect(check).toHaveBeenCalledTimes(2))
 		expect(second.result.current.update).toBeNull()
-		expect(
-			localStorage.getItem('windows-apps.dismissed-update-version'),
-		).toBe('0.2.2')
+		expect(localStorage.getItem('appnook.dismissed-update-version')).toBe(
+			'0.2.2',
+		)
 	})
 
 	// Install failures are classified from upstream plugin text, which is not a contract. Any
@@ -80,7 +80,7 @@ describe('useUpdater', () => {
 	})
 
 	it('manual checks show a dismissed version again', async () => {
-		localStorage.setItem('windows-apps.dismissed-update-version', '0.2.2')
+		localStorage.setItem('appnook.dismissed-update-version', '0.2.2')
 		check.mockResolvedValue(update('0.2.2'))
 
 		const { result } = renderHook(() => useUpdater({ autoCheck: false }))
@@ -96,12 +96,12 @@ describe('useUpdater', () => {
 			date: '2026-07-11T10:00:00Z',
 			packageSize: 5_600_000,
 			releaseUrl:
-				'https://github.com/keskiyo/WindowsApps/releases/tag/v0.2.2',
+				'https://github.com/keskiyo/AppNook/releases/tag/v0.2.2',
 		})
 	})
 
 	it('coalesces an automatic and manual check while preserving manual visibility', async () => {
-		localStorage.setItem('windows-apps.dismissed-update-version', '0.2.2')
+		localStorage.setItem('appnook.dismissed-update-version', '0.2.2')
 		let resolveCheck:
 			((value: ReturnType<typeof update>) => void) | undefined
 		check.mockImplementation(
@@ -171,7 +171,7 @@ describe('useUpdater', () => {
 
 		expect(result.current.phase).toBe('failed')
 		expect(result.current.error).toBe(
-			'The update could not write the new version. Reinstall Windows Apps for the current user or download the installer manually.',
+			'The update could not write the new version. Reinstall AppNook for the current user or download the installer manually.',
 		)
 		expect(relaunch).not.toHaveBeenCalled()
 	})

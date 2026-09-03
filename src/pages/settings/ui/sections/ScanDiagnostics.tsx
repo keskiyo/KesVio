@@ -8,7 +8,7 @@ import { TargetAvailabilityPanel } from './TargetAvailabilityPanel'
 export function ScanDiagnostics({ diagnostics }: ScanDiagnosticsProps) {
 	const [expanded, setExpanded] = useState(false)
 	return (
-		<div className="mt-5 border-t border-slate-200/80 pt-4">
+		<section className="settings-surface rounded-2xl border border-white/85 bg-white/58 p-5">
 			<button
 				type="button"
 				aria-expanded={expanded}
@@ -60,6 +60,6 @@ export function ScanDiagnostics({ diagnostics }: ScanDiagnosticsProps) {
 					/>
 				</div>
 			</CollapsiblePanel>
-		</div>
+		</section>
 	)
 }

@@ -1,33 +1,33 @@
 <p align="center">
-  <img src="public/app-icon.png" width="88" height="88" alt="Windows Apps logo">
+  <img src="public/app-icon.png" width="88" height="88" alt="AppNook logo">
 </p>
 
-<h1 align="center">Windows Apps</h1>
+<h1 align="center">AppNook</h1>
 
 <p align="center">A local catalog for the Windows software you already use.</p>
 
 <p align="center">
-  Windows Apps finds Start Menu shortcuts, installed desktop programs, Microsoft Store apps, Steam games and portable executables.<br>
+  AppNook finds Start Menu shortcuts, installed desktop programs, Microsoft Store apps, Steam games and portable executables.<br>
   It brings them together in one searchable catalog and merges duplicate entries into a single application card.
 </p>
 
 <p align="center">
-  <a href="https://github.com/keskiyo/WindowsApps/releases/tag/v0.3.9"><img src="https://img.shields.io/badge/version-0.3.9-7C3AED?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/keskiyo/AppNook/releases/tag/v0.4.0"><img src="https://img.shields.io/badge/version-0.4.0-7C3AED?style=flat-square" alt="Version"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&amp;logo=windows11&amp;logoColor=white" alt="Windows">
   <img src="https://img.shields.io/badge/architecture-x64-334155?style=flat-square" alt="Architecture">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&amp;logo=tauri&amp;logoColor=white" alt="Tauri">
   <img src="https://img.shields.io/badge/catalog-local--first-16A34A?style=flat-square" alt="Local first">
 </p>
 
-<h2 align="center"><a href="https://github.com/keskiyo/WindowsApps/releases/latest">⬇ Download Windows Apps</a></h2>
+<h2 align="center"><a href="https://github.com/keskiyo/AppNook/releases/latest">⬇ Download AppNook</a></h2>
 
 <p align="center">Windows 10/11 · x64 · Local-first</p>
 
-![Windows Apps catalog with categories, search and application cards](.github/images/catalog.png)
+![AppNook catalog with categories, search and application cards](.github/images/catalog.png)
 
 ## One catalog for Windows software
 
-Windows keeps applications in several places. Windows Apps combines:
+Windows keeps applications in several places. AppNook combines:
 
 - Start Menu shortcuts
 - installed desktop programs
@@ -54,7 +54,7 @@ straight to it.
 
 ### Sort software it has never seen
 
-Categories do not rely on a list of known products. Windows Apps reads the file types and
+Categories do not rely on a list of known products. AppNook reads the file types and
 protocols an application registered with Windows, the purpose the vendor wrote into the file
 description, and the Start Menu group the shortcut lives in — so an unfamiliar player, editor or
 mail client still lands where it belongs.
@@ -109,37 +109,39 @@ Inspect local file details, architecture, signature status and installation stat
 Everyday settings stay visible. Scanning, backups and maintenance live under Advanced, together
 with the applications no rule recognised: each one lists the signals the classifier read, can be
 moved to a category on the spot, and the whole list copies as plain text. Settings
-export contains preferences only, and import reports an error if Windows Apps cannot persist the
+export contains preferences only, and import reports an error if AppNook cannot persist the
 restored data. Normal refreshes scan Windows sources and portable folders you add. Optional
-fixed-drive discovery runs only through **Force full scan**, with a bounded traversal time. The
-installer adds Windows Apps to startup once, so it is already in the system tray
-after you sign in; choose **Open Windows Apps** there when you need the window. Turn it off the
-same way as any other program, in **Settings → Apps → Startup**. The window reopens at the size,
+fixed-drive discovery runs through **Force full scan**, on by default, with a bounded traversal time. The
+installer adds AppNook to startup once, so it is already in the system tray
+after you sign in; choose **Open AppNook** there when you need the window. Turn it off the
+same way as any other program, in **Settings → Apps → Startup**. Closing the window leaves Windows
+Apps in the notification area; **Keep running in the tray** turns that into a normal quit. The window
+reopens at the size,
 position and maximized state you left it in, on the monitor it was on; unplug that monitor and it
 comes back to the middle of the one you still have.
 
 ## Install
 
-1. Download [**`Windows.Apps_0.3.9_x64-setup.exe`**](https://github.com/keskiyo/WindowsApps/releases/latest).
+1. Download [**`AppNook_0.4.0_x64-setup.exe`**](https://github.com/keskiyo/AppNook/releases/latest).
 2. Run the installer.
-3. Start Windows Apps and choose **Scan for apps**.
+3. Start AppNook and choose **Scan for apps**.
 
 > [!WARNING]
 > Released installers are not Authenticode-signed yet, so SmartScreen may show **Windows protected your PC**. Choose **More info → Run anyway** and download only from this repository's Releases. See [Code signing policy](#code-signing-policy).
 
-| Requirement  | Value                           |
-| ------------ | ------------------------------- |
-| OS           | Windows 10 or 11                |
-| Architecture | x64                             |
-| Runtime      | Microsoft Edge WebView2         |
-| Internet     | Not required after installation |
-| Account      | Not required                    |
+| Requirement  | Value                   |
+| ------------ | ----------------------- |
+| OS           | Windows 10 or 11        |
+| Architecture | x64                     |
+| Runtime      | Microsoft Edge WebView2 |
+| Internet     | Only for update checks  |
+| Account      | Not required            |
 
 ## Privacy
 
-Windows Apps is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine.
+AppNook is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine. The one request it makes is the update check against this repository's Releases, which sends nothing about your catalog.
 
-For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). Windows Apps is available under the [MIT License](LICENSE).
+For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). AppNook is available under the [MIT License](LICENSE).
 
 ## Known limitations
 
@@ -164,20 +166,20 @@ Bug reports and pull requests are welcome. Read [Technical Documentation](Docume
 
 ## Code signing policy
 
-Windows Apps uses free code signing provided by [SignPath.io](https://signpath.io), with a certificate issued by the [SignPath Foundation](https://signpath.org).
+AppNook uses free code signing provided by [SignPath.io](https://signpath.io), with a certificate issued by the [SignPath Foundation](https://signpath.org).
 
-Releases up to and including v0.3.9 predate that setup and are not signed; the SmartScreen warning above applies until the first signed release.
+Releases published so far predate that setup and are not signed; the SmartScreen warning above applies until the first signed release.
 
-| Role     | Person  |
-| -------- | ------- |
-| Author   | keskiyo |
-| Reviewer | keskiyo |
-| Approver | keskiyo |
+| Role     | Person                     |
+| -------- | -------------------------- |
+| Author   | Maksim Makhilin (@keskiyo) |
+| Reviewer | Maksim Makhilin (@keskiyo) |
+| Approver | Maksim Makhilin (@keskiyo) |
 
 Every release is built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml`, on GitHub-hosted runners, and each signing request is approved manually.
 
-Windows Apps collects no personal data: it has no telemetry, no account and no network service, and the catalog it builds stays on the local machine. See [Privacy](#privacy).
+AppNook collects no personal data: it has no telemetry and no account, and the catalog it builds stays on the local machine. Its only network request is the update check against this repository's Releases, which GitHub serves and logs like any other download. See [Privacy](#privacy).
 
 ## Links
 
-[Documentation](Documentation.md) · [Releases](https://github.com/keskiyo/WindowsApps/releases) · [Telegram: @keskiyo](https://t.me/keskiyo)
+[Documentation](Documentation.md) · [Releases](https://github.com/keskiyo/AppNook/releases) · [Telegram: @keskiyo](https://t.me/keskiyo)

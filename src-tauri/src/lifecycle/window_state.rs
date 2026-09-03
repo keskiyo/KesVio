@@ -29,24 +29,57 @@ pub(crate) struct ScreenRect {
     pub height: u32,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct WindowPreferences {
+    pub geometry: Option<WindowGeometry>,
+    pub hide_to_tray: bool,
+}
+
+impl Default for WindowPreferences {
+    fn default() -> Self {
+        Self {
+            geometry: None,
+            hide_to_tray: hides_to_tray_by_default(),
+        }
+    }
+}
+
+fn hides_to_tray_by_default() -> bool {
+    true
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct StoredWindowState {
     version: u32,
-    geometry: WindowGeometry,
+    #[serde(default)]
+    geometry: Option<WindowGeometry>,
+    #[serde(default = "hides_to_tray_by_default")]
+    hide_to_tray: bool,
 }
 
-pub(crate) fn read(app_data_dir: &Path) -> Option<WindowGeometry> {
-    let bytes = fs::read(app_data_dir.join(WINDOW_STATE_FILE)).ok()?;
-    let stored = serde_json::from_slice::<StoredWindowState>(&bytes).ok()?;
-    (stored.version == WINDOW_STATE_VERSION).then_some(stored.geometry)
+pub(crate) fn read(app_data_dir: &Path) -> WindowPreferences {
+    let Ok(bytes) = fs::read(app_data_dir.join(WINDOW_STATE_FILE)) else {
+        return WindowPreferences::default();
+    };
+    let Ok(stored) = serde_json::from_slice::<StoredWindowState>(&bytes) else {
+        return WindowPreferences::default();
+    };
+    if stored.version != WINDOW_STATE_VERSION {
+        return WindowPreferences::default();
+    }
+    WindowPreferences {
+        geometry: stored.geometry,
+        hide_to_tray: stored.hide_to_tray,
+    }
 }
 
-pub(crate) fn write(app_data_dir: &Path, geometry: &WindowGeometry) -> io::Result<()> {
+pub(crate) fn write(app_data_dir: &Path, preferences: &WindowPreferences) -> io::Result<()> {
     fs::create_dir_all(app_data_dir)?;
     let bytes = serde_json::to_vec_pretty(&StoredWindowState {
         version: WINDOW_STATE_VERSION,
-        geometry: *geometry,
+        geometry: preferences.geometry,
+        hide_to_tray: preferences.hide_to_tray,
     })
     .map_err(io::Error::other)?;
     let temporary = app_data_dir.join(WINDOW_STATE_TEMPORARY_FILE);
@@ -152,14 +185,18 @@ pub(crate) fn remember(app: &AppHandle, lifecycle: &LifecycleState) {
     }
 }
 
+pub(crate) fn preferences_of(lifecycle: &LifecycleState) -> WindowPreferences {
+    WindowPreferences {
+        geometry: lifecycle.geometry(),
+        hide_to_tray: lifecycle.hides_to_tray(),
+    }
+}
+
 pub(crate) fn persist(app: &AppHandle, lifecycle: &LifecycleState) {
-    let Some(geometry) = lifecycle.geometry() else {
-        return;
-    };
     let Ok(app_data_dir) = app.path().app_data_dir() else {
         return;
     };
-    let _ = write(&app_data_dir, &geometry);
+    let _ = write(&app_data_dir, &preferences_of(lifecycle));
 }
 
 fn screen_rects(window: &WebviewWindow) -> Vec<ScreenRect> {
@@ -177,10 +214,12 @@ fn screen_rects(window: &WebviewWindow) -> Vec<ScreenRect> {
 }
 
 fn restore(window: &WebviewWindow, app_data_dir: &Path, lifecycle: &LifecycleState) {
-    let Some(stored) = read(app_data_dir) else {
-        return;
-    };
-    let Some(fitted) = fit_to_screens(stored, &screen_rects(window)) else {
+    let stored = read(app_data_dir);
+    lifecycle.set_hides_to_tray(stored.hide_to_tray);
+    let Some(fitted) = stored
+        .geometry
+        .and_then(|geometry| fit_to_screens(geometry, &screen_rects(window)))
+    else {
         return;
     };
     let _ = window.set_position(PhysicalPosition::new(fitted.x, fitted.y));
@@ -227,35 +266,65 @@ mod tests {
     }
 
     #[test]
-    fn round_trips_the_stored_geometry() {
+    fn round_trips_the_stored_preferences() {
         let dir = tempfile::tempdir().unwrap();
-        let saved = WindowGeometry {
-            x: 120,
-            y: 64,
-            width: 1250,
-            height: 720,
-            maximized: true,
+        let saved = WindowPreferences {
+            geometry: Some(WindowGeometry {
+                x: 120,
+                y: 64,
+                width: 1250,
+                height: 720,
+                maximized: true,
+            }),
+            hide_to_tray: false,
         };
 
         write(dir.path(), &saved).unwrap();
 
-        assert_eq!(read(dir.path()), Some(saved));
+        assert_eq!(read(dir.path()), saved);
     }
 
     #[test]
     fn missing_corrupt_or_future_state_falls_back_to_the_configured_window() {
         let dir = tempfile::tempdir().unwrap();
-        assert_eq!(read(dir.path()), None);
+        assert_eq!(read(dir.path()), WindowPreferences::default());
 
         fs::write(dir.path().join(WINDOW_STATE_FILE), "not json").unwrap();
-        assert_eq!(read(dir.path()), None);
+        assert_eq!(read(dir.path()), WindowPreferences::default());
 
         fs::write(
             dir.path().join(WINDOW_STATE_FILE),
             br#"{"version":99,"geometry":{"x":0,"y":0,"width":1250,"height":720}}"#,
         )
         .unwrap();
-        assert_eq!(read(dir.path()), None);
+        assert_eq!(read(dir.path()), WindowPreferences::default());
+    }
+
+    #[test]
+    fn closing_hides_to_tray_until_the_user_says_otherwise() {
+        let dir = tempfile::tempdir().unwrap();
+        assert!(WindowPreferences::default().hide_to_tray);
+        assert!(read(dir.path()).hide_to_tray);
+
+        fs::write(
+            dir.path().join(WINDOW_STATE_FILE),
+            br#"{"version":1,"geometry":{"x":0,"y":0,"width":1250,"height":720}}"#,
+        )
+        .unwrap();
+        assert!(read(dir.path()).hide_to_tray);
+    }
+
+    #[test]
+    fn a_window_that_never_moved_still_stores_the_close_setting() {
+        let dir = tempfile::tempdir().unwrap();
+        let saved = WindowPreferences {
+            geometry: None,
+            hide_to_tray: false,
+        };
+
+        write(dir.path(), &saved).unwrap();
+
+        assert_eq!(read(dir.path()), saved);
     }
 
     #[test]

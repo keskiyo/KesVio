@@ -112,7 +112,10 @@ describe('reconcileScenarios', () => {
 
 	it('drops the stale row instead of listing the same app twice', () => {
 		const duplicated = scenario({
-			launchIdentities: ['preference:current-code', 'preference:old-code'],
+			launchIdentities: [
+				'preference:current-code',
+				'preference:old-code',
+			],
 			launchAppSnapshots: {
 				'preference:old-code': {
 					name: 'Visual Studio Code',

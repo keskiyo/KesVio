@@ -73,14 +73,29 @@ impl Default for CatalogCache {
 pub(crate) fn read_document(app_data_dir: &Path) -> Option<CatalogCache> {
     let primary = app_data_dir.join(CACHE_FILE);
     let backup = app_data_dir.join("apps-cache.json.bak");
-    fs::read(&primary)
+    if let Some(document) = fs::read(&primary)
         .ok()
         .and_then(|bytes| parse_document(&bytes))
-        .or_else(|| {
-            fs::read(backup)
-                .ok()
-                .and_then(|bytes| parse_document(&bytes))
-        })
+    {
+        return Some(document);
+    }
+    match fs::read(backup)
+        .ok()
+        .and_then(|bytes| parse_document(&bytes))
+    {
+        Some(document) => {
+            log::warn!(
+                "Catalog cache fell back to its backup: generation {} with {} applications",
+                document.generation,
+                document.apps.len()
+            );
+            Some(document)
+        }
+        None => {
+            log::warn!("Catalog cache unavailable: starting from an empty catalog");
+            None
+        }
+    }
 }
 
 fn parse_document(bytes: &[u8]) -> Option<CatalogCache> {

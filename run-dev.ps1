@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 Set-Location -LiteralPath $PSScriptRoot
 $logPath = Join-Path $PSScriptRoot 'dev-launcher.log'
 
-Set-Content -LiteralPath $logPath -Value "[$(Get-Date -Format o)] Starting Windows Apps dev" -Encoding UTF8
+Set-Content -LiteralPath $logPath -Value "[$(Get-Date -Format o)] Starting AppNook dev" -Encoding UTF8
 
 try {
     foreach ($command in 'node', 'npm', 'cargo') {

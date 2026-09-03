@@ -1,14 +1,14 @@
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) "windows-apps-manifest-test-$([Guid]::NewGuid().ToString('N'))"
+$fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) "appnook-manifest-test-$([Guid]::NewGuid().ToString('N'))"
 $assetsDir = Join-Path $fixtureRoot "assets"
 $notesPath = Join-Path $fixtureRoot "release-notes.md"
 
 try {
   New-Item -ItemType Directory -Path $assetsDir | Out-Null
-  [IO.File]::WriteAllBytes((Join-Path $assetsDir "Windows Apps_9.8.7_x64-setup.exe"), [byte[]](1, 2, 3))
+  [IO.File]::WriteAllBytes((Join-Path $assetsDir "AppNook_9.8.7_x64-setup.exe"), [byte[]](1, 2, 3))
   [IO.File]::WriteAllText(
-    (Join-Path $assetsDir "Windows Apps_9.8.7_x64-setup.exe.sig"),
+    (Join-Path $assetsDir "AppNook_9.8.7_x64-setup.exe.sig"),
     "test-signature",
     [Text.UTF8Encoding]::new($false)
   )

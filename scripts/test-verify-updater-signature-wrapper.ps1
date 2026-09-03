@@ -1,8 +1,8 @@
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $wrapperPath = Join-Path $repoRoot "scripts/verify-updater-signature.ps1"
-$missingInstaller = Join-Path ([IO.Path]::GetTempPath()) "windows-apps-missing-installer-$([Guid]::NewGuid().ToString('N')).exe"
-$missingSignature = Join-Path ([IO.Path]::GetTempPath()) "windows-apps-missing-signature-$([Guid]::NewGuid().ToString('N')).sig"
+$missingInstaller = Join-Path ([IO.Path]::GetTempPath()) "appnook-missing-installer-$([Guid]::NewGuid().ToString('N')).exe"
+$missingSignature = Join-Path ([IO.Path]::GetTempPath()) "appnook-missing-signature-$([Guid]::NewGuid().ToString('N')).sig"
 
 $previousErrorActionPreference = $ErrorActionPreference
 $ErrorActionPreference = "Continue"

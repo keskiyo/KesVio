@@ -1,11 +1,11 @@
-# Windows Apps Technical Documentation
+# AppNook Technical Documentation
 
 Technical reference for maintainers. [README](README.md) is the user-facing
 overview; source and tests are the detailed implementation reference.
 
 ## 1. Product scope and environment
 
-Windows Apps is a local Windows catalog, launcher, and organization layer. It
+AppNook is a local Windows catalog, launcher, and organization layer. It
 discovers applications, sanitizes and deduplicates results, persists a compact
 cache, and exposes launch and registered uninstall through a React desktop UI.
 It updates only itself from signed GitHub Releases; it never updates cataloged
@@ -155,7 +155,7 @@ frontend test reads the same file and holds it against the interfaces through
 `Required<T>` literals the compiler checks. Fields that legitimately live on one
 side only — the store's own marks, the backend's rollback switches — are listed
 by name in the frontend test rather than passed over in silence. Record a new
-contract with `WINDOWSAPPS_CONTRACT_UPDATE=1` and review the diff before
+contract with `APPNOOK_CONTRACT_UPDATE=1` and review the diff before
 committing it.
 
 Events use `namespace://name`. Catalog synchronization emits full updates,
@@ -168,20 +168,37 @@ listener that calls back into the catalog cannot meet a writer still holding it.
 
 Three stores contain user data:
 
-| Store         | Owner                          | Rules                                                                                                   |
-| ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| Catalog cache | `catalog/storage/cache.rs`     | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                   |
-| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document for categories, marks, scenarios, first-seen data and unknown fields. |
-| Window state  | `lifecycle/window_state.rs`    | Versioned `window-state.json`; position, size and maximized flag only, written atomically.              |
+| Store         | Owner                          | Rules                                                                                                      |
+| ------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Catalog cache | `catalog/storage/cache.rs`     | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                      |
+| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document for categories, marks, scenarios, first-seen data and unknown fields.    |
+| Window state  | `lifecycle/window_state.rs`    | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically. |
 
 Window state is presentation-only and deliberately disposable: a missing,
-malformed or newer-versioned document restores nothing and the window opens at
-the configured 1250×720, centered. It is the one store whose loss costs the user
-nothing, so it never falls back to a backup copy and never blocks startup.
+malformed or newer-versioned document restores nothing, the window opens at the
+configured 1250×720, centered, and closing hides to the tray. It is the one
+store whose loss costs the user nothing, so it never falls back to a backup copy
+and never blocks startup. Geometry is optional inside the document, because the
+close setting has to survive a session in which the window was never moved.
 
 Persisted-format changes must bump the appropriate version, upgrade every
 supported version, default new fields, preserve unknown data, safely handle
 malformed input, and test migration paths.
+
+The diagnostics log is a fourth store and is not user data. `diagnostics/` owns
+it: `tauri-plugin-log` writes `appnook.log` to the application log directory at
+`Info`, rotates at four megabytes keeping eight dated archives, and
+`prune_expired_logs` deletes any `*.log` older than three days at startup. The
+active file is held open by the plugin, so failing to delete it is expected and
+ignored. `export_diagnostics_log` renders the whole directory as one XML
+document — the newest twenty thousand lines, each parsed into a dated `entry`
+element and anything else preserved as a `line` element — and writes it wherever
+the save dialog points. Losing the whole directory costs nothing but the ability
+to explain the last few scans.
+
+The scan writes one line per run, per source and per portable root, never per
+catalogued application. Root paths are recorded deliberately: a scan that stops
+is diagnosed by knowing which location it was walking.
 
 Preferences preserve unknown root fields, which is also how a field this version
 stopped reading survives: scenario run history is no longer collected or parsed,
@@ -274,13 +291,16 @@ snapshot where safe.
 
 Normal startup is cache-first. Background validation and incremental scans keep
 the UI usable while source work runs. Startup, watchers and ordinary refreshes
-scan only explicitly configured portable folders. Fixed-drive discovery is off
-by default and runs only during **Force full scan** when enabled. An ordinary
+scan only explicitly configured portable folders. Fixed-drive discovery is on
+by default and runs during **Force full scan**. An ordinary
 refresh retains already discovered fixed-drive portable applications while the
 option remains enabled, but drops their large directory index; disabling the
 option removes those retained records on the next refresh. A force scan bypasses
-the previous filesystem index and shares one 45-second cooperative traversal
-budget across portable roots. Scan work is cancellable and generation-aware; no
+the previous filesystem index and shares the same three-minute cooperative
+traversal budget across portable roots that a refresh uses. Only cancellation
+discards a portable run: a run stopped by
+the time or entry bound still adopts what it found, because an incompletely
+walked root keeps its previously known applications. Scan work is cancellable and generation-aware; no
 stale result may overwrite a newer generation. The rule holds in both
 directions, so a scan hands its records and the generation that produced them
 back as one value: the interface adopts that generation with the records, and
@@ -299,15 +319,15 @@ binaries. The package map is best-effort: when it cannot be read, packaged
 entries keep their name, publisher, version, install location and uninstall
 target and lose only the resolved executable.
 
-| Stage          | Invariant                                                                                                                                                |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Traversal      | Explicit folders on routine scans; optional fixed drives on forced scans; shared time, depth, entry and cancellation bounds; no reparse-point recursion. |
-| Classification | Artifact, visibility and category decisions are deterministic and explainable.                                                                           |
-| Deduplication  | Canonical identity and launch evidence prevent unrelated same-name applications from merging.                                                            |
-| Install root   | A record keeps an install location only while that location contains its own launch target.                                                              |
-| Cache          | Source-aware generation document; invalid data degrades safely.                                                                                          |
-| Hydration      | Icons/details are lazy, size-limited, trusted-ID-only and processed in bounded batches.                                                                  |
-| Search         | Current view/category only; literal matches rank above corrected, transliterated and fuzzy matches.                                                      |
+| Stage          | Invariant                                                                                                                                       |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traversal      | Explicit folders on routine scans; fixed drives on forced scans; shared time, depth, entry and cancellation bounds; no reparse-point recursion. |
+| Classification | Artifact, visibility and category decisions are deterministic and explainable.                                                                  |
+| Deduplication  | Canonical identity and launch evidence prevent unrelated same-name applications from merging.                                                   |
+| Install root   | A record keeps an install location only while that location contains its own launch target.                                                     |
+| Cache          | Source-aware generation document; invalid data degrades safely.                                                                                 |
+| Hydration      | Icons/details are lazy, size-limited, trusted-ID-only and processed in bounded batches.                                                         |
+| Search         | Current view/category only; literal matches rank above corrected, transliterated and fuzzy matches.                                             |
 
 A query token expands into variants before matching: the literal token, the
 token remapped between the English and Russian keyboard layouts, and a
@@ -568,7 +588,7 @@ fixtures and deterministic generated properties. Recording a new baseline is
 deliberate:
 
 ```powershell
-$env:WINDOWSAPPS_GOLDEN_UPDATE = "1"; cargo test --manifest-path src-tauri/Cargo.toml golden
+$env:APPNOOK_GOLDEN_UPDATE = "1"; cargo test --manifest-path src-tauri/Cargo.toml golden
 ```
 
 ## 10. Desktop operations
@@ -612,7 +632,7 @@ would have to reintroduce it deliberately.
 - Startup registration is owned by the installer and by Windows, never by the
   running program. A fresh install creates one Startup-folder shortcut that
   passes `--autostart`; the program reads that argument and starts hidden once
-  the tray is ready, and the tray's **Open Windows Apps** action restores it. A
+  the tray is ready, and the tray's **Open AppNook** action restores it. A
   tray initialization failure keeps the window visible. The user turns the entry
   off in **Settings → Apps → Startup**, which is why the application itself
   offers no toggle: a program that repairs its own persistence is exactly the
@@ -641,6 +661,13 @@ would have to reintroduce it deliberately.
   sixteen pixels wide, nine tall — back on every start, and the window grew by
   that much each time it was reopened. The position is the outer position, which
   is what `set_position` takes.
+- Closing the window hides AppNook in the notification area, and
+  **Settings → Keep running in the tray** turns that into an ordinary quit. The
+  flag lives in `LifecycleState`, so the close handler reads it without touching
+  the disk; `set_close_behavior` writes the document and restores the previous
+  value if that write fails, because a setting the interface shows and the disk
+  does not hold is worse than a refused change. Quitting from the tray still
+  quits whatever the setting says.
 - Startup does no discovery work on the main thread. Tray creation and the
   window are the only things `setup` performs; global-shortcut registration,
   the cached catalog, the change watcher and the installed-copy registry sync
@@ -698,7 +725,7 @@ would have to reintroduce it deliberately.
 - Because the binary is unsigned and every release starts at zero reputation,
   behaviour that reputation-based antivirus scores heavily is avoided on
   purpose: no interpreter is started, and `mainBinaryName` ships the executable
-  as `WindowsApps.exe` rather than the Cargo package's generic `app.exe`. The
+  as `AppNook.exe` rather than the Cargo package's generic `app.exe`. The
   NSIS template records `MainBinaryName` in the uninstall key and deletes the
   previously installed binary when the name changes, so an update from a build
   that shipped `app.exe` leaves nothing behind.
@@ -809,18 +836,19 @@ source is MIT-licensed; third-party notices are recorded in
 
 ## 17. Troubleshooting
 
-| Problem                        | First action                                                                                                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Catalog empty                  | Use **Scan for apps**; the first complete scan is explicit.                                                  |
-| Duplicate or stale entries     | Refresh; then use **Settings → Advanced → Catalog maintenance → Reset catalog cache**.                       |
-| Missing application            | Add its folder under **Application discovery**, or enable fixed drives and use **Force full scan**.          |
-| Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.               |
-| Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                  |
-| Uninstall unavailable          | The catalog record has no trusted, parseable uninstall target.                                               |
-| Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.        |
-| A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.           |
-| Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                  |
-| Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                               |
-| SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                   |
-| Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.          |
-| Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque. |
+| Problem                        | First action                                                                                                    |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Catalog empty                  | Use **Scan for apps**; the first complete scan is explicit.                                                     |
+| Duplicate or stale entries     | Refresh; then use **Settings → Advanced → Catalog maintenance → Reset catalog cache**.                          |
+| Missing application            | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive. |
+| Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                  |
+| Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                     |
+| Uninstall unavailable          | The catalog record has no trusted, parseable uninstall target.                                                  |
+| Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.           |
+| A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.              |
+| Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                     |
+| Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                                  |
+| SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                      |
+| Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.             |
+| Closing the window hides it    | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                |
+| Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.    |

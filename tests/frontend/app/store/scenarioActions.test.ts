@@ -281,9 +281,7 @@ describe('scenario actions', () => {
 		store.setState({ apps: [oldCode] })
 		const created = store.getState().createScenario('Development')
 		const id = created.ok ? created.id : ''
-		store
-			.getState()
-			.addScenarioApp(id, 'close', 'preference:old-code')
+		store.getState().addScenarioApp(id, 'close', 'preference:old-code')
 
 		await store.getState().refresh()
 

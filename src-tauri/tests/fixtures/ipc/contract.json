@@ -7,6 +7,7 @@
       "notRunning": 1,
       "unavailable": 0
     },
+    "export_diagnostics_log": true,
     "force_full_scan": {
       "apps": [
         {
@@ -91,6 +92,7 @@
       "fixedDrives": [
         "C:\\"
       ],
+      "hideToTrayOnClose": true,
       "scanSettings": {
         "autoScanFixedDrives": true,
         "catalogPortableFingerprintV1": true,
@@ -103,7 +105,7 @@
         "error": "The shortcut has not been registered yet.",
         "label": "Win+Shift+Q"
       },
-      "version": "0.3.9"
+      "version": "0.4.0"
     },
     "get_uninstall_history": [
       {
@@ -190,6 +192,7 @@
       "generation": 7
     },
     "save_preferences_backup": true,
+    "set_close_behavior": true,
     "set_scan_settings": {
       "autoScanFixedDrives": true,
       "catalogPortableFingerprintV1": true,
@@ -198,7 +201,7 @@
       "includedPaths": []
     },
     "stale_copy_status": {
-      "installLocation": "C:\\Program Files\\Windows Apps",
+      "installLocation": "C:\\Program Files\\AppNook",
       "installedVersion": "0.3.8"
     }
   },

@@ -28,6 +28,12 @@ pub(super) fn scan_all(
     is_cancelled: &(impl Fn() -> bool + Sync),
 ) -> SourceScan {
     let control = ScanControl::new(is_cancelled);
+    log::info!(
+        "Scan starting: request={request:?} fixedDrives={} includedPaths={} excludedPaths={}",
+        settings.auto_scan_fixed_drives,
+        settings.included_paths.len(),
+        settings.excluded_paths.len()
+    );
     progress(ScanProgress {
         stage: "Windows applications".into(),
         location: None,
@@ -51,6 +57,17 @@ pub(super) fn scan_all(
     outcomes.push(installers.outcome);
     outcomes.push(steam.outcome);
     outcomes.push(portable.outcome);
+    for outcome in &outcomes {
+        log::info!(
+            "Source {} answered={} replaced={} records={} in {}ms stop={:?}",
+            outcome.key,
+            outcome.answered,
+            outcome.replaced,
+            outcome.records,
+            outcome.duration.as_millis(),
+            outcome.stop
+        );
+    }
 
     let mut updates = Vec::new();
     push_snapshot(&mut updates, "steam", steam.apps);

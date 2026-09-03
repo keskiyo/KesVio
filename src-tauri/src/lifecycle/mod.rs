@@ -57,14 +57,14 @@ where
 }
 
 pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "Open Windows Apps", true, None::<&str>)?;
+    let open = MenuItem::with_id(app, "open", "Open AppNook", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
     let icon = app.default_window_icon().cloned();
-    let mut builder = TrayIconBuilder::with_id("windows-apps")
+    let mut builder = TrayIconBuilder::with_id("appnook")
         .menu(&menu)
         .show_menu_on_left_click(false)
-        .tooltip("Windows Apps")
+        .tooltip("AppNook")
         .on_menu_event(move |app, event| match tray_action(event.id().as_ref()) {
             Some(TrayAction::Open) => show_main_window(app),
             Some(TrayAction::Quit) => {

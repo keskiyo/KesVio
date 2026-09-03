@@ -19,14 +19,17 @@ describe('SettingsPage', () => {
 			excludedPaths: [],
 		},
 		fixedDrives: ['C:\\'],
+		hideToTrayOnClose: true,
 	}
 
 	const systemClient = (): SystemClient => ({
 		getSettings: vi.fn().mockResolvedValue(settings),
 		setScanSettings: vi.fn().mockImplementation(async value => value),
+		setCloseBehavior: vi.fn().mockImplementation(async value => value),
 		getUninstallHistory: vi.fn().mockResolvedValue([]),
 		clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
+		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 		pickFolder: vi.fn().mockResolvedValue(null),
 		openTelegram: vi.fn().mockResolvedValue(undefined),
 		openGithub: vi.fn().mockResolvedValue(undefined),
@@ -80,6 +83,51 @@ describe('SettingsPage', () => {
 		expect(
 			screen.queryByText('Launch when Windows starts'),
 		).not.toBeInTheDocument()
+	})
+
+	it('turns the tray behaviour off through the backend and reflects the answer', async () => {
+		const client = systemClient()
+		client.setCloseBehavior = vi.fn().mockResolvedValue(false)
+		render(<SettingsPage client={client} updater={updaterState()} />)
+		await screen.findByText('Version 0.1.0')
+		const toggle = screen.getByRole('switch', {
+			name: 'Keep running in the tray when the window is closed',
+		})
+		expect(toggle).toBeChecked()
+
+		await userEvent.click(toggle)
+
+		expect(client.setCloseBehavior).toHaveBeenCalledWith(false)
+		expect(
+			await screen.findByRole('switch', {
+				name: 'Keep running in the tray when the window is closed',
+			}),
+		).not.toBeChecked()
+		expect(
+			screen.getByText('Closing the window quits AppNook.'),
+		).toBeInTheDocument()
+	})
+
+	it('keeps the tray toggle on when the backend refuses to store the change', async () => {
+		const client = systemClient()
+		client.setCloseBehavior = vi
+			.fn()
+			.mockRejectedValue(new Error('disk full'))
+		render(<SettingsPage client={client} updater={updaterState()} />)
+		await screen.findByText('Version 0.1.0')
+
+		await userEvent.click(
+			screen.getByRole('switch', {
+				name: 'Keep running in the tray when the window is closed',
+			}),
+		)
+
+		expect(
+			screen.getByRole('switch', {
+				name: 'Keep running in the tray when the window is closed',
+			}),
+		).toBeChecked()
+		expect(await screen.findByRole('alert')).toBeInTheDocument()
 	})
 
 	it('runs the manual update check on the shared updater instance', async () => {
@@ -558,10 +606,12 @@ describe('SettingsPage', () => {
 					excludedPaths: [],
 				},
 				fixedDrives: ['C:\\', 'D:\\', 'E:\\'],
+				hideToTrayOnClose: true,
 			}),
 			setScanSettings: vi
 				.fn()
 				.mockImplementation(async settings => settings),
+			setCloseBehavior: vi.fn().mockImplementation(async value => value),
 			getUninstallHistory: vi.fn().mockResolvedValue([
 				{
 					id: 'history-1',
@@ -574,6 +624,7 @@ describe('SettingsPage', () => {
 			]),
 			clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
 			savePreferencesBackup: vi.fn().mockResolvedValue(true),
+			exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 			pickFolder: vi.fn().mockResolvedValue(String.raw`F:\Stick\Tools`),
 			openTelegram: vi.fn().mockResolvedValue(undefined),
 			openGithub: vi.fn().mockResolvedValue(undefined),
@@ -588,7 +639,7 @@ describe('SettingsPage', () => {
 		expect(client.openTelegram).toHaveBeenCalledOnce()
 		await userEvent.click(
 			screen.getByRole('button', {
-				name: 'Open Windows Apps on GitHub',
+				name: 'Open AppNook on GitHub',
 			}),
 		)
 		expect(client.openGithub).toHaveBeenCalledOnce()
@@ -621,13 +672,16 @@ describe('SettingsPage', () => {
 					excludedPaths: [],
 				},
 				fixedDrives: ['C:\\'],
+				hideToTrayOnClose: true,
 			}),
 			setScanSettings: vi
 				.fn()
 				.mockImplementation(async settings => settings),
+			setCloseBehavior: vi.fn().mockImplementation(async value => value),
 			getUninstallHistory: vi.fn().mockResolvedValue([]),
 			clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
 			savePreferencesBackup: vi.fn().mockResolvedValue(true),
+			exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 			pickFolder: vi.fn().mockResolvedValue(String.raw`F:\Stick\Tools`),
 			openTelegram: vi.fn().mockResolvedValue(undefined),
 			openGithub: vi.fn().mockResolvedValue(undefined),

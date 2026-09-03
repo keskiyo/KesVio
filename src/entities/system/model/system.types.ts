@@ -11,6 +11,7 @@ export interface SystemSettings {
 	shortcut: GlobalShortcutStatus
 	scanSettings: ScanSettings
 	fixedDrives: string[]
+	hideToTrayOnClose: boolean
 }
 
 export interface ScanSettings {
@@ -31,9 +32,11 @@ export interface UninstallHistoryEntry {
 export interface SystemClient {
 	getSettings(): Promise<SystemSettings>
 	setScanSettings(settings: ScanSettings): Promise<ScanSettings>
+	setCloseBehavior(hideToTray: boolean): Promise<boolean>
 	getUninstallHistory(): Promise<UninstallHistoryEntry[]>
 	clearUninstallHistory(): Promise<void>
 	savePreferencesBackup(contents: string): Promise<boolean>
+	exportDiagnosticsLog(): Promise<boolean>
 	pickFolder(): Promise<string | null>
 	openTelegram(): Promise<void>
 	openGithub(): Promise<void>

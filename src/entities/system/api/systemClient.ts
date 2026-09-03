@@ -5,10 +5,13 @@ import { invokeTauri } from '../../../shared/api/tauri/client'
 export const tauriSystemClient: SystemClient = {
 	getSettings: () => invokeTauri('get_system_settings'),
 	setScanSettings: settings => invokeTauri('set_scan_settings', { settings }),
+	setCloseBehavior: hideToTray =>
+		invokeTauri('set_close_behavior', { hideToTray }),
 	getUninstallHistory: () => invokeTauri('get_uninstall_history'),
 	clearUninstallHistory: () => invokeTauri('clear_uninstall_history'),
 	savePreferencesBackup: contents =>
 		invokeTauri('save_preferences_backup', { contents }),
+	exportDiagnosticsLog: () => invokeTauri('export_diagnostics_log'),
 	pickFolder: () =>
 		open({ directory: true }).then(result =>
 			typeof result === 'string' ? result : null,

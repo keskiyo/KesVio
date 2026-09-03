@@ -40,7 +40,7 @@ pub(crate) fn write_dev_report(apps: &[AppInfo]) {
         })
         .collect::<Vec<_>>();
     let path = Path::new(&base)
-        .join("WindowsApps")
+        .join("AppNook")
         .join("visibility-report.json");
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);

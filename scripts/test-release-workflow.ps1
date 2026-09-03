@@ -179,7 +179,7 @@ try {
   $env:RELEASE_TAG = $hostileTag
   # The exact expression the workflow uses to derive the bundle version from the tag.
   $version = $env:RELEASE_TAG.TrimStart('v')
-  $rendered = "Windows Apps_${version}_x64-setup.exe"
+  $rendered = "AppNook_${version}_x64-setup.exe"
   if ($rendered -notlike "*Write-Output INJECTED*") {
     throw "Crafted-tag fixture did not exercise the injection payload"
   }

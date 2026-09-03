@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Windows Apps v0.3.7 distribution notices. Generated from `npm ls --omit=dev --all --json` and the locked Windows x64 Cargo normal/build dependency graph on 2026-08-13, and unchanged since: none of v0.3.5, v0.3.6 or v0.3.7 adds, removes or upgrades a runtime dependency, so every lockfile since differs from v0.3.4 only in this package's own version field. v0.3.7 enables the `Management_Deployment` feature of the already-listed `windows` crate, which adds no package to either graph. Each listed package must retain its upstream license and any required notice.
+AppNook v0.3.9 distribution notices. Generated from `npm ls --omit=dev --all --json` and the locked Windows x64 Cargo normal/build dependency graph on 2026-08-13, and unchanged since: none of v0.3.5 through v0.3.9 adds, removes or upgrades a runtime dependency, so every lockfile since differs from v0.3.4 only in this package's own version field. v0.3.7 enables the `Management_Deployment` feature of the already-listed `windows` crate, and v0.3.9 adds a `[profile.release]` section; neither adds a package to either graph. Each listed package must retain its upstream license and any required notice.
 
 ## npm runtime dependencies
 

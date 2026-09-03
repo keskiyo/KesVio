@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $fixtureRoot = Join-Path $repoRoot "src-tauri/tests/fixtures/updater-signature"
-$tempRoot = Join-Path ([IO.Path]::GetTempPath()) "windows-apps-updater-signature-test-$([Guid]::NewGuid().ToString('N'))"
+$tempRoot = Join-Path ([IO.Path]::GetTempPath()) "appnook-updater-signature-test-$([Guid]::NewGuid().ToString('N'))"
 
 function Decode-OuterBase64 {
   param(
