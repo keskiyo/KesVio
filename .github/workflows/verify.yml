@@ -1,4 +1,4 @@
-name: Verify
+name: CI Verify
 
 # Pre-merge verification. The release workflow re-runs the same critical gates on the tag as an
 # independent second check, so a green run here is a prerequisite for a release, never a substitute.

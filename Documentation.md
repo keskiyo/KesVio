@@ -795,7 +795,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-`verify.yml` runs on pull requests and `master`:
+`CI Verify` (`verify.yml`) runs on pull requests and `master`:
 
 - frontend: `npm ci`, lint, formatting check, typecheck, coverage test run and
   production build;
