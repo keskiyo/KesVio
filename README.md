@@ -27,19 +27,6 @@
 
 Screenshots show AppNook 0.4.0 with an example catalog.
 
-## Windows Apps is now AppNook
-
-Windows Apps is now **AppNook**, starting with version 0.4.0. Releases and documentation are published in this repository under the AppNook name.
-
-The new application identity installs AppNook alongside Windows Apps. To move your settings:
-
-1. In Windows Apps, open **Settings → Advanced → Backup & restore → Export settings**. Note any folders you added for scanning.
-2. Install AppNook and import the exported file from the same section.
-3. Add your scan folders under **Settings → Advanced → Application discovery**, then run **Catalog maintenance → Force full scan**.
-4. Check your Favorites, categories and Scenarios after restarting AppNook. Once they are saved, uninstall Windows Apps from **Windows Settings → Apps → Installed apps**.
-
-Export transfers preferences, including Favorites, categories and Scenarios. The catalog cache and scan folders are not included; AppNook rebuilds the catalog by scanning.
-
 ## One catalog for Windows software
 
 Windows keeps applications in several places. AppNook combines:
@@ -96,14 +83,9 @@ Star applications for quick access, or run a Scenario that opens one group of ap
 
 ![Scenarios page with launch and close lists](.github/images/scenarios.png)
 
-Each Scenario shows the applications it will launch and the applications it will close before you run it.
-Applications are added from a searchable picker that names the category of every entry and
-takes the whole selection in one pass. While a Scenario runs it reports each step — asking
-applications to close, counting down the five seconds before anything is forced — and ends
-with one summary of what launched, closed and refused. Closing is not a polite request
-only: whatever ignores it is ended, and unsaved work in those applications is lost.
-If an application later disappears from Windows, its saved name and icon remain visible as
-**Unavailable** so it can be removed without deleting the whole Scenario.
+Choose which apps to launch or close and follow the Scenario's progress. Missing apps stay visible as **Unavailable**.
+
+**Save your work first:** apps that do not close within five seconds are forcibly stopped, which can discard unsaved work.
 
 ## More catalog views
 
@@ -121,22 +103,9 @@ Inspect local file details, architecture, signature status and installation stat
 
 ![AppNook 0.4.0 settings with global shortcut, tray behavior and update controls](.github/images/settings.png)
 
-Everyday settings stay visible. Scanning, backups and maintenance live under Advanced, together
-with the applications no rule recognised: each one lists the signals the classifier read, can be
-moved to a category on the spot, and the whole list copies as plain text. Settings
-export contains preferences only. If storage is full or unavailable, imported settings
-remain active for the current session and the **Your changes are not being saved** banner
-appears. The import can still show **Settings imported.**; those changes may be lost after
-restart. Keep the export until you have confirmed the restored settings persist.
-Normal refreshes scan Windows sources and portable folders you add. Optional
-fixed-drive discovery runs through **Force full scan**, on by default, with a bounded traversal time. The
-installer adds AppNook to startup once, so it is already in the system tray
-after you sign in; choose **Open AppNook** there when you need the window. Turn it off the
-same way as any other program, in **Settings → Apps → Startup**. Closing the window leaves AppNook
-in the notification area; **Keep running in the tray** turns that into a normal quit. The window
-reopens at the size,
-position and maximized state you left it in, on the monitor it was on; unplug that monitor and it
-comes back to the middle of the one you still have.
+Manage scanning, backups and unclassified apps under **Advanced**. Optional fixed-drive discovery uses **Force full scan**. AppNook remembers window placement and can stay in the tray; manage startup in **Windows Settings → Apps → Startup**.
+
+Backups contain preferences only. If **Your changes are not being saved** appears, keep your export: imported settings may be lost after restart even when import reports success.
 
 ## Install
 
