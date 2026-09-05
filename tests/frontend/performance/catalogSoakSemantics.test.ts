@@ -22,6 +22,7 @@ function app(index: number): AppInfo {
 		iconBase64: index % 3 === 0 ? null : 'data:image/png;base64,x',
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: index % 5 === 0 ? 'Searchable metadata' : null,
 		version: null,
 		publisher: index % 7 === 0 ? 'AppNook Publisher' : null,
@@ -55,13 +56,6 @@ function client(apps: AppInfo[]): AppsClient {
 			installLocationExists: null,
 		}),
 		openAppFolder: vi.fn().mockResolvedValue(undefined),
-		getUninstallPreview: vi.fn().mockResolvedValue({
-			appName: '',
-			publisher: null,
-			source: 'registry',
-			mechanism: 'registered_command',
-		}),
-		uninstallApp: vi.fn().mockResolvedValue(undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 	}
 }

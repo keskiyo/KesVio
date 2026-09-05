@@ -1,5 +1,6 @@
 mod installer_sources;
 mod portable_sources;
+mod stage_log;
 mod steam_sources;
 mod windows_sources;
 
@@ -10,6 +11,7 @@ use crate::catalog::source::{SourceKey, SourceSnapshot};
 use crate::catalog::sources::registry::RegistryMetadata;
 use crate::catalog::sync::health::SourceOutcome;
 use crate::catalog::sync::scan_control::ScanControl;
+use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::sync::SyncRequest;
 use crate::catalog::{self, ScanProgress};
 
@@ -26,8 +28,9 @@ pub(super) fn scan_all(
     request: SyncRequest,
     progress: &impl Fn(ScanProgress),
     is_cancelled: &(impl Fn() -> bool + Sync),
+    steps: &StepTracker,
 ) -> SourceScan {
-    let control = ScanControl::new(is_cancelled);
+    let control = ScanControl::with_steps(is_cancelled, steps.clone());
     log::info!(
         "Scan starting: request={request:?} fixedDrives={} includedPaths={} excludedPaths={}",
         settings.auto_scan_fixed_drives,
@@ -43,7 +46,7 @@ pub(super) fn scan_all(
 
     let windows = windows_sources::scan(&control);
     let installers = installer_sources::scan(&control, progress);
-    let steam = steam_sources::scan(progress, is_cancelled);
+    let steam = steam_sources::scan(progress, is_cancelled, steps);
     let portable = portable_sources::scan(
         previous,
         settings,
@@ -51,23 +54,13 @@ pub(super) fn scan_all(
         steam.libraries,
         progress,
         is_cancelled,
+        steps,
     );
 
     let mut outcomes = windows.outcomes;
     outcomes.push(installers.outcome);
     outcomes.push(steam.outcome);
     outcomes.push(portable.outcome);
-    for outcome in &outcomes {
-        log::info!(
-            "Source {} answered={} replaced={} records={} in {}ms stop={:?}",
-            outcome.key,
-            outcome.answered,
-            outcome.replaced,
-            outcome.records,
-            outcome.duration.as_millis(),
-            outcome.stop
-        );
-    }
 
     let mut updates = Vec::new();
     push_snapshot(&mut updates, "steam", steam.apps);

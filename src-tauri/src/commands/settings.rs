@@ -4,6 +4,7 @@ use crate::catalog;
 use crate::catalog::sync::restart_change_watcher;
 use crate::error::AppError;
 use crate::lifecycle::{window_state, LifecycleState};
+use crate::paths;
 use crate::platform::windows::{drives, global_shortcut};
 use serde::Serialize;
 use std::path::Path;
@@ -78,16 +79,14 @@ fn normalize_scan_settings(
 
 #[tauri::command]
 pub(crate) async fn get_system_settings(app: tauri::AppHandle) -> Result<SystemSettings, AppError> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let app_data_dir =
+        paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let (scan_settings, fixed_drives) = run_blocking("System settings read", move || {
         let scan_settings = catalog::scan_settings::read(&app_data_dir);
         let fixed_drives = drives::fixed_drive_roots();
-        Ok::<_, String>((scan_settings, fixed_drives))
+        (scan_settings, fixed_drives)
     })
-    .await??;
+    .await?;
     let shortcut = app
         .state::<AppState>()
         .shortcut_status
@@ -111,10 +110,8 @@ pub(crate) async fn set_close_behavior(
     app: tauri::AppHandle,
     hide_to_tray: bool,
 ) -> Result<bool, AppError> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let app_data_dir =
+        paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let lifecycle = Arc::clone(&app.state::<Arc<LifecycleState>>());
     let previous = lifecycle.hides_to_tray();
     lifecycle.set_hides_to_tray(hide_to_tray);
@@ -135,10 +132,8 @@ pub(crate) async fn set_scan_settings(
     app: tauri::AppHandle,
     settings: catalog::scan_settings::ScanSettings,
 ) -> Result<catalog::scan_settings::ScanSettings, AppError> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let app_data_dir =
+        paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let settings = normalize_scan_settings(settings, &catalog::scan_settings::read(&app_data_dir))?;
     let watcher_settings = settings.clone();
     run_blocking("Scan settings update", move || {

@@ -1,4 +1,4 @@
-use crate::catalog::{AppInfo, SourceKind, UninstallTarget};
+use crate::catalog::{AppInfo, SourceKind};
 use crate::platform::windows::apps_folder::PackageIdentity;
 use std::collections::HashMap;
 use std::path::{Component, Path};
@@ -16,9 +16,6 @@ pub(super) fn apply(
     app.description = Some(name.clone());
     app.product_name = Some(name);
     app.can_uninstall = true;
-    app.uninstall = Some(UninstallTarget::Msix {
-        package_full_name: package.full_name.clone(),
-    });
 
     let Some(install_location) = app.install_location.as_deref() else {
         return;

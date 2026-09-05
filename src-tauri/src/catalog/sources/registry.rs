@@ -1,7 +1,7 @@
 use crate::catalog::sync::scan_control::{StageBudget, StageStop};
 use crate::catalog::{
     classify::classify, filters::clean_display_icon, find_executable_named, stable_id, AppInfo,
-    LaunchKind, SourceKind, UninstallTarget,
+    LaunchKind, SourceKind,
 };
 use crate::platform::windows::uninstall_registry;
 pub(in crate::catalog) use crate::platform::windows::uninstall_registry::RegistryEntry as RegistryValues;
@@ -13,7 +13,7 @@ pub(in crate::catalog) struct RegistryMetadata {
     pub version: Option<String>,
     pub publisher: Option<String>,
     pub install_location: Option<String>,
-    pub uninstall: UninstallTarget,
+    pub uninstall_signature: String,
 }
 
 #[derive(Default)]
@@ -32,11 +32,20 @@ pub(in crate::catalog) fn scan(budget: &StageBudget) -> RegistryScan {
     }
     let facts = crate::catalog::machine::MachineFacts::current();
     let entries = uninstall_registry::entries();
+    log::info!(
+        "Registry uninstall entries read: {} complete={}",
+        entries.entries.len(),
+        entries.complete
+    );
     result.complete = entries.complete;
     for values in entries.entries.into_iter().map(expand_registry_paths) {
         if !budget.charge_entry() {
             break;
         }
+        budget.step(
+            crate::catalog::source::REGISTRY_SOURCE,
+            &values.display_name,
+        );
         if let Some(metadata) = metadata_from_values(&values) {
             result.metadata.push(metadata);
         }
@@ -76,8 +85,7 @@ pub(in crate::catalog) fn from_values(
     {
         return None;
     }
-    let uninstall = uninstall_from_values(&values);
-    let can_uninstall = uninstall.is_some();
+    let can_uninstall = uninstall_signature(&values).is_some();
     let name = values.display_name.trim().to_string();
     let executable_metadata = crate::platform::windows::executable_metadata::read(&path);
     let internal_name = executable_metadata.internal_name.clone();
@@ -104,7 +112,6 @@ pub(in crate::catalog) fn from_values(
         original_filename: executable_metadata.original_filename,
         install_location: clean(values.install_location),
         can_uninstall,
-        uninstall,
         resolved_path: None,
         shortcut_icon_path: None,
         launch_arguments: None,
@@ -135,20 +142,17 @@ fn metadata_from_values(values: &RegistryValues) -> Option<RegistryMetadata> {
         version: clean(values.display_version.clone()),
         publisher: clean(values.publisher.clone()),
         install_location: clean(values.install_location.clone()),
-        uninstall: uninstall_from_values(values)?,
+        uninstall_signature: uninstall_signature(values)?,
     })
 }
 
-fn uninstall_from_values(values: &RegistryValues) -> Option<UninstallTarget> {
+fn uninstall_signature(values: &RegistryValues) -> Option<String> {
     values
         .quiet_uninstall_string
         .as_deref()
         .and_then(split_command)
         .or_else(|| values.uninstall_string.as_deref().and_then(split_command))
-        .map(|(executable, arguments)| UninstallTarget::Command {
-            executable,
-            arguments,
-        })
+        .map(|(executable, arguments)| format!("{executable}\u{1f}{arguments}"))
 }
 
 fn expand_registry_paths(mut values: RegistryValues) -> RegistryValues {
@@ -167,7 +171,7 @@ fn clean(value: Option<String>) -> Option<String> {
         .filter(|text| !text.is_empty())
 }
 
-pub(in crate::catalog) fn split_command(value: &str) -> Option<(String, String)> {
+fn split_command(value: &str) -> Option<(String, String)> {
     let value = value.trim();
     if let Some(rest) = value.strip_prefix('"') {
         let end = rest.find('"')?;
@@ -284,7 +288,7 @@ mod tests {
         .unwrap();
         assert_eq!(app.version.as_deref(), Some("1.2.3"));
         assert_eq!(app.publisher.as_deref(), Some("OpenAI"));
-        assert!(app.uninstall.is_some());
+        assert!(app.can_uninstall);
     }
 
     #[test]
@@ -307,12 +311,9 @@ mod tests {
 
     #[test]
     fn quiet_uninstall_command_has_priority() {
-        let dir = tempfile::tempdir().unwrap();
-        let executable = dir.path().join("App.exe");
-        std::fs::write(&executable, []).unwrap();
-        let app = from_values(RegistryValues {
+        let values = RegistryValues {
             display_name: "App".into(),
-            display_icon: Some(executable.to_string_lossy().into_owned()),
+            display_icon: None,
             display_version: None,
             publisher: None,
             comments: None,
@@ -320,14 +321,11 @@ mod tests {
             uninstall_string: Some(r"C:\Apps\uninstall.exe".into()),
             quiet_uninstall_string: Some(r"C:\Apps\uninstall.exe /quiet".into()),
             system_component: false,
-        })
-        .unwrap();
+        };
+
         assert_eq!(
-            app.uninstall,
-            Some(UninstallTarget::Command {
-                executable: r"C:\Apps\uninstall.exe".into(),
-                arguments: "/quiet".into(),
-            })
+            uninstall_signature(&values).as_deref(),
+            Some(format!("{}\u{1f}/quiet", r"C:\Apps\uninstall.exe").as_str())
         );
     }
 
@@ -349,7 +347,6 @@ mod tests {
         })
         .unwrap();
         assert!(!app.can_uninstall);
-        assert!(app.uninstall.is_none());
     }
 
     #[test]
@@ -380,11 +377,8 @@ mod tests {
         assert_eq!(metadata.name, "Steam");
         assert_eq!(metadata.publisher.as_deref(), Some("Valve"));
         assert_eq!(
-            metadata.uninstall,
-            UninstallTarget::Command {
-                executable: r"C:\Program Files (x86)\Steam\uninstall.exe".into(),
-                arguments: String::new(),
-            }
+            metadata.uninstall_signature,
+            format!("{}\u{1f}", r"C:\Program Files (x86)\Steam\uninstall.exe")
         );
         assert!(from_values(values).is_none());
     }

@@ -149,6 +149,7 @@ mod tests {
                 catalog::hydration::AppHydrationPatch {
                     id: "code".into(),
                     generation: 1,
+                    platform_kind: None,
                     icon_base64: Some("data:image/png;base64,new".into()),
                     description: None,
                     version: None,
@@ -161,6 +162,7 @@ mod tests {
                 catalog::hydration::AppHydrationPatch {
                     id: "claude".into(),
                     generation: 1,
+                    platform_kind: None,
                     icon_base64: None,
                     description: None,
                     version: None,

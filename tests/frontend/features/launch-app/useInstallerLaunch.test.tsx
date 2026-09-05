@@ -13,6 +13,7 @@ function app(artifactKind?: AppInfo['artifactKind']): AppInfo {
 		category: artifactKind ? 'installers_docs' : 'other',
 		launchKind: 'executable',
 		sourceKind: 'portable',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,

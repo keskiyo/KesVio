@@ -39,12 +39,18 @@ pub(crate) struct StartAppEntry {
 const MAX_ENTRIES: usize = 4096;
 const BATCH: usize = 32;
 
-pub(crate) fn start_apps(is_cancelled: &dyn Fn() -> bool) -> Option<Vec<StartAppEntry>> {
+pub(crate) fn start_apps(
+    is_cancelled: &dyn Fn() -> bool,
+    on_step: &dyn Fn(&str),
+) -> Option<Vec<StartAppEntry>> {
     ensure_initialized();
-    enumerate(is_cancelled).ok()
+    enumerate(is_cancelled, on_step).ok()
 }
 
-fn enumerate(is_cancelled: &dyn Fn() -> bool) -> windows::core::Result<Vec<StartAppEntry>> {
+fn enumerate(
+    is_cancelled: &dyn Fn() -> bool,
+    on_step: &dyn Fn(&str),
+) -> windows::core::Result<Vec<StartAppEntry>> {
     // SAFETY: `start_apps` joins an apartment before calling, which every interface below requires.
     // `FOLDERID_AppsFolder` is a static constant, so the pointer outlives the call; `KF_FLAG_DEFAULT`
     // with no access token asks for the calling user's own view of the folder and creates nothing.
@@ -57,6 +63,7 @@ fn enumerate(is_cancelled: &dyn Fn() -> bool) -> windows::core::Result<Vec<Start
     let mut entries = Vec::new();
     let mut batch: [Option<IShellItem>; BATCH] = std::array::from_fn(|_| None);
     while entries.len() < MAX_ENTRIES && !is_cancelled() {
+        on_step("next batch");
         let mut fetched = 0;
         // SAFETY: `batch` is a live local for the whole call and `Option<IShellItem>` has the
         // nullable-pointer layout the enumerator writes, so it fills at most `BATCH` slots that are
@@ -70,14 +77,15 @@ fn enumerate(is_cancelled: &dyn Fn() -> bool) -> windows::core::Result<Vec<Start
         entries.extend(
             batch
                 .iter_mut()
-                .filter_map(|slot| read_entry(&slot.take()?)),
+                .filter_map(|slot| read_entry(&slot.take()?, on_step)),
         );
     }
     Ok(entries)
 }
 
-fn read_entry(item: &IShellItem) -> Option<StartAppEntry> {
+fn read_entry(item: &IShellItem, on_step: &dyn Fn(&str)) -> Option<StartAppEntry> {
     let app_id = display_name(item, SIGDN_PARENTRELATIVEPARSING)?;
+    on_step(&app_id);
     let name = display_name(item, SIGDN_NORMALDISPLAY)?;
     let properties = item.cast::<IShellItem2>().ok();
     Some(StartAppEntry {
@@ -124,7 +132,7 @@ mod tests {
     fn enumerates_the_apps_folder_without_an_interpreter() {
         let never = || false;
 
-        let Some(entries) = start_apps(&never) else {
+        let Some(entries) = start_apps(&never, &|_| {}) else {
             return;
         };
 
@@ -141,7 +149,7 @@ mod tests {
     fn a_packaged_entry_carries_the_full_name_its_uninstall_needs() {
         let never = || false;
 
-        let Some(entries) = start_apps(&never) else {
+        let Some(entries) = start_apps(&never, &|_| {}) else {
             return;
         };
 
@@ -154,9 +162,11 @@ mod tests {
     #[test]
     fn a_cancelled_scan_stops_before_the_first_batch() {
         let cancelled = || true;
+        let steps = std::cell::Cell::new(0);
 
-        let entries = start_apps(&cancelled);
+        let entries = start_apps(&cancelled, &|_| steps.set(steps.get() + 1));
 
         assert_eq!(entries, Some(Vec::new()));
+        assert_eq!(steps.get(), 0);
     }
 }

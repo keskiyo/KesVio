@@ -4,5 +4,4 @@ export type {
 	StaleCopyInfo,
 	SystemClient,
 	SystemSettings,
-	UninstallHistoryEntry,
 } from './model/system.types'

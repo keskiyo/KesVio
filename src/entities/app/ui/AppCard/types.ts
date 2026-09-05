@@ -1,5 +1,5 @@
 import type { ReactNode, RefObject } from 'react'
-import type { AppInfo } from '../../model/app.types'
+import type { AppInfo, AppPlatformKind } from '../../model/app.types'
 
 export interface AppCardActions {
 	close(): void
@@ -25,6 +25,14 @@ export interface CardLabelProps {
 	name: string
 	version: string | null
 	launching: boolean
+}
+
+export interface PlatformBadgeProps {
+	platformKind: AppInfo['platformKind']
+}
+
+export interface PlatformIconProps {
+	platformKind: AppPlatformKind
 }
 
 export interface FavoriteButtonProps {

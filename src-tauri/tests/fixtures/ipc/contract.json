@@ -27,6 +27,7 @@
           "name": "Visual Studio Code",
           "originalFilename": "Code.exe",
           "path": "C:\\Program Files\\Code\\Code.exe",
+          "platformKind": null,
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
@@ -71,6 +72,7 @@
           "name": "Visual Studio Code",
           "originalFilename": "Code.exe",
           "path": "C:\\Program Files\\Code\\Code.exe",
+          "platformKind": null,
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
@@ -107,22 +109,7 @@
       },
       "version": "0.4.0"
     },
-    "get_uninstall_history": [
-      {
-        "appName": "Visual Studio Code",
-        "id": "editor",
-        "mechanism": "registered_command",
-        "publisher": "Microsoft Corporation",
-        "result": "succeeded",
-        "timestamp": 1700000200
-      }
-    ],
-    "get_uninstall_preview": {
-      "appName": "Visual Studio Code",
-      "mechanism": "msix",
-      "publisher": "Microsoft Corporation",
-      "source": "registry"
-    },
+    "open_startup_settings": null,
     "refresh_apps": {
       "apps": [
         {
@@ -142,6 +129,7 @@
           "name": "Visual Studio Code",
           "originalFilename": "Code.exe",
           "path": "C:\\Program Files\\Code\\Code.exe",
+          "platformKind": null,
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
@@ -176,6 +164,7 @@
           "name": "Visual Studio Code",
           "originalFilename": "Code.exe",
           "path": "C:\\Program Files\\Code\\Code.exe",
+          "platformKind": null,
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
@@ -209,6 +198,30 @@
     "code": "LAUNCH_UNAVAILABLE",
     "message": "This application is not available for launch."
   },
+  "errorCodes": [
+    "APP_DATA_UNAVAILABLE",
+    "APP_DETAILS_UNAVAILABLE",
+    "CLEAR_ICON_CACHE_FAILED",
+    "CLOSE_DATA_UNAVAILABLE",
+    "EXPORT_DIAGNOSTICS_FAILED",
+    "INVALID_HYDRATION_REQUEST",
+    "INVALID_RELEASE_VERSION",
+    "LAUNCH_DATA_UNAVAILABLE",
+    "LAUNCH_UNAVAILABLE",
+    "NO_NEWER_COPY",
+    "OPEN_FOLDER_UNAVAILABLE",
+    "OPERATION_FAILED",
+    "OPERATION_INTERRUPTED",
+    "PRODUCT_NAME_MISSING",
+    "RESET_CATALOG_CACHE_FAILED",
+    "RESET_ICON_CACHE_FAILED",
+    "SAVE_PREFERENCES_BACKUP_FAILED",
+    "SAVE_SCAN_SETTINGS_FAILED",
+    "SAVE_WINDOW_SETTINGS_FAILED",
+    "SCAN_CANCELLED",
+    "SCAN_COALESCED",
+    "SCAN_PATH_NOT_ABSOLUTE"
+  ],
   "events": {
     "catalog://changed": {
       "added": 1,
@@ -241,6 +254,7 @@
           "name": "Visual Studio Code",
           "originalFilename": "Code.exe",
           "path": "C:\\Program Files\\Code\\Code.exe",
+          "platformKind": null,
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
@@ -280,6 +294,7 @@
         "id": "editor",
         "installLocation": "C:\\Program Files\\Code",
         "originalFilename": "Code.exe",
+        "platformKind": "battle_net",
         "productName": "Visual Studio Code",
         "publisher": "Microsoft Corporation",
         "version": "1.95.0"

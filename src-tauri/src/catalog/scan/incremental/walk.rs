@@ -4,6 +4,7 @@ use super::model::{
     IncrementalScanResult, ScanLimit, ScanLimits, ScanMode,
 };
 use crate::catalog::machine::MachineFacts;
+use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::{portable, portable_app};
 use std::fs;
 use std::os::windows::fs::MetadataExt;
@@ -13,23 +14,25 @@ use std::time::{Instant, UNIX_EPOCH};
 const FILE_ATTRIBUTE_REPARSE_POINT: u32 = 0x400;
 const CANCELLATION_CHECK_INTERVAL: usize = 128;
 
-pub(super) struct VisitContext<'a, F: Fn() -> bool> {
+pub(super) struct VisitContext<'a> {
     pub(super) previous: &'a FilesystemIndex,
     pub(super) mode: ScanMode,
     pub(super) excluded: &'a [PathBuf],
-    pub(super) is_cancelled: &'a F,
+    pub(super) is_cancelled: &'a dyn Fn() -> bool,
     pub(super) limits: ScanLimits,
     pub(super) started_at: Instant,
     pub(super) facts: &'a MachineFacts,
     pub(super) verify_fingerprints: bool,
+    pub(super) steps: &'a StepTracker,
 }
 
-pub(super) fn visit_directory<F: Fn() -> bool>(
+pub(super) fn visit_directory(
     directory: &Path,
     depth: usize,
-    context: &VisitContext<'_, F>,
+    context: &VisitContext<'_>,
     result: &mut IncrementalScanResult,
 ) {
+    context.steps.mark("portable", &directory.to_string_lossy());
     if should_stop(result, context.limits, context.started_at)
         || (context.is_cancelled)()
         || !is_scannable_directory(directory)

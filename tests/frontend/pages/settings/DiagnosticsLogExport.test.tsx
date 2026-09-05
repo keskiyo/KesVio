@@ -23,6 +23,18 @@ describe('DiagnosticsLogExport', () => {
 		)
 	})
 
+	// The export is meant to be sent to someone, and a scan log names the folders it walked. The
+	// caution has to be on the control, not only in the documentation nobody opens first.
+	it('warns that the log names scanned folders before it is shared', () => {
+		render(<DiagnosticsLogExport onExport={vi.fn()} />)
+
+		expect(
+			screen.getByText(
+				'The log names the folders a scan walked, so read it before sharing it.',
+			),
+		).toBeVisible()
+	})
+
 	it('says nothing when the save dialog is dismissed', async () => {
 		const onExport = vi.fn().mockResolvedValue(false)
 		render(<DiagnosticsLogExport onExport={onExport} />)

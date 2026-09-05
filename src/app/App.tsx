@@ -36,7 +36,6 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		catalogChange,
 		clearCatalogChange,
 		error,
-		getUninstallPreview,
 		hydrateVisibleIcons,
 		initialize,
 		isLoading,
@@ -65,14 +64,10 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	const feedback = useAppFeedback({
 		onLaunch: state.launch,
 		onRefresh: state.refresh,
-		onUninstall: state.uninstall,
 	})
 	const dialogs = useCatalogDialogs({
 		systemClient,
-		getUninstallPreview,
 		onLaunch: feedback.launch,
-		onUninstall: feedback.uninstall,
-		onRefresh: state.refresh,
 	})
 	const navigation = useCatalogNavigation({
 		collapsedCategories: state.collapsedCategories,
@@ -149,7 +144,10 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 
 	return (
 		<AppStoreProvider store={store}>
-			<div className="app-shell theme-graphite-surface flex h-screen flex-col overflow-hidden">
+			<div
+				data-density={state.catalogDensity}
+				className="app-shell theme-graphite-surface flex h-screen flex-col overflow-hidden"
+			>
 				<AppShellChrome
 					activityActive={activity.active}
 					activityLabel={activity.label}
@@ -214,7 +212,6 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 					dialogs={dialogs}
 					paletteApps={primaryApps}
 					paletteSuggestions={catalog.paletteSuggestions}
-					onConfirmUninstall={dialogs.confirmUninstall}
 					onError={dialogs.reportFailure}
 				/>
 				<Toaster

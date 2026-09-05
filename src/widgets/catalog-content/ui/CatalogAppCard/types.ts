@@ -13,7 +13,7 @@ export interface CatalogAppCardProps {
 	onLaunch(app: AppInfo): Promise<void>
 	onMove(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void
-	onUninstall(app: AppInfo): void
+	onManageInWindows(): Promise<void>
 	isHidden?: boolean
 	isAuxiliary?: boolean
 	onHide(id: string): void

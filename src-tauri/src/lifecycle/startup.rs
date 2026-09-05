@@ -1,6 +1,7 @@
 use crate::app_state::{remember_catalog, AppState};
 use crate::catalog;
 use crate::catalog::sync::{load_sanitized_cache, restart_change_watcher};
+use crate::paths;
 use crate::platform::windows::{global_shortcut, install_registry};
 use tauri::{AppHandle, Manager};
 
@@ -29,7 +30,7 @@ fn register_global_shortcut(app: &AppHandle) {
 }
 
 fn load_cached_catalog(app: &AppHandle) {
-    let Ok(app_data_dir) = app.path().app_data_dir() else {
+    let Ok(app_data_dir) = paths::data_dir(app) else {
         return;
     };
     if let Some(apps) = load_sanitized_cache(&app_data_dir) {

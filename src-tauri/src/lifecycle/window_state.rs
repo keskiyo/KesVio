@@ -1,4 +1,5 @@
 use super::state::LifecycleState;
+use crate::paths;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::{fs, io};
@@ -75,6 +76,9 @@ pub(crate) fn read(app_data_dir: &Path) -> WindowPreferences {
 }
 
 pub(crate) fn write(app_data_dir: &Path, preferences: &WindowPreferences) -> io::Result<()> {
+    if stored_matches(app_data_dir, preferences) {
+        return Ok(());
+    }
     fs::create_dir_all(app_data_dir)?;
     let bytes = serde_json::to_vec_pretty(&StoredWindowState {
         version: WINDOW_STATE_VERSION,
@@ -85,6 +89,17 @@ pub(crate) fn write(app_data_dir: &Path, preferences: &WindowPreferences) -> io:
     let temporary = app_data_dir.join(WINDOW_STATE_TEMPORARY_FILE);
     fs::write(&temporary, bytes)?;
     fs::rename(temporary, app_data_dir.join(WINDOW_STATE_FILE))
+}
+
+fn stored_matches(app_data_dir: &Path, preferences: &WindowPreferences) -> bool {
+    fs::read(app_data_dir.join(WINDOW_STATE_FILE))
+        .ok()
+        .and_then(|bytes| serde_json::from_slice::<StoredWindowState>(&bytes).ok())
+        .filter(|stored| stored.version == WINDOW_STATE_VERSION)
+        .is_some_and(|stored| {
+            stored.geometry == preferences.geometry
+                && stored.hide_to_tray == preferences.hide_to_tray
+        })
 }
 
 fn overlap_area(geometry: &WindowGeometry, screen: &ScreenRect) -> u64 {
@@ -193,7 +208,7 @@ pub(crate) fn preferences_of(lifecycle: &LifecycleState) -> WindowPreferences {
 }
 
 pub(crate) fn persist(app: &AppHandle, lifecycle: &LifecycleState) {
-    let Ok(app_data_dir) = app.path().app_data_dir() else {
+    let Ok(app_data_dir) = paths::data_dir(app) else {
         return;
     };
     let _ = write(&app_data_dir, &preferences_of(lifecycle));
@@ -230,15 +245,12 @@ fn restore(window: &WebviewWindow, app_data_dir: &Path, lifecycle: &LifecycleSta
     lifecycle.remember_geometry(fitted);
 }
 
-pub(crate) fn present_main_window(app: &AppHandle, lifecycle: &LifecycleState, stay_hidden: bool) {
+pub(crate) fn restore_main_window(app: &AppHandle, lifecycle: &LifecycleState) {
     let Some(window) = app.get_webview_window("main") else {
         return;
     };
-    if let Ok(app_data_dir) = app.path().app_data_dir() {
+    if let Ok(app_data_dir) = paths::data_dir(app) {
         restore(&window, &app_data_dir, lifecycle);
-    }
-    if !stay_hidden {
-        let _ = window.show();
     }
 }
 
@@ -281,6 +293,37 @@ mod tests {
 
         write(dir.path(), &saved).unwrap();
 
+        assert_eq!(read(dir.path()), saved);
+    }
+
+    #[test]
+    fn rewriting_the_same_preferences_leaves_the_file_untouched() {
+        let dir = tempfile::tempdir().unwrap();
+        let saved = WindowPreferences::default();
+        write(dir.path(), &saved).unwrap();
+        let path = dir.path().join(WINDOW_STATE_FILE);
+        let written_at = fs::metadata(&path).unwrap().modified().unwrap();
+
+        write(dir.path(), &saved).unwrap();
+
+        assert_eq!(fs::metadata(&path).unwrap().modified().unwrap(), written_at);
+    }
+
+    #[test]
+    fn a_corrupt_or_future_document_is_replaced_rather_than_kept() {
+        let dir = tempfile::tempdir().unwrap();
+        let saved = WindowPreferences::default();
+
+        fs::write(dir.path().join(WINDOW_STATE_FILE), "not json").unwrap();
+        write(dir.path(), &saved).unwrap();
+        assert_eq!(read(dir.path()), saved);
+
+        fs::write(
+            dir.path().join(WINDOW_STATE_FILE),
+            br#"{"version":99,"hideToTray":false}"#,
+        )
+        .unwrap();
+        write(dir.path(), &saved).unwrap();
         assert_eq!(read(dir.path()), saved);
     }
 

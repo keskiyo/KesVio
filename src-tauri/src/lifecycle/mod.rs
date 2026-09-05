@@ -1,7 +1,9 @@
+mod presentation;
 mod startup;
 mod state;
 pub(crate) mod window_state;
 
+pub(crate) use presentation::prepare_main_window;
 pub(crate) use startup::spawn as start_background_initialization;
 pub(crate) use state::LifecycleState;
 

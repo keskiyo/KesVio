@@ -109,7 +109,6 @@ mod tests {
             original_filename: fixture.original_filename.clone(),
             install_location: fixture.install_location.clone(),
             can_uninstall: false,
-            uninstall: None,
             resolved_path: fixture.resolved_path.clone(),
             shortcut_icon_path: None,
             launch_arguments: None,

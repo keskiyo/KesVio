@@ -14,7 +14,7 @@ function AuxiliaryToolRowComponent({
 	onLaunch,
 	onMove,
 	onInfo,
-	onUninstall,
+	onManageInWindows,
 	onRestore,
 	onDemote,
 }: AuxiliaryToolRowProps) {
@@ -39,7 +39,7 @@ function AuxiliaryToolRowComponent({
 			data-menu-open={menuOpen || undefined}
 			data-launching={launching || undefined}
 			style={{ transform: CSS.Translate.toString(draggable.transform) }}
-			className={`app-card app-card-glass group relative grid min-h-18 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-xl border border-white/85 transition-[transform,border-color,box-shadow,opacity] duration-200 ease-out focus-within:border-violet-400/45 hover:-translate-y-0.5 ${menuOpen ? 'z-100' : ''} ${draggable.isDragging ? 'z-40 opacity-60' : ''}`}
+			className={`app-card app-card-row app-card-glass group relative grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-xl border border-white/85 transition-[transform,border-color,box-shadow,opacity] duration-200 ease-out focus-within:border-violet-400/45 hover:-translate-y-0.5 ${menuOpen ? 'z-100' : ''} ${draggable.isDragging ? 'z-40 opacity-60' : ''}`}
 		>
 			<button
 				type="button"
@@ -94,7 +94,7 @@ function AuxiliaryToolRowComponent({
 					onClose={closeMenu}
 					onMove={onMove}
 					onInfo={onInfo}
-					onUninstall={onUninstall}
+					onManageInWindows={onManageInWindows}
 					isHidden
 					onHide={() => undefined}
 					onRestore={onRestore}

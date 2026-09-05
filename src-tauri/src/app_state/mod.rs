@@ -1,13 +1,11 @@
 mod catalog_memory;
 mod launch_waits;
-mod uninstall;
 
 pub(crate) use catalog_memory::{
     app_details_target_for, cached_app_details_for, cached_details_for_catalog, known_catalog_ids,
     remember_app_details, remember_catalog,
 };
 pub(crate) use launch_waits::LaunchWaitLimiter;
-pub(crate) use uninstall::{execute_and_record, preview_for, UninstallPreview, UninstallRecord};
 
 use crate::catalog::cache::CachedAppDetails;
 use crate::catalog::scan_coordinator::ScanCoordinator;
@@ -33,7 +31,6 @@ pub(crate) struct LaunchTarget {
 #[derive(Default)]
 pub(crate) struct AppState {
     pub(crate) catalog_ids: Mutex<HashSet<String>>,
-    pub(crate) uninstall_targets: Mutex<HashMap<String, UninstallRecord>>,
     pub(crate) launch_targets: Mutex<HashMap<String, LaunchTarget>>,
     pub(crate) close_targets: Mutex<HashMap<String, CloseTarget>>,
     pub(crate) app_details_targets: Mutex<HashMap<String, AppDetailsTarget>>,
@@ -68,7 +65,6 @@ pub(crate) fn cached_app(name: &str, path: &str) -> catalog::AppInfo {
         original_filename: None,
         install_location: None,
         can_uninstall: false,
-        uninstall: None,
         resolved_path: None,
         shortcut_icon_path: None,
         launch_arguments: None,

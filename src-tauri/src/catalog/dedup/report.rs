@@ -5,7 +5,6 @@ use super::resolve_apps;
 use crate::catalog::AppInfo;
 use serde::Serialize;
 use std::collections::HashMap;
-use std::path::Path;
 
 #[derive(Serialize)]
 struct DedupMember {
@@ -45,10 +44,10 @@ pub(crate) fn write_dev_report(apps: &[AppInfo]) {
         return;
     }
     let report = analyze(apps.to_vec());
-    let Ok(base) = std::env::var("LOCALAPPDATA") else {
+    let Some(directory) = crate::paths::report_dir() else {
         return;
     };
-    let path = Path::new(&base).join("AppNook").join("dedup-report.json");
+    let path = directory.join("dedup-report.json");
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }

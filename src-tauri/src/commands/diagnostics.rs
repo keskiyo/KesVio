@@ -1,6 +1,6 @@
 use crate::diagnostics;
 use crate::error::AppError;
-use tauri::Manager;
+use crate::paths;
 use tauri_plugin_dialog::DialogExt;
 
 use super::run_blocking;
@@ -30,10 +30,8 @@ pub(crate) fn log_client_error(kind: String, detail: String) {
 
 #[tauri::command]
 pub(crate) async fn export_diagnostics_log(app: tauri::AppHandle) -> Result<bool, AppError> {
-    let directory = app
-        .path()
-        .app_log_dir()
-        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let directory =
+        paths::log_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let Some(file) = app
         .dialog()
         .file()

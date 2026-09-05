@@ -54,16 +54,13 @@ pub(crate) enum SourceKind {
     Portable,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub(crate) enum UninstallTarget {
-    Command {
-        executable: String,
-        arguments: String,
-    },
-    Msix {
-        package_full_name: String,
-    },
+pub(crate) enum PlatformKind {
+    Steam,
+    BattleNet,
+    MicrosoftStore,
+    Portable,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -95,8 +92,6 @@ pub(crate) struct AppInfo {
     pub install_location: Option<String>,
     #[serde(default)]
     pub can_uninstall: bool,
-    #[serde(default)]
-    pub uninstall: Option<UninstallTarget>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub resolved_path: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]

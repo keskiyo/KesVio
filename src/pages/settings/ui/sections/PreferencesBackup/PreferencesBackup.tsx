@@ -1,7 +1,7 @@
 import { DatabaseBackup, Download, History, Upload } from 'lucide-react'
 import { usePreferencesBackup } from './usePreferencesBackup'
 import type { PreferencesBackupProps } from './types'
-import { ACTION_BUTTON, ACTION_ROW } from '../../../data'
+import { ACTION_BUTTON, ACTION_BUTTON_PRIMARY, ACTION_ROW } from '../../../data'
 import { SettingsSectionHeader } from '../../components/SettingsSectionHeader'
 
 const NEUTRAL_BUTTON =
@@ -27,7 +27,7 @@ export function PreferencesBackup(props: PreferencesBackupProps) {
 				<SettingsSectionHeader
 					icon={DatabaseBackup}
 					title="Backup & restore"
-					description="Export categories, Favorites, Hidden apps, and scenarios. A local fallback copy is created before each saved change."
+					description="Export or import your settings."
 				/>
 			</div>
 			<div className={`mt-4 ${ACTION_ROW}`}>
@@ -35,7 +35,7 @@ export function PreferencesBackup(props: PreferencesBackupProps) {
 					type="button"
 					disabled={exporting}
 					onClick={() => void exportSettings()}
-					className={`${ACTION_BUTTON} utility-accent-button text-white focus-visible:outline-violet-400`}
+					className={ACTION_BUTTON_PRIMARY}
 				>
 					<Download size={16} aria-hidden="true" />
 					{exporting ? 'Saving\u2026' : 'Export settings'}

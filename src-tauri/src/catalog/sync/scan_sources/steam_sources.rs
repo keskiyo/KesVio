@@ -1,5 +1,7 @@
+use super::stage_log;
 use crate::catalog::sync::health::SourceOutcome;
 use crate::catalog::sync::scan_control::StageStop;
+use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::{self, AppInfo, ScanProgress};
 use std::path::PathBuf;
 use std::time::Instant;
@@ -13,7 +15,10 @@ pub(super) struct SteamSources {
 pub(super) fn scan(
     progress: &impl Fn(ScanProgress),
     is_cancelled: &(impl Fn() -> bool + Sync),
+    steps: &StepTracker,
 ) -> SteamSources {
+    stage_log::starting("steam");
+    steps.mark("steam", "installed libraries");
     let started_at = Instant::now();
     let libraries = catalog::steam::installed_libraries();
     let mut apps = Vec::new();
@@ -30,6 +35,7 @@ pub(super) fn scan(
             cancelled = true;
             break;
         }
+        steps.mark("steam", &library.to_string_lossy());
         let scan = catalog::steam::scan_library(library);
         complete &= scan.complete;
         apps.extend(scan.games.into_iter().map(catalog::steam_app));
@@ -49,6 +55,7 @@ pub(super) fn scan(
         records: apps.len(),
         duration: started_at.elapsed(),
     };
+    stage_log::finished(&outcome);
     SteamSources {
         apps: replaced.then_some(apps),
         libraries,

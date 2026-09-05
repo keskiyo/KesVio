@@ -1,7 +1,6 @@
 use super::{VisibilityClass, VisibilityReason};
 use crate::catalog::{AppInfo, SourceKind};
 use serde::Serialize;
-use std::path::Path;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,7 +18,7 @@ pub(crate) fn write_dev_report(apps: &[AppInfo]) {
     if !crate::catalog::dedup::dev_report_enabled() {
         return;
     }
-    let Ok(base) = std::env::var("LOCALAPPDATA") else {
+    let Some(directory) = crate::paths::report_dir() else {
         return;
     };
     let user_profile = std::env::var("USERPROFILE").ok();
@@ -39,9 +38,7 @@ pub(crate) fn write_dev_report(apps: &[AppInfo]) {
             original_filename: app.original_filename.as_deref(),
         })
         .collect::<Vec<_>>();
-    let path = Path::new(&base)
-        .join("AppNook")
-        .join("visibility-report.json");
+    let path = directory.join("visibility-report.json");
     if let Some(parent) = path.parent() {
         let _ = std::fs::create_dir_all(parent);
     }

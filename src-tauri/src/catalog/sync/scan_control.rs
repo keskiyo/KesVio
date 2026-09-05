@@ -1,3 +1,4 @@
+use super::scan_steps::StepTracker;
 use std::cell::Cell;
 use std::time::{Duration, Instant};
 
@@ -16,15 +17,28 @@ pub(crate) enum StageStop {
 
 pub(crate) struct ScanControl<'a> {
     cancelled: &'a (dyn Fn() -> bool + 'a),
+    steps: StepTracker,
 }
 
 impl<'a> ScanControl<'a> {
+    #[cfg(test)]
     pub(crate) fn new(cancelled: &'a (dyn Fn() -> bool + 'a)) -> Self {
-        Self { cancelled }
+        Self {
+            cancelled,
+            steps: StepTracker::default(),
+        }
+    }
+
+    pub(crate) fn with_steps(cancelled: &'a (dyn Fn() -> bool + 'a), steps: StepTracker) -> Self {
+        Self { cancelled, steps }
     }
 
     pub(crate) fn is_cancelled(&self) -> bool {
         (self.cancelled)()
+    }
+
+    pub(crate) fn step(&self, stage: &'static str, detail: &str) {
+        self.steps.mark(stage, detail);
     }
 
     pub(crate) fn stage(&self, timeout: Duration) -> StageBudget<'_> {
@@ -39,6 +53,7 @@ impl<'a> ScanControl<'a> {
     ) -> StageBudget<'_> {
         StageBudget {
             cancelled: self.cancelled,
+            steps: self.steps.clone(),
             deadline: Instant::now() + timeout,
             max_entries,
             max_depth,
@@ -50,6 +65,7 @@ impl<'a> ScanControl<'a> {
 
 pub(crate) struct StageBudget<'a> {
     cancelled: &'a (dyn Fn() -> bool + 'a),
+    steps: StepTracker,
     deadline: Instant,
     max_entries: usize,
     max_depth: usize,
@@ -60,6 +76,10 @@ pub(crate) struct StageBudget<'a> {
 impl StageBudget<'_> {
     pub(crate) fn max_depth(&self) -> usize {
         self.max_depth
+    }
+
+    pub(crate) fn step(&self, stage: &'static str, detail: &str) {
+        self.steps.mark(stage, detail);
     }
 
     pub(crate) fn should_stop(&self) -> bool {

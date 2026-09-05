@@ -17,7 +17,7 @@ export interface CategorySectionProps {
 	onLaunch(app: AppInfo): Promise<void>
 	onMoveApp(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void
-	onUninstall(app: AppInfo): void
+	onManageInWindows(): Promise<void>
 	onHide(id: string): void
 	onRestore(id: string): void
 	onDemote(id: string): void

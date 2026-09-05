@@ -9,7 +9,6 @@ pub(crate) mod diagnostics;
 pub(crate) mod launch;
 pub(crate) mod links;
 pub(crate) mod settings;
-pub(crate) mod uninstall;
 
 pub(super) const MAX_CATALOG_ID_LENGTH: usize = 512;
 

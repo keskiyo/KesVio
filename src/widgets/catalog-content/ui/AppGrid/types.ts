@@ -32,7 +32,7 @@ export interface AppGridProps {
 	onDeleteCategory(id: string): { ok: true } | { ok: false; error: string }
 	onLaunch(app: AppInfo): Promise<void>
 	onInfo(app: AppInfo): void
-	onUninstall(app: AppInfo): void
+	onManageInWindows(): Promise<void>
 	onHide(id: string): void
 	onRestore(id: string): void
 	onPromoteAuxiliary(id: string): void

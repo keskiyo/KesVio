@@ -3,6 +3,7 @@ import type { MaintenanceConfirmation } from '../../features/edit-settings'
 import type { UpdaterState } from '../../features/update-app'
 import type {
 	AppInfo,
+	CatalogDensity,
 	CatalogDiagnostics,
 	SourceHealth,
 	TargetAvailabilityDiff,
@@ -27,8 +28,20 @@ export interface SettingsSectionHeaderProps {
 	description: ReactNode
 }
 
+export interface DensityControlProps {
+	density: CatalogDensity
+	onSelect(density: CatalogDensity): void
+}
+
+export interface CatalogDensityRowProps {
+	density: CatalogDensity
+	onSetDensity(density: CatalogDensity): void
+}
+
 export interface SettingsPageProps {
 	client: SystemClient
+	density: CatalogDensity
+	onSetDensity(density: CatalogDensity): void
 	onExportPreferences?: () => string
 	onValidatePreferencesImport?: (
 		source: string,
@@ -52,10 +65,13 @@ export interface GeneralSettingsProps {
 	settings: SystemSettings | null
 	updater: UpdaterState
 	saving: boolean
+	density: CatalogDensity
+	onSetDensity(density: CatalogDensity): void
 	onSetCloseBehavior(hideToTray: boolean): Promise<void>
 	onOpenGithub: SystemClient['openGithub']
 	onOpenTelegram: SystemClient['openTelegram']
 	onOpenAppsSettings: SystemClient['openAppsSettings']
+	onOpenStartupSettings: SystemClient['openStartupSettings']
 }
 
 export interface CatalogMaintenanceProps {

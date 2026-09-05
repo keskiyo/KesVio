@@ -12,6 +12,7 @@ const app: AppInfo = {
 	category: 'installers_docs',
 	launchKind: 'executable',
 	sourceKind: 'portable',
+	platformKind: null,
 	description: null,
 	version: null,
 	publisher: null,

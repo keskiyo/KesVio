@@ -12,6 +12,7 @@ function app(value: Partial<AppInfo> & Pick<AppInfo, 'id' | 'name'>): AppInfo {
 		iconBase64: null,
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,

@@ -6,11 +6,30 @@ modules they exercise in `#[cfg(test)]` blocks so they can validate private and
 
 Snapshot: `v0.4.0`.
 
-- Rust: **664 test entries** in **97 source files**; two developer-only tests
-  are ignored in the normal run, so a green suite reports 662 passed. The
-  ignored pair is `catalog/golden/timings.rs`, which prints stage medians
-  instead of asserting a threshold, and the `msix.rs` case that drives the real
-  deployment API. The diagnostics log added `diagnostics/export.rs`, whose cases
+- Rust: **677 test entries** in **100 source files**; one developer-only test is
+  ignored in the normal run, so a green suite reports 676 passed. The ignored
+  case is `catalog/golden/timings.rs`, which prints stage medians instead of
+  asserting a threshold; its former companion, the `msix.rs` case that drove the
+  real deployment API, went with the uninstall feature. Removing that feature
+  deleted `platform/windows/uninstall/`, `commands/uninstall.rs` and
+  `app_state/uninstall.rs` along with their cases, and left one invariant behind
+  that is now guarded on purpose: `can_uninstall` is the evidence that an entry
+  is a registered product, worth 35 points in `visibility/mod.rs`, so
+  `sync/document.rs` proves it survives a cache round trip with its score intact
+  and `storage/cache.rs` proves the v9 to v10 migration drops the stored command
+  without touching the flag. Moving every store beside the executable added `paths/`, where
+  `portable.rs` proves that a root is created and probed once and adopted without
+  probing afterwards, that a debug build creates none, and that an occupied name
+  is declined; `adopt.rs` proves the one-way copy never refills a destination
+  that already exists; and `mod.rs` proves an unmanaged or unresolved location
+  defers to the Tauri per-user folder. `catalog/platform_kind.rs` maps a source
+  or its Battle.net evidence to the badge the card shows, and
+  `catalog/sync/scan_steps.rs` covers the stall watchdog: the threshold, the
+  repeat interval, the reused detail buffer, and a thread that stops before its
+  next poll rather than after it. `catalog/scan/settings.rs` and
+  `lifecycle/window_state.rs` each prove that rewriting the stored value is a
+  no-op while a malformed or unsupported document is still replaced. The
+  diagnostics log added `diagnostics/export.rs`, whose cases
   hold the XML document together — a plugin-formatted line becomes a structured
   entry, a line the logger did not write is kept verbatim, markup and control
   characters cannot escape their element, and the export keeps only the newest
@@ -20,13 +39,18 @@ Snapshot: `v0.4.0`.
   `lifecycle/state.rs` and window geometry in `lifecycle/window_state.rs`, which
   is where a window from a disconnected monitor, one hanging off an edge, one
   larger than its screen and a maximized one each have a named case.
+  `lifecycle/presentation.rs` keeps ordinary startup hidden until the frontend
+  readiness event while tray-backed autostart remains hidden.
   `commands/contract.rs` serializes every IPC payload and event and compares the
   shape against a recorded fixture, so a renamed or retyped field is reported as
-  a contract change rather than reaching the webview. Splitting scan sources per
+  a contract change rather than reaching the webview. The same fixture records
+  `errorCodes` from `AppError` itself, which is what the frontend now holds
+  `APP_ERROR_CODES` against; the previous frontend guard compared that map to a
+  hand-copied list and so agreed with itself while two real codes were missing. Splitting scan sources per
   source kind moved portable root selection into
   `catalog/sync/scan_sources/portable_sources.rs`, where retaining fixed drives
   across a refresh and discarding only a cancelled scan are proved.
-- Frontend: **715 Vitest tests** in **87 files**; it is documented here only to
+- Frontend: **759 Vitest tests** in **96 files**; it is documented here only to
   distinguish the two suites.
 - Two fixture corpora carry the catalog rules rather than the test bodies:
   **250 records** in `catalog_categories.json` and **30** in
@@ -132,7 +156,7 @@ coverage.
 
 These tests validate the only layer that calls Windows APIs: executable and
 folder target validation, launch/close process identity, PE metadata,
-signatures, icons, registry, drive discovery, global shortcut, uninstall and
+signatures, icons, registry, drive discovery, global shortcut and
 watcher lifecycle.
 
 | Module                                                                                                                       | Tests |
@@ -163,10 +187,6 @@ watcher lifecycle.
 | [`platform/windows/registry/registered_targets.rs`](../../src-tauri/src/platform/windows/registry/registered_targets.rs)     |     1 |
 | [`platform/windows/registry/uninstall_registry.rs`](../../src-tauri/src/platform/windows/registry/uninstall_registry.rs)     |     2 |
 | [`platform/windows/shortcuts/global_shortcut.rs`](../../src-tauri/src/platform/windows/shortcuts/global_shortcut.rs)         |     3 |
-| [`platform/windows/uninstall/uninstall_history.rs`](../../src-tauri/src/platform/windows/uninstall/uninstall_history.rs)     |     3 |
-| [`platform/windows/uninstall/msix.rs`](../../src-tauri/src/platform/windows/uninstall/msix.rs)                               |     3 |
-| [`platform/windows/uninstall/uninstaller.rs`](../../src-tauri/src/platform/windows/uninstall/uninstaller.rs)                 |     2 |
-| [`platform/windows/uninstall/validate.rs`](../../src-tauri/src/platform/windows/uninstall/validate.rs)                       |    16 |
 
 ## Core, IPC and lifecycle
 
@@ -182,7 +202,6 @@ exact `--autostart` argument is required.
 | -------------------------------------------------------------------------------- | ----: |
 | [`app_state/catalog_memory.rs`](../../src-tauri/src/app_state/catalog_memory.rs) |     7 |
 | [`app_state/launch_waits.rs`](../../src-tauri/src/app_state/launch_waits.rs)     |     1 |
-| [`app_state/uninstall.rs`](../../src-tauri/src/app_state/uninstall.rs)           |     4 |
 | [`commands/catalog.rs`](../../src-tauri/src/commands/catalog.rs)                 |     6 |
 | [`commands/close.rs`](../../src-tauri/src/commands/close.rs)                     |     6 |
 | [`commands/contract.rs`](../../src-tauri/src/commands/contract.rs)               |     2 |
@@ -191,11 +210,11 @@ exact `--autostart` argument is required.
 | [`commands/launch.rs`](../../src-tauri/src/commands/launch.rs)                   |     5 |
 | [`commands/mod.rs`](../../src-tauri/src/commands/mod.rs)                         |     1 |
 | [`commands/settings.rs`](../../src-tauri/src/commands/settings.rs)               |     3 |
-| [`commands/uninstall.rs`](../../src-tauri/src/commands/uninstall.rs)             |     4 |
 | [`diagnostics/export.rs`](../../src-tauri/src/diagnostics/export.rs)             |     8 |
 | [`diagnostics/retention.rs`](../../src-tauri/src/diagnostics/retention.rs)       |     4 |
 | [`error.rs`](../../src-tauri/src/error.rs)                                       |     6 |
 | [`lifecycle/mod.rs`](../../src-tauri/src/lifecycle/mod.rs)                       |     4 |
+| [`lifecycle/presentation.rs`](../../src-tauri/src/lifecycle/presentation.rs)     |     2 |
 | [`lifecycle/state.rs`](../../src-tauri/src/lifecycle/state.rs)                   |     6 |
 | [`lifecycle/window_state.rs`](../../src-tauri/src/lifecycle/window_state.rs)     |    14 |
 

@@ -1,10 +1,4 @@
-import {
-	fireEvent,
-	render,
-	screen,
-	waitFor,
-	within,
-} from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { toast } from 'sonner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -21,6 +15,7 @@ function app(
 		iconBase64: null,
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,
@@ -62,13 +57,6 @@ function renderApp(
 			unavailable: 0,
 			failed: 0,
 		}),
-		getUninstallPreview: vi.fn().mockResolvedValue({
-			appName: 'Visual Studio Code',
-			publisher: 'Microsoft',
-			source: 'registry',
-			mechanism: 'registered_command',
-		}),
-		uninstallApp: vi.fn().mockResolvedValue(undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 		...overrides,
 		getAppDetails:
@@ -99,14 +87,13 @@ function renderApp(
 		}),
 		setScanSettings: vi.fn().mockImplementation(async s => s),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
-		getUninstallHistory: vi.fn().mockResolvedValue([]),
-		clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 		pickFolder: vi.fn().mockResolvedValue(null),
 		openTelegram: vi.fn().mockResolvedValue(undefined),
 		openGithub: vi.fn().mockResolvedValue(undefined),
 		openAppsSettings: vi.fn().mockResolvedValue(undefined),
+		openStartupSettings: vi.fn().mockResolvedValue(undefined),
 		...systemOverrides,
 	}
 	const store = createAppStore(client, localStorage)
@@ -168,104 +155,6 @@ describe('UX quality — first impressions', () => {
 		resolveFirst()
 		// After debounce/disabled guard: only one call
 		expect(client.launchApp).toHaveBeenCalledTimes(1)
-	})
-
-	// Issue 2: uninstall success toast names the app
-	it('shows the app name in the uninstall success toast', async () => {
-		renderApp()
-		await userEvent.click(
-			await screen.findByRole('button', {
-				name: 'Manage Visual Studio Code',
-			}),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Uninstall' }),
-		)
-		await userEvent.click(
-			await screen.findByRole('button', { name: 'Confirm uninstall' }),
-		)
-		expect(
-			await screen.findByText('Visual Studio Code uninstalled'),
-		).toBeInTheDocument()
-	})
-
-	// The card has to leave the catalog on its own: a finished uninstall is followed by a rescan,
-	// so the user never has to press Refresh to stop seeing something they removed.
-	it('rescans the catalog after a finished uninstall', async () => {
-		const { client } = renderApp()
-		await userEvent.click(
-			await screen.findByRole('button', {
-				name: 'Manage Visual Studio Code',
-			}),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Uninstall' }),
-		)
-		const before = (client.refreshApps as ReturnType<typeof vi.fn>).mock
-			.calls.length
-
-		await userEvent.click(
-			await screen.findByRole('button', { name: 'Confirm uninstall' }),
-		)
-
-		await waitFor(() =>
-			expect(client.refreshApps).toHaveBeenCalledTimes(before + 1),
-		)
-	})
-
-	// Nothing was removed, so rescanning would be work for no reason and the wizard's own dialog
-	// should simply go away.
-	it('does not rescan when the user closed the uninstall wizard', async () => {
-		const { client } = renderApp({
-			uninstallApp: vi.fn().mockRejectedValue({
-				code: 'UNINSTALL_CANCELLED',
-				message: 'The uninstall was cancelled.',
-			}),
-		})
-		await userEvent.click(
-			await screen.findByRole('button', {
-				name: 'Manage Visual Studio Code',
-			}),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Uninstall' }),
-		)
-		const before = (client.refreshApps as ReturnType<typeof vi.fn>).mock
-			.calls.length
-
-		await userEvent.click(
-			await screen.findByRole('button', { name: 'Confirm uninstall' }),
-		)
-
-		expect(
-			await screen.findByText(
-				'Uninstall of Visual Studio Code cancelled',
-			),
-		).toBeInTheDocument()
-		expect(client.refreshApps).toHaveBeenCalledTimes(before)
-	})
-
-	// Issue 3: uninstall error toast names the app
-	it('shows the app name in the uninstall error toast', async () => {
-		renderApp({
-			uninstallApp: vi
-				.fn()
-				.mockRejectedValue(new Error('permission denied')),
-		})
-		await userEvent.click(
-			await screen.findByRole('button', {
-				name: 'Manage Visual Studio Code',
-			}),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Uninstall' }),
-		)
-		await userEvent.click(
-			await screen.findByRole('button', { name: 'Confirm uninstall' }),
-		)
-		expect(
-			await screen.findByText('Could not uninstall Visual Studio Code'),
-		).toBeInTheDocument()
 	})
 
 	// Issue 4: launch button shows loading state
@@ -516,29 +405,6 @@ describe('UX quality — keyboard & native (round 3)', () => {
 			screen.getByRole('button', { name: 'Scan for apps' }),
 		)
 		await screen.findByText('Could not refresh the application list')
-
-		expect(errorToast).toHaveBeenCalledTimes(1)
-	})
-
-	it('reports a failed uninstall exactly once', async () => {
-		// spyOn returns the existing spy when the method is already wrapped, so the history has
-		// to be cleared or earlier tests in this file inflate the count.
-		const errorToast = vi.spyOn(toast, 'error').mockClear()
-		renderApp({
-			uninstallApp: vi.fn().mockRejectedValue(new Error('denied')),
-		})
-		await userEvent.click(
-			await screen.findByRole('button', {
-				name: 'Manage Visual Studio Code',
-			}),
-		)
-		await userEvent.click(
-			await screen.findByRole('menuitem', { name: /Uninstall/i }),
-		)
-		await userEvent.click(
-			await screen.findByRole('button', { name: 'Confirm uninstall' }),
-		)
-		await screen.findByText('Could not uninstall Visual Studio Code')
 
 		expect(errorToast).toHaveBeenCalledTimes(1)
 	})

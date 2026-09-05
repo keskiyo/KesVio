@@ -1,4 +1,5 @@
 import { ExternalLink, RefreshCw, Send } from 'lucide-react'
+import { ACTION_BUTTON_PRIMARY, ACTION_BUTTON_QUIET } from '../../data'
 import { GithubIcon } from '../../../../shared/ui/GithubIcon'
 import type { SettingsUpdateControlsProps } from '../../types'
 import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
@@ -26,7 +27,7 @@ export function SettingsUpdateControls({
 						type="button"
 						disabled={updater.status === 'checking'}
 						onClick={() => void updater.checkNow()}
-						className="utility-accent-button inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium text-white focus-visible:outline-2 focus-visible:outline-violet-500 disabled:opacity-50"
+						className={ACTION_BUTTON_PRIMARY}
 					>
 						<RefreshCw
 							size={16}
@@ -43,7 +44,7 @@ export function SettingsUpdateControls({
 						type="button"
 						aria-label="Open AppNook on GitHub"
 						onClick={() => void onOpenGithub()}
-						className="inline-flex items-center gap-2 rounded-xl border border-slate-300/70 px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-violet-500"
+						className={ACTION_BUTTON_QUIET}
 					>
 						<GithubIcon size={16} aria-hidden="true" />
 						keskiyo

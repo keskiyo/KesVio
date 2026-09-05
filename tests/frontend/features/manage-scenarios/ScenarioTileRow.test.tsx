@@ -15,6 +15,7 @@ function app(index: number): AppInfo {
 		category: 'utilities',
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,

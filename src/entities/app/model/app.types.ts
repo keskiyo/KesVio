@@ -3,7 +3,8 @@ import type { AppCategory } from '../../category'
 export type AppLaunchKind = 'executable' | 'shortcut' | 'app_user_model_id'
 export type AppSourceKind =
 	'registry' | 'start_menu' | 'start_apps' | 'msix' | 'steam' | 'portable'
-export type UninstallMechanism = 'registered_command' | 'msi' | 'msix'
+export type AppPlatformKind =
+	'steam' | 'battle_net' | 'microsoft_store' | 'portable'
 export type AppVisibilityClass = 'primary' | 'auxiliary' | 'rejected'
 export type AppArtifactKind = 'application' | 'installer' | 'documentation'
 
@@ -41,6 +42,7 @@ export interface AppInfo {
 	category: AppCategory
 	launchKind: AppLaunchKind
 	sourceKind: AppSourceKind
+	platformKind: AppPlatformKind | null
 	description: string | null
 	version: string | null
 	publisher: string | null
@@ -134,13 +136,6 @@ export interface CatalogDiagnostics {
 	targetAvailability?: TargetAvailabilityDiff
 }
 
-export interface UninstallPreview {
-	appName: string
-	publisher: string | null
-	source: AppSourceKind
-	mechanism: UninstallMechanism
-}
-
 export interface CatalogChangeSummary {
 	added: number
 	removed: number
@@ -157,6 +152,7 @@ export interface CatalogDelta {
 export interface AppHydrationPatch {
 	id: string
 	generation: number
+	platformKind?: AppPlatformKind
 	iconBase64?: string
 	description?: string
 	version?: string
@@ -206,8 +202,6 @@ export interface AppsClient {
 	closeApps(ids: string[]): Promise<CloseAppsResult>
 	getAppDetails(id: string): Promise<AppDetails>
 	openAppFolder(id: string): Promise<void>
-	getUninstallPreview(id: string): Promise<UninstallPreview>
-	uninstallApp(id: string): Promise<void>
 	onCatalogDelta?(handler: (delta: CatalogDelta) => void): Promise<() => void>
 	onCatalogPatches?(
 		handler: (patches: AppHydrationPatch[]) => void,

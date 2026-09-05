@@ -1,4 +1,5 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
+import { createAppearanceActions } from './appearanceActions'
 import { createAppMarkActions } from './appMarkActions'
 import { createAppPlacementActions } from './appPlacementActions'
 import { createCatalogActions } from './catalogActions'
@@ -11,11 +12,11 @@ import { createPersist } from './persist'
 import { createPreferenceTransferActions } from './preferenceTransferActions'
 import { createScenarioActions } from './scenarioActions'
 import { readPreferences } from './preferences'
-import type { AppPreferencesV17 } from './preferences'
+import type { AppPreferencesV18 } from './preferences'
 import type { AppsClient } from '../../entities/app'
 import type { AppState } from './types'
 
-function initialState(preferences: AppPreferencesV17) {
+function initialState(preferences: AppPreferencesV18) {
 	return {
 		apps: [],
 		query: '',
@@ -28,6 +29,7 @@ function initialState(preferences: AppPreferencesV17) {
 		catalogDiagnostics: null,
 		error: null,
 		activeView: 'all' as const,
+		catalogDensity: preferences.catalogDensity,
 		favoriteAppIds: preferences.favoriteAppIds,
 		favoriteAppIdentities: preferences.favoriteAppIdentities,
 		categoryOrder: preferences.categoryOrder,
@@ -72,6 +74,7 @@ export function createAppStore(
 			...createCatalogSyncActions({ set, get, persist }),
 			...createIconActions({ get, client }),
 			...createLaunchActions({ set, get, client }),
+			...createAppearanceActions({ set, persist }),
 			...createAppMarkActions({ set, get, persist }),
 			...createAppPlacementActions({ set, persist }),
 			...createCategoryActions({ set, get, persist, idFactory }),

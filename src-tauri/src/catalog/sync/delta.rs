@@ -84,7 +84,6 @@ pub(crate) fn compute_delta(
 mod tests {
     use super::*;
     use crate::catalog::sync::app;
-    use crate::catalog::UninstallTarget;
 
     #[test]
     fn computes_stable_id_delta_and_summary() {
@@ -106,10 +105,6 @@ mod tests {
     #[test]
     fn catalog_delta_excludes_execution_metadata_from_webview_json() {
         let mut current = app("editor", "Editor");
-        current.uninstall = Some(UninstallTarget::Command {
-            executable: "TOP_SECRET_DELTA_UNINSTALL_EXECUTABLE".into(),
-            arguments: "TOP_SECRET_DELTA_UNINSTALL_ARGUMENTS".into(),
-        });
         current.launch_arguments = Some("TOP_SECRET_DELTA_LAUNCH_ARGUMENTS".into());
         current.resolved_path = Some("TOP_SECRET_DELTA_RESOLVED_TARGET".into());
         current.shortcut_icon_path = Some("TOP_SECRET_DELTA_SHORTCUT_ICON".into());
@@ -119,8 +114,6 @@ mod tests {
         let serialized = json.to_string();
 
         for secret in [
-            "TOP_SECRET_DELTA_UNINSTALL_EXECUTABLE",
-            "TOP_SECRET_DELTA_UNINSTALL_ARGUMENTS",
             "TOP_SECRET_DELTA_LAUNCH_ARGUMENTS",
             "TOP_SECRET_DELTA_RESOLVED_TARGET",
             "TOP_SECRET_DELTA_SHORTCUT_ICON",

@@ -1,5 +1,3 @@
-import type { UninstallMechanism } from '../../app'
-
 export interface GlobalShortcutStatus {
 	available: boolean
 	label: string
@@ -20,27 +18,17 @@ export interface ScanSettings {
 	excludedPaths: string[]
 }
 
-export interface UninstallHistoryEntry {
-	id: string
-	timestamp: number
-	appName: string
-	publisher: string | null
-	mechanism: UninstallMechanism
-	result: 'succeeded' | 'failed'
-}
-
 export interface SystemClient {
 	getSettings(): Promise<SystemSettings>
 	setScanSettings(settings: ScanSettings): Promise<ScanSettings>
 	setCloseBehavior(hideToTray: boolean): Promise<boolean>
-	getUninstallHistory(): Promise<UninstallHistoryEntry[]>
-	clearUninstallHistory(): Promise<void>
 	savePreferencesBackup(contents: string): Promise<boolean>
 	exportDiagnosticsLog(): Promise<boolean>
 	pickFolder(): Promise<string | null>
 	openTelegram(): Promise<void>
 	openGithub(): Promise<void>
 	openAppsSettings(): Promise<void>
+	openStartupSettings(): Promise<void>
 	openRelease?(version: string): Promise<void>
 	staleCopyStatus?(): Promise<StaleCopyInfo | null>
 	openInstalledCopy?(): Promise<void>

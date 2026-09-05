@@ -21,6 +21,7 @@ function app(id: string): AppInfo {
 		iconBase64: null,
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,

@@ -14,6 +14,7 @@ function app(overrides: Partial<AppInfo>): AppInfo {
 		category: 'other',
 		launchKind: 'executable',
 		sourceKind: 'portable',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,

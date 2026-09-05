@@ -5,6 +5,7 @@ export type {
 	AppHydrationPatch,
 	AppInfo,
 	AppLaunchKind,
+	AppPlatformKind,
 	AppSignatureStatus,
 	AppSourceKind,
 	AppsClient,
@@ -23,8 +24,6 @@ export type {
 	SourceHealth,
 	SourceHealthState,
 	TargetAvailabilityDiff,
-	UninstallMechanism,
-	UninstallPreview,
 } from './model/app.types'
 export {
 	type AppPredicate,
@@ -75,6 +74,11 @@ export {
 	isCatalogArtifact,
 	isInstaller,
 } from './lib/catalogArtifacts'
+export {
+	CATALOG_DENSITIES,
+	type CatalogDensity,
+	DEFAULT_CATALOG_DENSITY,
+} from './lib/catalogDensity'
 export {
 	filterAppsByQuery,
 	rankAppsByQuery,

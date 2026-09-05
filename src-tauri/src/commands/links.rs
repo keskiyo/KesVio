@@ -40,6 +40,17 @@ pub(crate) async fn open_apps_settings() -> Result<(), AppError> {
 }
 
 #[tauri::command]
+pub(crate) async fn open_startup_settings() -> Result<(), AppError> {
+    tauri::async_runtime::spawn_blocking(|| launcher::shell_execute("ms-settings:startupapps"))
+        .await
+        .map_err(|error| AppError::Interrupted {
+            context: "Startup settings launch",
+            source: error.to_string(),
+        })?
+        .map_err(AppError::from)
+}
+
+#[tauri::command]
 pub(crate) async fn open_github() -> Result<(), AppError> {
     tauri::async_runtime::spawn_blocking(|| {
         launcher::shell_execute("https://github.com/keskiyo/AppNook")

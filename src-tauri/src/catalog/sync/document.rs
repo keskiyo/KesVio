@@ -8,9 +8,6 @@ pub(crate) fn load_sanitized_document(app_data_dir: &Path) -> Option<CatalogCach
     document.apps = catalog::sanitize(document.apps);
     document.app_details =
         crate::catalog::details::retain_cached_details(&document.app_details, &document.apps);
-    for app in &mut document.apps {
-        app.can_uninstall = app.uninstall.is_some();
-    }
     if document.apps != original && !newer_generation_on_disk(app_data_dir, document.generation) {
         let _ = cache::write_document(app_data_dir, &document);
     }
@@ -47,7 +44,6 @@ mod tests {
     fn settled(apps: Vec<crate::catalog::AppInfo>) -> Vec<crate::catalog::AppInfo> {
         let mut settled = crate::catalog::sanitize(apps);
         for app in &mut settled {
-            app.can_uninstall = app.uninstall.is_some();
             app.icon_base64 = Some(CACHED_ICON.into());
         }
         settled
@@ -171,10 +167,15 @@ mod tests {
     }
 
     #[test]
-    fn disables_stale_uninstall_flag_without_a_cached_target() {
+    fn a_registered_product_keeps_its_flag_and_its_score_across_a_cache_round_trip() {
         let dir = tempfile::tempdir().unwrap();
         let mut app = cached_app("Editor", r"C:\Editor.exe");
         app.can_uninstall = true;
+        crate::catalog::visibility::apply_visibility(&mut app);
+        let scored = app.visibility_score;
+        assert!(app
+            .visibility_reasons
+            .contains(&crate::catalog::VisibilityReason::RegisteredProduct));
         cache::write_document(
             dir.path(),
             &CatalogCache {
@@ -183,8 +184,14 @@ mod tests {
             },
         )
         .unwrap();
+
         let apps = load_sanitized_cache(dir.path()).unwrap();
-        assert!(!apps[0].can_uninstall);
+
+        assert!(apps[0].can_uninstall);
+        assert_eq!(apps[0].visibility_score, scored);
+        assert!(apps[0]
+            .visibility_reasons
+            .contains(&crate::catalog::VisibilityReason::RegisteredProduct));
     }
 
     #[test]

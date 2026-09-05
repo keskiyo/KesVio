@@ -23,7 +23,7 @@ export function SettingsDiscoveryControls({
 				<SettingsSectionHeader
 					icon={HardDrive}
 					title="Application discovery"
-					description="Ordinary refresh scans Windows sources and added folders. Fixed drives are walked during Force full scan, which is on by default."
+					description="Choose where AppNook scans."
 				/>
 				<SettingsToggle
 					label="Include fixed drives in Force full scan"
@@ -39,6 +39,11 @@ export function SettingsDiscoveryControls({
 					}
 				/>
 			</div>
+
+			<p className="mt-3 text-sm leading-6 text-slate-600">
+				Fixed drives are walked only during Force full scan. An ordinary
+				refresh reads Windows sources and the folders added below.
+			</p>
 
 			<div className="mt-5">
 				<p className="text-xs font-semibold tracking-[.14em] text-slate-500 uppercase">

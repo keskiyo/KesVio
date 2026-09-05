@@ -29,13 +29,6 @@ function emptyClient(): AppsClient {
 			installLocationExists: null,
 		}),
 		openAppFolder: vi.fn().mockResolvedValue(undefined),
-		getUninstallPreview: vi.fn().mockResolvedValue({
-			appName: '',
-			publisher: null,
-			source: 'registry',
-			mechanism: 'registered_command',
-		}),
-		uninstallApp: vi.fn().mockResolvedValue(undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 	}
 }
@@ -49,6 +42,7 @@ function app(index: number): AppInfo {
 		iconBase64: null,
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,
@@ -94,7 +88,7 @@ function renderGrid(size: number) {
 				onMoveApp={vi.fn()}
 				onLaunch={vi.fn().mockResolvedValue(undefined)}
 				onInfo={vi.fn()}
-				onUninstall={vi.fn()}
+				onManageInWindows={vi.fn()}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
 				onPromoteAuxiliary={vi.fn()}

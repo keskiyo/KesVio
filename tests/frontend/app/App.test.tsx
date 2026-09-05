@@ -16,6 +16,7 @@ function app(
 		iconBase64: null,
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,
@@ -65,13 +66,6 @@ function renderApp(
 			unavailable: 0,
 			failed: 0,
 		}),
-		getUninstallPreview: vi.fn().mockResolvedValue({
-			appName: 'Visual Studio Code',
-			publisher: 'Microsoft',
-			source: 'registry',
-			mechanism: 'registered_command',
-		}),
-		uninstallApp: vi.fn().mockResolvedValue(undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 		...overrides,
 		getAppDetails:
@@ -102,14 +96,13 @@ function renderApp(
 		}),
 		setScanSettings: vi.fn().mockImplementation(async settings => settings),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
-		getUninstallHistory: vi.fn().mockResolvedValue([]),
-		clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 		pickFolder: vi.fn().mockResolvedValue(null),
 		openTelegram: vi.fn().mockResolvedValue(undefined),
 		openGithub: vi.fn().mockResolvedValue(undefined),
 		openAppsSettings: vi.fn().mockResolvedValue(undefined),
+		openStartupSettings: vi.fn().mockResolvedValue(undefined),
 		...systemOverrides,
 	}
 	const store = createAppStore(client, localStorage)
@@ -160,6 +153,44 @@ describe('App', () => {
 				callback(0)
 				return 1
 			},
+		)
+	})
+
+	it('renders the stored catalog density on the shell', async () => {
+		localStorage.setItem(
+			PREFERENCES_KEY,
+			JSON.stringify({ version: 18, catalogDensity: 'dense' }),
+		)
+		renderApp()
+		await screen.findByText('Steam')
+
+		expect(document.querySelector('.app-shell')).toHaveAttribute(
+			'data-density',
+			'dense',
+		)
+	})
+
+	it('falls back to the compact density with nothing stored', async () => {
+		renderApp()
+		await screen.findByText('Steam')
+
+		expect(document.querySelector('.app-shell')).toHaveAttribute(
+			'data-density',
+			'compact',
+		)
+	})
+
+	it('keeps a stored comfortable density instead of the compact default', async () => {
+		localStorage.setItem(
+			PREFERENCES_KEY,
+			JSON.stringify({ version: 18, catalogDensity: 'comfortable' }),
+		)
+		renderApp()
+		await screen.findByText('Steam')
+
+		expect(document.querySelector('.app-shell')).toHaveAttribute(
+			'data-density',
+			'comfortable',
 		)
 	})
 
@@ -903,76 +934,6 @@ describe('App', () => {
 				name: 'Visual Studio Code actions',
 			}),
 		).not.toBeInTheDocument()
-	})
-
-	it('requires confirmation before starting uninstall', async () => {
-		const { client } = renderApp()
-		await userEvent.click(
-			await screen.findByRole('button', {
-				name: 'Manage Visual Studio Code',
-			}),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Uninstall' }),
-		)
-		expect(client.uninstallApp).not.toHaveBeenCalled()
-		expect(document.body.style.overflow).toBe('hidden')
-		expect(await screen.findByText('Microsoft')).toBeInTheDocument()
-		expect(screen.getByText('Registry')).toBeInTheDocument()
-		expect(
-			screen.getByText('Registered uninstall command'),
-		).toBeInTheDocument()
-		expect(
-			screen.queryByText('C:\\Code\\uninstall.exe /quiet'),
-		).not.toBeInTheDocument()
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Confirm uninstall' }),
-		)
-		expect(client.uninstallApp).toHaveBeenCalledWith('code')
-		expect(client.refreshApps).toHaveBeenCalledTimes(1)
-		expect(document.body.style.overflow).toBe('')
-	})
-
-	it('disables uninstall when no registered uninstall target exists', async () => {
-		const { client } = renderApp()
-		await userEvent.click(
-			await screen.findByRole('button', { name: 'Manage Steam' }),
-		)
-		const unavailable = screen.getByRole('menuitem', {
-			name: 'Uninstall unavailable',
-		})
-		expect(unavailable).toBeDisabled()
-		expect(
-			screen.getByRole('menuitem', { name: 'Move to category' }),
-		).toBeInTheDocument()
-		expect(client.uninstallApp).not.toHaveBeenCalled()
-		expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
-	})
-
-	it('keeps uninstall confirmation disabled when preview fails', async () => {
-		const { client } = renderApp({
-			getUninstallPreview: vi
-				.fn()
-				.mockRejectedValue(new Error('preview unavailable')),
-		})
-		await userEvent.click(
-			await screen.findByRole('button', {
-				name: 'Manage Visual Studio Code',
-			}),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Uninstall' }),
-		)
-
-		expect(
-			await screen.findByText(
-				'The operation could not be completed. Try again.',
-			),
-		).toBeInTheDocument()
-		expect(
-			screen.getByRole('button', { name: 'Confirm uninstall' }),
-		).toBeDisabled()
-		expect(client.uninstallApp).not.toHaveBeenCalled()
 	})
 
 	it('returns to All Apps from the header without clearing search', async () => {

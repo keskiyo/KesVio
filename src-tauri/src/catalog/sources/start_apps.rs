@@ -13,7 +13,10 @@ pub(in crate::catalog) fn scan(control: &ScanControl) -> Option<Vec<AppInfo>> {
     if control.is_cancelled() {
         return None;
     }
-    let entries = apps_folder::start_apps(&|| control.is_cancelled())?;
+    let entries = apps_folder::start_apps(&|| control.is_cancelled(), &|detail| {
+        control.step(crate::catalog::source::START_APPS_SOURCE, detail)
+    })?;
+    log::info!("Apps folder enumerated: {} entries", entries.len());
     Some(build_start_apps(
         entries,
         &package_registry::packaged_executables(),
@@ -55,7 +58,6 @@ fn build_start_apps(
                 original_filename: None,
                 install_location: None,
                 can_uninstall: false,
-                uninstall: None,
                 resolved_path,
                 shortcut_icon_path: None,
                 launch_arguments: None,
@@ -281,12 +283,6 @@ mod tests {
         assert_eq!(apps[0].version.as_deref(), Some("26.727.4816.0"));
         assert_eq!(apps[0].product_name.as_deref(), Some("OpenAI.Codex"));
         assert!(apps[0].can_uninstall);
-        assert_eq!(
-            apps[0].uninstall,
-            Some(crate::catalog::UninstallTarget::Msix {
-                package_full_name: "OpenAI.Codex_26.727.4816.0_x64__2p2nqsd0c76g0".into()
-            })
-        );
         assert_eq!(apps[0].resolved_path, None);
     }
 

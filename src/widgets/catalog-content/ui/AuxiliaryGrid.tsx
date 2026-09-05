@@ -28,7 +28,7 @@ export function AuxiliaryGrid(props: AuxiliaryGridProps) {
 								onLaunch={props.onLaunch}
 								onMove={props.onMoveApp}
 								onInfo={props.onInfo}
-								onUninstall={props.onUninstall}
+								onManageInWindows={props.onManageInWindows}
 								onRestore={props.onPromote}
 								onDemote={props.onDemote}
 							/>

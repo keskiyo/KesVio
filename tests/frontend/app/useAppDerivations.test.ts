@@ -12,6 +12,7 @@ function app(name: string, overrides: Partial<AppInfo> = {}): AppInfo {
 		category: 'utilities',
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,

@@ -8,7 +8,6 @@ pub(crate) mod known_folders;
 mod locale;
 mod registry;
 mod shortcuts;
-mod uninstall;
 
 pub(crate) use execution::{
     close_risk, closer, exec_target, executable_metadata, is_console_subsystem, launcher,
@@ -21,4 +20,3 @@ pub(crate) use registry::{
     uninstall_registry,
 };
 pub(crate) use shortcuts::{global_shortcut, shortcut};
-pub(crate) use uninstall::{uninstall_history, uninstaller};

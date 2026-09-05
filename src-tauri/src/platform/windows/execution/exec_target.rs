@@ -68,17 +68,6 @@ pub(crate) fn validate_executable_path(value: &str) -> Result<PathBuf, RejectedT
     Ok(path.to_path_buf())
 }
 
-pub(crate) fn system_msiexec() -> PathBuf {
-    system_root().join("System32").join("msiexec.exe")
-}
-
-fn system_root() -> PathBuf {
-    std::env::var("SystemRoot")
-        .or_else(|_| std::env::var("windir"))
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from(r"C:\Windows"))
-}
-
 pub(crate) fn expand_env(value: &str) -> String {
     let mut result = String::with_capacity(value.len());
     let mut rest = value;
@@ -195,11 +184,5 @@ mod tests {
             validate_executable_path(r"%WINAPPS_TEST_VALIDATE_ROOT%\App\app.exe").unwrap(),
             PathBuf::from(r"C:\Base\App\app.exe")
         );
-    }
-
-    #[test]
-    fn the_installer_host_resolves_under_the_windows_directory() {
-        assert!(system_msiexec().starts_with(system_root()));
-        assert!(system_msiexec().is_absolute());
     }
 }

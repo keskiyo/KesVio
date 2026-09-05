@@ -43,6 +43,7 @@ const app: AppInfo = {
 	category: 'development',
 	launchKind: 'executable',
 	sourceKind: 'registry',
+	platformKind: null,
 	description: null,
 	version: 'v2.1.186.0',
 	publisher: 'Anthropic PBC',
@@ -58,7 +59,7 @@ function props(appOverride: AppInfo = app) {
 		onLaunch: vi.fn().mockResolvedValue(undefined),
 		onMove: vi.fn(),
 		onInfo: vi.fn(),
-		onUninstall: vi.fn(),
+		onManageInWindows: vi.fn(),
 		onRestore: vi.fn(),
 		onDemote: vi.fn(),
 	}

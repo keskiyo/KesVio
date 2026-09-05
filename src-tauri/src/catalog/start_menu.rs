@@ -25,6 +25,14 @@ pub(super) fn scan_start_menu(control: &ScanControl) -> StartMenuScan {
     if let Some(appdata) = env::var_os("APPDATA") {
         roots.push(PathBuf::from(appdata).join(r"Microsoft\Windows\Start Menu\Programs"));
     }
+    log::info!(
+        "Start menu roots: {}",
+        roots
+            .iter()
+            .map(|root| root.display().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
     let budget = control.stage_with(
         DEFAULT_STAGE_TIMEOUT,
         START_MENU_MAX_ENTRIES,
@@ -60,7 +68,15 @@ fn walk_start_menu_shortcuts(
                 .max_depth(budget.max_depth())
                 .into_iter()
         })
-        .take_while(|_| budget.charge_entry())
+        .take_while(|entry| {
+            if let Ok(entry) = entry {
+                budget.step(
+                    crate::catalog::source::START_MENU_SOURCE,
+                    &entry.path().to_string_lossy(),
+                );
+            }
+            budget.charge_entry()
+        })
         .filter_map(|entry| match entry {
             Ok(entry) => Some(entry),
             Err(_) => {

@@ -4,6 +4,7 @@ use crate::catalog::sync::SyncRequest;
 use crate::catalog::sync::{enqueue_hydration, load_sanitized_document, run_coordinated_scan};
 use crate::catalog::{self, cache, CatalogAppDto};
 use crate::error::AppError;
+use crate::paths;
 use serde::Serialize;
 use tauri::Manager;
 
@@ -55,10 +56,8 @@ const MAX_HYDRATION_ID_LENGTH: usize = 512;
 
 #[tauri::command]
 pub(crate) async fn get_apps(app: tauri::AppHandle) -> Result<CatalogSnapshot, AppError> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let app_data_dir =
+        paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let cache_dir = app_data_dir.clone();
     let cached = run_blocking("Catalog cache read", move || {
         load_sanitized_document(&cache_dir)
@@ -123,10 +122,8 @@ pub(crate) async fn reset_catalog_cache(
     app: tauri::AppHandle,
 ) -> Result<CatalogScanResult, AppError> {
     let commit = tauri::async_runtime::spawn_blocking(move || {
-        let app_data_dir = app
-            .path()
-            .app_data_dir()
-            .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+        let app_data_dir =
+            paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
         {
             let state = app.state::<AppState>();
             state.scan_coordinator.cancel_all();
@@ -152,10 +149,8 @@ pub(crate) async fn reset_catalog_cache(
 
 #[tauri::command]
 pub(crate) async fn clear_icon_cache(app: tauri::AppHandle) -> Result<(), AppError> {
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let app_data_dir =
+        paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     run_blocking("Icon cache clear", move || {
         catalog::icon_cache::clear(&app_data_dir)
     })
@@ -175,10 +170,8 @@ pub(crate) async fn hydrate_visible_icons(
     if ids.is_empty() {
         return Ok(());
     }
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
-        .map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    let app_data_dir =
+        paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let cache_dir = app_data_dir.clone();
     let Some(document) = run_blocking("Catalog cache read", move || {
         cache::read_document(&cache_dir)
@@ -217,7 +210,6 @@ pub(crate) fn start_background_sync(app: tauri::AppHandle) {
 mod tests {
     use super::*;
     use crate::app_state::{cached_app, remember_catalog};
-    use crate::catalog::UninstallTarget;
 
     #[test]
     fn hydration_ids_are_deduplicated_and_limited_to_the_trusted_catalog() {
@@ -286,10 +278,6 @@ mod tests {
     fn catalog_snapshot_excludes_execution_metadata_from_webview_json() {
         let mut app = cached_app("Editor", r"C:\Editor\editor.exe");
         app.id = "editor".into();
-        app.uninstall = Some(UninstallTarget::Command {
-            executable: "TOP_SECRET_UNINSTALL_EXECUTABLE".into(),
-            arguments: "TOP_SECRET_UNINSTALL_ARGUMENTS".into(),
-        });
         app.launch_arguments = Some("TOP_SECRET_LAUNCH_ARGUMENTS".into());
         app.resolved_path = Some("TOP_SECRET_RESOLVED_TARGET".into());
         app.shortcut_icon_path = Some("TOP_SECRET_SHORTCUT_ICON".into());
@@ -304,8 +292,6 @@ mod tests {
         let serialized = json.to_string();
 
         for secret in [
-            "TOP_SECRET_UNINSTALL_EXECUTABLE",
-            "TOP_SECRET_UNINSTALL_ARGUMENTS",
             "TOP_SECRET_LAUNCH_ARGUMENTS",
             "TOP_SECRET_RESOLVED_TARGET",
             "TOP_SECRET_SHORTCUT_ICON",

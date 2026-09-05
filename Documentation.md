@@ -7,9 +7,9 @@ overview; source and tests are the detailed implementation reference.
 
 AppNook is a local Windows catalog, launcher, and organization layer. It
 discovers applications, sanitizes and deduplicates results, persists a compact
-cache, and exposes launch and registered uninstall through a React desktop UI.
-It updates only itself from signed GitHub Releases; it never updates cataloged
-third-party applications.
+cache, and launches applications through a React desktop UI. It cannot remove
+software: uninstalling is handed to Windows. It updates only itself from signed
+GitHub Releases; it never updates cataloged third-party applications.
 
 Out of scope: cloud sync, telemetry, metadata uploads, online enrichment,
 arbitrary frontend command execution, VPN control, and direct deletion of
@@ -38,7 +38,7 @@ enforces the frontend boundary contract.
 | `entities/*` clients | Typed seams between UI and Tauri IPC                                                                |
 | Rust commands        | Validate transport input, resolve trusted targets, delegate, and map safe errors                    |
 | `catalog/*`          | Discovery, classification, deduplication, cache and incremental synchronization                     |
-| `platform/windows/*` | Registry, filesystem, shell, COM, Windows handles, launch, uninstall and shortcut APIs              |
+| `platform/windows/*` | Registry, filesystem, shell, COM, Windows handles, launch and shortcut APIs                         |
 | `AppState`           | Process-wide trusted catalog targets, lifecycle and watcher ownership                               |
 
 Runtime path:
@@ -87,22 +87,27 @@ health (`health.rs`), the catalog delta (`delta.rs`) and cache assembly
 (`assemble.rs`), leaving `synchronize` as orchestration. `catalog/scan/`
 separates the filesystem walk from the index model and executable fingerprints,
 and hydration from icon extraction. `app_state/` separates catalog memory,
-launch-wait limiting and uninstall history. `platform/windows/icon_extractor/`
+launch-wait limiting. `platform/windows/icon_extractor/`
 separates image decoding, GDI bitmap encoding, shell icons and AppUserModelId
 lookups, so each `unsafe` block sits next to the ownership rules it depends on.
-`platform/windows/uninstall/validate.rs` holds the whole uninstall-argument
-validation surface, which is the boundary that keeps a registry-supplied
-command from becoming an arbitrary process.
+`platform/windows/uninstall/` used to hold the argument-validation surface that
+kept a registry-supplied command from becoming an arbitrary process; the whole
+directory is gone, because the safest version of that boundary is not having the
+capability behind it.
 
 ## 4. IPC, events, and errors
 
 Command families cover catalog reads and scans, icon hydration, launch/close,
-details/folder, uninstall/history, system settings, settings backup export,
+details/folder, system settings, settings backup export,
 project links, update release links, stale-copy handling, and bounded
 interface-failure reporting. Commands return
 `Result<T, AppError>`; errors expose stable `SCREAMING_SNAKE` codes and static
 safe messages. Internal paths, commands, registry values and upstream errors
 never reach the webview.
+
+`open_startup_settings` opens the Windows Startup apps page without exposing a
+shell or arbitrary URI to IPC. No IPC command creates, changes or removes
+startup registration.
 
 Scenario close actions accept catalog IDs only. The trusted catalog classifies
 close targets; only `Safe` targets may be added or executed. Critical Windows
@@ -115,15 +120,14 @@ a per-second countdown, then terminating — so the pause reads as deliberate
 rather than as a hang. A scenario run ends in a single summary notice counting
 launches, failures, closures and refusals; nothing is discarded silently.
 
-An uninstall runs the registered uninstaller and waits for it. Exit codes are
-read rather than assumed: `0`, `1641` and `3010` are completions, `1602` and `2`
-are the user closing the wizard, and everything else is a failure. A cancelled
-uninstall returns `UNINSTALL_CANCELLED`, is reported as information rather than
-an error, and is not written to the uninstall history, because nothing was
-uninstalled.
+No command removes software. The catalog reports whether Windows has a registered
+uninstaller for an entry, and **Uninstall** opens
+`ms-settings:appsfeatures` through `open_apps_settings`. The removal itself, its
+confirmation and its consequences belong to Windows.
 
 The native logger starts before application setup and retains `Info`-level
-production diagnostics in Tauri's platform log directory. A root React error
+production diagnostics in the log folder `paths/` resolved for this process. A
+root React error
 boundary replaces render failures with a static recovery screen; exception
 details are not displayed in the webview. The boundary reports the failure kind
 and a truncated stack to the native log through `log_client_error`, which strips
@@ -131,10 +135,16 @@ control characters and bounds both fields. Dialogs sit behind their own boundary
 so a failing panel closes instead of replacing the whole interface.
 
 Catalog reads, refreshes and catalog-update events use a display DTO. The DTO
-excludes uninstall targets and arguments, launch arguments, resolved execution
+excludes launch arguments, resolved execution
 targets and shortcut icon paths. Rust retains those values only in the catalog
 cache and trusted `AppState`; every native action still resolves the catalog ID
-there. Display paths can be shown to the user but never return as action input.
+there. The DTO derives `platformKind` for Steam, Battle.net, Microsoft Store and
+portable entries without persisting a second source field; it is `null` for an
+ordinary Windows entry rather than absent, so a client fake cannot drop it
+without failing the compiler. Hydration recomputes it from the metadata it read
+and carries it in the patch, and because hydration writes that metadata back into
+the cache document, the next start derives the same answer without the patch.
+Display paths can be shown to the user but never return as action input.
 
 IPC changes update all of these together:
 
@@ -158,21 +168,41 @@ by name in the frontend test rather than passed over in silence. Record a new
 contract with `APPNOOK_CONTRACT_UPDATE=1` and review the diff before
 committing it.
 
+The same fixture carries `errorCodes`, the full list `AppError::code` can return.
+Payload shapes were compared across the boundary and error codes were not, so a
+code could exist in Rust and be unknown to the webview — which is not a compile
+error on either side. `readAppErrorPayload` rejects an unrecognized code and
+`toAppClientError` collapses the envelope to `INTERNAL`, so the branch the
+backend meant to offer disappears silently. Two codes were in exactly that state,
+`SAVE_WINDOW_SETTINGS_FAILED` from `set_close_behavior` and
+`EXPORT_DIAGNOSTICS_FAILED` from the diagnostics export. The frontend test now
+holds the recorded list against `APP_ERROR_CODES` and allows only the two codes
+the client raises without the backend, `DESKTOP_RUNTIME_UNAVAILABLE` and
+`INTERNAL`.
+
 Events use `namespace://name`. Catalog synchronization emits full updates,
 deltas, change counts, hydration patches, diagnostics and coarse scan progress.
 Progress is coalesced; icon and metadata patches are emitted in bounded batches.
 The synchronization lock is released before any event leaves the backend, so a
 listener that calls back into the catalog cannot meet a writer still holding it.
+Startup uses the payload-free frontend-to-backend `app://frontend-ready` event.
+Tauri restores geometry while the configured window remains hidden, and normal
+startup registers a one-shot listener before background initialization begins.
+After the React shell commits, a readiness gate waits two animation frames and
+emits the event; only then does the backend show and focus the window. StrictMode
+cleanup suppresses the discarded effect. Tray-backed autostart registers no
+listener and remains hidden until the user opens AppNook from the tray, shortcut
+or a second ordinary launch.
 
 ## 5. Persisted data
 
 Three stores contain user data:
 
-| Store         | Owner                          | Rules                                                                                                      |
-| ------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| Catalog cache | `catalog/storage/cache.rs`     | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                      |
-| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document for categories, marks, scenarios, first-seen data and unknown fields.    |
-| Window state  | `lifecycle/window_state.rs`    | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically. |
+| Store         | Owner                          | Rules                                                                                                                                |
+| ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Catalog cache | `catalog/storage/cache.rs`     | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                |
+| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 18) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
+| Window state  | `lifecycle/window_state.rs`    | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                           |
 
 Window state is presentation-only and deliberately disposable: a missing,
 malformed or newer-versioned document restores nothing, the window opens at the
@@ -185,20 +215,118 @@ Persisted-format changes must bump the appropriate version, upgrade every
 supported version, default new fields, preserve unknown data, safely handle
 malformed input, and test migration paths.
 
+`catalogDensity` arrived with schema 18 and holds `comfortable`, `compact` or
+`dense`. It needs no version gate, because no earlier schema gave the field a
+different meaning: a document written by any older version simply lacks it and
+normalizes to `compact`, and an unrecognized or non-string value does the
+same rather than throwing.
+
+Everything AppNook writes itself lives beside the executable. `paths/` resolves
+`<install folder>\AppNookData` once per process: when that directory accepts a
+write, `AppNookData\data` holds the catalog cache, scan settings and window
+state, and `AppNookData\logs` holds the diagnostics log. Only
+the run that has to create the folder probes it; once it exists, later runs adopt
+it on sight. A binary that repeatedly writes and deletes a file inside its own
+install directory is a dropper pattern, and the answer to "may I write here" does
+not change between launches of the same copy. A debug build never creates the
+folder at all, so a development run leaves nothing in `target\debug`. When it
+cannot be written — an installation under `Program Files`, a read-only medium
+— every store falls back to the Tauri per-user locations
+(`%APPDATA%\dev.neiroslop.appnook` and `%LOCALAPPDATA%\dev.neiroslop.appnook\logs`)
+and nothing else about the stores changes. The resolved root is managed state, so
+every caller asks `paths::data_dir` or `paths::log_dir` instead of Tauri
+directly, and the startup log names the data folder actually in use. The first
+run that resolves a folder beside the executable copies the documents from the
+previous per-user folder once and leaves the originals in place; a destination
+that already exists is never refilled, and icon caches are rebuilt rather than
+copied because they are derived data. The debug-only dedup and visibility reports
+resolve the same folder through `paths::report_dir`, which reads the root without
+creating one because those writers have no application handle.
+
+Because that folder sits inside the install directory, uninstalling has to reach
+it: Tauri's own uninstall section clears `%APPDATA%\dev.neiroslop.appnook` and
+`%LOCALAPPDATA%\dev.neiroslop.appnook` when the user ticks **Delete app data**,
+and finishes with a `RMDir "$INSTDIR"` that is not recursive. Neither touches
+`AppNookData`, so `nsis/autostart-shortcut.nsh` does. On a normal uninstall it
+always removes `AppNookData\logs`, which is diagnostics rather than user data;
+with the box ticked it removes the whole `AppNookData` folder, and then the
+install directory itself once nothing is left in it. Every branch is guarded on
+`$UpdateMode <> 1`, because an update runs the previous uninstaller before the
+new installer: without that guard a version bump would delete the catalog,
+the scan settings and the catalog. `tests/frontend/config/installerHooks.test.mjs`
+holds that contract.
+
+A small store also refuses to rewrite itself with the value it already holds.
+`scan-settings.json` and `window-state.json` compare the parsed document against
+what is about to be written and return early when they match, so toggling a
+setting back and forth, or closing a window that never moved, leaves the file and
+its timestamp alone. A document that is missing, malformed or written at an
+unsupported version never counts as a match, so recovery still replaces it.
+
+Preferences are the exception AppNook cannot place. They live in `localStorage`,
+which belongs to the WebView2 user-data folder, and Tauri forces that folder to
+`%LOCALAPPDATA%\dev.neiroslop.appnook\EBWebView` whenever a window declares no
+`dataDirectory`; the configuration file accepts only a relative path resolved
+under the same local-data root, so no configuration change can move it beside the
+executable. Relocating it would mean building the main window in Rust instead of
+from configuration and copying a live browser profile on first run. Preference
+export and import remain the supported way to carry that store between machines.
+
 The diagnostics log is a fourth store and is not user data. `diagnostics/` owns
-it: `tauri-plugin-log` writes `appnook.log` to the application log directory at
+it: `tauri-plugin-log` writes `appnook.log` to the resolved log folder at
 `Info`, rotates at four megabytes keeping eight dated archives, and
-`prune_expired_logs` deletes any `*.log` older than three days at startup. The
-active file is held open by the plugin, so failing to delete it is expected and
-ignored. `export_diagnostics_log` renders the whole directory as one XML
+`prune_expired_logs` deletes any `*.log` older than six hours. Age is the file's
+modification time measured against `SystemTime::now`, so it follows the Windows
+system clock the machine is set to, and a file stamped in the future is never
+treated as expired. Six hours is short on purpose: the log answers "what is this
+scan doing right now", it is read while the problem is still happening, and a
+scan that finished yesterday explains nothing about one that is stuck today. A
+tray application left open accumulates archives faster than anyone reads them,
+so the window is the useful one rather than the generous one. Pruning runs at
+startup and again after every completed scan, because that application can stay
+open for days and a startup-only sweep would keep far more than the window on
+exactly the machines that need diagnosing.
+The active file is held open by the plugin, so failing to delete it is expected
+and ignored. `export_diagnostics_log` renders the whole directory as one XML
 document — the newest twenty thousand lines, each parsed into a dated `entry`
 element and anything else preserved as a `line` element — and writes it wherever
 the save dialog points. Losing the whole directory costs nothing but the ability
 to explain the last few scans.
 
-The scan writes one line per run, per source and per portable root, never per
-catalogued application. Root paths are recorded deliberately: a scan that stops
-is diagnosed by knowing which location it was walking.
+The scan writes one line per run, two lines per source and one per portable root,
+never per catalogued application. Root paths are recorded deliberately: a scan
+that stops is diagnosed by knowing which location it was walking. Each source
+logs `Source <key> starting` before it runs and its outcome the moment it
+finishes, rather than every outcome after the whole scan: a source that never
+returns must not hide the sources that already answered. Three lines split the
+Windows sources further, because each has a cheap half and a half that touches
+the filesystem — the registry entry count separates reading the hives from
+resolving every entry's target, the start-menu roots separate the folders chosen
+from the walk, and the apps-folder entry count separates the Shell enumeration
+from the package lookup. A run that stops between two of these lines names the
+call that blocked.
+
+Those lines bound a stage, not a call, so `sync/scan_steps.rs` adds the item.
+Every per-item loop records the step it is about to attempt into one slot whose
+detail buffer is reused, which costs an uncontended lock and a copy rather than an
+allocation. A watchdog thread, owned by `scan_all` and joined when it returns,
+reads that slot once a second and logs one `warn` line when the same step has been
+current for ten seconds, repeating at most every thirty. A healthy scan logs
+nothing, and the line arrives while the application is still hung instead of after
+it is killed. Stage budgets are checked between items, so a single blocking Win32
+or COM call inside one item can outlast every deadline; this is what names it.
+`--verbose-scan` on the command line additionally logs one `info` line per item,
+for a diagnostic run only.
+
+The watchdog is owned by `synchronize`, not by source scanning, so it also covers
+assembly: merging sources, attaching registry metadata, checking that every target
+still exists, sanitizing and deduplicating, demoting console applications,
+attaching category reasons and close risk, and retaining cached details. Target
+availability is the reason that matters — it stats every catalogued path, so a
+target on an unreachable share blocks there rather than in a source. The
+instrumented loops are the registry entries, the Start Menu walk, the
+installer-cache walk, the AppsFolder items, the Steam libraries and every
+directory the portable walk enters.
 
 Preferences preserve unknown root fields, which is also how a field this version
 stopped reading survives: scenario run history is no longer collected or parsed,
@@ -234,6 +362,28 @@ would only confirm the shorter list and take another tile away on each pass —
 and the ones past the first row are clipped by height and removed from the focus
 order rather than unmounted. The run dialog never collapses: it states what is
 about to happen, so it may not hide half the answer.
+
+Catalog tile geometry is owned entirely by the `--app-card-*` tokens in
+`src/app/styles/index.css`, never by a size class on a card. `.app-card-grid`
+lays out `repeat(auto-fill, var(--app-card-width))`, so the column count follows
+the window at any tile size. Settings offers three presets — Comfortable,
+Compact and Dense — and `App.tsx` stamps the choice as `data-density` on
+`.app-shell`; each preset block redefines the whole token set rather than a
+subset, because a partly-defined preset would inherit comfortable sizes and
+overflow its own shorter card. Compact and Dense hide the version line through
+`--app-card-version-display`, which keeps the element and its tooltip in the
+tree. A passive lower-left badge identifies Steam, Battle.net, Microsoft Store
+and portable entries; ordinary Windows entries have no badge. Steam games and
+the trusted Valve Steam client use the Steam classification. Steam and
+Battle.net use a gamepad mark, Microsoft Store uses a shopping-bag mark, and
+portable entries use a USB-drive silhouette. Every glyph is monochrome white;
+the tooltip retains the specific source identity. Badge artwork performs no
+runtime network request. A
+same-generation hydration patch carries the derived
+platform when executable metadata identifies Battle.net after the initial
+snapshot. The density setting keeps its copy beside the icon and aligns its
+segmented control to the right on the row below.
+`tests/frontend/styles/card-density.test.mjs` holds these geometry contracts.
 
 Filing an application into Installers & Docs by hand records which half it
 belongs to. The category holds one bucket per artifact kind, so a placement that
@@ -287,7 +437,7 @@ that comparison made every load look like a change and rewrote the whole file to
 throw away the icons hydration had just persisted.
 
 Resetting the catalog removes every file belonging to the cache, including
-siblings left by earlier builds, and leaves scan settings, uninstall history and
+siblings left by earlier builds, and leaves scan settings and
 the icon store untouched.
 Cache/index and generated icons are separate; clearing icons does not remove the
 catalog, and resetting the catalog does not remove user preferences.
@@ -327,8 +477,8 @@ executable behind a packaged entry comes from the read-only application map in
 `powershell.exe`, so a scan no longer looks like a process launching a hidden
 interpreter — behaviour that reputation-based antivirus scores against unsigned
 binaries. The package map is best-effort: when it cannot be read, packaged
-entries keep their name, publisher, version, install location and uninstall
-target and lose only the resolved executable.
+entries keep their name, publisher, version and install location, and lose
+only the resolved executable.
 
 | Stage          | Invariant                                                                                                                                       |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -403,14 +553,14 @@ and declining one leaves the rest of the set intact. Deleting a scenario is
 confirmed in its own dialog, since the delete control sits beside rename and the
 configuration it removes cannot be recovered.
 
-Every destructive confirmation — uninstall, delete category, delete scenario —
+Every destructive confirmation — delete category, delete scenario —
 is the one `shared/ui/ConfirmDialog`: same layout, same wording positions, same
 Cancel and named danger action, painted from tokens and portalled to
 `document.body`. It dismisses only through Cancel or its close control: neither
 Escape nor a click on the backdrop discards it, so a confirmation cannot be lost
 to a stray keystroke while it is being read. Cancel takes focus on open, which
 keeps the keyboard exit one keystroke away, and focus returns to the control that
-opened the dialog. Optional detail — the uninstall route, for instance — renders
+opened the dialog. Optional detail renders
 in a block between the description and the actions.
 
 Returning focus is not specific to confirmations: every dialog hands it back to
@@ -420,6 +570,10 @@ left focus on `<body>`; it now goes through the same shared modal lifecycle as
 the rest, and a regression test opens it from a control and asserts the control
 has focus again after it closes. The navigation drawer restores focus to its
 menu button explicitly, because the burger outlives the panel.
+
+The catalog scroll root reserves its vertical scrollbar gutter. The shared
+modal lifecycle can therefore lock that root for any drawer or dialog without
+changing the width of the obscured page underneath it.
 
 The More page previews every scenario while they all fit its card and spends the
 last slot on a "View all" row only once a scenario is left out of the preview.
@@ -619,18 +773,14 @@ by the Steam installation directory, so games remain explicit Scenario entries.
 
 ### Uninstall
 
-Uninstall previews expose only application identity, publisher, source and safe
-removal mechanism. Execution requires confirmation and uses a validated,
-Rust-owned target. History excludes paths, command lines and internal errors.
-
-Removing a packaged application goes through
-`Windows.Management.Deployment.PackageManager` in
-`platform/windows/uninstall/msix.rs`, not through an interpreter. Removal is
-silent, as before. The call runs on a thread the module spawns for it and joins:
-that thread enters a multithreaded apartment, because the blocking wait on the
-deployment operation pumps no messages and would deadlock a completion
-marshalled into the process's single-threaded apartment. Failures are reported
-as the deployment error code alone, without a package name or path.
+AppNook does not uninstall anything. The feature existed through 0.4.0 and was
+removed: it was the highest-consequence code in the project, it kept a persisted
+record of what the user had removed from their PC, and Windows already does the
+job. What is left is `canUninstall`, which reports that Windows has a registered
+uninstaller for the entry and earns it 35 visibility points as a registered
+product, plus a menu item that opens the Windows page. Reading the
+`…\CurrentVersion\Uninstall` hives continues, because that is how installed
+software is discovered.
 
 The product no longer starts `powershell.exe` anywhere. `cargo clippy` enforces
 it: removing the last call site left `exec_target::system_powershell` unused and
@@ -640,21 +790,23 @@ would have to reintroduce it deliberately.
 ### Windows integration and updates
 
 - Tray, global shortcut and window lifecycle are backend-owned.
-- Startup registration is owned by the installer and by Windows, never by the
-  running program. A fresh install creates one Startup-folder shortcut that
-  passes `--autostart`; the program reads that argument and starts hidden once
-  the tray is ready, and the tray's **Open AppNook** action restores it. A
-  tray initialization failure keeps the window visible. The user turns the entry
-  off in **Settings → Apps → Startup**, which is why the application itself
-  offers no toggle: a program that repairs its own persistence is exactly the
-  behaviour that has to stay absent.
-- Both installer hooks are guarded with `$UpdateMode <> 1`, and the guards
-  depend on each other. An update runs the previous uninstaller with `/UPDATE`
-  before the new installer, so an unguarded uninstall hook would delete the
-  shortcut that the guarded install hook then refuses to recreate, switching
-  autostart off on every update. Guarding both leaves an update from touching
-  the entry at all, which also preserves a user who disabled it in Windows —
-  that switch writes to `StartupApproved` and leaves the shortcut in place.
+- A fresh direct installation registers startup and leaves it **switched off**.
+  Windows lists nothing it has no entry for, so the installer creates
+  `$SMSTARTUP\AppNook.lnk` and, in the same guarded block, writes a
+  `StartupApproved\StartupFolder` payload whose first byte is `0x03` — the value
+  Explorer itself writes for a disabled entry. The result is a row under
+  **Settings → Apps → Startup** that the user can switch on. The Settings page
+  has no application-owned switch; **Manage** only opens that Windows page.
+- Once the user flips that switch, Explorer owns the value. Both installer hooks
+  are guarded on `$UpdateMode <> 1`, so an update neither recreates the shortcut
+  nor resets the choice; only a normal uninstall removes the shortcut and its
+  approval value.
+- The running executable still has no startup-registration API of any kind.
+  `scripts/verify-platform-boundaries.ps1` fails the build if `CurrentVersion\Run`,
+  `FOLDERID_Startup`, `shell:startup` or `SMSTARTUP` appears anywhere in Rust.
+  Registration is the installer's job precisely because a running unsigned binary
+  writing its own persistence is what Kaspersky scored as
+  `PDM:Trojan.Win32.Generic`.
 - The main window is created hidden and painted with the canvas colour, and it
   is shown only after saved geometry has been applied. A window created visible
   first flashed white and then jumped to its restored position; there is nothing
@@ -744,22 +896,85 @@ would have to reintroduce it deliberately.
   that shipped `app.exe` leaves nothing behind.
 - Kaspersky's proactive defence module scored the `HKCU` Run value that the
   former **Launch when Windows starts** toggle wrote, and returned
-  `PDM:Trojan.Win32.Generic` for an unsigned binary with no reputation. What is
-  scored is a running process writing its own persistence, so the ownership
-  moved rather than the feature: the installer registers the Startup shortcut
-  once, and the executable only reads the argument it is launched with. The
-  installer also deletes the legacy Run value on every install, including
-  updates, because Tauri's own uninstall section skips that while updating.
-  `scripts/verify-platform-boundaries.ps1` fails the build if the Run subkey or
-  any Startup-folder location reappears anywhere in the backend.
+  `PDM:Trojan.Win32.Generic` for an unsigned binary with no reputation. The Run
+  value is gone and the executable has no startup-registration API at all;
+  `scripts/verify-platform-boundaries.ps1` forbids Run values, Startup-folder
+  APIs and shell indirection throughout the backend. The installer still creates
+  a Startup shortcut, because that is ordinary installer behaviour and is what
+  makes the entry appear in Windows' own Startup apps page — but it registers it
+  disabled, so nothing runs at logon until the user says so. What was scored was
+  a _running_ program writing its own persistence, not an installer declaring an
+  entry the user controls.
 - The critical and session process tables that protect Windows from a close
   scenario are stored as digests of the process names. A release binary
   therefore does not carry `lsass.exe`, `csrss.exe` or `winlogon.exe` as
   literals beside its `TerminateProcess` import, which static classifiers read
   as a credential-dumper signature. The readable names live in test code only.
-- The registered uninstaller runs in a normal console-visible child process. A
-  hidden child process that removes installed software is a scored behaviour and
-  the flag bought nothing but a suppressed console frame.
+- The application spawns no child process at all. Running a registered
+  uninstaller was the only one, and it went with the uninstall feature; a process
+  that starts another process to remove installed software is a scored behaviour,
+  and the strongest version of not being scored for it is not doing it.
+- A copy that has already resolved its data folder never probes it again. The
+  earlier build created and deleted `AppNookData\write-probe.tmp` on every start;
+  an unsigned binary repeatedly testing whether it can write into its own install
+  directory is a dropper pattern, and the answer cannot change between launches.
+
+### What AppNook does to this machine
+
+Every capability the program uses, when it runs, and what bounds it. Nothing here
+is discretionary: each row is enforced by the boundary scripts, the capability
+file or a named test.
+
+| Capability                                                       | When it runs                                                        | Bound                                                                                                     |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Read the uninstall registry hives, Start Menu, AppsFolder, Steam | Startup, refresh, watcher, Force full scan                          | Read-only. Stage budgets and cancellation bound every loop.                                               |
+| Walk fixed drives for portable executables                       | **Force full scan only**, and only while the discovery toggle is on | `roots_for` retains fixed drives on refresh and walks them only on `SyncRequest::Force`.                  |
+| `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry                             | Target resolved from a catalog id held in trusted state, never from the webview.                          |
+| `CreateToolhelp32Snapshot`, `OpenProcess`, `TerminateProcess`    | The explicit close action of a scenario                             | `WM_CLOSE` first; terminate only on refusal; batch capped; protected processes and this process excluded. |
+| Remove installed software                                        | Never                                                               | The capability was removed. No code path starts a removal; the card menu opens the Windows page instead.  |
+| Write one `HKCU` value (`Software\keskiyo\AppNook`)              | Startup, only when the install directory changed                    | Read before write; the running program writes nothing else in the registry, ever.                         |
+| Register a disabled Startup entry                                | The installer, on a fresh install only                              | Shortcut plus a `StartupApproved` value marked disabled. Never on update; the running program cannot.     |
+| Write files                                                      | Catalog cache, scan settings, window state, logs                    | Only under the resolved data root. Atomic replace; identical values are not rewritten.                    |
+| Network                                                          | The update check, and a download the user starts                    | GitHub release endpoint only. Automatic checks are throttled to one per four hours.                       |
+
+There is no telemetry, no account and no background upload. The one persistence
+entry is the Startup shortcut the installer registers **disabled**, which exists
+so Windows can offer the choice; the running program can neither create it nor
+change it, and **Manage** only opens the Windows page where the user decides.
+
+AppNook also cannot remove software. The uninstall feature was removed in full —
+`platform/windows/uninstall/`, its four commands, the `Management_Deployment`
+WinRT feature and the `uninstall-history.json` store are gone, and `AppInfo` no
+longer carries an uninstall command at all. `git grep Command::new src-tauri/src`
+returns nothing, which is the whole point: the claim is checkable rather than
+trusted. What remains is `canUninstall`, a boolean that means "Windows has a
+registered uninstaller for this entry". It is evidence, not a capability, and it
+is load-bearing: `visibility/mod.rs` gives a registry entry 35 points and the
+`RegisteredProduct` reason for it, so removing it would quietly change which
+applications the catalog shows. The card menu turns that flag into **Uninstall**,
+which opens `ms-settings:appsfeatures` rather than removing anything; an entry
+Windows cannot uninstall shows a disabled **Uninstall unavailable** instead. The registry
+`…\CurrentVersion\Uninstall` hives are still read, because they are how installed
+software is discovered in the first place.
+
+### Verifying a downloaded installer
+
+Three independent checks, none of which requires trusting the author:
+
+- `gh attestation verify AppNook_<version>_x64-setup.exe --repo keskiyo/AppNook`
+  — GitHub's own record that this file was produced by `release.yml` in this
+  repository, at a named commit. `release.yml` attests the assets after
+  `verify-release-assets.ps1` has passed and before the release leaves draft.
+- `Get-FileHash -Algorithm SHA256` against the published `SHA256SUMS.txt`, which
+  the release workflow generates from the collected installer and
+  `verify-release-assets.ps1` re-checks against that same file, so a stale or
+  mismatched checksum fails the release rather than reaching the release page.
+- The detached `.sig`, verified with `minisign` against the public key in
+  `tauri.conf.json`. This is the same signature the in-app updater checks.
+
+None of the three suppresses SmartScreen, which only an Authenticode certificate
+does. They answer a different question: whether the bytes are the ones this
+repository built.
 
 ## 14. Repository workflow
 
@@ -856,12 +1071,14 @@ source is MIT-licensed; third-party notices are recorded in
 | Missing application            | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive. |
 | Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                  |
 | Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                     |
-| Uninstall unavailable          | The catalog record has no trusted, parseable uninstall target.                                                  |
+| Uninstall unavailable          | Windows has no registered uninstaller for the entry, so there is nothing to open.                               |
 | Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.           |
 | A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.              |
 | Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                     |
 | Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                                  |
 | SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                      |
 | Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.             |
+| A scan never finishes          | Open `AppNookData\logs\appnook.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.  |
+| A stall must be traced further | Start the application with `--verbose-scan`; every scanned item is logged until the run is over.                |
 | Closing the window hides it    | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                |
 | Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.    |

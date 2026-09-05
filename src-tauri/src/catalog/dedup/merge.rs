@@ -94,9 +94,6 @@ pub(super) fn merge_app(left: AppInfo, right: AppInfo) -> AppInfo {
     if primary.icon_base64.is_none() {
         primary.icon_base64 = secondary.icon_base64;
     }
-    if primary.uninstall.is_none() {
-        primary.uninstall = secondary.uninstall;
-    }
     if primary.resolved_path.is_none() {
         primary.resolved_path = secondary.resolved_path;
     }
@@ -124,7 +121,7 @@ pub(super) fn merge_app(left: AppInfo, right: AppInfo) -> AppInfo {
     if primary.visibility_class == crate::catalog::VisibilityClass::Primary && card_is_sticky {
         primary.visibility_class = crate::catalog::VisibilityClass::Auxiliary;
     }
-    primary.can_uninstall |= secondary.can_uninstall || primary.uninstall.is_some();
+    primary.can_uninstall |= secondary.can_uninstall;
     primary
 }
 
@@ -185,7 +182,6 @@ mod tests {
             original_filename: None,
             install_location: Some(r"C:\Apps\Example".into()),
             can_uninstall: false,
-            uninstall: None,
             resolved_path: None,
             shortcut_icon_path: None,
             launch_arguments: None,

@@ -2,7 +2,7 @@ import { ChevronDown, ClipboardCopy, HelpCircle } from 'lucide-react'
 import { useState } from 'react'
 import { CollapsiblePanel } from '../../../../../shared/ui/CollapsiblePanel'
 import { copyToClipboard } from '../../../../../shared/lib/clipboard'
-import { ACTION_BUTTON } from '../../../data'
+import { ACTION_BUTTON_PRIMARY } from '../../../data'
 import { buildDiagnosticsReport } from './data'
 import { UnclassifiedRow } from './UnclassifiedRow'
 import type { UnclassifiedAppsProps } from './types'
@@ -68,7 +68,7 @@ export function UnclassifiedApps({
 						<button
 							type="button"
 							onClick={() => void copyReport()}
-							className={`${ACTION_BUTTON} utility-accent-button shrink-0 text-white focus-visible:outline-violet-400`}
+							className={`${ACTION_BUTTON_PRIMARY} shrink-0`}
 						>
 							<ClipboardCopy size={16} aria-hidden="true" />
 							Copy diagnostics

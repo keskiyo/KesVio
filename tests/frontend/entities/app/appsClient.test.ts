@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import contract from '../../../../src-tauri/tests/fixtures/ipc/contract.json'
+
+const recorded = contract as unknown as { errorCodes: string[] }
 
 const invokeMock = vi.fn()
 const listenMock = vi.fn()
@@ -66,42 +69,19 @@ describe('tauri app client browser fallback', () => {
 		})
 	})
 
-	// The error-code set is a cross-language contract. The Rust half is pinned by
-	// `error_codes_form_the_expected_stable_contract`; this pins the frontend half so the two
-	// cannot drift silently: every backend code is recognized, plus exactly the two the frontend
-	// owns. Adding a backend code without mirroring it here fails this test.
+	// The error-code set is a cross-language contract, and it used to be pinned against a copy of
+	// itself: the backend half below was a hand-maintained literal, so a code added in Rust and
+	// never mirrored here left both lists agreeing with each other and disagreeing with the
+	// application. `EXPORT_DIAGNOSTICS_FAILED` and `SAVE_WINDOW_SETTINGS_FAILED` sat in exactly
+	// that state. The list now comes from the recorded contract, which is serialized from
+	// `AppError` itself, so Rust is the only source of truth.
 	it('mirrors the backend AppError code contract exactly', async () => {
 		const { APP_ERROR_CODES } =
 			await import('../../../../src/shared/api/tauri/errors')
-		const backend = [
-			'APP_DATA_UNAVAILABLE',
-			'APP_DETAILS_UNAVAILABLE',
-			'CLEAR_ICON_CACHE_FAILED',
-			'CLEAR_UNINSTALL_HISTORY_FAILED',
-			'CLOSE_DATA_UNAVAILABLE',
-			'INVALID_RELEASE_VERSION',
-			'INVALID_HYDRATION_REQUEST',
-			'LAUNCH_DATA_UNAVAILABLE',
-			'LAUNCH_UNAVAILABLE',
-			'NO_NEWER_COPY',
-			'OPERATION_FAILED',
-			'OPERATION_INTERRUPTED',
-			'OPEN_FOLDER_UNAVAILABLE',
-			'PRODUCT_NAME_MISSING',
-			'RESET_CATALOG_CACHE_FAILED',
-			'RESET_ICON_CACHE_FAILED',
-			'SAVE_SCAN_SETTINGS_FAILED',
-			'SAVE_PREFERENCES_BACKUP_FAILED',
-			'SCAN_CANCELLED',
-			'SCAN_COALESCED',
-			'SCAN_PATH_NOT_ABSOLUTE',
-			'UNINSTALL_CANCELLED',
-			'UNINSTALL_DATA_UNAVAILABLE',
-			'UNINSTALL_UNAVAILABLE',
-		]
 		const frontendOnly = ['DESKTOP_RUNTIME_UNAVAILABLE', 'INTERNAL']
+
 		expect(Object.keys(APP_ERROR_CODES).sort()).toEqual(
-			[...backend, ...frontendOnly].sort(),
+			[...recorded.errorCodes, ...frontendOnly].sort(),
 		)
 	})
 })

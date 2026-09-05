@@ -71,6 +71,8 @@ export function AppViews({
 			{state.activeView === 'settings' && (
 				<SettingsPage
 					client={systemClient}
+					density={state.catalogDensity}
+					onSetDensity={state.setCatalogDensity}
 					onExportPreferences={state.exportPreferences}
 					onValidatePreferencesImport={
 						state.validatePreferencesImport
@@ -127,7 +129,7 @@ export function AppViews({
 						onMoveApp: state.moveApp,
 						onLaunch: dialogs.installerLaunch.requestLaunch,
 						onInfo: dialogs.appInfo.open,
-						onUninstall: dialogs.uninstall.select,
+						onManageInWindows: systemClient.openAppsSettings,
 						onHide: state.hideApp,
 						onRestore: state.restoreApp,
 						onPromoteAuxiliary: state.promoteAuxiliary,

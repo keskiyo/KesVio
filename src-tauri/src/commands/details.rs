@@ -8,6 +8,7 @@ use crate::catalog::{
     AppDetails, AppDetailsTarget,
 };
 use crate::error::AppError;
+use crate::paths;
 use crate::platform::windows::open_trusted_folder;
 use std::path::PathBuf;
 use tauri::Manager;
@@ -46,7 +47,7 @@ pub(crate) async fn get_app_details(
 ) -> Result<AppDetails, AppError> {
     let state = app.state::<AppState>();
     let target = resolve_app_details_target(state.inner(), &id)?;
-    let cache_dir = app.path().app_data_dir().ok();
+    let cache_dir = paths::data_dir(&app).ok();
     let fingerprint = run_blocking("App detail fingerprint", {
         let target = target.clone();
         move || details_fingerprint(&target)

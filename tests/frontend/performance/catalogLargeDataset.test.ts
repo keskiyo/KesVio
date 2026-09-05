@@ -22,6 +22,7 @@ function app(index: number): AppInfo {
 		iconBase64: null,
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: index % 100 === 0 ? 'Large catalog marker' : null,
 		version: null,
 		publisher: index % 2 === 0 ? 'Sample Publisher' : null,

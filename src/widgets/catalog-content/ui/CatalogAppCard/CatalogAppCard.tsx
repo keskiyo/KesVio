@@ -13,7 +13,7 @@ function CatalogAppCardComponent({
 	onLaunch,
 	onMove,
 	onInfo,
-	onUninstall,
+	onManageInWindows,
 	isHidden = false,
 	isAuxiliary = false,
 	onHide,
@@ -37,7 +37,7 @@ function CatalogAppCardComponent({
 					onClose={close}
 					onMove={onMove}
 					onInfo={onInfo}
-					onUninstall={onUninstall}
+					onManageInWindows={onManageInWindows}
 					isHidden={isHidden}
 					isUserPromoted={app.userPromoted}
 					onHide={onHide}

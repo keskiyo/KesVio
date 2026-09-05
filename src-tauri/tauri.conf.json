@@ -2,7 +2,7 @@
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "AppNook",
 	"mainBinaryName": "AppNook",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"identifier": "dev.neiroslop.appnook",
 	"build": {
 		"frontendDist": "../dist",
@@ -48,7 +48,7 @@
 		"license": "MIT",
 		"homepage": "https://github.com/keskiyo/AppNook",
 		"shortDescription": "Private application catalog and launcher for Windows.",
-		"longDescription": "AppNook discovers installed and portable applications on this computer, organizes them into categories and scenarios, and launches or uninstalls them. It works entirely offline: no telemetry, no accounts, and no uploads. Only the application itself updates, from signed GitHub releases.",
+		"longDescription": "AppNook discovers installed and portable applications on this computer, organizes them into categories and scenarios, and launches them. It removes no software: uninstalling stays with Windows. It works entirely offline: no telemetry, no accounts, and no uploads. Only the application itself updates, from signed GitHub releases.",
 		"targets": ["nsis"],
 		"createUpdaterArtifacts": true,
 		"windows": {

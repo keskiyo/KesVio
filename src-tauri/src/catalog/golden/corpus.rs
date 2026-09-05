@@ -34,7 +34,6 @@ fn blank(name: &str, path: &str) -> AppInfo {
         original_filename: None,
         install_location: None,
         can_uninstall: false,
-        uninstall: None,
         resolved_path: None,
         shortcut_icon_path: None,
         launch_arguments: None,

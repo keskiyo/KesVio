@@ -32,7 +32,7 @@ function props(
 		onLaunch: vi.fn().mockResolvedValue(undefined),
 		onMoveApp: vi.fn(),
 		onInfo: vi.fn(),
-		onUninstall: vi.fn(),
+		onManageInWindows: vi.fn(),
 		onHide: vi.fn(),
 		onRestore: vi.fn(),
 		onDemote: vi.fn(),

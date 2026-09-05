@@ -1,5 +1,8 @@
-use crate::catalog::incremental::{scan_root_with_duration, FilesystemIndex, ScanLimit, ScanMode};
+use crate::catalog::incremental::{
+    scan_root_with_duration, FilesystemIndex, RootScanInput, ScanLimit, ScanMode,
+};
 use crate::catalog::sync::scan_control::StageStop;
+use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::{AppInfo, ScanProgress};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -20,6 +23,7 @@ pub(super) struct PortableScanInput<'a> {
     pub(super) mode: ScanMode,
     pub(super) max_duration: Duration,
     pub(super) verify_fingerprints: bool,
+    pub(super) steps: &'a StepTracker,
 }
 
 pub(super) fn scan_roots(
@@ -67,13 +71,16 @@ pub(super) fn scan_roots(
         );
         let root_at = Instant::now();
         let scanned = scan_root_with_duration(
-            root,
-            input.previous_index,
-            input.mode,
-            input.excluded,
-            is_cancelled,
+            &RootScanInput {
+                root,
+                previous: input.previous_index,
+                mode: input.mode,
+                excluded: input.excluded,
+                is_cancelled,
+                verify_fingerprints: input.verify_fingerprints,
+                steps: input.steps,
+            },
             root_duration,
-            input.verify_fingerprints,
         );
         let root_stop = match scanned.limit_reached {
             Some(ScanLimit::Entries) => Some(StageStop::EntryLimit),
@@ -210,7 +217,6 @@ mod tests {
                 .parent()
                 .map(|value| value.to_string_lossy().into_owned()),
             can_uninstall: false,
-            uninstall: None,
             resolved_path: None,
             shortcut_icon_path: None,
             launch_arguments: None,
@@ -309,6 +315,7 @@ mod tests {
                 mode: ScanMode::Incremental,
                 max_duration: Duration::from_secs(10),
                 verify_fingerprints: true,
+                steps: &StepTracker::default(),
             },
             &|_| {},
             &|| false,
@@ -347,6 +354,7 @@ mod tests {
                 mode: ScanMode::Incremental,
                 max_duration: Duration::from_secs(10),
                 verify_fingerprints: true,
+                steps: &StepTracker::default(),
             },
             &|_| {},
             &|| false,
@@ -373,6 +381,7 @@ mod tests {
                 mode: ScanMode::Incremental,
                 max_duration: Duration::from_secs(10),
                 verify_fingerprints: true,
+                steps: &StepTracker::default(),
             },
             &|_| {},
             &|| false,
@@ -405,6 +414,7 @@ mod tests {
                 mode: ScanMode::Incremental,
                 max_duration: Duration::ZERO,
                 verify_fingerprints: true,
+                steps: &StepTracker::default(),
             },
             &|_| {},
             &|| false,

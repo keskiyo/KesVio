@@ -22,7 +22,7 @@ export interface AppActionsMenuProps {
 		artifact?: CatalogArtifactKind,
 	): void
 	onInfo(app: AppInfo): void
-	onUninstall(app: AppInfo): void
+	onManageInWindows(): Promise<void>
 	isHidden?: boolean
 	isUserPromoted?: boolean
 	onHide(id: string): void

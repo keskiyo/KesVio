@@ -10,16 +10,9 @@ import {
 interface AppFeedbackOptions {
 	onLaunch(app: AppInfo): Promise<void>
 	onRefresh(): Promise<void>
-	onUninstall(id: string): Promise<void>
 }
 
-export type UninstallOutcome = 'completed' | 'cancelled' | 'failed'
-
-export function useAppFeedback({
-	onLaunch,
-	onRefresh,
-	onUninstall,
-}: AppFeedbackOptions) {
+export function useAppFeedback({ onLaunch, onRefresh }: AppFeedbackOptions) {
 	const launch = useCallback(
 		async function launch(app: AppInfo) {
 			try {
@@ -50,24 +43,6 @@ export function useAppFeedback({
 		}
 	}, [onRefresh])
 
-	const uninstall = useCallback(
-		async (app: AppInfo): Promise<UninstallOutcome> => {
-			try {
-				await onUninstall(app.id)
-				toast.success(`${app.name} uninstalled`)
-				return 'completed'
-			} catch (error) {
-				if (toAppClientError(error).code === 'UNINSTALL_CANCELLED') {
-					toast.info(`Uninstall of ${app.name} cancelled`)
-					return 'cancelled'
-				}
-				toast.error(`Could not uninstall ${app.name}`)
-				return 'failed'
-			}
-		},
-		[onUninstall],
-	)
-
 	const reportScenarioRun = useCallback((summary: ScenarioRunSummary) => {
 		const message = scenarioRunSummaryMessage(summary)
 		if (!message) return
@@ -80,5 +55,5 @@ export function useAppFeedback({
 		else toast.success(message)
 	}, [])
 
-	return { launch, refresh, uninstall, reportScenarioRun }
+	return { launch, refresh, reportScenarioRun }
 }

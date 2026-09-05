@@ -39,6 +39,8 @@ interface Options {
 }
 
 const DISMISSED_UPDATE_KEY = 'appnook.dismissed-update-version'
+const LAST_CHECK_KEY = 'appnook.last-update-check'
+const AUTO_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 const ACTIVE_UPDATE_PHASES = new Set<UpdateInstallPhase>([
 	'downloading',
 	'verifying',
@@ -64,6 +66,29 @@ function rememberDismissedVersion(version: string) {
 	} catch (ignored) {
 		void ignored
 	}
+}
+
+function lastAutomaticCheck(): number {
+	try {
+		const stored = Number(globalThis.localStorage?.getItem(LAST_CHECK_KEY))
+		return Number.isFinite(stored) ? stored : 0
+	} catch {
+		return 0
+	}
+}
+
+function rememberCheck(at: number) {
+	try {
+		globalThis.localStorage?.setItem(LAST_CHECK_KEY, String(at))
+	} catch (ignored) {
+		void ignored
+	}
+}
+
+function automaticCheckIsDue(now: number): boolean {
+	const previous = lastAutomaticCheck()
+	if (previous <= 0 || previous > now) return true
+	return now - previous >= AUTO_CHECK_INTERVAL_MS
 }
 
 function shouldShowUpdate(
@@ -131,10 +156,15 @@ export function useUpdater(options?: Options): UpdaterState {
 
 	const requestCheck = useCallback(() => {
 		if (checkPromiseRef.current) return checkPromiseRef.current
-		const request = check().finally(() => {
-			if (checkPromiseRef.current === request)
-				checkPromiseRef.current = null
-		})
+		const request = check()
+			.then(found => {
+				rememberCheck(Date.now())
+				return found
+			})
+			.finally(() => {
+				if (checkPromiseRef.current === request)
+					checkPromiseRef.current = null
+			})
 		checkPromiseRef.current = request
 		return request
 	}, [])
@@ -151,7 +181,7 @@ export function useUpdater(options?: Options): UpdaterState {
 	}, [requestCheck])
 
 	useEffect(() => {
-		if (!autoCheck) return
+		if (!autoCheck || !automaticCheckIsDue(Date.now())) return
 		let active = true
 		void (async () => {
 			try {

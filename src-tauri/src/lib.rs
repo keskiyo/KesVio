@@ -6,6 +6,7 @@ mod commands;
 mod diagnostics;
 mod error;
 mod lifecycle;
+mod paths;
 mod platform;
 
 use std::sync::Arc;
@@ -21,7 +22,8 @@ pub fn run() {
     let window_lifecycle = Arc::clone(&lifecycle);
     let tray_lifecycle = Arc::clone(&lifecycle);
     let setup_lifecycle = Arc::clone(&lifecycle);
-    let mut builder = tauri::Builder::default().plugin(diagnostics::plugin());
+    let locations = paths::Locations::beside_executable();
+    let mut builder = tauri::Builder::default().plugin(diagnostics::plugin(locations.logs()));
     #[cfg(desktop)]
     {
         builder = builder
@@ -35,6 +37,7 @@ pub fn run() {
     }
     builder
         .manage(AppState::default())
+        .manage(locations)
         .manage(Arc::clone(&lifecycle))
         .plugin(tauri_plugin_dialog::init())
         .on_window_event(move |window, event| {
@@ -57,18 +60,23 @@ pub fn run() {
             }
         })
         .setup(move |app| {
-            if let Ok(log_dir) = app.path().app_log_dir() {
+            paths::adopt_previous_documents(app.handle());
+            paths::remove_retired_documents(app.handle());
+            if let Ok(log_dir) = paths::log_dir(app.handle()) {
                 let removed = diagnostics::prune_expired_logs(
                     &log_dir,
                     std::time::SystemTime::now(),
                     diagnostics::MAX_LOG_AGE,
                 );
                 log::info!(
-                    "AppNook {} starting on {}: log retention {} days, {removed} expired files removed",
+                    "AppNook {} starting on {}: log retention {} hours, {removed} expired files removed",
                     app.package_info().version,
                     std::env::consts::OS,
-                    diagnostics::MAX_LOG_AGE.as_secs() / (24 * 60 * 60)
+                    diagnostics::MAX_LOG_AGE.as_secs() / (60 * 60)
                 );
+            }
+            if let Ok(data_dir) = paths::data_dir(app.handle()) {
+                log::info!("Data folder: {}", data_dir.display());
             }
             let tray_ready = match lifecycle::setup_tray(app.handle(), Arc::clone(&tray_lifecycle))
             {
@@ -78,8 +86,8 @@ pub fn run() {
                     false
                 }
             };
-            window_state::present_main_window(
-                app.handle(),
+            lifecycle::prepare_main_window(
+                app,
                 &setup_lifecycle,
                 lifecycle::should_hide_on_autostart(starts_hidden_from_autostart, tray_ready),
             );
@@ -99,10 +107,6 @@ pub fn run() {
             commands::close::close_apps,
             commands::details::get_app_details,
             commands::details::open_app_folder,
-            commands::uninstall::get_uninstall_preview,
-            commands::uninstall::uninstall_app,
-            commands::uninstall::get_uninstall_history,
-            commands::uninstall::clear_uninstall_history,
             commands::settings::get_system_settings,
             commands::settings::set_scan_settings,
             commands::settings::set_close_behavior,
@@ -110,6 +114,7 @@ pub fn run() {
             commands::links::open_telegram,
             commands::links::open_github,
             commands::links::open_apps_settings,
+            commands::links::open_startup_settings,
             commands::links::open_release,
             commands::links::stale_copy_status,
             commands::links::open_installed_copy,

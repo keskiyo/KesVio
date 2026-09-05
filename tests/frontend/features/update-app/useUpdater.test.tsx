@@ -49,6 +49,9 @@ describe('useUpdater', () => {
 		act(() => result.current.dismiss())
 		expect(result.current.update).toBeNull()
 		unmount()
+		// This case is about dismissal, not cadence: clear the throttle so the second mount
+		// actually reaches the network the way a launch four hours later would.
+		localStorage.removeItem('appnook.last-update-check')
 
 		const second = renderHook(() => useUpdater())
 
@@ -57,6 +60,65 @@ describe('useUpdater', () => {
 		expect(localStorage.getItem('appnook.dismissed-update-version')).toBe(
 			'0.2.2',
 		)
+	})
+
+	// A tray application is restarted far more often than it is updated. Without a throttle every
+	// restart is one more request to the release endpoint, so the automatic check keeps a clock and
+	// the explicit button ignores it.
+	it('checks once per interval however often the application restarts', async () => {
+		check.mockResolvedValue(null)
+
+		const first = renderHook(() => useUpdater())
+		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
+		first.unmount()
+		renderHook(() => useUpdater())
+
+		await waitFor(() =>
+			expect(
+				Number(localStorage.getItem('appnook.last-update-check')),
+			).toBeGreaterThan(0),
+		)
+		expect(check).toHaveBeenCalledTimes(1)
+	})
+
+	it('checks again once the interval has passed', async () => {
+		check.mockResolvedValue(null)
+		const stale = Date.now() - 5 * 60 * 60 * 1000
+		localStorage.setItem('appnook.last-update-check', String(stale))
+
+		renderHook(() => useUpdater())
+
+		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
+	})
+
+	it('checks again when the stored time is unusable or in the future', async () => {
+		check.mockResolvedValue(null)
+		localStorage.setItem('appnook.last-update-check', 'not a number')
+		const first = renderHook(() => useUpdater())
+		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
+		first.unmount()
+
+		localStorage.setItem(
+			'appnook.last-update-check',
+			String(Date.now() + 60 * 60 * 1000),
+		)
+		renderHook(() => useUpdater())
+
+		await waitFor(() => expect(check).toHaveBeenCalledTimes(2))
+	})
+
+	it('never throttles the explicit check', async () => {
+		check.mockResolvedValue(null)
+		localStorage.setItem('appnook.last-update-check', String(Date.now()))
+		const { result } = renderHook(() => useUpdater())
+		expect(check).not.toHaveBeenCalled()
+
+		await act(async () => {
+			await result.current.checkNow()
+		})
+
+		expect(check).toHaveBeenCalledTimes(1)
+		expect(result.current.status).toBe('current')
 	})
 
 	// Install failures are classified from upstream plugin text, which is not a contract. Any

@@ -38,7 +38,6 @@ export interface AppDialogsProps {
 	dialogs: ReturnType<typeof useCatalogDialogs>
 	paletteApps: AppInfo[]
 	paletteSuggestions: AppInfo[]
-	onConfirmUninstall(): Promise<void>
 	onError(kind: string, detail: string): void
 }
 

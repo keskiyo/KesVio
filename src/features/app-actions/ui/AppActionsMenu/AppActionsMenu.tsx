@@ -1,9 +1,9 @@
 import {
 	ArrowRight,
+	ExternalLink,
 	EyeOff,
 	Info,
 	RotateCcw,
-	Trash2,
 	Wrench,
 } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
@@ -25,7 +25,7 @@ export function AppActionsMenu({
 	onClose,
 	onMove,
 	onInfo,
-	onUninstall,
+	onManageInWindows,
 	isHidden = false,
 	isUserPromoted = false,
 	onHide,
@@ -120,19 +120,18 @@ export function AppActionsMenu({
 				)}
 				{!isHidden && app.canUninstall && (
 					<MenuItem
-						icon={Trash2}
-						tone="danger"
+						icon={ExternalLink}
 						withSpotlight={false}
 						label="Uninstall"
 						onClick={() => {
-							onUninstall(app)
+							void onManageInWindows()
 							onClose()
 						}}
 					/>
 				)}
 				{!isHidden && !app.canUninstall && (
 					<MenuItem
-						icon={Trash2}
+						icon={ExternalLink}
 						disabled
 						withSpotlight={false}
 						label="Uninstall unavailable"

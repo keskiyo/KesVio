@@ -2,10 +2,12 @@ import { EllipsisVertical } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { useSpotlight } from '../../../../shared/hooks/useSpotlight'
 import { isCatalogArtifact } from '../../lib/catalogArtifacts'
+import { launchSourceLabel } from '../../lib/appPlatform'
 import { SpotlightLayer } from '../../../../shared/ui/SpotlightLayer'
 import { CardIcon } from './CardIcon'
 import { CardLabel } from './CardLabel'
 import { FavoriteButton } from './FavoriteButton'
+import { PlatformBadge } from './PlatformBadge'
 import type { AppCardProps } from './types'
 
 export function AppCard({
@@ -25,6 +27,7 @@ export function AppCard({
 	}, [])
 	const spotlight = useSpotlight()
 	const artifact = isCatalogArtifact(app)
+	const launchSource = launchSourceLabel(app.platformKind)
 	return (
 		<article
 			data-menu-open={menuOpen || undefined}
@@ -32,7 +35,7 @@ export function AppCard({
 			onPointerEnter={spotlight.onPointerEnter}
 			onPointerLeave={spotlight.onPointerLeave}
 			data-launching={launching || undefined}
-			className={`app-card app-card-tile app-card-glass cv-card group relative rounded-[1.15rem] border border-white/85 transition-[transform,border-color,box-shadow,opacity] duration-200 ease-out focus-within:border-violet-400/45 hover:-translate-y-0.5 ${menuOpen ? 'z-100' : ''}`}
+			className={`app-card app-card-tile app-card-glass cv-card group relative border border-white/85 transition-[transform,border-color,box-shadow,opacity] duration-200 ease-out focus-within:border-violet-400/45 hover:-translate-y-0.5 ${menuOpen ? 'z-100' : ''}`}
 		>
 			<SpotlightLayer size={110} />
 			<button
@@ -41,11 +44,11 @@ export function AppCard({
 					if (launching) return
 					void onLaunch(app)
 				}}
-				aria-label={`Launch ${app.name}`}
+				aria-label={`Launch ${app.name}${launchSource ? ` from ${launchSource}` : ''}`}
 				aria-busy={launching}
 				disabled={launching}
 				title={launching ? 'Launching…' : app.name}
-				className="relative z-1 flex size-full flex-col items-center justify-center gap-2.5 px-2.5 py-3 text-center focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-violet-500 disabled:cursor-progress"
+				className="app-card-face relative z-1 flex size-full flex-col items-center justify-center text-center focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-violet-500 disabled:cursor-progress"
 			>
 				<CardIcon iconBase64={app.iconBase64} launching={launching} />
 				<CardLabel
@@ -54,6 +57,7 @@ export function AppCard({
 					launching={launching}
 				/>
 			</button>
+			<PlatformBadge platformKind={app.platformKind} />
 			<button
 				type="button"
 				ref={menuTriggerRef}
@@ -64,7 +68,7 @@ export function AppCard({
 					event.stopPropagation()
 					setMenuOpen(value => !value)
 				}}
-				className="absolute top-2 left-2 z-2 grid size-8 place-items-center rounded-lg border border-white/85 bg-white/72 text-slate-500 opacity-75 shadow-sm transition hover:text-violet-700 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-violet-500"
+				className="app-card-action app-card-action-menu absolute z-2 grid place-items-center rounded-lg border border-white/85 bg-white/72 text-slate-500 opacity-75 shadow-sm transition hover:text-violet-700 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-violet-500"
 			>
 				<EllipsisVertical size={16} aria-hidden="true" />
 			</button>

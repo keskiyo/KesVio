@@ -11,7 +11,6 @@ import type {
 	CloseProgress,
 	LaunchStatus,
 	ScanProgress,
-	UninstallPreview,
 } from '../model/app.types'
 import {
 	invokeIfTauri,
@@ -57,9 +56,6 @@ export const tauriAppsClient: AppsClient = {
 	closeApps: ids => invokeIfTauri<CloseAppsResult>('close_apps', { ids }),
 	getAppDetails: id => invokeIfTauri<AppDetails>('get_app_details', { id }),
 	openAppFolder: id => invokeIfTauri<void>('open_app_folder', { id }),
-	getUninstallPreview: id =>
-		invokeIfTauri<UninstallPreview>('get_uninstall_preview', { id }),
-	uninstallApp: id => invokeIfTauri<void>('uninstall_app', { id }),
 	async onCatalogDelta(handler) {
 		return listenIfTauri<CatalogDelta>('catalog://delta', handler)
 	},

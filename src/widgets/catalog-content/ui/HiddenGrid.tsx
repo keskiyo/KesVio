@@ -29,7 +29,7 @@ export function HiddenGrid(props: HiddenGridProps) {
 							onLaunch={props.onLaunch}
 							onMove={props.onMoveApp}
 							onInfo={props.onInfo}
-							onUninstall={props.onUninstall}
+							onManageInWindows={props.onManageInWindows}
 							onHide={props.onHide}
 							onRestore={props.onRestore}
 							onDemote={props.onDemote}

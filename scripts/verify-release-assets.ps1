@@ -18,9 +18,10 @@ $latestPath = Join-Path $AssetsDir "latest.json"
 $setupName = "AppNook_${version}_x64-setup.exe"
 $setupPath = Join-Path $AssetsDir $setupName
 $signaturePath = "$setupPath.sig"
+$checksumPath = Join-Path $AssetsDir "SHA256SUMS.txt"
 $publishedSetupName = $setupName.Replace(" ", ".")
 
-foreach ($path in @($latestPath, $setupPath, $signaturePath)) {
+foreach ($path in @($latestPath, $setupPath, $signaturePath, $checksumPath)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
     $errors.Add("Required release asset is missing: $([IO.Path]::GetFileName($path))")
   }
@@ -42,6 +43,28 @@ $unexpected = Get-ChildItem -LiteralPath $AssetsDir -File | Where-Object {
 }
 if ($unexpected) {
   $errors.Add("Unexpected release assets: $($unexpected.Name -join ', ')")
+}
+
+# The checksum file is the only verification step a user can run without gh, minisign or trust in
+# the author, so a stale or malformed one must fail the release rather than reassure nobody.
+if ((Test-Path -LiteralPath $checksumPath -PathType Leaf) -and (Test-Path -LiteralPath $setupPath -PathType Leaf)) {
+  $checksumLines = @(Get-Content -LiteralPath $checksumPath | Where-Object { $_.Trim().Length -gt 0 })
+  if ($checksumLines.Count -ne 1) {
+    $errors.Add("SHA256SUMS.txt must hold exactly one entry, found $($checksumLines.Count)")
+  } else {
+    $entry = [regex]::Match($checksumLines[0], '^(?<hash>[0-9a-f]{64})\s\s(?<name>.+)$')
+    if (-not $entry.Success) {
+      $errors.Add("SHA256SUMS.txt is not in sha256sum format: $($checksumLines[0])")
+    } else {
+      if ($entry.Groups['name'].Value.Trim() -ne $setupName) {
+        $errors.Add("SHA256SUMS.txt names '$($entry.Groups['name'].Value.Trim())' instead of $setupName")
+      }
+      $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $setupPath).Hash.ToLowerInvariant()
+      if ($entry.Groups['hash'].Value -ne $actual) {
+        $errors.Add("SHA256SUMS.txt does not match the installer it names")
+      }
+    }
+  }
 }
 
 if (Test-Path -LiteralPath $latestPath -PathType Leaf) {

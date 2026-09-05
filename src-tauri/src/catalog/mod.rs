@@ -17,6 +17,7 @@ mod machine;
 mod model;
 mod naming;
 mod place;
+mod platform_kind;
 mod scan;
 mod sources;
 mod start_menu;
@@ -37,8 +38,8 @@ pub(crate) use display::CatalogAppDto;
 pub(crate) use identity::path_is_within;
 use identity::{find_executable, find_executable_named, is_launchable, stable_id};
 pub(crate) use model::{
-    AppCategory, AppDetails, AppInfo, ArtifactKind, LaunchKind, ScanProgress, SourceKind,
-    UninstallTarget,
+    AppCategory, AppDetails, AppInfo, ArtifactKind, LaunchKind, PlatformKind, ScanProgress,
+    SourceKind,
 };
 pub(crate) use scan::{
     coordinator as scan_coordinator, hydration, incremental, settings as scan_settings,
@@ -74,7 +75,6 @@ fn steam_app(game: steam::SteamGame) -> AppInfo {
         original_filename: None,
         install_location: Some(game.install_dir.to_string_lossy().into_owned()),
         can_uninstall: false,
-        uninstall: None,
         resolved_path: find_executable(&game.install_dir.to_string_lossy())
             .map(|path| path.to_string_lossy().into_owned()),
         shortcut_icon_path: None,
@@ -189,7 +189,7 @@ fn scan_registry(control: &ScanControl) -> registry::RegistryScan {
 }
 
 fn attach_registry_metadata(apps: &mut [AppInfo], metadata: &[registry::RegistryMetadata]) {
-    for app in apps.iter_mut().filter(|app| app.uninstall.is_none()) {
+    for app in apps.iter_mut().filter(|app| !app.can_uninstall) {
         let matches = metadata
             .iter()
             .filter(|record| registry_metadata_matches(app, record))
@@ -199,11 +199,10 @@ fn attach_registry_metadata(apps: &mut [AppInfo], metadata: &[registry::Registry
         };
         if !matches
             .iter()
-            .all(|record| record.uninstall == first.uninstall)
+            .all(|record| record.uninstall_signature == first.uninstall_signature)
         {
             continue;
         }
-        app.uninstall = Some(first.uninstall.clone());
         app.can_uninstall = true;
         if app.description.is_none() {
             app.description = first.description.clone();
@@ -373,7 +372,6 @@ pub(super) fn make_app(name: String, path: PathBuf) -> AppInfo {
         original_filename: None,
         install_location: None,
         can_uninstall: false,
-        uninstall: None,
         resolved_path: None,
         shortcut_icon_path: None,
         launch_arguments: None,
@@ -476,7 +474,6 @@ mod tests {
             original_filename: None,
             install_location: None,
             can_uninstall: false,
-            uninstall: None,
             resolved_path: None,
             shortcut_icon_path: None,
             launch_arguments: None,
@@ -644,10 +641,7 @@ mod tests {
             version: None,
             publisher: publisher.map(String::from),
             install_location: None,
-            uninstall: UninstallTarget::Command {
-                executable: executable.into(),
-                arguments: String::new(),
-            },
+            uninstall_signature: format!("{executable}\u{1f}"),
         }
     }
 
@@ -665,13 +659,6 @@ mod tests {
         );
         assert!(apps[0].can_uninstall);
         assert_eq!(apps[0].publisher.as_deref(), Some("Valve"));
-        assert_eq!(
-            apps[0].uninstall,
-            Some(UninstallTarget::Command {
-                executable: r"C:\Steam\uninstall.exe".into(),
-                arguments: String::new(),
-            })
-        );
     }
 
     #[test]
@@ -699,7 +686,6 @@ mod tests {
             ],
         );
         assert!(!apps[0].can_uninstall);
-        assert!(apps[0].uninstall.is_none());
     }
 
     #[test]

@@ -7,6 +7,7 @@ mod portable;
 mod scan;
 pub(crate) mod scan_control;
 mod scan_sources;
+pub(crate) mod scan_steps;
 mod watcher;
 
 pub(crate) use delta::{compute_delta, CatalogDelta, CatalogDeltaDto};
@@ -52,8 +53,25 @@ pub(crate) fn synchronize(
 ) -> CatalogCache {
     let started_at = Instant::now();
     let attempted_at = health::seconds_since_epoch();
-    let scan = scan_sources::scan_all(previous, settings, request, &progress, &is_cancelled);
-    assemble::assemble(previous, scan, settings, request, started_at, attempted_at)
+    let watchdog = scan_steps::ScanWatchdog::start();
+    let steps = watchdog.tracker();
+    let scan = scan_sources::scan_all(
+        previous,
+        settings,
+        request,
+        &progress,
+        &is_cancelled,
+        &steps,
+    );
+    assemble::assemble(
+        previous,
+        scan,
+        settings,
+        request,
+        started_at,
+        attempted_at,
+        &steps,
+    )
 }
 
 #[cfg(test)]
@@ -75,7 +93,6 @@ fn app(id: &str, name: &str) -> crate::catalog::AppInfo {
         original_filename: None,
         install_location: None,
         can_uninstall: false,
-        uninstall: None,
         resolved_path: None,
         shortcut_icon_path: None,
         launch_arguments: None,

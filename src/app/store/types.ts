@@ -10,10 +10,10 @@ import type {
 	CatalogArtifactKind,
 	CatalogChangeSummary,
 	CatalogDelta,
+	CatalogDensity,
 	CatalogDiagnostics,
 	CloseAppsResult,
 	ScanProgress,
-	UninstallPreview,
 } from '../../entities/app'
 
 export interface AppState {
@@ -28,6 +28,7 @@ export interface AppState {
 	catalogDiagnostics: CatalogDiagnostics | null
 	error: string | null
 	activeView: AppView
+	catalogDensity: CatalogDensity
 	favoriteAppIds: string[]
 	favoriteAppIdentities: string[]
 	categoryOrder: AppCategory[]
@@ -86,10 +87,9 @@ export interface AppState {
 	): { ok: true } | { ok: false; error: string }
 	removeScenarioApp(id: string, list: ScenarioList, identity: string): void
 	toggleFavoriteScenario(id: string): void
-	getUninstallPreview(id: string): Promise<UninstallPreview>
-	uninstall(id: string): Promise<void>
 	setQuery(query: string): void
 	setActiveView(view: AppView): void
+	setCatalogDensity(density: CatalogDensity): void
 	exportPreferences(): string
 	validatePreferencesImport(source: string): PreferenceTransferResult
 	importPreferences(source: string): PreferenceTransferResult

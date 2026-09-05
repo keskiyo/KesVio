@@ -9,7 +9,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 const CACHE_FILE: &str = "apps-cache.json";
-pub(crate) const CACHE_SCHEMA_VERSION: u32 = 9;
+pub(crate) const CACHE_SCHEMA_VERSION: u32 = 10;
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -105,7 +105,7 @@ fn parse_document(bytes: &[u8]) -> Option<CatalogCache> {
             promote_cached_artifacts(&mut document, &places);
             return Some(document);
         }
-        if matches!(document.schema_version, 2..=8) {
+        if matches!(document.schema_version, 2..=9) {
             if document.schema_version < 4 {
                 for app in &mut document.apps {
                     crate::catalog::visibility::apply_visibility(app);
@@ -449,7 +449,7 @@ mod tests {
 
         let migrated = read_document(dir.path()).unwrap();
 
-        assert_eq!(migrated.schema_version, 9);
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
         let docs = migrated
             .apps
             .iter()
@@ -605,7 +605,6 @@ mod tests {
             original_filename: Some("editor.exe".into()),
             install_location: Some(r"C:\".into()),
             can_uninstall: false,
-            uninstall: None,
             resolved_path: None,
             shortcut_icon_path: None,
             launch_arguments: Some("--profile-directory=Work".into()),
@@ -654,7 +653,6 @@ mod tests {
             original_filename: None,
             install_location: Some(r"C:\Git".into()),
             can_uninstall: false,
-            uninstall: None,
             resolved_path: None,
             shortcut_icon_path: None,
             launch_arguments: None,
@@ -700,7 +698,6 @@ mod tests {
             original_filename: None,
             install_location: None,
             can_uninstall: false,
-            uninstall: None,
             resolved_path: Some(r"C:\Program Files\Mozilla Firefox\firefox.exe".into()),
             shortcut_icon_path: Some(r"C:\Program Files\Mozilla Firefox\firefox.exe".into()),
             launch_arguments: None,
@@ -897,6 +894,45 @@ mod tests {
 
         assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
         assert!(migrated.app_details.is_empty());
+    }
+
+    // v9 stored an `uninstall` command beside `canUninstall`. The command is gone; the flag is the
+    // evidence that an entry is a registered product and is worth 35 visibility points, so the
+    // migration has to carry it over untouched and simply ignore the field it no longer reads.
+    #[test]
+    fn migrates_v9_by_dropping_the_uninstall_command_and_keeping_the_flag() {
+        let dir = tempfile::tempdir().unwrap();
+        let document = serde_json::json!({
+            "schemaVersion": 9,
+            "generation": 31,
+            "apps": [{
+                "id": "editor",
+                "name": "Editor",
+                "path": r"C:\Editor\editor.exe",
+                "iconBase64": null,
+                "canUninstall": true,
+                "uninstall": {
+                    "command": {
+                        "executable": r"C:\Editor\unins000.exe",
+                        "arguments": "/SILENT"
+                    }
+                }
+            }]
+        });
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = read_document(dir.path()).unwrap();
+
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
+        assert_eq!(migrated.generation, 31);
+        assert!(migrated.apps[0].can_uninstall);
+        write_document(dir.path(), &migrated).unwrap();
+        let rewritten = std::fs::read_to_string(dir.path().join(CACHE_FILE)).unwrap();
+        assert!(!rewritten.contains("unins000"));
     }
 
     // A reset that names the files it knows leaves behind the ones an earlier build wrote. One such

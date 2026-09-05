@@ -1,4 +1,4 @@
-﻿import { LayoutGrid, Star } from 'lucide-react'
+import { LayoutGrid, Star } from 'lucide-react'
 import { sortFavoritesFirst } from '../../../entities/app'
 import { FavoriteScenarioList } from '../../../features/manage-scenarios'
 import { SectionHeading } from '../../../shared/ui/SectionHeading'
@@ -17,7 +17,7 @@ export function FavoritesGrid({
 	onLaunch,
 	onMoveApp,
 	onInfo,
-	onUninstall,
+	onManageInWindows,
 	onHide,
 	onRestore,
 	onDemote,
@@ -74,7 +74,7 @@ export function FavoritesGrid({
 							onLaunch={onLaunch}
 							onMove={onMoveApp}
 							onInfo={onInfo}
-							onUninstall={onUninstall}
+							onManageInWindows={onManageInWindows}
 							onHide={onHide}
 							onRestore={onRestore}
 							onDemote={onDemote}

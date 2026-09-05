@@ -22,7 +22,7 @@ export function CategorySection({
 	onLaunch,
 	onMoveApp,
 	onInfo,
-	onUninstall,
+	onManageInWindows,
 	onHide,
 	onRestore,
 	onDemote,
@@ -86,7 +86,7 @@ export function CategorySection({
 								onLaunch={onLaunch}
 								onMove={onMoveApp}
 								onInfo={onInfo}
-								onUninstall={onUninstall}
+								onManageInWindows={onManageInWindows}
 								onHide={onHide}
 								onRestore={onRestore}
 								onDemote={onDemote}

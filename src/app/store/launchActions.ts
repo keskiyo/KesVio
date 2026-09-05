@@ -11,12 +11,7 @@ interface LaunchActionOptions {
 
 type LaunchActions = Pick<
 	AppState,
-	| 'markLaunching'
-	| 'clearLaunching'
-	| 'launch'
-	| 'closeApps'
-	| 'getUninstallPreview'
-	| 'uninstall'
+	'markLaunching' | 'clearLaunching' | 'launch' | 'closeApps'
 >
 
 export function createLaunchActions({
@@ -72,13 +67,6 @@ export function createLaunchActions({
 		async closeApps(ids) {
 			set({ error: null })
 			return client.closeApps(ids)
-		},
-		async getUninstallPreview(id) {
-			return client.getUninstallPreview(id)
-		},
-		async uninstall(id) {
-			set({ error: null })
-			return client.uninstallApp(id)
 		},
 	}
 }

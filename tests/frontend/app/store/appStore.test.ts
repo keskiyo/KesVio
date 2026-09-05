@@ -35,6 +35,7 @@ function app(
 		iconBase64: null,
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher: null,
@@ -89,13 +90,6 @@ function client(overrides: Partial<AppsClient> = {}): AppsClient {
 			unavailable: 0,
 			failed: 0,
 		}),
-		getUninstallPreview: vi.fn().mockResolvedValue({
-			appName: 'Visual Studio Code',
-			publisher: 'Microsoft',
-			source: 'registry',
-			mechanism: 'registered_command',
-		}),
-		uninstallApp: vi.fn().mockResolvedValue(undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 		...overrides,
 		getAppDetails:
@@ -115,6 +109,35 @@ function client(overrides: Partial<AppsClient> = {}): AppsClient {
 }
 
 describe('app store', () => {
+	it('starts at the stored density and persists a change', () => {
+		const values = new Map<string, string>()
+		const storage = {
+			getItem: (key: string) => values.get(key) ?? null,
+			setItem: (key: string, value: string) =>
+				void values.set(key, value),
+		} as unknown as Storage
+		const store = createAppStore(client(), storage)
+
+		expect(store.getState().catalogDensity).toBe('compact')
+
+		store.getState().setCatalogDensity('dense')
+
+		expect(store.getState().catalogDensity).toBe('dense')
+		expect(JSON.parse(values.get(PREFERENCES_KEY) ?? '{}')).toMatchObject({
+			catalogDensity: 'dense',
+		})
+	})
+
+	it('leaves state untouched when the density is already selected', () => {
+		const store = createAppStore(client(), memoryStorage())
+		const before = store.getState()
+
+		before.setCatalogDensity('compact')
+
+		expect(store.getState().catalogDensity).toBe('compact')
+		expect(store.getState().apps).toBe(before.apps)
+	})
+
 	it('imports normalized preferences and keeps the previous state as the local backup', () => {
 		const values = new Map<string, string>()
 		const storage = {
@@ -143,7 +166,7 @@ describe('app store', () => {
 			importedField: 'kept',
 		})
 		expect(JSON.parse(store.getState().exportPreferences())).toMatchObject({
-			version: 17,
+			version: 18,
 			favoriteAppIds: ['code'],
 			hiddenAppIds: ['chrome'],
 			importedField: 'kept',
@@ -243,7 +266,7 @@ describe('app store', () => {
 
 	it('refuses import and restore when local preferences use a newer schema', () => {
 		const future = JSON.stringify({
-			version: 18,
+			version: 19,
 			favoriteAppIds: ['keep'],
 		})
 		const values = new Map<string, string>([
@@ -1476,18 +1499,6 @@ describe('app store', () => {
 		expect(store.getState().isRefreshing).toBe(false)
 	})
 
-	it('rejects a failed uninstall without also writing the background error state', async () => {
-		const store = createAppStore(
-			client({
-				uninstallApp: vi.fn().mockRejectedValue(new Error('denied')),
-			}),
-		)
-		await expect(store.getState().uninstall(apps[0].id)).rejects.toThrow(
-			'denied',
-		)
-		expect(store.getState().error).toBeNull()
-	})
-
 	// A failed catalog load has no caller waiting on it, so it must still reach the user.
 	it('still surfaces a background load failure through the error state', async () => {
 		const store = createAppStore(
@@ -1646,16 +1657,5 @@ describe('app store', () => {
 				entry => entry.id === 'code',
 			)?.category,
 		).toBe('development')
-	})
-
-	it('launches and uninstalls through source-aware client calls', async () => {
-		const api = client()
-		const store = createAppStore(api)
-		await store.getState().launch(apps[2])
-		await expect(
-			store.getState().uninstall('codex'),
-		).resolves.toBeUndefined()
-		expect(api.launchApp).toHaveBeenCalledWith({ id: 'codex' })
-		expect(api.uninstallApp).toHaveBeenCalledWith('codex')
 	})
 })

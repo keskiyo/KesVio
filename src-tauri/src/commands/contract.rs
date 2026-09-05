@@ -1,10 +1,8 @@
-use crate::app_state::{cached_app, preview_for, UninstallRecord};
+use crate::app_state::cached_app;
 use crate::catalog::hydration::AppHydrationPatch;
 use crate::catalog::sync::{compute_delta, CatalogDeltaDto};
-use crate::catalog::{AppDetails, AppInfo, ScanProgress, SourceKind, UninstallTarget};
+use crate::catalog::{AppDetails, AppInfo, PlatformKind, ScanProgress};
 use crate::error::AppError;
-use crate::platform::windows::uninstall_history::{UninstallHistoryEntry, UninstallResult};
-use crate::platform::windows::uninstaller::UninstallMechanism;
 use crate::platform::windows::{AppArchitecture, AppSignatureStatus};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -27,10 +25,6 @@ fn sample_app() -> AppInfo {
     app.original_filename = Some("Code.exe".into());
     app.install_location = Some(r"C:\Program Files\Code".into());
     app.can_uninstall = true;
-    app.uninstall = Some(UninstallTarget::Command {
-        executable: r"C:\Program Files\Code\unins000.exe".into(),
-        arguments: "/SILENT".into(),
-    });
     app.resolved_path = Some(r"C:\Program Files\Code\Code.exe".into());
     app.shortcut_icon_path = Some(r"C:\Program Files\Code\Code.exe".into());
     app.launch_arguments = Some("--new-window".into());
@@ -60,26 +54,11 @@ fn commands(app: &AppInfo) -> Value {
             install_location_exists: Some(true),
             can_open_folder: true,
         }),
-        "get_uninstall_preview": wire(preview_for(&UninstallRecord {
-            app_name: "Visual Studio Code".into(),
-            publisher: Some("Microsoft Corporation".into()),
-            source_kind: SourceKind::Registry,
-            target: UninstallTarget::Msix {
-                package_full_name: "Microsoft.Code_1.95.0.0_x64__8wekyb3d8bbwe".into(),
-            },
-        })),
         "close_apps": wire(super::close::response_sample()),
-        "get_uninstall_history": wire(vec![UninstallHistoryEntry {
-            id: "editor".into(),
-            timestamp: 1_700_000_200,
-            app_name: "Visual Studio Code".into(),
-            publisher: Some("Microsoft Corporation".into()),
-            mechanism: UninstallMechanism::RegisteredCommand,
-            result: UninstallResult::Succeeded,
-        }]),
         "get_system_settings": wire(super::settings::settings_sample()),
         "set_scan_settings": wire(crate::catalog::scan_settings::ScanSettings::default()),
         "set_close_behavior": wire(true),
+        "open_startup_settings": wire(()),
         "stale_copy_status": wire(super::links::stale_copy_sample()),
         "save_preferences_backup": wire(true),
         "export_diagnostics_log": wire(true),
@@ -94,6 +73,7 @@ fn events(app: &AppInfo) -> Value {
         "catalog://patches": wire(vec![AppHydrationPatch {
             id: "editor".into(),
             generation: 7,
+            platform_kind: Some(PlatformKind::BattleNet),
             icon_base64: Some("data:image/png;base64,sample".into()),
             description: Some("Code editing. Redefined.".into()),
             version: Some("1.95.0".into()),
@@ -121,6 +101,7 @@ fn contract() -> Value {
         "commands": commands(&app),
         "events": events(&app),
         "error": wire(AppError::LaunchUnavailable),
+        "errorCodes": crate::error::every_code(),
     })
 }
 

@@ -1,8 +1,10 @@
+use super::stage_log;
 use crate::catalog::cache::CatalogCache;
 use crate::catalog::incremental::{FilesystemIndex, ScanMode, DEFAULT_MAX_DURATION};
 use crate::catalog::scan_settings::ScanSettings;
 use crate::catalog::sync::health::SourceOutcome;
 use crate::catalog::sync::scan_control::StageStop;
+use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::sync::{portable, SyncRequest};
 use crate::catalog::{self, AppInfo, ScanProgress};
 use std::path::PathBuf;
@@ -21,7 +23,10 @@ pub(super) fn scan(
     steam_libraries: Vec<PathBuf>,
     progress: &impl Fn(ScanProgress),
     is_cancelled: &(impl Fn() -> bool + Sync),
+    steps: &StepTracker,
 ) -> PortableSources {
+    stage_log::starting("portable");
+    steps.mark("portable", "fixed drives");
     let fixed_roots = settings
         .auto_scan_fixed_drives
         .then(crate::platform::windows::drives::fixed_drive_roots)
@@ -60,6 +65,7 @@ pub(super) fn scan(
             mode,
             max_duration: DEFAULT_MAX_DURATION,
             verify_fingerprints: settings.catalog_portable_fingerprint_v1,
+            steps,
         },
         progress,
         is_cancelled,
@@ -73,6 +79,7 @@ pub(super) fn scan(
         records: scan.apps.len(),
         duration: started_at.elapsed(),
     };
+    stage_log::finished(&outcome);
     PortableSources {
         apps: replaced.then_some(scan.apps),
         filesystem_index: replaced.then_some(scan.filesystem_index),

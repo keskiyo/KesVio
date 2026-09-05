@@ -59,7 +59,15 @@ pub(in crate::catalog) fn scan_roots(
                 .max_depth(budget.max_depth())
                 .into_iter()
         })
-        .take_while(|_| budget.charge_entry())
+        .take_while(|entry| {
+            if let Ok(entry) = entry {
+                budget.step(
+                    crate::catalog::source::INSTALLER_CACHE_SOURCE,
+                    &entry.path().to_string_lossy(),
+                );
+            }
+            budget.charge_entry()
+        })
         .filter_map(Result::ok)
         .filter(|entry| entry.file_type().is_file())
         .filter(|entry| {

@@ -10,11 +10,12 @@ import { GeneralSettings } from './sections/GeneralSettings'
 import { PreferencesBackup } from './sections/PreferencesBackup/PreferencesBackup'
 import { SettingsDiscoveryControls } from './sections/SettingsDiscoveryControls'
 import { UnclassifiedApps } from './sections/UnclassifiedApps/UnclassifiedApps'
-import { UninstallHistory } from './sections/UninstallHistory'
 import type { SettingsPageProps } from '../types'
 
 export function SettingsPage({
 	client,
+	density,
+	onSetDensity,
 	onExportPreferences,
 	onValidatePreferencesImport,
 	onImportPreferences,
@@ -73,10 +74,13 @@ export function SettingsPage({
 				settings={settings}
 				updater={updater}
 				saving={saving}
+				density={density}
+				onSetDensity={onSetDensity}
 				onSetCloseBehavior={setCloseBehavior}
 				onOpenGithub={client.openGithub}
 				onOpenTelegram={client.openTelegram}
 				onOpenAppsSettings={client.openAppsSettings}
+				onOpenStartupSettings={client.openStartupSettings}
 			/>
 			{areaError('settings')}
 			<AdvancedSettings>
@@ -132,7 +136,6 @@ export function SettingsPage({
 							onMoveApp={onMoveApp}
 						/>
 					)}
-				<UninstallHistory client={client} />
 			</AdvancedSettings>
 		</section>
 	)

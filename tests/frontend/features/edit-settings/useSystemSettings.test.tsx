@@ -27,14 +27,13 @@ const client: SystemClient = {
 	}),
 	setScanSettings: vi.fn(),
 	setCloseBehavior: vi.fn().mockImplementation(async value => value),
-	getUninstallHistory: vi.fn().mockResolvedValue([]),
-	clearUninstallHistory: vi.fn(),
 	savePreferencesBackup: vi.fn(),
 	exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 	pickFolder: vi.fn(),
 	openTelegram: vi.fn(),
 	openGithub: vi.fn(),
 	openAppsSettings: vi.fn(),
+	openStartupSettings: vi.fn(),
 }
 
 describe('useSystemSettings', () => {

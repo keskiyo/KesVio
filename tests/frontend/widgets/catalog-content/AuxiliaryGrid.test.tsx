@@ -34,6 +34,7 @@ function tool(id: string, name: string, publisher: string): AppInfo {
 		category: 'development',
 		launchKind: 'executable',
 		sourceKind: 'registry',
+		platformKind: null,
 		description: null,
 		version: null,
 		publisher,
@@ -56,7 +57,7 @@ function props() {
 		onLaunch: vi.fn().mockResolvedValue(undefined),
 		onMoveApp: vi.fn(),
 		onInfo: vi.fn(),
-		onUninstall: vi.fn(),
+		onManageInWindows: vi.fn(),
 		onPromote: vi.fn(),
 		onDemote: vi.fn(),
 	}

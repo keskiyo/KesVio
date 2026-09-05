@@ -26,7 +26,6 @@ pub(crate) enum AppError {
     ResetCatalogCache(String),
     ResetIconCache(String),
     ClearIconCache(String),
-    ClearUninstallHistory(String),
     ScanPathNotAbsolute(String),
     InvalidReleaseVersion,
     InvalidHydrationRequest,
@@ -35,9 +34,6 @@ pub(crate) enum AppError {
     CloseDataUnavailable,
     AppDetailsUnavailable,
     OpenFolderUnavailable,
-    UninstallDataUnavailable,
-    UninstallUnavailable,
-    UninstallCancelled,
     ProductNameMissing,
     NoNewerCopy,
     Other(String),
@@ -63,7 +59,6 @@ impl AppError {
             Self::ResetCatalogCache(_) => "RESET_CATALOG_CACHE_FAILED",
             Self::ResetIconCache(_) => "RESET_ICON_CACHE_FAILED",
             Self::ClearIconCache(_) => "CLEAR_ICON_CACHE_FAILED",
-            Self::ClearUninstallHistory(_) => "CLEAR_UNINSTALL_HISTORY_FAILED",
             Self::ScanPathNotAbsolute(_) => "SCAN_PATH_NOT_ABSOLUTE",
             Self::InvalidReleaseVersion => "INVALID_RELEASE_VERSION",
             Self::InvalidHydrationRequest => "INVALID_HYDRATION_REQUEST",
@@ -72,9 +67,6 @@ impl AppError {
             Self::CloseDataUnavailable => "CLOSE_DATA_UNAVAILABLE",
             Self::AppDetailsUnavailable => "APP_DETAILS_UNAVAILABLE",
             Self::OpenFolderUnavailable => "OPEN_FOLDER_UNAVAILABLE",
-            Self::UninstallDataUnavailable => "UNINSTALL_DATA_UNAVAILABLE",
-            Self::UninstallUnavailable => "UNINSTALL_UNAVAILABLE",
-            Self::UninstallCancelled => "UNINSTALL_CANCELLED",
             Self::ProductNameMissing => "PRODUCT_NAME_MISSING",
             Self::NoNewerCopy => "NO_NEWER_COPY",
             Self::Other(_) => "OPERATION_FAILED",
@@ -97,7 +89,6 @@ impl AppError {
             Self::ResetCatalogCache(_source) => "Could not reset the catalog cache. Try again.",
             Self::ResetIconCache(_source) => "Could not reset the icon cache. Try again.",
             Self::ClearIconCache(_source) => "Could not clear the icon cache. Try again.",
-            Self::ClearUninstallHistory(_source) => "Could not clear uninstall history. Try again.",
             Self::ScanPathNotAbsolute(_path) => "Scan paths must be absolute.",
             Self::InvalidReleaseVersion => "The release version is invalid.",
             Self::InvalidHydrationRequest => "The icon hydration request is invalid.",
@@ -106,9 +97,6 @@ impl AppError {
             Self::CloseDataUnavailable => "Close data is temporarily unavailable.",
             Self::AppDetailsUnavailable => "Application details are unavailable.",
             Self::OpenFolderUnavailable => "The application folder is unavailable.",
-            Self::UninstallDataUnavailable => "Uninstall data is temporarily unavailable.",
-            Self::UninstallUnavailable => "Uninstall is unavailable for this application.",
-            Self::UninstallCancelled => "The uninstall was cancelled.",
             Self::ProductNameMissing => "The installed application could not be identified.",
             Self::NoNewerCopy => "No newer installed copy was found.",
             Self::Other(_message) => "The operation could not be completed. Try again.",
@@ -117,6 +105,47 @@ impl AppError {
 }
 
 impl std::error::Error for AppError {}
+
+#[cfg(test)]
+pub(crate) fn every_variant() -> Vec<AppError> {
+    vec![
+        AppError::AppDataDir(String::new()),
+        AppError::Interrupted {
+            context: "x",
+            source: String::new(),
+        },
+        AppError::Coalesced { what: "x" },
+        AppError::ScanCancelled,
+        AppError::SaveScanSettings(String::new()),
+        AppError::SaveWindowSettings(String::new()),
+        AppError::SavePreferencesBackup(String::new()),
+        AppError::ExportDiagnostics(String::new()),
+        AppError::ResetCatalogCache(String::new()),
+        AppError::ResetIconCache(String::new()),
+        AppError::ClearIconCache(String::new()),
+        AppError::ScanPathNotAbsolute(String::new()),
+        AppError::InvalidReleaseVersion,
+        AppError::InvalidHydrationRequest,
+        AppError::LaunchDataUnavailable,
+        AppError::LaunchUnavailable,
+        AppError::CloseDataUnavailable,
+        AppError::AppDetailsUnavailable,
+        AppError::OpenFolderUnavailable,
+        AppError::ProductNameMissing,
+        AppError::NoNewerCopy,
+        AppError::Other(String::new()),
+    ]
+}
+
+#[cfg(test)]
+pub(crate) fn every_code() -> Vec<&'static str> {
+    let mut codes = every_variant()
+        .iter()
+        .map(AppError::code)
+        .collect::<Vec<_>>();
+    codes.sort_unstable();
+    codes
+}
 
 impl Serialize for AppError {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
@@ -163,36 +192,7 @@ mod tests {
 
     #[test]
     fn error_codes_form_the_expected_stable_contract() {
-        let all = [
-            AppError::AppDataDir(String::new()),
-            AppError::Interrupted {
-                context: "x",
-                source: String::new(),
-            },
-            AppError::Coalesced { what: "x" },
-            AppError::ScanCancelled,
-            AppError::SaveScanSettings(String::new()),
-            AppError::SavePreferencesBackup(String::new()),
-            AppError::ExportDiagnostics(String::new()),
-            AppError::ResetCatalogCache(String::new()),
-            AppError::ResetIconCache(String::new()),
-            AppError::ClearIconCache(String::new()),
-            AppError::ClearUninstallHistory(String::new()),
-            AppError::ScanPathNotAbsolute(String::new()),
-            AppError::InvalidReleaseVersion,
-            AppError::InvalidHydrationRequest,
-            AppError::LaunchDataUnavailable,
-            AppError::LaunchUnavailable,
-            AppError::CloseDataUnavailable,
-            AppError::AppDetailsUnavailable,
-            AppError::OpenFolderUnavailable,
-            AppError::UninstallDataUnavailable,
-            AppError::UninstallUnavailable,
-            AppError::UninstallCancelled,
-            AppError::ProductNameMissing,
-            AppError::NoNewerCopy,
-            AppError::Other(String::new()),
-        ];
+        let all = every_variant();
         for error in &all {
             let code = error.code();
             assert!(!code.is_empty());
@@ -203,9 +203,8 @@ mod tests {
             );
             assert!(!error.safe_message().is_empty());
         }
-        let mut codes = all.iter().map(AppError::code).collect::<Vec<_>>();
+        let mut codes = every_code();
         let total = codes.len();
-        codes.sort_unstable();
         codes.dedup();
         assert_eq!(codes.len(), total, "duplicate error codes");
         assert_eq!(
@@ -214,7 +213,6 @@ mod tests {
                 "APP_DATA_UNAVAILABLE",
                 "APP_DETAILS_UNAVAILABLE",
                 "CLEAR_ICON_CACHE_FAILED",
-                "CLEAR_UNINSTALL_HISTORY_FAILED",
                 "CLOSE_DATA_UNAVAILABLE",
                 "EXPORT_DIAGNOSTICS_FAILED",
                 "INVALID_HYDRATION_REQUEST",
@@ -230,13 +228,24 @@ mod tests {
                 "RESET_ICON_CACHE_FAILED",
                 "SAVE_PREFERENCES_BACKUP_FAILED",
                 "SAVE_SCAN_SETTINGS_FAILED",
+                "SAVE_WINDOW_SETTINGS_FAILED",
                 "SCAN_CANCELLED",
                 "SCAN_COALESCED",
                 "SCAN_PATH_NOT_ABSOLUTE",
-                "UNINSTALL_CANCELLED",
-                "UNINSTALL_DATA_UNAVAILABLE",
-                "UNINSTALL_UNAVAILABLE",
             ]
+        );
+    }
+
+    #[test]
+    fn every_variant_reaches_the_recorded_contract() {
+        assert_eq!(
+            every_variant().len(),
+            every_code().len(),
+            "every variant contributes exactly one recorded code"
+        );
+        assert!(
+            every_code().contains(&"SAVE_WINDOW_SETTINGS_FAILED"),
+            "set_close_behavior can return this code, so the webview has to know it"
         );
     }
 

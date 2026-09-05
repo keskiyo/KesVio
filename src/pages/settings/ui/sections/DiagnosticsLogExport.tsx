@@ -30,7 +30,7 @@ export function DiagnosticsLogExport({ onExport }: DiagnosticsLogExportProps) {
 				<SettingsSectionHeader
 					icon={ScrollText}
 					title="Diagnostics log"
-					description="AppNook records what each scan does. Export the recent log as XML when a scan stops or takes too long. Entries older than three days are removed automatically."
+					description="Export recent scan logs."
 				/>
 			</div>
 			<div className={`mt-auto pt-4 ${ACTION_ROW}`}>
@@ -44,9 +44,13 @@ export function DiagnosticsLogExport({ onExport }: DiagnosticsLogExportProps) {
 					{exporting ? 'Saving…' : 'Export log as XML'}
 				</button>
 			</div>
+			<p className="mt-3 text-sm leading-6 text-slate-600">
+				The log names the folders a scan walked, so read it before
+				sharing it.
+			</p>
 			<p
 				aria-live="polite"
-				className="mt-3 text-sm leading-6 text-slate-600"
+				className="mt-1 text-sm leading-6 text-slate-600"
 			>
 				{message}
 			</p>

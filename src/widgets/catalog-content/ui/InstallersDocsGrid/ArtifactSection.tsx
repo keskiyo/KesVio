@@ -29,7 +29,7 @@ export function ArtifactSection({
 						onLaunch={actions.onLaunch}
 						onMove={actions.onMoveApp}
 						onInfo={actions.onInfo}
-						onUninstall={actions.onUninstall}
+						onManageInWindows={actions.onManageInWindows}
 						onHide={actions.onHide}
 						onRestore={actions.onRestore}
 						onDemote={actions.onDemoteAuxiliary}

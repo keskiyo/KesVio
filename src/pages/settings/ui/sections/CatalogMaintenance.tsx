@@ -5,6 +5,7 @@ import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
 import { DANGER_VARIANT } from '../../../../shared/ui/buttonVariants'
 import {
 	ACTION_BUTTON,
+	ACTION_BUTTON_PRIMARY,
 	ACTION_ROW,
 	CANCEL_BUTTON,
 	CONFIRM_BUTTON,
@@ -40,7 +41,7 @@ export function CatalogMaintenance({
 				<SettingsSectionHeader
 					icon={RefreshCw}
 					title="Catalog maintenance"
-					description="Discard the incremental scan index and inspect every configured location again. Categories, Favorites and Hidden apps are preserved."
+					description="Rebuild the application catalog."
 				/>
 			</div>
 			<div className={`mt-auto pt-4 ${ACTION_ROW}`}>
@@ -49,7 +50,7 @@ export function CatalogMaintenance({
 					type="button"
 					disabled={forcing || resetting}
 					onClick={() => setConfirming('force')}
-					className={`${ACTION_BUTTON} utility-accent-button text-white focus-visible:outline-violet-400`}
+					className={ACTION_BUTTON_PRIMARY}
 				>
 					<ScanSearch size={16} aria-hidden="true" />
 					Force full scan

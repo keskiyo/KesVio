@@ -11,6 +11,7 @@ pub(crate) use model::{
 pub(crate) use model::DirectoryRecord;
 
 use crate::catalog::machine::MachineFacts;
+use crate::catalog::sync::scan_steps::StepTracker;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use walk::{visit_directory, VisitContext};
@@ -19,6 +20,16 @@ use walk::{visit_directory, VisitContext};
 use crate::catalog::{portable, portable_app};
 #[cfg(test)]
 use walk::{directory_modified_nanos, normalized_path};
+
+pub(crate) struct RootScanInput<'a> {
+    pub(crate) root: &'a Path,
+    pub(crate) previous: &'a FilesystemIndex,
+    pub(crate) mode: ScanMode,
+    pub(crate) excluded: &'a [PathBuf],
+    pub(crate) is_cancelled: &'a dyn Fn() -> bool,
+    pub(crate) verify_fingerprints: bool,
+    pub(crate) steps: &'a StepTracker,
+}
 
 #[cfg(test)]
 pub(crate) fn scan_root(
@@ -29,48 +40,33 @@ pub(crate) fn scan_root(
     is_cancelled: impl Fn() -> bool,
 ) -> IncrementalScanResult {
     scan_root_with_limits(
-        root,
-        previous,
-        mode,
-        excluded,
-        is_cancelled,
+        &RootScanInput {
+            root,
+            previous,
+            mode,
+            excluded,
+            is_cancelled: &is_cancelled,
+            verify_fingerprints: true,
+            steps: &StepTracker::default(),
+        },
         ScanLimits::default(),
-        true,
     )
 }
 
 pub(crate) fn scan_root_with_duration(
-    root: &Path,
-    previous: &FilesystemIndex,
-    mode: ScanMode,
-    excluded: &[PathBuf],
-    is_cancelled: impl Fn() -> bool,
+    input: &RootScanInput<'_>,
     max_duration: Duration,
-    verify_fingerprints: bool,
 ) -> IncrementalScanResult {
     scan_root_with_limits(
-        root,
-        previous,
-        mode,
-        excluded,
-        is_cancelled,
+        input,
         ScanLimits {
             max_duration,
             ..ScanLimits::default()
         },
-        verify_fingerprints,
     )
 }
 
-fn scan_root_with_limits(
-    root: &Path,
-    previous: &FilesystemIndex,
-    mode: ScanMode,
-    excluded: &[PathBuf],
-    is_cancelled: impl Fn() -> bool,
-    limits: ScanLimits,
-    verify_fingerprints: bool,
-) -> IncrementalScanResult {
+fn scan_root_with_limits(input: &RootScanInput<'_>, limits: ScanLimits) -> IncrementalScanResult {
     let mut result = IncrementalScanResult {
         apps: Vec::new(),
         index: FilesystemIndex::default(),
@@ -79,16 +75,17 @@ fn scan_root_with_limits(
     };
     let facts = MachineFacts::current();
     let context = VisitContext {
-        previous,
-        mode,
-        excluded,
-        is_cancelled: &is_cancelled,
+        previous: input.previous,
+        mode: input.mode,
+        excluded: input.excluded,
+        is_cancelled: input.is_cancelled,
         limits,
         started_at: Instant::now(),
         facts: &facts,
-        verify_fingerprints,
+        verify_fingerprints: input.verify_fingerprints,
+        steps: input.steps,
     };
-    visit_directory(root, 0, &context, &mut result);
+    visit_directory(input.root, 0, &context, &mut result);
     result
         .apps
         .sort_by_cached_key(|app| app.path.to_lowercase());
@@ -275,6 +272,27 @@ mod tests {
     use super::*;
     use std::time::Duration;
 
+    fn defaults() -> (FilesystemIndex, fn() -> bool, StepTracker) {
+        (FilesystemIndex::default(), || false, StepTracker::default())
+    }
+
+    fn forced<'a>(
+        root: &'a Path,
+        previous: &'a FilesystemIndex,
+        is_cancelled: &'a dyn Fn() -> bool,
+        steps: &'a StepTracker,
+    ) -> RootScanInput<'a> {
+        RootScanInput {
+            root,
+            previous,
+            mode: ScanMode::Force,
+            excluded: &[],
+            is_cancelled,
+            verify_fingerprints: true,
+            steps,
+        }
+    }
+
     #[test]
     fn unchanged_directories_reuse_cached_apps_without_rechecking_executables() {
         let root = tempfile::tempdir().unwrap();
@@ -393,19 +411,15 @@ mod tests {
         let too_deep = directory.join("TooDeep");
         std::fs::create_dir_all(&too_deep).unwrap();
         std::fs::write(too_deep.join("TooDeep.exe"), []).unwrap();
+        let (empty, never, steps) = defaults();
 
         let result = scan_root_with_limits(
-            root.path(),
-            &FilesystemIndex::default(),
-            ScanMode::Force,
-            &[],
-            || false,
+            &forced(root.path(), &empty, &never, &steps),
             ScanLimits {
                 max_depth: 2,
                 max_entries: 100,
                 max_duration: Duration::from_secs(10),
             },
-            true,
         );
 
         assert!(result.apps.iter().any(|app| app.name == "Allowed"));
@@ -417,19 +431,15 @@ mod tests {
     fn stops_when_the_entry_budget_is_exhausted() {
         let root = tempfile::tempdir().unwrap();
         std::fs::write(root.path().join("Portable.exe"), []).unwrap();
+        let (empty, never, steps) = defaults();
 
         let result = scan_root_with_limits(
-            root.path(),
-            &FilesystemIndex::default(),
-            ScanMode::Force,
-            &[],
-            || false,
+            &forced(root.path(), &empty, &never, &steps),
             ScanLimits {
                 max_depth: 16,
                 max_entries: 0,
                 max_duration: Duration::from_secs(10),
             },
-            true,
         );
 
         assert!(result.apps.is_empty());
@@ -441,19 +451,15 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         std::fs::write(root.path().join("First.exe"), []).unwrap();
         std::fs::write(root.path().join("Second.exe"), []).unwrap();
+        let (empty, never, steps) = defaults();
 
         let result = scan_root_with_limits(
-            root.path(),
-            &FilesystemIndex::default(),
-            ScanMode::Force,
-            &[],
-            || false,
+            &forced(root.path(), &empty, &never, &steps),
             ScanLimits {
                 max_depth: 16,
                 max_entries: 1,
                 max_duration: Duration::from_secs(10),
             },
-            true,
         );
 
         assert_eq!(result.limit_reached, Some(ScanLimit::Entries));
@@ -464,21 +470,37 @@ mod tests {
     }
 
     #[test]
+    fn every_directory_the_walk_enters_becomes_the_current_step() {
+        let root = tempfile::tempdir().unwrap();
+        let nested = root.path().join("Tools");
+        std::fs::create_dir_all(&nested).unwrap();
+        let watchdog = crate::catalog::sync::scan_steps::ScanWatchdog::start();
+        let steps = watchdog.tracker();
+        let (empty, never, _) = defaults();
+
+        scan_root_with_limits(
+            &forced(root.path(), &empty, &never, &steps),
+            ScanLimits::default(),
+        );
+
+        assert_eq!(
+            steps.current(),
+            Some(("portable", nested.to_string_lossy().into_owned()))
+        );
+    }
+
+    #[test]
     fn stops_when_the_time_budget_is_exhausted() {
         let root = tempfile::tempdir().unwrap();
+        let (empty, never, steps) = defaults();
 
         let result = scan_root_with_limits(
-            root.path(),
-            &FilesystemIndex::default(),
-            ScanMode::Force,
-            &[],
-            || false,
+            &forced(root.path(), &empty, &never, &steps),
             ScanLimits {
                 max_depth: 16,
                 max_entries: 100,
                 max_duration: Duration::ZERO,
             },
-            true,
         );
 
         assert_eq!(result.limit_reached, Some(ScanLimit::Time));

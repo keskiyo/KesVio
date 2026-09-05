@@ -31,9 +31,7 @@ fn write_catalog_under_lock(
         .sync_lock
         .lock()
         .map_err(|_| "Application synchronization is temporarily unavailable".to_string())?;
-    let app_data_dir = app
-        .path()
-        .app_data_dir()
+    let app_data_dir = crate::paths::data_dir(app)
         .map_err(|error| format!("Could not open the application data folder: {error}"))?;
     let previous = load_sanitized_document(&app_data_dir).unwrap_or_default();
     let settings = catalog::scan_settings::read(&app_data_dir);
@@ -61,6 +59,7 @@ fn write_catalog_under_lock(
         .map(|app| app.id.clone())
         .collect::<Vec<_>>();
     catalog::icon_cache::retain_only(&app_data_dir, &live_ids);
+    prune_expired_logs(app);
     Ok(ScanOutcome {
         apps: document.apps,
         generation: document.generation,
@@ -68,6 +67,17 @@ fn write_catalog_under_lock(
         delta,
         app_data_dir,
     })
+}
+
+fn prune_expired_logs(app: &tauri::AppHandle) {
+    let Ok(log_dir) = crate::paths::log_dir(app) else {
+        return;
+    };
+    crate::diagnostics::prune_expired_logs(
+        &log_dir,
+        std::time::SystemTime::now(),
+        crate::diagnostics::MAX_LOG_AGE,
+    );
 }
 
 fn synchronize_catalog_once(

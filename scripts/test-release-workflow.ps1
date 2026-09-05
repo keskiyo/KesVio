@@ -161,6 +161,37 @@ if ($collectAssetsIndex -lt 0 -or $verifySignatureIndex -lt $collectAssetsIndex 
   throw "Release workflow does not verify the updater signature before preparing latest.json"
 }
 
+# Without an Authenticode certificate, provenance and a checksum file are the only checks a user can
+# run on a downloaded installer. Both are release-blocking: an attestation that silently stops being
+# produced, or a checksum that never reaches the release page, fails open and nobody notices.
+if ($workflowText -notmatch 'uses: actions/attest-build-provenance@[0-9a-f]{40}') {
+  throw "Release workflow must attest build provenance with a SHA-pinned action"
+}
+
+foreach ($permission in @('id-token: write', 'attestations: write')) {
+  if ($workflowText -notmatch [regex]::Escape($permission)) {
+    throw "Release workflow must grant '$permission' for build provenance"
+  }
+}
+
+if ($workflowText -notmatch 'SHA256SUMS\.txt') {
+  throw "Release workflow must publish SHA256SUMS.txt"
+}
+
+$attestIndex = $workflowText.IndexOf("attest-build-provenance", [StringComparison]::Ordinal)
+$verifyAssetsIndex = $workflowText.IndexOf("verify-release-assets.ps1", [StringComparison]::Ordinal)
+$publishIndex = $workflowText.IndexOf("--draft=false", [StringComparison]::Ordinal)
+if ($verifyAssetsIndex -lt 0 -or $attestIndex -lt $verifyAssetsIndex -or $publishIndex -lt $attestIndex) {
+  throw "Release workflow must attest verified assets before it publishes the release"
+}
+
+$uploadsChecksum = $runBlocks | Where-Object {
+  $_.Body -match 'gh release upload' -and $_.Body -match 'SHA256SUMS\.txt'
+}
+if (-not $uploadsChecksum) {
+  throw "Release workflow never uploads SHA256SUMS.txt to the release"
+}
+
 foreach ($name in @('RELEASE_TAG', 'REPOSITORY', 'COMMIT_SHA')) {
   $used = $runBlocks | Where-Object { $_.Body -match "\`$env:$name" }
   if (-not $used) {

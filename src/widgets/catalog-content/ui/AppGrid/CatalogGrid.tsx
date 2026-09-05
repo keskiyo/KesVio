@@ -20,7 +20,7 @@ export function CatalogGrid(props: AppGridProps) {
 				onLaunch={props.onLaunch}
 				onMoveApp={props.onMoveApp}
 				onInfo={props.onInfo}
-				onUninstall={props.onUninstall}
+				onManageInWindows={props.onManageInWindows}
 				onHide={props.onHide}
 				onRestore={props.onRestore}
 				onDemote={props.onDemoteAuxiliary}
@@ -39,7 +39,7 @@ export function CatalogGrid(props: AppGridProps) {
 				onLaunch={props.onLaunch}
 				onMoveApp={props.onMoveApp}
 				onInfo={props.onInfo}
-				onUninstall={props.onUninstall}
+				onManageInWindows={props.onManageInWindows}
 				onHide={props.onHide}
 				onRestore={props.onRestore}
 				onDemote={props.onDemoteAuxiliary}
@@ -57,7 +57,7 @@ export function CatalogGrid(props: AppGridProps) {
 				onLaunch={props.onLaunch}
 				onMoveApp={props.onMoveApp}
 				onInfo={props.onInfo}
-				onUninstall={props.onUninstall}
+				onManageInWindows={props.onManageInWindows}
 				onPromote={props.onPromoteAuxiliary}
 				onDemote={props.onDemoteAuxiliary}
 			/>

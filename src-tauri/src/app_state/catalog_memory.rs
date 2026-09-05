@@ -1,4 +1,4 @@
-use crate::app_state::{AppState, CloseTarget, LaunchTarget, UninstallRecord};
+use crate::app_state::{AppState, CloseTarget, LaunchTarget};
 use crate::catalog::cache::CachedAppDetails;
 use crate::catalog::{self, AppDetailsTarget, AppInfo};
 use std::collections::{BTreeMap, HashSet};
@@ -6,7 +6,6 @@ use std::path::Path;
 
 pub(crate) fn remember_catalog(state: &AppState, apps: &[AppInfo]) {
     remember_catalog_ids(state, apps);
-    remember_uninstall_targets(state, apps);
     remember_launch_targets(state, apps);
     remember_close_targets(state, apps);
     remember_app_details_targets(state, apps);
@@ -28,28 +27,6 @@ pub(crate) fn known_catalog_ids(state: &AppState, ids: Vec<String>) -> Vec<Strin
     ids.into_iter()
         .filter(|id| known.contains(id) && seen.insert(id.clone()))
         .collect()
-}
-
-fn remember_uninstall_targets(state: &AppState, apps: &[AppInfo]) {
-    let targets = apps
-        .iter()
-        .filter_map(|app| {
-            app.uninstall.clone().map(|target| {
-                (
-                    app.id.clone(),
-                    UninstallRecord {
-                        app_name: app.name.clone(),
-                        publisher: app.publisher.clone(),
-                        source_kind: app.source_kind,
-                        target,
-                    },
-                )
-            })
-        })
-        .collect();
-    if let Ok(mut stored) = state.uninstall_targets.lock() {
-        *stored = targets;
-    }
 }
 
 fn remember_launch_targets(state: &AppState, apps: &[AppInfo]) {

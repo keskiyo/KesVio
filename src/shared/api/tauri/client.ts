@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
+import { emit, listen } from '@tauri-apps/api/event'
 import { AppClientError, toAppClientError } from './errors'
 
 type TauriGlobal = typeof globalThis & {
@@ -39,4 +39,16 @@ export async function listenIfTauri<T>(
 ): Promise<() => void> {
 	if (!isTauriRuntime()) return () => undefined
 	return listen<T>(event, ({ payload }) => handler(payload))
+}
+
+export async function emitIfTauri<T>(
+	event: string,
+	payload?: T,
+): Promise<void> {
+	if (!isTauriRuntime()) return
+	try {
+		await emit<T>(event, payload)
+	} catch (error) {
+		throw toAppClientError(error)
+	}
 }

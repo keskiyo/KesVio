@@ -29,15 +29,16 @@ describe('SettingsDiscoveryControls', () => {
 			/>,
 		)
 
-		expect(
-			screen.getByText(
-				'Ordinary refresh scans Windows sources and added folders. Fixed drives are walked during Force full scan, which is on by default.',
-			),
-		).toBeVisible()
+		expect(screen.getByText('Choose where AppNook scans.')).toBeVisible()
 		expect(
 			screen.getByRole('switch', {
 				name: 'Include fixed drives in Force full scan',
 			}),
+		).toBeVisible()
+		expect(
+			screen.getByText(
+				'Fixed drives are walked only during Force full scan. An ordinary refresh reads Windows sources and the folders added below.',
+			),
 		).toBeVisible()
 	})
 

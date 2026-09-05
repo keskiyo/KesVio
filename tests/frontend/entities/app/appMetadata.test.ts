@@ -15,6 +15,7 @@ const app: AppInfo = {
 	category: 'editors',
 	launchKind: 'executable',
 	sourceKind: 'registry',
+	platformKind: null,
 	description: 'A test editor',
 	version: 'v1.2.3',
 	publisher: 'Example Corp',

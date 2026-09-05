@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/keskiyo/AppNook/releases/tag/v0.4.0"><img src="https://img.shields.io/badge/version-0.4.0-7C3AED?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/keskiyo/AppNook/releases/tag/v0.4.1"><img src="https://img.shields.io/badge/version-0.4.1-7C3AED?style=flat-square" alt="Version"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&amp;logo=windows11&amp;logoColor=white" alt="Windows">
   <img src="https://img.shields.io/badge/architecture-x64-334155?style=flat-square" alt="Architecture">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&amp;logo=tauri&amp;logoColor=white" alt="Tauri">
@@ -25,7 +25,7 @@
 
 ![AppNook catalog with categories, search and application cards](.github/images/catalog.png)
 
-Screenshots show AppNook 0.4.0 with an example catalog.
+Screenshots show AppNook 0.4.1 with an example catalog.
 
 ## One catalog for Windows software
 
@@ -101,15 +101,15 @@ Inspect local file details, architecture, signature status and installation stat
 
 ## Settings and maintenance
 
-![AppNook 0.4.0 settings with global shortcut, tray behavior and update controls](.github/images/settings.png)
+![AppNook 0.4.1 settings with Compact catalog density and Windows startup management](.github/images/settings.png)
 
-Manage scanning, backups and unclassified apps under **Advanced**. Optional fixed-drive discovery uses **Force full scan**. AppNook remembers window placement and can stay in the tray; manage startup in **Windows Settings → Apps → Startup**.
+General settings group appearance, startup, Windows integration and updates in one panel. Catalog cards use **Compact** by default. AppNook is listed under **Windows Settings → Apps → Startup** already switched off, so starting with Windows is a switch you turn on there; **Manage** opens that page. Scanning, backups and unclassified apps stay under **Advanced**.
 
 Backups contain preferences only. If **Your changes are not being saved** appears, keep your export: imported settings may be lost after restart even when import reports success.
 
 ## Install
 
-1. Download [**`AppNook_0.4.0_x64-setup.exe`**](https://github.com/keskiyo/AppNook/releases/latest).
+1. Download [**`AppNook_0.4.1_x64-setup.exe`**](https://github.com/keskiyo/AppNook/releases/latest).
 2. Run the installer.
 3. Start AppNook and choose **Scan for apps**.
 
@@ -127,6 +127,8 @@ Backups contain preferences only. If **Your changes are not being saved** appear
 ## Privacy
 
 AppNook is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine. The updater contacts this repository's Releases to check for updates and download an installer when you choose to update. These requests do not include your catalog. If WebView2 is missing, the installer also needs internet access to download the runtime from Microsoft.
+
+AppNook also cannot remove software. It shows you which entries Windows has a registered uninstaller for and opens the Windows page for you; the removal itself is Windows' job. There is no code in the application that starts one — `git grep Command::new src-tauri/src` returns nothing.
 
 For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). AppNook is available under the [MIT License](LICENSE).
 
@@ -155,7 +157,21 @@ Bug reports and pull requests are welcome. Read [Technical Documentation](Docume
 
 Released installers are not Authenticode-signed. There is no code signing certificate behind this project, so SmartScreen warns on first run and every release starts at zero reputation.
 
-What is verified instead: each release is built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml`, on GitHub-hosted runners, and every installer is published with a detached Tauri updater signature (`.sig`). The in-app updater verifies that signature against the public key in `tauri.conf.json` before it installs anything, so an installer altered after publication is rejected as an update. That signature is separate from Authenticode and does not suppress SmartScreen: download only from this repository's Releases.
+What is verified instead: each release is built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml`, on GitHub-hosted runners, and every installer is published with a detached Tauri updater signature (`.sig`), a `SHA256SUMS.txt`, and a GitHub build provenance attestation. The in-app updater verifies the `.sig` against the public key in `tauri.conf.json` before it installs anything, so an installer altered after publication is rejected as an update. None of this is Authenticode and none of it suppresses SmartScreen: download only from this repository's Releases.
+
+You can check a download yourself, without trusting me:
+
+```bash
+gh attestation verify AppNook_0.4.1_x64-setup.exe --repo keskiyo/AppNook
+```
+
+That asks GitHub whether this exact file was produced by this repository's release workflow, and names the commit it was built from.
+
+```powershell
+(Get-FileHash -Algorithm SHA256 .\AppNook_0.4.1_x64-setup.exe).Hash.ToLower()
+```
+
+Compare the result with the line in `SHA256SUMS.txt` on the same release page.
 
 AppNook has no telemetry or account, and the catalog it builds stays on the local machine. GitHub serves and logs update checks and installer downloads; Microsoft supplies the WebView2 runtime if it is missing during installation. See [Privacy](#privacy).
 

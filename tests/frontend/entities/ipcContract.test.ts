@@ -12,19 +12,18 @@ import type {
 	CloseProgress,
 	LaunchStatus,
 	ScanProgress,
-	UninstallPreview,
 } from '../../../src/entities/app'
 import type {
 	ScanSettings,
 	StaleCopyInfo,
 	SystemSettings,
-	UninstallHistoryEntry,
 } from '../../../src/entities/system'
 
 const contract = recorded as unknown as {
 	commands: Record<string, unknown>
 	events: Record<string, unknown>
 	error: unknown
+	errorCodes: string[]
 }
 
 // Marks the interface owns outright: the catalog never sends them, the store writes them from
@@ -66,6 +65,7 @@ const appInfo: Required<AppInfo> = {
 	category: '',
 	launchKind: 'executable',
 	sourceKind: 'registry',
+	platformKind: null,
 	description: null,
 	version: null,
 	publisher: null,
@@ -151,20 +151,6 @@ describe('IPC wire contract', () => {
 			)
 		})
 
-		it('describes the uninstall preview', () => {
-			const declared: Required<UninstallPreview> = {
-				appName: '',
-				publisher: null,
-				source: 'registry',
-				mechanism: 'msix',
-			}
-			expectWireShape(
-				contract.commands.get_uninstall_preview,
-				declared,
-				'UninstallPreview',
-			)
-		})
-
 		it('describes the close result', () => {
 			const declared: Required<CloseAppsResult> = {
 				closed: 0,
@@ -178,20 +164,6 @@ describe('IPC wire contract', () => {
 				declared,
 				'CloseAppsResult',
 			)
-		})
-
-		it('describes uninstall history', () => {
-			const declared: Required<UninstallHistoryEntry> = {
-				id: '',
-				timestamp: 0,
-				appName: '',
-				publisher: null,
-				mechanism: 'msix',
-				result: 'succeeded',
-			}
-			const entries = contract.commands
-				.get_uninstall_history as UninstallHistoryEntry[]
-			expectWireShape(entries[0], declared, 'UninstallHistoryEntry')
 		})
 
 		it('describes system settings and the scan settings inside them', () => {
@@ -262,6 +234,7 @@ describe('IPC wire contract', () => {
 			const declared: Required<AppHydrationPatch> = {
 				id: '',
 				generation: 0,
+				platformKind: 'battle_net',
 				iconBase64: '',
 				description: '',
 				version: '',
@@ -319,5 +292,16 @@ describe('IPC wire contract', () => {
 			'code',
 			'message',
 		])
+	})
+
+	// The recorded code list is held against `APP_ERROR_CODES` by
+	// `mirrors the backend AppError code contract exactly` in entities/app/appsClient.test.ts,
+	// which owns that seam. Recording it here keeps Rust the single source of that list.
+	it('records every error code the backend can send', () => {
+		expect(contract.errorCodes.length).toBeGreaterThan(0)
+		expect(contract.errorCodes).toEqual([...contract.errorCodes].sort())
+		expect(new Set(contract.errorCodes).size).toBe(
+			contract.errorCodes.length,
+		)
 	})
 })

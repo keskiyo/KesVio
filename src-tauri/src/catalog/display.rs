@@ -1,5 +1,6 @@
 use super::{
-    AppCategory, AppInfo, ArtifactKind, LaunchKind, SourceKind, VisibilityClass, VisibilityReason,
+    platform_kind, AppCategory, AppInfo, ArtifactKind, LaunchKind, PlatformKind, SourceKind,
+    VisibilityClass, VisibilityReason,
 };
 use serde::Serialize;
 
@@ -14,6 +15,7 @@ pub(crate) struct CatalogAppDto {
     pub category: AppCategory,
     pub launch_kind: LaunchKind,
     pub source_kind: SourceKind,
+    pub platform_kind: Option<PlatformKind>,
     pub description: Option<String>,
     pub version: Option<String>,
     pub publisher: Option<String>,
@@ -42,6 +44,7 @@ impl From<&AppInfo> for CatalogAppDto {
             category: app.category,
             launch_kind: app.launch_kind,
             source_kind: app.source_kind,
+            platform_kind: platform_kind::platform_kind(app),
             description: app.description.clone(),
             version: app.version.clone(),
             publisher: app.publisher.clone(),
@@ -58,5 +61,34 @@ impl From<&AppInfo> for CatalogAppDto {
             category_reasons: app.category_reasons.clone(),
             close_risk: app.close_risk.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CatalogAppDto;
+    use crate::app_state::cached_app;
+
+    #[test]
+    fn serializes_battle_net_platform_without_native_launch_fields() {
+        let mut app = cached_app("World of Warcraft", r"C:\Menu\World of Warcraft.lnk");
+        app.resolved_path = Some(r"D:\Games\Battle.net\World of Warcraft\Wow.exe".into());
+        app.launch_arguments = Some("battlenet://WoW".into());
+
+        let json = serde_json::to_value(CatalogAppDto::from(&app)).unwrap();
+
+        assert_eq!(json["platformKind"], "battle_net");
+        assert!(json.get("resolvedPath").is_none());
+        assert!(json.get("launchArguments").is_none());
+    }
+
+    #[test]
+    fn serializes_no_platform_for_an_ordinary_windows_app() {
+        let app = cached_app("Notepad", r"C:\Windows\notepad.exe");
+
+        let json = serde_json::to_value(CatalogAppDto::from(&app)).unwrap();
+
+        assert!(json.get("platformKind").is_some());
+        assert_eq!(json["platformKind"], serde_json::Value::Null);
     }
 }

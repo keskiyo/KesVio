@@ -30,6 +30,22 @@ describe('toaster theme', () => {
 		)
 	})
 
+	// Sonner treats anything under 600px as a phone and stretches the toaster to the full viewport.
+	// The window can be dragged down to 560px, so that band is reachable and turned a one-line
+	// notice into a bar across the catalog.
+	it('keeps the toast in its corner at the narrow window sizes Sonner calls mobile', () => {
+		const narrow = rule('.app-toaster[data-sonner-toaster]')
+
+		expect(narrow).toContain('left: auto')
+		expect(narrow).toContain('width: var(--width)')
+		expect(
+			rule('.app-toaster[data-sonner-toaster] [data-sonner-toast]'),
+		).toContain('width: 100%')
+		expect(stylesheet).toMatch(
+			/@media \(max-width: 600px\) \{\s*\.app-toaster\[data-sonner-toaster\]/,
+		)
+	})
+
 	it('keeps semantic colour on the status icon instead of the whole toast', () => {
 		expect(
 			rule(

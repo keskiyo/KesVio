@@ -1,3 +1,4 @@
+use super::stage_log;
 use crate::catalog::sync::health::SourceOutcome;
 use crate::catalog::sync::scan_control::ScanControl;
 use crate::catalog::{self, AppInfo, ScanProgress};
@@ -9,6 +10,7 @@ pub(super) struct InstallerSources {
 }
 
 pub(super) fn scan(control: &ScanControl, progress: &impl Fn(ScanProgress)) -> InstallerSources {
+    stage_log::starting(catalog::source::INSTALLER_CACHE_SOURCE);
     let roots = catalog::installer_cache::roots();
     progress(ScanProgress {
         stage: "Installer caches".into(),
@@ -31,6 +33,7 @@ pub(super) fn scan(control: &ScanControl, progress: &impl Fn(ScanProgress)) -> I
         records: scan.apps.len(),
         duration: started_at.elapsed(),
     };
+    stage_log::finished(&outcome);
     progress(ScanProgress {
         stage: "Installer caches".into(),
         location: None,

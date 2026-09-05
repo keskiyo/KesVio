@@ -1,4 +1,8 @@
 import {
+	type CatalogDensity,
+	DEFAULT_CATALOG_DENSITY,
+} from '../../entities/app'
+import {
 	type AppCategory,
 	CATEGORY_ORDER,
 	type CategoryDefinition,
@@ -8,7 +12,7 @@ import type { Scenario } from '../../entities/scenario'
 
 export const PREFERENCES_KEY = 'appnook.preferences.v1'
 
-export const CURRENT_PREFERENCES_VERSION = 17
+export const CURRENT_PREFERENCES_VERSION = 18
 
 export const PREFERENCES_BACKUP_KEY = 'appnook.preferences.v1.bak'
 
@@ -25,8 +29,9 @@ export interface LegacyCanonicalPreferences {
 	categoryOverrides: Record<string, AppCategory>
 }
 
-export interface AppPreferencesV17 {
-	version: 17
+export interface AppPreferencesV18 {
+	version: 18
+	catalogDensity: CatalogDensity
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
 	favoriteAppIds: string[]
@@ -53,10 +58,11 @@ export type PreferenceTransferResult =
 	{ ok: true } | { ok: false; error: string }
 
 export type PreferenceImportResult =
-	{ ok: true; preferences: AppPreferencesV17 } | { ok: false; error: string }
+	{ ok: true; preferences: AppPreferencesV18 } | { ok: false; error: string }
 
-export const DEFAULT_PREFERENCES: AppPreferencesV17 = {
-	version: 17,
+export const DEFAULT_PREFERENCES: AppPreferencesV18 = {
+	version: 18,
+	catalogDensity: DEFAULT_CATALOG_DENSITY,
 	categories: DEFAULT_CATEGORIES.map(category => ({ ...category })),
 	categoryOrder: [...CATEGORY_ORDER],
 	favoriteAppIds: [],

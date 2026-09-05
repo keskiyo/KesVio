@@ -7,8 +7,6 @@ export const tauriSystemClient: SystemClient = {
 	setScanSettings: settings => invokeTauri('set_scan_settings', { settings }),
 	setCloseBehavior: hideToTray =>
 		invokeTauri('set_close_behavior', { hideToTray }),
-	getUninstallHistory: () => invokeTauri('get_uninstall_history'),
-	clearUninstallHistory: () => invokeTauri('clear_uninstall_history'),
 	savePreferencesBackup: contents =>
 		invokeTauri('save_preferences_backup', { contents }),
 	exportDiagnosticsLog: () => invokeTauri('export_diagnostics_log'),
@@ -19,6 +17,7 @@ export const tauriSystemClient: SystemClient = {
 	openTelegram: () => invokeTauri('open_telegram'),
 	openGithub: () => invokeTauri('open_github'),
 	openAppsSettings: () => invokeTauri('open_apps_settings'),
+	openStartupSettings: () => invokeTauri('open_startup_settings'),
 	openRelease: version => invokeTauri('open_release', { version }),
 	staleCopyStatus: () => invokeTauri('stale_copy_status'),
 	openInstalledCopy: () => invokeTauri('open_installed_copy'),

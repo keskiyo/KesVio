@@ -15,6 +15,7 @@ const visualStudioCode: AppInfo = {
 	category: 'development',
 	launchKind: 'executable',
 	sourceKind: 'registry',
+	platformKind: null,
 	description: null,
 	version: null,
 	publisher: null,
@@ -68,7 +69,7 @@ function renderMovableMenu(
 				onClose={onClose}
 				onMove={onMove}
 				onInfo={vi.fn()}
-				onUninstall={vi.fn()}
+				onManageInWindows={vi.fn()}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
 				onDemote={vi.fn()}
@@ -79,6 +80,56 @@ function renderMovableMenu(
 	)
 	return { onClose, onMove }
 }
+
+// AppNook no longer removes software. The menu keeps the entry point a reader looks for and hands
+// it to Windows, so `canUninstall` still means "Windows has a registered uninstaller for this" and
+// nothing in the menu can start a removal.
+describe('AppActionsMenu removal handover', () => {
+	function renderWithUninstaller(canUninstall: boolean) {
+		const onManageInWindows = vi.fn().mockResolvedValue(undefined)
+		const anchor = createRef<HTMLButtonElement>()
+		render(
+			<>
+				<button ref={anchor} type="button" aria-label="anchor" />
+				<AppActionsMenu
+					app={{ ...visualStudioCode, canUninstall }}
+					categories={threeCategories}
+					categoryOrder={threeCategories.map(category => category.id)}
+					onClose={vi.fn()}
+					onMove={vi.fn()}
+					onInfo={vi.fn()}
+					onManageInWindows={onManageInWindows}
+					onHide={vi.fn()}
+					onRestore={vi.fn()}
+					onDemote={vi.fn()}
+					anchorRef={anchor}
+				/>
+			</>,
+		)
+		return onManageInWindows
+	}
+
+	it('hands a registered product to Windows instead of removing it', async () => {
+		const onManageInWindows = renderWithUninstaller(true)
+
+		await userEvent.click(
+			screen.getByRole('menuitem', { name: 'Uninstall' }),
+		)
+
+		expect(onManageInWindows).toHaveBeenCalledOnce()
+	})
+
+	it('disables the handover when Windows has no uninstaller for the entry', () => {
+		renderWithUninstaller(false)
+
+		expect(
+			screen.getByRole('menuitem', { name: 'Uninstall unavailable' }),
+		).toBeDisabled()
+		expect(
+			screen.queryByRole('menuitem', { name: 'Uninstall' }),
+		).not.toBeInTheDocument()
+	})
+})
 
 describe('AppActionsMenu artifacts', () => {
 	it('does not offer category moves or favorites for an installer artifact', () => {
@@ -91,6 +142,7 @@ describe('AppActionsMenu artifacts', () => {
 			category: 'installers_docs',
 			launchKind: 'executable',
 			sourceKind: 'portable',
+			platformKind: null,
 			description: null,
 			version: null,
 			publisher: null,
@@ -105,7 +157,7 @@ describe('AppActionsMenu artifacts', () => {
 				onClose={vi.fn()}
 				onMove={vi.fn()}
 				onInfo={vi.fn()}
-				onUninstall={vi.fn()}
+				onManageInWindows={vi.fn()}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
 				onDemote={vi.fn()}

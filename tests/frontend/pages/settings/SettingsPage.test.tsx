@@ -26,14 +26,13 @@ describe('SettingsPage', () => {
 		getSettings: vi.fn().mockResolvedValue(settings),
 		setScanSettings: vi.fn().mockImplementation(async value => value),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
-		getUninstallHistory: vi.fn().mockResolvedValue([]),
-		clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 		pickFolder: vi.fn().mockResolvedValue(null),
 		openTelegram: vi.fn().mockResolvedValue(undefined),
 		openGithub: vi.fn().mockResolvedValue(undefined),
 		openAppsSettings: vi.fn().mockResolvedValue(undefined),
+		openStartupSettings: vi.fn().mockResolvedValue(undefined),
 	})
 
 	const updaterState = (
@@ -55,7 +54,14 @@ describe('SettingsPage', () => {
 
 	it('opens the Windows installed apps settings page', async () => {
 		const client = systemClient()
-		render(<SettingsPage client={client} updater={updaterState()} />)
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
 		await screen.findByText('Version 0.1.0')
 
 		await userEvent.click(
@@ -67,28 +73,121 @@ describe('SettingsPage', () => {
 		expect(client.openAppsSettings).toHaveBeenCalledTimes(1)
 	})
 
-	// Kaspersky PDM scored the HKCU Run value this toggle used to write. The product creates no
-	// startup persistence any more, so the control must not come back.
-	it('offers no Windows startup control', async () => {
+	it('opens Windows startup management without a runtime startup switch', async () => {
+		const client = systemClient()
 		render(
-			<SettingsPage client={systemClient()} updater={updaterState()} />,
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-
 		expect(
 			screen.queryByRole('switch', {
 				name: 'Launch when Windows starts',
 			}),
 		).not.toBeInTheDocument()
-		expect(
-			screen.queryByText('Launch when Windows starts'),
-		).not.toBeInTheDocument()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Manage startup in Windows' }),
+		)
+		expect(client.openStartupSettings).toHaveBeenCalledOnce()
+	})
+
+	it('orders the compact General Settings sections by task', async () => {
+		render(
+			<SettingsPage
+				density="compact"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+			/>,
+		)
+		await screen.findByText('Version 0.1.0')
+		const sections = [
+			'Appearance',
+			'Startup & window',
+			'System',
+			'Updates & links',
+		].map(label => screen.getByText(label))
+
+		for (let index = 1; index < sections.length; index += 1) {
+			expect(
+				sections[index - 1]?.compareDocumentPosition(sections[index]!),
+			).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+		}
+	})
+
+	it('uses concise descriptions for settings actions', async () => {
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+				onExportPreferences={() => '{}'}
+				onValidatePreferencesImport={() => ({ ok: true })}
+				onImportPreferences={() => ({ ok: true })}
+				onRestorePreferencesBackup={() => ({ ok: true })}
+				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
+			/>,
+		)
+		await screen.findByText('Version 0.1.0')
+
+		for (const description of [
+			'Works in any keyboard layout.',
+			'Open Windows Settings.',
+		]) {
+			expect(screen.getByText(description)).toBeInTheDocument()
+		}
+
+		await openAdvancedSettings()
+
+		for (const description of [
+			'Choose where AppNook scans.',
+			'Export or import your settings.',
+			'Rebuild the application catalog.',
+			'Export recent scan logs.',
+		]) {
+			expect(screen.getByText(description)).toBeInTheDocument()
+		}
+	})
+
+	// Both sentences are guarantees the code keeps and the reader cannot otherwise check: the
+	// history holds no commands or paths, and a refresh does not walk the disk. Shortening the
+	// section descriptions once removed them, which is what this case is here to catch.
+	it('keeps the privacy and scan-scope guarantees on the page', async () => {
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				updater={updaterState()}
+				client={systemClient()}
+			/>,
+		)
+		await screen.findByText('Version 0.1.0')
+		await openAdvancedSettings()
+
+		for (const guarantee of [
+			'Fixed drives are walked only during Force full scan. An ordinary refresh reads Windows sources and the folders added below.',
+			'The log names the folders a scan walked, so read it before sharing it.',
+		]) {
+			expect(screen.getByText(guarantee)).toBeVisible()
+		}
 	})
 
 	it('turns the tray behaviour off through the backend and reflects the answer', async () => {
 		const client = systemClient()
 		client.setCloseBehavior = vi.fn().mockResolvedValue(false)
-		render(<SettingsPage client={client} updater={updaterState()} />)
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
 		await screen.findByText('Version 0.1.0')
 		const toggle = screen.getByRole('switch', {
 			name: 'Keep running in the tray when the window is closed',
@@ -113,7 +212,14 @@ describe('SettingsPage', () => {
 		client.setCloseBehavior = vi
 			.fn()
 			.mockRejectedValue(new Error('disk full'))
-		render(<SettingsPage client={client} updater={updaterState()} />)
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
 		await screen.findByText('Version 0.1.0')
 
 		await userEvent.click(
@@ -136,6 +242,8 @@ describe('SettingsPage', () => {
 		const checkNow = vi.fn().mockResolvedValue(undefined)
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				client={systemClient()}
 				updater={updaterState({ checkNow })}
 			/>,
@@ -149,32 +257,11 @@ describe('SettingsPage', () => {
 		expect(checkNow).toHaveBeenCalledOnce()
 	})
 
-	it('places catalog maintenance beside uninstall history', async () => {
-		render(
-			<SettingsPage
-				updater={updaterState()}
-				client={systemClient()}
-				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
-			/>,
-		)
-		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
-
-		const maintenance = screen.getByRole('heading', {
-			name: 'Catalog maintenance',
-		})
-		const history = screen.getByRole('heading', {
-			name: 'Uninstall history',
-		})
-		expect(
-			maintenance.compareDocumentPosition(history) &
-				Node.DOCUMENT_POSITION_FOLLOWING,
-		).toBeTruthy()
-	})
-
 	it('keeps infrequent settings in a collapsed Advanced section', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -196,6 +283,8 @@ describe('SettingsPage', () => {
 	it('does not render catalog visibility counts outside scan diagnostics', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -213,6 +302,8 @@ describe('SettingsPage', () => {
 	it('keeps scan diagnostics collapsed until toggled', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -254,6 +345,8 @@ describe('SettingsPage', () => {
 	it('reports a source that is serving older data', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -297,6 +390,8 @@ describe('SettingsPage', () => {
 	it('shows no source table when the cache predates source health', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -326,6 +421,8 @@ describe('SettingsPage', () => {
 	it('reports how far the launch-target rule diverged from the one it replaced', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -366,6 +463,8 @@ describe('SettingsPage', () => {
 	it('shows no launch-target panel when the cache predates the diff', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -395,6 +494,8 @@ describe('SettingsPage', () => {
 	it('does not render manual icon-maintenance controls', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -414,6 +515,8 @@ describe('SettingsPage', () => {
 		const onForceFullScan = vi.fn().mockResolvedValue(undefined)
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={onForceFullScan}
@@ -436,6 +539,8 @@ describe('SettingsPage', () => {
 	it('returns focus to the full scan trigger when confirmation closes', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -453,6 +558,8 @@ describe('SettingsPage', () => {
 	it('uses readable dark text in the catalog maintenance confirmation', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -476,6 +583,8 @@ describe('SettingsPage', () => {
 		const onResetCatalogCache = vi.fn().mockResolvedValue(undefined)
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -500,6 +609,8 @@ describe('SettingsPage', () => {
 	it('replaces the open confirmation instead of stacking a second one', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -546,6 +657,8 @@ describe('SettingsPage', () => {
 	it('keeps focus on the trigger that opened the confirmation when swapping', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -569,6 +682,8 @@ describe('SettingsPage', () => {
 	it('uses dark-theme-safe settings surfaces and danger controls', async () => {
 		render(
 			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
 				updater={updaterState()}
 				client={systemClient()}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
@@ -612,25 +727,22 @@ describe('SettingsPage', () => {
 				.fn()
 				.mockImplementation(async settings => settings),
 			setCloseBehavior: vi.fn().mockImplementation(async value => value),
-			getUninstallHistory: vi.fn().mockResolvedValue([
-				{
-					id: 'history-1',
-					timestamp: 1_800_000_000,
-					appName: 'Visual Studio Code',
-					publisher: 'Microsoft',
-					mechanism: 'registered_command',
-					result: 'succeeded',
-				},
-			]),
-			clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
 			savePreferencesBackup: vi.fn().mockResolvedValue(true),
 			exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 			pickFolder: vi.fn().mockResolvedValue(String.raw`F:\Stick\Tools`),
 			openTelegram: vi.fn().mockResolvedValue(undefined),
 			openGithub: vi.fn().mockResolvedValue(undefined),
 			openAppsSettings: vi.fn().mockResolvedValue(undefined),
+			openStartupSettings: vi.fn().mockResolvedValue(undefined),
 		}
-		render(<SettingsPage client={client} updater={updaterState()} />)
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
 		expect(await screen.findByText('Version 0.1.0')).toBeInTheDocument()
 		expect(screen.getByText('Win+Shift+Q')).toBeInTheDocument()
 		await userEvent.click(
@@ -645,7 +757,6 @@ describe('SettingsPage', () => {
 		expect(client.openGithub).toHaveBeenCalledOnce()
 		await openAdvancedSettings()
 		expect(screen.getByText('Fixed local drives')).toBeInTheDocument()
-		expect(screen.getByText('Visual Studio Code')).toBeInTheDocument()
 		expect(screen.getByText('E:\\')).toBeInTheDocument()
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Browse for scan folder' }),
@@ -678,16 +789,22 @@ describe('SettingsPage', () => {
 				.fn()
 				.mockImplementation(async settings => settings),
 			setCloseBehavior: vi.fn().mockImplementation(async value => value),
-			getUninstallHistory: vi.fn().mockResolvedValue([]),
-			clearUninstallHistory: vi.fn().mockResolvedValue(undefined),
 			savePreferencesBackup: vi.fn().mockResolvedValue(true),
 			exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 			pickFolder: vi.fn().mockResolvedValue(String.raw`F:\Stick\Tools`),
 			openTelegram: vi.fn().mockResolvedValue(undefined),
 			openGithub: vi.fn().mockResolvedValue(undefined),
 			openAppsSettings: vi.fn().mockResolvedValue(undefined),
+			openStartupSettings: vi.fn().mockResolvedValue(undefined),
 		}
-		render(<SettingsPage client={client} updater={updaterState()} />)
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
 		await screen.findByText('Version 0.1.0')
 		await openAdvancedSettings()
 		await userEvent.click(
@@ -699,36 +816,5 @@ describe('SettingsPage', () => {
 			includedPaths: [String.raw`F:\Stick\Tools`],
 			excludedPaths: [],
 		})
-	})
-
-	it('clears uninstall history only after confirmation', async () => {
-		const client = systemClient()
-		vi.mocked(client.getUninstallHistory).mockResolvedValue([
-			{
-				id: 'history-1',
-				timestamp: 1_800_000_000,
-				appName: 'Visual Studio Code',
-				publisher: 'Microsoft',
-				mechanism: 'registered_command',
-				result: 'succeeded',
-			},
-		])
-		render(<SettingsPage client={client} updater={updaterState()} />)
-		await openAdvancedSettings()
-		expect(
-			await screen.findByText('Visual Studio Code'),
-		).toBeInTheDocument()
-		expect(screen.getByText('Succeeded')).toHaveClass('success-badge')
-
-		await userEvent.click(screen.getByRole('button', { name: 'Clear' }))
-		expect(client.clearUninstallHistory).not.toHaveBeenCalled()
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Confirm clear' }),
-		)
-
-		expect(client.clearUninstallHistory).toHaveBeenCalledOnce()
-		expect(
-			screen.getByText('No uninstall history yet.'),
-		).toBeInTheDocument()
 	})
 })

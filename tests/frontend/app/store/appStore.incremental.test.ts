@@ -10,6 +10,7 @@ const code: AppInfo = {
 	category: 'development',
 	launchKind: 'executable',
 	sourceKind: 'registry',
+	platformKind: null,
 	description: null,
 	version: null,
 	publisher: null,
@@ -43,13 +44,6 @@ function client(overrides: Partial<AppsClient> = {}): AppsClient {
 			installLocationExists: null,
 		}),
 		openAppFolder: vi.fn().mockResolvedValue(undefined),
-		getUninstallPreview: vi.fn().mockResolvedValue({
-			appName: 'Visual Studio Code',
-			publisher: 'Microsoft',
-			source: 'registry',
-			mechanism: 'registered_command',
-		}),
-		uninstallApp: vi.fn().mockResolvedValue(undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 		...overrides,
 	}
@@ -66,6 +60,7 @@ describe('incremental app store updates', () => {
 				generation: 2,
 				iconBase64: 'data:image/png;base64,x',
 				publisher: 'Microsoft',
+				platformKind: 'battle_net',
 			},
 		])
 
@@ -73,6 +68,7 @@ describe('incremental app store updates', () => {
 			id: 'code',
 			iconBase64: 'data:image/png;base64,x',
 			publisher: 'Microsoft',
+			platformKind: 'battle_net',
 		})
 		// The patch envelope carries a generation for staleness checks; only its fields belong
 		// on the catalog record.

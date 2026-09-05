@@ -21,8 +21,6 @@ function client(): AppsClient {
 		}),
 		getAppDetails: vi.fn(),
 		openAppFolder: vi.fn().mockResolvedValue(undefined),
-		getUninstallPreview: vi.fn(),
-		uninstallApp: vi.fn().mockResolvedValue(undefined),
 		onScanProgress: vi.fn().mockResolvedValue(() => undefined),
 	}
 }
