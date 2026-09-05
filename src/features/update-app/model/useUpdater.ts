@@ -29,9 +29,11 @@ export interface UpdaterState {
 	phase: UpdateInstallPhase
 	error: string | null
 	status: UpdateCheckStatus
+	automaticChecks: boolean
 	checkNow(): Promise<void>
 	install(): Promise<void>
 	dismiss(): void
+	setAutomaticChecks(enabled: boolean): void
 }
 
 interface Options {
@@ -40,7 +42,11 @@ interface Options {
 
 const DISMISSED_UPDATE_KEY = 'appnook.dismissed-update-version'
 const LAST_CHECK_KEY = 'appnook.last-update-check'
+const FAILED_CHECKS_KEY = 'appnook.update-check-failures'
+const AUTOMATIC_CHECKS_KEY = 'appnook.automatic-update-checks'
 const AUTO_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
+const MAX_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
+const MAX_COUNTED_FAILURES = 8
 const ACTIVE_UPDATE_PHASES = new Set<UpdateInstallPhase>([
 	'downloading',
 	'verifying',
@@ -85,10 +91,55 @@ function rememberCheck(at: number) {
 	}
 }
 
+function failedChecks(): number {
+	try {
+		const stored = Number(
+			globalThis.localStorage?.getItem(FAILED_CHECKS_KEY),
+		)
+		return Number.isFinite(stored) && stored > 0 ? Math.floor(stored) : 0
+	} catch {
+		return 0
+	}
+}
+
+function rememberFailedChecks(count: number) {
+	try {
+		globalThis.localStorage?.setItem(FAILED_CHECKS_KEY, String(count))
+	} catch (ignored) {
+		void ignored
+	}
+}
+
+function storedAutomaticChecks(): boolean {
+	try {
+		return globalThis.localStorage?.getItem(AUTOMATIC_CHECKS_KEY) !== 'off'
+	} catch {
+		return true
+	}
+}
+
+function rememberAutomaticChecks(enabled: boolean) {
+	try {
+		globalThis.localStorage?.setItem(
+			AUTOMATIC_CHECKS_KEY,
+			enabled ? 'on' : 'off',
+		)
+	} catch (ignored) {
+		void ignored
+	}
+}
+
+function checkInterval(failures: number): number {
+	if (failures <= 0) return AUTO_CHECK_INTERVAL_MS
+	const backoff =
+		AUTO_CHECK_INTERVAL_MS * 2 ** Math.min(failures, MAX_COUNTED_FAILURES)
+	return Math.min(backoff, MAX_CHECK_INTERVAL_MS)
+}
+
 function automaticCheckIsDue(now: number): boolean {
 	const previous = lastAutomaticCheck()
 	if (previous <= 0 || previous > now) return true
-	return now - previous >= AUTO_CHECK_INTERVAL_MS
+	return now - previous >= checkInterval(failedChecks())
 }
 
 function shouldShowUpdate(
@@ -151,6 +202,9 @@ export function useUpdater(options?: Options): UpdaterState {
 	const [totalBytes, setTotalBytes] = useState<number | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const [status, setStatus] = useState<UpdateCheckStatus>('idle')
+	const [automaticChecks, setAutomaticChecksState] = useState(
+		storedAutomaticChecks,
+	)
 	const checkPromiseRef = useRef<Promise<Update | null> | null>(null)
 	const installInFlightRef = useRef(false)
 
@@ -159,7 +213,13 @@ export function useUpdater(options?: Options): UpdaterState {
 		const request = check()
 			.then(found => {
 				rememberCheck(Date.now())
+				rememberFailedChecks(0)
 				return found
+			})
+			.catch((reason: unknown) => {
+				rememberCheck(Date.now())
+				rememberFailedChecks(failedChecks() + 1)
+				throw reason
 			})
 			.finally(() => {
 				if (checkPromiseRef.current === request)
@@ -180,8 +240,14 @@ export function useUpdater(options?: Options): UpdaterState {
 		}
 	}, [requestCheck])
 
+	const setAutomaticChecks = useCallback((enabled: boolean) => {
+		rememberAutomaticChecks(enabled)
+		setAutomaticChecksState(enabled)
+	}, [])
+
 	useEffect(() => {
-		if (!autoCheck || !automaticCheckIsDue(Date.now())) return
+		if (!autoCheck || !automaticChecks || !automaticCheckIsDue(Date.now()))
+			return
 		let active = true
 		void (async () => {
 			try {
@@ -197,7 +263,7 @@ export function useUpdater(options?: Options): UpdaterState {
 		return () => {
 			active = false
 		}
-	}, [autoCheck, requestCheck])
+	}, [autoCheck, automaticChecks, requestCheck])
 
 	const install = useCallback(async () => {
 		if (
@@ -277,8 +343,10 @@ export function useUpdater(options?: Options): UpdaterState {
 		phase,
 		error,
 		status,
+		automaticChecks,
 		checkNow,
 		install,
 		dismiss,
+		setAutomaticChecks,
 	}
 }

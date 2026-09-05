@@ -16,10 +16,14 @@ pub(super) fn existing_root(executable: Option<&Path>) -> Option<PathBuf> {
 
 fn resolve_root(executable: Option<&Path>, create_missing: bool) -> Option<PathBuf> {
     let root = executable?.parent()?.join(ROOT_DIRECTORY);
-    if root.is_dir() {
+    if already_written(&root) {
         return Some(root);
     }
     (create_missing && accepts_writes(&root)).then_some(root)
+}
+
+fn already_written(root: &Path) -> bool {
+    root.join(super::DATA_DIRECTORY).is_dir() || root.join(super::LOG_DIRECTORY).is_dir()
 }
 
 fn accepts_writes(root: &Path) -> bool {
@@ -67,10 +71,11 @@ mod tests {
     }
 
     #[test]
-    fn an_existing_root_is_adopted_without_probing_it_again() {
+    fn a_root_this_application_has_written_is_adopted_without_probing_it_again() {
         let dir = tempfile::tempdir().unwrap();
         let executable = dir.path().join("AppNook.exe");
         let root = resolve_root(Some(&executable), true).unwrap();
+        fs::create_dir_all(root.join(super::super::DATA_DIRECTORY)).unwrap();
         let probe = root.join(PROBE_FILE);
         fs::write(&probe, []).unwrap();
 
@@ -81,6 +86,30 @@ mod tests {
             probe.is_file(),
             "a second run must not touch the probe file it no longer needs"
         );
+    }
+
+    #[test]
+    fn a_root_someone_else_created_is_probed_before_it_is_trusted() {
+        let dir = tempfile::tempdir().unwrap();
+        let executable = dir.path().join("AppNook.exe");
+        let root = dir.path().join(ROOT_DIRECTORY);
+        fs::create_dir_all(&root).unwrap();
+
+        assert_eq!(resolve_root(Some(&executable), true), Some(root.clone()));
+        assert_eq!(resolve_root(Some(&executable), false), None);
+        assert!(!root.join(PROBE_FILE).exists());
+    }
+
+    #[test]
+    fn a_root_that_cannot_be_written_falls_back_instead_of_being_adopted() {
+        let dir = tempfile::tempdir().unwrap();
+        let executable = dir.path().join("AppNook.exe");
+        let root = dir.path().join(ROOT_DIRECTORY);
+        fs::create_dir_all(&root).unwrap();
+        fs::create_dir_all(root.join(PROBE_FILE)).unwrap();
+
+        assert_eq!(resolve_root(Some(&executable), true), None);
+        assert!(root.is_dir());
     }
 
     #[test]

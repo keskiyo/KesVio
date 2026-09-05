@@ -224,14 +224,20 @@ same rather than throwing.
 Everything AppNook writes itself lives beside the executable. `paths/` resolves
 `<install folder>\AppNookData` once per process: when that directory accepts a
 write, `AppNookData\data` holds the catalog cache, scan settings and window
-state, and `AppNookData\logs` holds the diagnostics log. Only
-the run that has to create the folder probes it; once it exists, later runs adopt
-it on sight. A binary that repeatedly writes and deletes a file inside its own
-install directory is a dropper pattern, and the answer to "may I write here" does
-not change between launches of the same copy. A debug build never creates the
-folder at all, so a development run leaves nothing in `target\debug`. When it
-cannot be written — an installation under `Program Files`, a read-only medium
-— every store falls back to the Tauri per-user locations
+state, and `AppNookData\logs` holds the diagnostics log. A root that already
+contains `data` or `logs` is one this copy has written before, so it is adopted on
+sight without any probe. A binary that repeatedly writes and deletes a file inside
+its own install directory is a dropper pattern, and the answer to "may I write
+here" does not change once the copy has written there successfully. A root that
+exists but holds neither folder was created by somebody else — a deployment
+script, an administrator's first run, an installer laying out a shared directory —
+so it is probed once before it is trusted. That case is why the check is not a
+plain `is_dir`: a standard domain user must fall back to a writable location
+rather than adopt a folder whose ACLs deny them, and fail every write in silence.
+A debug build never creates the folder at all, so a development run leaves nothing
+in `target\debug`. When it cannot be written — an installation under
+`Program Files`, a read-only medium — every store falls back to the Tauri
+per-user locations
 (`%APPDATA%\dev.neiroslop.appnook` and `%LOCALAPPDATA%\dev.neiroslop.appnook\logs`)
 and nothing else about the stores changes. The resolved root is managed state, so
 every caller asks `paths::data_dir` or `paths::log_dir` instead of Tauri
@@ -859,6 +865,23 @@ would have to reintroduce it deliberately.
   has no way to tell the update apart from something else starting.
 - Update checks are silent offline, when current, and outside the desktop
   runtime used by browser development/tests.
+- The automatic check runs at most once every four hours, and the clock is
+  recorded whether the check succeeded or failed. Recording only successes would
+  leave the throttle disengaged wherever the release endpoint is unreachable, so
+  a managed network that blocks GitHub would see a blocked outbound connection
+  from an unsigned binary on every single launch. Consecutive failures then
+  double the interval — four hours, eight, sixteen — capped at a day, and one
+  success resets the count. **Automatic update checks** in Settings turns the
+  automatic check off entirely; it is on by default, persists in
+  `appnook.automatic-update-checks`, and survives restarts and updates. The
+  switch lives in the updater slice rather than the preferences document because
+  the slice already owns its own storage keys and the answer is per-machine: a
+  managed workstation that must not reach GitHub should not carry that setting
+  into a backup restored on a personal one. **Check for updates** ignores all of
+  it, so a reader who has turned the automatic check off can still ask. The check
+  is
+  triggered by application start rather than by a running timer, so the interval
+  is a floor between attempts and never a fixed period on the wire.
 
 ## 13. Privacy and security
 
@@ -925,17 +948,17 @@ Every capability the program uses, when it runs, and what bounds it. Nothing her
 is discretionary: each row is enforced by the boundary scripts, the capability
 file or a named test.
 
-| Capability                                                       | When it runs                                                        | Bound                                                                                                     |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Read the uninstall registry hives, Start Menu, AppsFolder, Steam | Startup, refresh, watcher, Force full scan                          | Read-only. Stage budgets and cancellation bound every loop.                                               |
-| Walk fixed drives for portable executables                       | **Force full scan only**, and only while the discovery toggle is on | `roots_for` retains fixed drives on refresh and walks them only on `SyncRequest::Force`.                  |
-| `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry                             | Target resolved from a catalog id held in trusted state, never from the webview.                          |
-| `CreateToolhelp32Snapshot`, `OpenProcess`, `TerminateProcess`    | The explicit close action of a scenario                             | `WM_CLOSE` first; terminate only on refusal; batch capped; protected processes and this process excluded. |
-| Remove installed software                                        | Never                                                               | The capability was removed. No code path starts a removal; the card menu opens the Windows page instead.  |
-| Write one `HKCU` value (`Software\keskiyo\AppNook`)              | Startup, only when the install directory changed                    | Read before write; the running program writes nothing else in the registry, ever.                         |
-| Register a disabled Startup entry                                | The installer, on a fresh install only                              | Shortcut plus a `StartupApproved` value marked disabled. Never on update; the running program cannot.     |
-| Write files                                                      | Catalog cache, scan settings, window state, logs                    | Only under the resolved data root. Atomic replace; identical values are not rewritten.                    |
-| Network                                                          | The update check, and a download the user starts                    | GitHub release endpoint only. Automatic checks are throttled to one per four hours.                       |
+| Capability                                                       | When it runs                                                        | Bound                                                                                                                              |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Read the uninstall registry hives, Start Menu, AppsFolder, Steam | Startup, refresh, watcher, Force full scan                          | Read-only. Stage budgets and cancellation bound every loop.                                                                        |
+| Walk fixed drives for portable executables                       | **Force full scan only**, and only while the discovery toggle is on | `roots_for` retains fixed drives on refresh and walks them only on `SyncRequest::Force`.                                           |
+| `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry                             | Target resolved from a catalog id held in trusted state, never from the webview.                                                   |
+| `CreateToolhelp32Snapshot`, `OpenProcess`, `TerminateProcess`    | The explicit close action of a scenario                             | `WM_CLOSE` first; terminate only on refusal; batch capped; protected processes and this process excluded.                          |
+| Remove installed software                                        | Never                                                               | The capability was removed. No code path starts a removal; the card menu opens the Windows page instead.                           |
+| Write one `HKCU` value (`Software\keskiyo\AppNook`)              | Startup, only when the install directory changed                    | Read before write; the running program writes nothing else in the registry, ever.                                                  |
+| Register a disabled Startup entry                                | The installer, on a fresh install only                              | Shortcut plus a `StartupApproved` value marked disabled. Never on update; the running program cannot.                              |
+| Write files                                                      | Catalog cache, scan settings, window state, logs                    | Only under the resolved data root. Atomic replace; identical values are not rewritten.                                             |
+| Network                                                          | The update check, and a download the user starts                    | GitHub release endpoint only. Automatic checks are throttled to one per four hours, and back off to a day after repeated failures. |
 
 There is no telemetry, no account and no background upload. The one persistence
 entry is the Startup shortcut the installer registers **disabled**, which exists

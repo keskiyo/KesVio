@@ -1,8 +1,9 @@
-import { ExternalLink, RefreshCw, Send } from 'lucide-react'
+import { Clock, ExternalLink, RefreshCw, Send } from 'lucide-react'
 import { ACTION_BUTTON_PRIMARY, ACTION_BUTTON_QUIET } from '../../data'
 import { GithubIcon } from '../../../../shared/ui/GithubIcon'
 import type { SettingsUpdateControlsProps } from '../../types'
 import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
+import { SettingsToggle } from '../components/SettingsToggle'
 import { updateStatusText } from './updateStatusText'
 
 export function SettingsUpdateControls({
@@ -50,6 +51,24 @@ export function SettingsUpdateControls({
 						keskiyo
 					</button>
 				</div>
+			</div>
+			<div className="flex items-center gap-4 border-b border-slate-200 p-5">
+				<SettingsSectionHeader
+					icon={Clock}
+					title="Automatic update checks"
+					description={
+						updater.automaticChecks
+							? 'At most one check every four hours, on start.'
+							: 'Only when you press Check updates.'
+					}
+				/>
+				<SettingsToggle
+					label="Check for updates automatically"
+					checked={updater.automaticChecks}
+					onToggle={() =>
+						updater.setAutomaticChecks(!updater.automaticChecks)
+					}
+				/>
 			</div>
 			<button
 				type="button"

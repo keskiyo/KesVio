@@ -91,6 +91,105 @@ describe('useUpdater', () => {
 		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
 	})
 
+	// On a network that blocks the release endpoint every check rejects. If only a success recorded
+	// the clock, the throttle would never engage and an unsigned binary would open a blocked
+	// connection on every single launch — the pattern corporate monitoring reads as beaconing.
+	it('records the clock on a failed check so a blocked network is not retried every launch', async () => {
+		check.mockRejectedValue(new Error('network unreachable'))
+
+		const first = renderHook(() => useUpdater())
+		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
+		await waitFor(() =>
+			expect(
+				Number(localStorage.getItem('appnook.last-update-check')),
+			).toBeGreaterThan(0),
+		)
+		first.unmount()
+
+		renderHook(() => useUpdater())
+
+		await waitFor(() =>
+			expect(localStorage.getItem('appnook.update-check-failures')).toBe(
+				'1',
+			),
+		)
+		expect(check).toHaveBeenCalledTimes(1)
+	})
+
+	it('backs off further with each consecutive failure and recovers on success', async () => {
+		check.mockRejectedValue(new Error('network unreachable'))
+		localStorage.setItem('appnook.update-check-failures', '2')
+		const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000
+		localStorage.setItem('appnook.last-update-check', String(sixHoursAgo))
+
+		const backedOff = renderHook(() => useUpdater())
+		await Promise.resolve()
+		expect(check).not.toHaveBeenCalled()
+		backedOff.unmount()
+
+		const dayAgo = Date.now() - 25 * 60 * 60 * 1000
+		localStorage.setItem('appnook.last-update-check', String(dayAgo))
+		const retried = renderHook(() => useUpdater())
+		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
+		await waitFor(() =>
+			expect(localStorage.getItem('appnook.update-check-failures')).toBe(
+				'3',
+			),
+		)
+		retried.unmount()
+
+		check.mockResolvedValue(null)
+		localStorage.setItem('appnook.last-update-check', String(dayAgo))
+		renderHook(() => useUpdater())
+
+		await waitFor(() =>
+			expect(localStorage.getItem('appnook.update-check-failures')).toBe(
+				'0',
+			),
+		)
+	})
+
+	it('checks automatically until the reader turns it off, and never blocks the button', async () => {
+		check.mockResolvedValue(null)
+
+		const enabled = renderHook(() => useUpdater())
+		expect(enabled.result.current.automaticChecks).toBe(true)
+		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
+
+		act(() => enabled.result.current.setAutomaticChecks(false))
+		expect(enabled.result.current.automaticChecks).toBe(false)
+		expect(localStorage.getItem('appnook.automatic-update-checks')).toBe(
+			'off',
+		)
+		enabled.unmount()
+
+		localStorage.removeItem('appnook.last-update-check')
+		const disabled = renderHook(() => useUpdater())
+		await Promise.resolve()
+		expect(check).toHaveBeenCalledTimes(1)
+
+		await act(async () => {
+			await disabled.result.current.checkNow()
+		})
+		expect(check).toHaveBeenCalledTimes(2)
+	})
+
+	it('resumes automatic checks when the reader turns them back on', async () => {
+		check.mockResolvedValue(null)
+		localStorage.setItem('appnook.automatic-update-checks', 'off')
+
+		const { result } = renderHook(() => useUpdater())
+		await Promise.resolve()
+		expect(check).not.toHaveBeenCalled()
+
+		act(() => result.current.setAutomaticChecks(true))
+
+		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
+		expect(localStorage.getItem('appnook.automatic-update-checks')).toBe(
+			'on',
+		)
+	})
+
 	it('checks again when the stored time is unusable or in the future', async () => {
 		check.mockResolvedValue(null)
 		localStorage.setItem('appnook.last-update-check', 'not a number')

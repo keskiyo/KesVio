@@ -14,9 +14,11 @@ function updater(overrides: Partial<UpdaterState> = {}): UpdaterState {
 		phase: 'idle',
 		error: null,
 		status: 'idle',
+		automaticChecks: true,
 		checkNow: vi.fn().mockResolvedValue(undefined),
 		install: vi.fn().mockResolvedValue(undefined),
 		dismiss: vi.fn(),
+		setAutomaticChecks: vi.fn(),
 		...overrides,
 	}
 }
