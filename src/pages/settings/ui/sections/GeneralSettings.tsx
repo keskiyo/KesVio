@@ -41,8 +41,8 @@ export function GeneralSettings({
 						title="Keep running in the tray"
 						description={
 							hideToTray
-								? 'Closing the window leaves AppNook in the notification area.'
-								: 'Closing the window quits AppNook.'
+								? 'Closing the window leaves KesVio in the notification area.'
+								: 'Closing the window quits KesVio.'
 						}
 					/>
 					<SettingsToggle

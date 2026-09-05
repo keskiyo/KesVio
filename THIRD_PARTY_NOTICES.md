@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-AppNook v0.4.0 distribution notices. Package names and versions were verified on 2026-09-03 against `npm ls --omit=dev --all --json` and the locked Windows x64 Cargo normal/build dependency graph. Each listed package must retain its upstream license and any required notice.
+KesVio v0.5.0 distribution notices. Package names and versions were verified on 2026-09-03 against `npm ls --omit=dev --all --json` and the locked Windows x64 Cargo normal/build dependency graph. Each listed package must retain its upstream license and any required notice.
 
 ## npm runtime dependencies
 

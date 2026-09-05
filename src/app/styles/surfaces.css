@@ -1,0 +1,105 @@
+.app-shell {
+	background:
+		radial-gradient(
+			circle at 82% 4%,
+			oklch(0.56 0.11 292 / 0.2),
+			transparent 31rem
+		),
+		radial-gradient(
+			circle at 18% 88%,
+			oklch(0.48 0.04 250 / 0.18),
+			transparent 28rem
+		),
+		linear-gradient(145deg, oklch(0.32 0.013 270), var(--surface-canvas));
+}
+
+.theme-soft-surface,
+.theme-graphite-surface {
+	color: var(--text-primary);
+}
+
+.app-titlebar {
+	background: oklch(0.3 0.012 270 / 0.9);
+	-webkit-backdrop-filter: blur(14px) saturate(115%);
+	backdrop-filter: blur(14px) saturate(115%);
+}
+
+.app-panel {
+	background: oklch(0.34 0.012 272 / 0.82);
+	border: 1px solid oklch(0.56 0.014 274 / 0.38);
+	-webkit-backdrop-filter: blur(16px) saturate(118%);
+	backdrop-filter: blur(16px) saturate(118%);
+	box-shadow: 0 20px 48px oklch(0.16 0.016 270 / 0.42);
+}
+
+#catalog-scroll {
+	scrollbar-gutter: stable;
+}
+
+.app-header-glass {
+	background: oklch(0.36 0.012 272 / 0.86);
+	-webkit-backdrop-filter: blur(18px) saturate(115%);
+	backdrop-filter: blur(18px) saturate(115%);
+}
+
+.app-card-glass {
+	background: linear-gradient(
+		145deg,
+		oklch(0.43 0.014 274 / 0.86),
+		oklch(0.34 0.016 282 / 0.76)
+	);
+	-webkit-backdrop-filter: blur(16px) saturate(118%);
+	backdrop-filter: blur(16px) saturate(118%);
+	box-shadow:
+		0 0 0 1px oklch(0.72 0.12 292 / 0.08),
+		0 6px 18px oklch(0.58 0.14 292 / 0.05);
+}
+
+.app-card-glass::before {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: linear-gradient(
+		120deg,
+		oklch(0.7 0.012 274 / 0.18),
+		transparent 34%,
+		transparent 72%,
+		oklch(0.7 0.14 292 / 0.11)
+	);
+	content: '';
+	pointer-events: none;
+}
+
+.app-card-tile.app-card-glass {
+	box-shadow: 0 8px 22px oklch(0.58 0.14 292 / 0.06);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+	.app-titlebar {
+		background: oklch(0.3 0.012 270);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	.app-panel {
+		background: oklch(0.34 0.012 272);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	.app-header-glass {
+		background: oklch(0.36 0.012 272);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+
+	.app-card-glass {
+		background: linear-gradient(
+			145deg,
+			oklch(0.43 0.014 274),
+			oklch(0.34 0.016 282)
+		);
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+	}
+}

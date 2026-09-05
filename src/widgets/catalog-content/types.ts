@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import type { AppInfo, AppView, SearchScopeCounts } from '../../entities/app'
 import type { AppCategory, CategoryDefinition } from '../../entities/category'
@@ -22,6 +23,7 @@ export interface CatalogViewHeaderProps {
 	count: number
 	noun?: string
 	back?: { label: string; onBack(): void }
+	action?: ReactNode
 }
 
 export interface AuxiliaryGridProps {

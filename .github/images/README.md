@@ -1,21 +1,20 @@
 # README screenshots
 
-The six PNG images referenced by the root `README.md` live here so Vite does not
-include documentation screenshots in the application bundle.
+Documentation screenshots live here rather than under `public/` so Vite does not
+include them in the application bundle.
 
 ## Current capture
 
-Captured on September 3, 2026 from the AppNook 0.4.0 React interface at revision
-`6e7945b`, using an isolated browser session and an in-memory example catalog.
-Application names and icons come from common installed software. Favorites,
-scenarios and installation paths are demonstration data.
+Captured from the running 0.5.0 application on a real Windows installation, so
+the catalog counts, categories and application names are genuine rather than
+demonstration data. `app-info.png` is an earlier capture kept because the dialog
+covers the window and shows nothing version-specific.
 
-Each image is 1280 × 720 and uses the same dark theme. The root README identifies
-the catalog as an example.
+Each image is roughly 1280 × 720 and uses the same dark theme.
 
 | File            | Content                                                            |
 | --------------- | ------------------------------------------------------------------ |
-| `catalog.png`   | Main catalog with the AppNook logo, sidebar, categories and cards. |
+| `catalog.png`   | Main catalog with the KesVio logo, sidebar, categories and cards.  |
 | `favorites.png` | Favorite applications and two saved scenarios.                     |
 | `more.png`      | Auxiliary tools, Scenarios, Hidden and Installers & Docs previews. |
 | `scenarios.png` | Configured scenarios with their launch and close lists.            |

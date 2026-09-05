@@ -1,4 +1,6 @@
-import type { ToggleTrackProps } from './types'
+export interface ToggleTrackProps {
+	checked: boolean
+}
 
 export function ToggleTrack({ checked }: ToggleTrackProps) {
 	return (

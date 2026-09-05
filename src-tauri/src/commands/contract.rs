@@ -8,7 +8,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
-const UPDATE_ENV: &str = "APPNOOK_CONTRACT_UPDATE";
+const UPDATE_ENV: &str = "KESVIO_CONTRACT_UPDATE";
 
 fn wire(value: impl Serialize) -> Value {
     serde_json::to_value(value).expect("every IPC payload serializes")

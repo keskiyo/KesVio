@@ -1,8 +1,8 @@
-import { readFileSync } from 'node:fs'
+import { readStylesheet } from './readStylesheet.mjs'
 import { describe, expect, it } from 'vitest'
 import { CUSTOM_CATEGORY_ACCENTS } from '../../../src/entities/category/lib/categoryAccents'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 
 const ALL_ACCENTS = [...CUSTOM_CATEGORY_ACCENTS, 'slate', 'neutral']
 

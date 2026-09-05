@@ -1,14 +1,20 @@
-AppNook is a fast, private application catalog and launcher for Windows 10 and 11. It gathers Start Menu shortcuts, installed software, Store apps, Steam games, and portable executables into one searchable catalog.
+KesVio is a fast, private application catalog and launcher for Windows 10 and 11. It gathers Start Menu shortcuts, installed software, Store apps, Steam games, and portable executables into one searchable catalog.
 
 ## Highlights
 
-- **A quieter application** — the automatic update check now runs at most once every four hours instead of on every start, and the data folder beside the executable is probed once rather than on every launch. **Check for updates** in Settings still checks immediately.
-- **Startup is yours to switch on** — AppNook now appears in **Windows Settings → Apps → Startup**, installed **off**. Turn it on there if you want AppNook to start with Windows.
+- **One card per application** — however many sources found it. Shortcuts, registry entries and Store packages for the same program are merged rather than listed side by side.
+- **Startup is yours to switch on** — the installer registers a Startup entry and leaves it **off**, so KesVio appears in **Windows Settings → Apps → Startup** for you to enable if you want it.
+- **It removes no software** — uninstalling stays with Windows, and the card menu opens the Windows page for it.
 
 ## Install
 
-1. Download `AppNook_0.4.1_x64-setup.exe`.
-2. Run it. Because the installer is not Authenticode-signed, SmartScreen may show **Windows protected your PC**; choose **More info → Run anyway**.
+1. Download `KesVio_0.5.0_x64-setup.exe`.
+2. Run it. The installer needs no administrator rights and installs for the current user only. Because it is not Authenticode-signed, SmartScreen may show **Windows protected your PC**; choose **More info → Run anyway**.
 3. If Microsoft Edge WebView2 is missing, the embedded bootstrapper downloads it from Microsoft and requires internet access.
 
-Upgrading from 0.4.0 keeps your settings and catalog; no export or import is needed.
+## Verifying this download
+
+The installer is not Authenticode-signed, so two things are published beside it instead:
+
+- `SHA256SUMS.txt` — compare it with `Get-FileHash KesVio_0.5.0_x64-setup.exe -Algorithm SHA256`.
+- A build provenance attestation tying these exact bytes to the workflow run and commit that produced them — `gh attestation verify KesVio_0.5.0_x64-setup.exe --repo keskiyo/KesVio`.

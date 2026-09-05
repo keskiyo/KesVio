@@ -1,7 +1,6 @@
-use sha2::{Digest, Sha256};
-use std::env;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
+mod app_record;
 mod artifact;
 mod classify;
 mod close;
@@ -18,6 +17,7 @@ mod model;
 mod naming;
 mod place;
 mod platform_kind;
+mod registry_enrichment;
 mod scan;
 mod sources;
 mod start_menu;
@@ -27,6 +27,8 @@ pub(crate) mod target_availability;
 mod tree;
 mod visibility;
 
+use app_record::make_app;
+
 pub(crate) use close::{
     attach_close_risk, close_scope_of, close_target_of, demote_console_applications,
 };
@@ -35,17 +37,20 @@ pub(crate) use details::{
     AppDetailsTarget,
 };
 pub(crate) use display::CatalogAppDto;
+use hydration::icon_source_candidates;
 pub(crate) use identity::path_is_within;
-use identity::{find_executable, find_executable_named, is_launchable, stable_id};
+use identity::{find_executable_named, is_launchable, stable_id};
 pub(crate) use model::{
     AppCategory, AppDetails, AppInfo, ArtifactKind, LaunchKind, PlatformKind, ScanProgress,
     SourceKind,
 };
+use registry_enrichment::attach_registry_metadata;
 pub(crate) use scan::{
     coordinator as scan_coordinator, hydration, incremental, settings as scan_settings,
 };
 pub(crate) use sources::source;
 use sources::{installer_cache, portable, registry, start_apps, steam};
+use sources::{portable_app, steam_app};
 use start_menu::scan_start_menu;
 #[cfg(test)]
 pub(crate) use start_menu::StartMenuScan;
@@ -54,185 +59,11 @@ use sync::scan_control::{
     ScanControl, StageBudget, StageStop, DEFAULT_STAGE_TIMEOUT, START_MENU_MAX_DEPTH,
     START_MENU_MAX_ENTRIES,
 };
+use sync::{default_portable_exclusions, watcher_paths};
 pub(crate) use visibility::{VisibilityClass, VisibilityReason};
-
-fn steam_app(game: steam::SteamGame) -> AppInfo {
-    let path = format!("steam://rungameid/{}", game.app_id);
-    let product_name = game.name.clone();
-    AppInfo {
-        id: stable_id(&path),
-        category: AppCategory::Games,
-        name: game.name,
-        path,
-        icon_base64: None,
-        artifact_kind: ArtifactKind::Application,
-        launch_kind: LaunchKind::Executable,
-        source_kind: SourceKind::Steam,
-        description: None,
-        version: None,
-        publisher: None,
-        product_name: Some(product_name),
-        original_filename: None,
-        install_location: Some(game.install_dir.to_string_lossy().into_owned()),
-        can_uninstall: false,
-        resolved_path: find_executable(&game.install_dir.to_string_lossy())
-            .map(|path| path.to_string_lossy().into_owned()),
-        shortcut_icon_path: None,
-        launch_arguments: None,
-        canonical_identity: None,
-        preference_identity: None,
-        visibility_class: Default::default(),
-        visibility_score: 0,
-        visibility_reasons: Vec::new(),
-        target_availability: None,
-        category_reasons: Vec::new(),
-        close_risk: None,
-    }
-}
-
-pub(in crate::catalog) fn portable_app(
-    path: PathBuf,
-    facts: &machine::MachineFacts,
-) -> Option<AppInfo> {
-    let metadata = crate::platform::windows::executable_metadata::read(&path);
-    let has_metadata = metadata.product_name.is_some()
-        || metadata.description.is_some()
-        || metadata.publisher.is_some()
-        || metadata.original_filename.is_some();
-    let installer_candidate = artifact::has_installer_filename_evidence(
-        &path.to_string_lossy(),
-        metadata.original_filename.as_deref(),
-        metadata.internal_name.as_deref(),
-    );
-    let stem = path.file_stem()?.to_string_lossy().trim().to_string();
-    let parent_matches = path
-        .parent()
-        .and_then(Path::file_name)
-        .is_some_and(|parent| {
-            naming::normalized_portable_name(&parent.to_string_lossy())
-                == naming::normalized_portable_name(&stem)
-        });
-    if !has_metadata
-        && !parent_matches
-        && !is_known_standalone_portable(&stem)
-        && !installer_candidate
-    {
-        return None;
-    }
-    let parent_name = path
-        .parent()
-        .and_then(Path::file_name)
-        .map(|parent| parent.to_string_lossy().into_owned());
-    let name = naming::portable_display_name(
-        &stem,
-        parent_name.as_deref(),
-        metadata.product_name.as_deref(),
-    );
-    let mut app = make_app(name, path.clone());
-    app.source_kind = SourceKind::Portable;
-    app.description = metadata.description;
-    app.version = metadata
-        .version
-        .or_else(|| naming::portable_version_from_stem(&stem));
-    app.publisher = metadata.publisher;
-    app.product_name = metadata.product_name;
-    app.original_filename = metadata.original_filename;
-    app.artifact_kind = artifact::classify(&app, metadata.internal_name.as_deref(), facts);
-    if app.artifact_kind == ArtifactKind::Application
-        && filters::is_maintenance_entry(&app.name, &path.to_string_lossy(), None)
-    {
-        return None;
-    }
-    if app.artifact_kind != ArtifactKind::Application {
-        app.category = AppCategory::InstallersDocs;
-    }
-    app.install_location = path
-        .parent()
-        .map(|value| value.to_string_lossy().into_owned());
-    Some(app)
-}
-
-fn default_portable_exclusions() -> Vec<PathBuf> {
-    [
-        "WINDIR",
-        "ProgramFiles",
-        "ProgramFiles(x86)",
-        "ProgramData",
-        "APPDATA",
-        "LOCALAPPDATA",
-    ]
-    .into_iter()
-    .filter_map(env::var_os)
-    .map(PathBuf::from)
-    .collect()
-}
-
-pub(crate) fn watcher_paths(settings: &scan_settings::ScanSettings) -> Vec<PathBuf> {
-    let mut paths = vec![PathBuf::from(
-        r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs",
-    )];
-    if let Some(appdata) = env::var_os("APPDATA") {
-        paths.push(PathBuf::from(appdata).join(r"Microsoft\Windows\Start Menu\Programs"));
-    }
-    paths.extend(settings.included_paths.iter().map(PathBuf::from));
-    paths.retain(|path| path.is_dir());
-    paths.sort_by_cached_key(|path| path.to_string_lossy().to_lowercase());
-    paths.dedup_by(|left, right| {
-        left.to_string_lossy()
-            .eq_ignore_ascii_case(&right.to_string_lossy())
-    });
-    paths
-}
 
 fn scan_registry(control: &ScanControl) -> registry::RegistryScan {
     registry::scan(&control.stage(DEFAULT_STAGE_TIMEOUT))
-}
-
-fn attach_registry_metadata(apps: &mut [AppInfo], metadata: &[registry::RegistryMetadata]) {
-    for app in apps.iter_mut().filter(|app| !app.can_uninstall) {
-        let matches = metadata
-            .iter()
-            .filter(|record| registry_metadata_matches(app, record))
-            .collect::<Vec<_>>();
-        let Some(first) = matches.first() else {
-            continue;
-        };
-        if !matches
-            .iter()
-            .all(|record| record.uninstall_signature == first.uninstall_signature)
-        {
-            continue;
-        }
-        app.can_uninstall = true;
-        if app.description.is_none() {
-            app.description = first.description.clone();
-        }
-        if app.version.is_none() {
-            app.version = first.version.clone();
-        }
-        if app.publisher.is_none() {
-            app.publisher = first.publisher.clone();
-        }
-        if app.install_location.is_none() {
-            app.install_location = first
-                .install_location
-                .clone()
-                .filter(|location| dedup::location_holds_target(location, app));
-        }
-    }
-}
-
-fn registry_metadata_matches(app: &AppInfo, record: &registry::RegistryMetadata) -> bool {
-    if dedup::normalized_product_family(&app.name) != dedup::normalized_product_family(&record.name)
-    {
-        return false;
-    }
-    match (&app.publisher, &record.publisher) {
-        (Some(app_publisher), Some(record_publisher)) => {
-            app_publisher.eq_ignore_ascii_case(record_publisher)
-        }
-        _ => true,
-    }
 }
 
 fn classify_entries(apps: Vec<AppInfo>, registrations: &machine::Registrations) -> Vec<AppInfo> {
@@ -295,95 +126,6 @@ pub(in crate::catalog) fn sanitize_pinned(
         |app| classify::classify_app(app, &associations),
         os_script,
     )
-}
-
-fn is_known_standalone_portable(stem: &str) -> bool {
-    let normalized = naming::normalized_portable_name(stem);
-    [
-        "rufus",
-        "putty",
-        "winscp",
-        "ventoy",
-        "crystaldiskinfo",
-        "crystaldiskmark",
-        "cpu z",
-        "gpu z",
-        "hwinfo",
-        "memtest",
-        "processhacker",
-        "processexplorer",
-    ]
-    .iter()
-    .any(|known| normalized == naming::normalized_portable_name(known))
-        || normalized.starts_with("rufus")
-        || normalized.starts_with("putty")
-        || normalized.starts_with("winscp")
-        || normalized.starts_with("ventoy")
-}
-
-pub(super) fn icon_source_candidates(app: &AppInfo) -> Vec<String> {
-    let mut candidates: Vec<String> = Vec::new();
-    let mut push = |value: Option<&String>| {
-        if let Some(path) = value {
-            if Path::new(path).is_file() && !candidates.contains(path) {
-                candidates.push(path.clone());
-            }
-        }
-    };
-    push(app.shortcut_icon_path.as_ref());
-    push(app.resolved_path.as_ref());
-    if app.launch_kind != LaunchKind::AppUserModelId && !candidates.contains(&app.path) {
-        candidates.push(app.path.clone());
-    }
-    candidates
-}
-
-#[cfg(test)]
-pub(super) fn icon_source(app: &AppInfo) -> Option<String> {
-    icon_source_candidates(app).into_iter().next()
-}
-
-pub(super) fn make_app(name: String, path: PathBuf) -> AppInfo {
-    let path = path.to_string_lossy().to_string();
-    let normalized = path.to_lowercase();
-    let id = format!("{:x}", Sha256::digest(normalized.as_bytes()));
-    let category = classify::classify(&name, &path);
-    let launch_kind = if Path::new(&path)
-        .extension()
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("lnk"))
-    {
-        LaunchKind::Shortcut
-    } else {
-        LaunchKind::Executable
-    };
-    AppInfo {
-        id,
-        name,
-        path,
-        icon_base64: None,
-        artifact_kind: ArtifactKind::Application,
-        category,
-        launch_kind,
-        source_kind: SourceKind::Registry,
-        description: None,
-        version: None,
-        publisher: None,
-        product_name: None,
-        original_filename: None,
-        install_location: None,
-        can_uninstall: false,
-        resolved_path: None,
-        shortcut_icon_path: None,
-        launch_arguments: None,
-        canonical_identity: None,
-        preference_identity: None,
-        visibility_class: Default::default(),
-        visibility_score: 0,
-        visibility_reasons: Vec::new(),
-        target_availability: None,
-        category_reasons: Vec::new(),
-        close_risk: None,
-    }
 }
 
 pub(crate) fn retain_present_targets(
@@ -453,10 +195,6 @@ mod tests {
         machine::MachineFacts::empty()
     }
 
-    fn portable_app(path: PathBuf) -> Option<AppInfo> {
-        super::portable_app(path, &facts())
-    }
-
     fn app(name: &str, path: &str) -> AppInfo {
         AppInfo {
             id: String::new(),
@@ -510,20 +248,6 @@ mod tests {
             portable_display_name("app", Some("x64"), Some("Yandex")),
             "Yandex"
         );
-    }
-
-    #[test]
-    fn includes_known_standalone_portable_without_metadata() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("Tools").join("rufus-4.11p.exe");
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(&path, []).unwrap();
-
-        let app = portable_app(path.clone()).expect("rufus should be detected");
-
-        assert_eq!(app.name, "rufus");
-        assert_eq!(app.path, path.to_string_lossy());
-        assert_eq!(app.source_kind, SourceKind::Portable);
     }
 
     #[test]
@@ -618,89 +342,6 @@ mod tests {
             by_name["Telegram Desktop Setup"].category,
             AppCategory::InstallersDocs
         );
-    }
-
-    #[test]
-    fn rejects_unknown_orphan_executable_without_metadata() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("Tools").join("helper-tool.exe");
-        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
-        std::fs::write(&path, []).unwrap();
-
-        assert!(portable_app(path).is_none());
-    }
-
-    fn registry_metadata(
-        name: &str,
-        publisher: Option<&str>,
-        executable: &str,
-    ) -> registry::RegistryMetadata {
-        registry::RegistryMetadata {
-            name: name.into(),
-            description: None,
-            version: None,
-            publisher: publisher.map(String::from),
-            install_location: None,
-            uninstall_signature: format!("{executable}\u{1f}"),
-        }
-    }
-
-    #[test]
-    fn attaches_registered_uninstall_to_matching_shortcut() {
-        let mut apps = vec![app("Steam", r"C:\Menu\Steam.lnk")];
-        apps[0].launch_kind = LaunchKind::Shortcut;
-        attach_registry_metadata(
-            &mut apps,
-            &[registry_metadata(
-                "Steam",
-                Some("Valve"),
-                r"C:\Steam\uninstall.exe",
-            )],
-        );
-        assert!(apps[0].can_uninstall);
-        assert_eq!(apps[0].publisher.as_deref(), Some("Valve"));
-    }
-
-    #[test]
-    fn attaches_version_labelled_registry_entry_to_plain_shortcut_name() {
-        let mut apps = vec![app("Ollama", r"C:\Menu\Ollama.lnk")];
-        attach_registry_metadata(
-            &mut apps,
-            &[registry_metadata(
-                "Ollama version 0.24.0",
-                Some("Ollama"),
-                r"C:\Ollama\unins000.exe",
-            )],
-        );
-        assert!(apps[0].can_uninstall);
-    }
-
-    #[test]
-    fn does_not_attach_ambiguous_uninstall_commands() {
-        let mut apps = vec![app("Studio", r"C:\Menu\Studio.lnk")];
-        attach_registry_metadata(
-            &mut apps,
-            &[
-                registry_metadata("Studio", None, r"C:\Alpha\uninstall.exe"),
-                registry_metadata("Studio", None, r"C:\Beta\uninstall.exe"),
-            ],
-        );
-        assert!(!apps[0].can_uninstall);
-    }
-
-    #[test]
-    fn does_not_attach_metadata_from_a_conflicting_publisher() {
-        let mut apps = vec![app("Studio", r"C:\Menu\Studio.lnk")];
-        apps[0].publisher = Some("Alpha".into());
-        attach_registry_metadata(
-            &mut apps,
-            &[registry_metadata(
-                "Studio",
-                Some("Beta"),
-                r"C:\Beta\uninstall.exe",
-            )],
-        );
-        assert!(!apps[0].can_uninstall);
     }
 
     #[test]
@@ -1552,57 +1193,6 @@ mod tests {
         assert_eq!(value.version.as_deref(), Some("1.2.3"));
         assert_eq!(value.publisher.as_deref(), Some("OpenAI"));
         assert!(value.can_uninstall);
-    }
-
-    #[test]
-    fn shortcut_icon_source_prefers_target_when_icon_location_is_empty() {
-        let dir = tempfile::tempdir().unwrap();
-        let shortcut = dir.path().join("Happ.lnk");
-        let target = dir.path().join("Happ.exe");
-        std::fs::write(&shortcut, []).unwrap();
-        std::fs::write(&target, []).unwrap();
-
-        let mut value = app("Happ", &shortcut.to_string_lossy());
-        value.launch_kind = LaunchKind::Shortcut;
-        value.resolved_path = Some(target.to_string_lossy().into_owned());
-        assert_eq!(
-            icon_source(&value).as_deref(),
-            Some(target.to_string_lossy().as_ref())
-        );
-    }
-
-    #[test]
-    fn icon_candidates_order_icon_location_then_target_then_path() {
-        let dir = tempfile::tempdir().unwrap();
-        let shortcut = dir.path().join("PgAdmin.lnk");
-        let icon = dir.path().join("pgAdmin4.ico");
-        let target = dir.path().join("pgAdmin4.exe");
-        for file in [&shortcut, &icon, &target] {
-            std::fs::write(file, []).unwrap();
-        }
-
-        let mut value = app("pgAdmin 4", &shortcut.to_string_lossy());
-        value.launch_kind = LaunchKind::Shortcut;
-        value.shortcut_icon_path = Some(icon.to_string_lossy().into_owned());
-        value.resolved_path = Some(target.to_string_lossy().into_owned());
-
-        let candidates = icon_source_candidates(&value);
-        assert_eq!(
-            candidates,
-            vec![
-                icon.to_string_lossy().into_owned(),
-                target.to_string_lossy().into_owned(),
-                shortcut.to_string_lossy().into_owned(),
-            ],
-        );
-    }
-
-    #[test]
-    fn icon_candidates_skip_missing_files_and_aumid_path() {
-        let mut value = app("Calc", "Microsoft.WindowsCalculator_8wekyb3d8bbwe!App");
-        value.launch_kind = LaunchKind::AppUserModelId;
-        value.shortcut_icon_path = Some(r"C:\missing\icon.ico".into());
-        assert!(icon_source_candidates(&value).is_empty());
     }
 
     #[test]

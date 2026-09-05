@@ -25,7 +25,7 @@ function app(index: number): AppInfo {
 		platformKind: null,
 		description: index % 5 === 0 ? 'Searchable metadata' : null,
 		version: null,
-		publisher: index % 7 === 0 ? 'AppNook Publisher' : null,
+		publisher: index % 7 === 0 ? 'KesVio Publisher' : null,
 		installLocation: `C:\\Program Files\\App ${index}`,
 		canUninstall: false,
 		targetAvailability: index % 4 === 3 ? 'missing' : null,

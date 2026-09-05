@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { readStylesheet } from './readStylesheet.mjs'
 import { describe, expect, it } from 'vitest'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 
 describe('category edit action styles', () => {
 	it('does not paint a background on hover', () => {

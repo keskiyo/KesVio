@@ -11,7 +11,7 @@ ignore = [
   # attribute names. Severity 7.5 (high). Fixed in quick-xml >= 0.41.0.
   #
   #   chain:       quick-xml 0.39.4 <- plist 1.9.0 <- tauri-utils 2.9.3 <- tauri 2.11.3
-  #   reason:      `plist` parses Apple property lists. AppNook is Windows-only by design and
+  #   reason:      `plist` parses Apple property lists. KesVio is Windows-only by design and
   #                never parses one: the crate is compiled into the Windows build but no code path
   #                reaches it at runtime. Both advisories are denial of service through hostile XML
   #                input, and this application feeds plist no input at all.

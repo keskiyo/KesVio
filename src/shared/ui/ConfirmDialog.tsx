@@ -2,7 +2,19 @@ import { TriangleAlert, Trash2, X } from 'lucide-react'
 import { useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useModalDialog } from '../hooks/useModalDialog'
-import type { ConfirmDialogProps } from './types'
+import type { ReactNode } from 'react'
+export interface ConfirmDialogProps {
+	label: string
+	title: string
+	description: string
+	confirmLabel: string
+	closeLabel: string
+	pending?: boolean
+	confirmDisabled?: boolean
+	children?: ReactNode
+	onConfirm(): void
+	onClose(): void
+}
 
 export function ConfirmDialog({
 	label,

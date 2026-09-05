@@ -284,7 +284,7 @@ describe('app store', () => {
 		const store = createAppStore(client(), storage)
 		const expected = {
 			ok: false as const,
-			error: 'Settings cannot be replaced by this version of AppNook.',
+			error: 'Settings cannot be replaced by this version of KesVio.',
 		}
 
 		expect(

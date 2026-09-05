@@ -161,7 +161,7 @@ pub(crate) async fn save_preferences_backup(
         .dialog()
         .file()
         .set_title("Export settings")
-        .set_file_name("appnook-settings.json")
+        .set_file_name("kesvio-settings.json")
         .add_filter("JSON files", &["json"])
         .blocking_save_file()
     else {

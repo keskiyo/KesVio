@@ -1,4 +1,4 @@
-export { normalizePreferences } from './preferencesNormalize'
+export { normalizePreferences } from './preferences/preferencesNormalize'
 export {
 	type AppPreferencesV18,
 	CURRENT_PREFERENCES_VERSION,
@@ -8,7 +8,7 @@ export {
 	PREFERENCES_KEY,
 	type PreferenceImportResult,
 	type PreferenceTransferResult,
-} from './preferencesSchema'
+} from './preferences/preferencesSchema'
 export {
 	hasNewerStoredPreferences,
 	parsePreferenceImport,
@@ -16,4 +16,4 @@ export {
 	readPreferences,
 	serializePreferences,
 	writePreferences,
-} from './preferencesStorage'
+} from './preferences/preferencesStorage'

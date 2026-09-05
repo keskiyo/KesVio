@@ -1,9 +1,9 @@
 {
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-	"productName": "AppNook",
-	"mainBinaryName": "AppNook",
-	"version": "0.4.1",
-	"identifier": "dev.neiroslop.appnook",
+	"productName": "KesVio",
+	"mainBinaryName": "KesVio",
+	"version": "0.5.0",
+	"identifier": "dev.neiroslop.kesvio",
 	"build": {
 		"frontendDist": "../dist",
 		"devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
 	"app": {
 		"windows": [
 			{
-				"title": "AppNook",
+				"title": "KesVio",
 				"width": 1250,
 				"height": 720,
 				"minWidth": 560,
@@ -33,7 +33,7 @@
 	"plugins": {
 		"updater": {
 			"endpoints": [
-				"https://github.com/keskiyo/AppNook/releases/latest/download/latest.json"
+				"https://github.com/keskiyo/KesVio/releases/latest/download/latest.json"
 			],
 			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ1MDJCMkFGQ0FCRkVEQUUKUldTdTdiL0tyN0lDUlVXNUtKd1pkUG1xOFVrS29Zb1BGTTYzb0p5T29EY3lkZWFlaGJiRWs2SFUK",
 			"windows": {
@@ -46,9 +46,9 @@
 		"publisher": "keskiyo",
 		"copyright": "Copyright © 2026 keskiyo. MIT licensed.",
 		"license": "MIT",
-		"homepage": "https://github.com/keskiyo/AppNook",
+		"homepage": "https://github.com/keskiyo/KesVio",
 		"shortDescription": "Private application catalog and launcher for Windows.",
-		"longDescription": "AppNook discovers installed and portable applications on this computer, organizes them into categories and scenarios, and launches them. It removes no software: uninstalling stays with Windows. It works entirely offline: no telemetry, no accounts, and no uploads. Only the application itself updates, from signed GitHub releases.",
+		"longDescription": "KesVio discovers installed and portable applications on this computer, organizes them into categories and scenarios, and launches them. It removes no software: uninstalling stays with Windows. It works entirely offline: no telemetry, no accounts, and no uploads. Only the application itself updates, from signed GitHub releases.",
 		"targets": ["nsis"],
 		"createUpdaterArtifacts": true,
 		"windows": {

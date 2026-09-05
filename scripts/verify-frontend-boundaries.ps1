@@ -115,4 +115,9 @@ if ($violations.Count -gt 0) {
   throw "Frontend layer/slice boundary violations:`n$($violations -join "`n")"
 }
 
+node (Join-Path $PSScriptRoot "frontend-import-graph.mjs")
+if ($LASTEXITCODE -ne 0) {
+  throw "Frontend import graph verification failed (exit $LASTEXITCODE)"
+}
+
 Write-Output "Verified frontend dependency boundaries"

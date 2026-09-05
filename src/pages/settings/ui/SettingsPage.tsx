@@ -56,7 +56,7 @@ export function SettingsPage({
 			<div className="mb-8 flex items-center gap-4">
 				<img
 					src="/app-icon.png"
-					alt="AppNook logo"
+					alt="KesVio logo"
 					className="size-16 rounded-2xl ring-1 ring-violet-400/25"
 				/>
 				<div>

@@ -1,0 +1,184 @@
+@keyframes activity-slide {
+	0% {
+		transform: translateX(-120%);
+	}
+	100% {
+		transform: translateX(420%);
+	}
+}
+
+.activity-bar-fill {
+	animation: activity-slide 1.1s ease-in-out infinite;
+}
+
+.motion-overlay,
+.update-modal-backdrop {
+	animation: overlay-enter var(--motion-fast) var(--motion-ease-out) both;
+}
+
+.motion-panel,
+.update-modal-panel {
+	animation: panel-enter var(--motion-medium) var(--motion-ease-out) both;
+	will-change: transform, opacity;
+}
+
+.spotlight {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+}
+
+.spotlight::before {
+	position: absolute;
+	inset: 0;
+	padding: 2.4px;
+	border-radius: inherit;
+	background: radial-gradient(
+		var(--spotlight-size, 110px) circle at var(--mouse-x, 50%)
+			var(--mouse-y, 50%),
+		rgba(90, 230, 255, 0.95),
+		rgba(170, 80, 255, 0.62) 32%,
+		rgba(255, 70, 220, 0.28) 48%,
+		transparent 72%
+	);
+	opacity: var(--spotlight-opacity, 0);
+	-webkit-mask:
+		linear-gradient(#000 0 0) content-box,
+		linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask-composite: exclude;
+	transition: opacity 160ms ease;
+	content: '';
+}
+
+.app-card-tile .spotlight::before {
+	padding: 1.4px;
+}
+
+.spotlight::after {
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: radial-gradient(
+		calc(var(--spotlight-size, 110px) * 1.4) circle at var(--mouse-x, 50%)
+			var(--mouse-y, 50%),
+		rgba(90, 220, 255, 0.1),
+		rgba(160, 80, 255, 0.06) 35%,
+		transparent 70%
+	);
+	opacity: calc(var(--spotlight-opacity, 0) * 0.32);
+	transition: opacity 160ms ease;
+	content: '';
+}
+
+.app-card:not(:hover) .spotlight::before,
+.app-card:not(:hover) .spotlight::after {
+	opacity: 0;
+}
+
+.drawer-shell {
+	pointer-events: none;
+}
+
+.drawer-shell.is-open {
+	pointer-events: auto;
+}
+
+.drawer-backdrop {
+	animation: overlay-enter 220ms var(--motion-ease-out) both;
+}
+
+.drawer-panel {
+	animation: drawer-panel-enter 240ms var(--motion-ease-out) both;
+	will-change: transform, opacity;
+}
+
+.drawer-shell.is-closing .drawer-backdrop {
+	animation: overlay-exit 180ms var(--motion-ease-in) both;
+}
+
+.drawer-shell.is-closing .drawer-panel {
+	animation: drawer-panel-exit 200ms var(--motion-ease-in) both;
+}
+
+@keyframes drawer-panel-enter {
+	from {
+		opacity: 0;
+		transform: translateX(-24px);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes drawer-panel-exit {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(-18px);
+	}
+}
+
+@keyframes card-enter {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes overlay-enter {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes overlay-exit {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes panel-enter {
+	from {
+		opacity: 0;
+		transform: translateY(12px) scale(0.985);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.activity-bar-fill,
+	.app-card,
+	.motion-overlay,
+	.update-modal-backdrop,
+	.motion-panel,
+	.update-modal-panel,
+	.drawer-backdrop,
+	.drawer-panel,
+	.drawer-shell.is-closing .drawer-backdrop,
+	.drawer-shell.is-closing .drawer-panel,
+	.density-thumb,
+	.spotlight::before,
+	.spotlight::after {
+		animation: none !important;
+		transition: none !important;
+	}
+}

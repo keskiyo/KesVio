@@ -13,7 +13,7 @@ pub(crate) struct StaleCopy {
 pub(super) fn stale_copy_sample() -> StaleCopy {
     StaleCopy {
         installed_version: "0.3.8".into(),
-        install_location: r"C:\Program Files\AppNook".into(),
+        install_location: r"C:\Program Files\KesVio".into(),
     }
 }
 
@@ -53,7 +53,7 @@ pub(crate) async fn open_startup_settings() -> Result<(), AppError> {
 #[tauri::command]
 pub(crate) async fn open_github() -> Result<(), AppError> {
     tauri::async_runtime::spawn_blocking(|| {
-        launcher::shell_execute("https://github.com/keskiyo/AppNook")
+        launcher::shell_execute("https://github.com/keskiyo/KesVio")
     })
     .await
     .map_err(|error| AppError::Interrupted {
@@ -74,7 +74,7 @@ pub(crate) async fn open_release(version: String) -> Result<(), AppError> {
     }
     tauri::async_runtime::spawn_blocking(move || {
         launcher::shell_execute(&format!(
-            "https://github.com/keskiyo/AppNook/releases/tag/v{version}"
+            "https://github.com/keskiyo/KesVio/releases/tag/v{version}"
         ))
     })
     .await
@@ -105,7 +105,7 @@ pub(crate) fn open_installed_copy(app: tauri::AppHandle) -> Result<(), AppError>
     let binary = std::env::current_exe()
         .ok()
         .and_then(|path| path.file_name().map(|name| name.to_os_string()))
-        .unwrap_or_else(|| "AppNook.exe".into());
+        .unwrap_or_else(|| "KesVio.exe".into());
     let target = std::path::Path::new(&info.install_location).join(binary);
     let target = exec_target::validate_executable_path(&target.to_string_lossy())
         .map_err(|_| AppError::LaunchUnavailable)?;

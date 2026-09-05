@@ -58,7 +58,7 @@ export function UpdateDialog({
 				aria-modal="true"
 				aria-labelledby="update-dialog-title"
 				aria-describedby="update-dialog-description"
-				className="update-modal-panel relative flex max-h-[calc(100vh-3rem)] min-h-124 w-full max-w-xl flex-col overflow-hidden rounded-lg border border-violet-300/35 bg-(--color-update-surface) text-slate-100 shadow-(--shadow-update-dialog)"
+				className="update-modal-panel relative flex max-h-[calc(100vh-3rem)] min-h-124 w-full max-w-xl flex-col overflow-hidden rounded-lg border border-violet-300/35 bg-(--surface-dialog) text-slate-100 shadow-(--shadow-update-dialog)"
 			>
 				<DialogHeader
 					version={version}

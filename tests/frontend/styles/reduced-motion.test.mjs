@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { readStylesheet } from './readStylesheet.mjs'
 import { describe, expect, it } from 'vitest'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 const reducedMotion = stylesheet.match(
 	/@media \(prefers-reduced-motion: reduce\) \{([\s\S]*)\}\s*$/,
 )

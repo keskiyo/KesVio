@@ -1,35 +1,35 @@
 <p align="center">
-  <img src="public/app-icon.png" width="88" height="88" alt="AppNook logo">
+  <img src="public/app-icon.png" width="88" height="88" alt="KesVio logo">
 </p>
 
-<h1 align="center">AppNook</h1>
+<h1 align="center">KesVio</h1>
 
 <p align="center">A local catalog for the Windows software you already use.</p>
 
 <p align="center">
-  AppNook finds Start Menu shortcuts, installed desktop programs, Microsoft Store apps, Steam games and portable executables.<br>
+  KesVio finds Start Menu shortcuts, installed desktop programs, Microsoft Store apps, Steam games and portable executables.<br>
   It brings them together in one searchable catalog and merges duplicate entries into a single application card.
 </p>
 
 <p align="center">
-  <a href="https://github.com/keskiyo/AppNook/releases/tag/v0.4.1"><img src="https://img.shields.io/badge/version-0.4.1-7C3AED?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/keskiyo/KesVio/releases/tag/v0.5.0"><img src="https://img.shields.io/badge/version-0.5.0-7C3AED?style=flat-square" alt="Version"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&amp;logo=windows11&amp;logoColor=white" alt="Windows">
   <img src="https://img.shields.io/badge/architecture-x64-334155?style=flat-square" alt="Architecture">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&amp;logo=tauri&amp;logoColor=white" alt="Tauri">
   <img src="https://img.shields.io/badge/catalog-local--first-16A34A?style=flat-square" alt="Local first">
 </p>
 
-<h2 align="center"><a href="https://github.com/keskiyo/AppNook/releases/latest">⬇ Download AppNook</a></h2>
+<h2 align="center"><a href="https://github.com/keskiyo/KesVio/releases/latest">⬇ Download KesVio</a></h2>
 
 <p align="center">Windows 10/11 · x64 · Local-first</p>
 
-![AppNook catalog with categories, search and application cards](.github/images/catalog.png)
+![KesVio catalog with sidebar categories, search and application cards](.github/images/catalog.png)
 
-Screenshots show AppNook 0.4.1 with an example catalog.
+Screenshots show the current interface.
 
 ## One catalog for Windows software
 
-Windows keeps applications in several places. AppNook combines:
+Windows keeps applications in several places. KesVio combines:
 
 - Start Menu shortcuts
 - installed desktop programs
@@ -56,7 +56,7 @@ straight to it.
 
 ### Sort software it has never seen
 
-Categories do not rely on a list of known products. AppNook reads the file types and
+Categories do not rely on a list of known products. KesVio reads the file types and
 protocols an application registered with Windows, the purpose the vendor wrote into the file
 description, and the Start Menu group the shortcut lives in — so an unfamiliar player, editor or
 mail client still lands where it belongs.
@@ -75,13 +75,13 @@ Favorites, categories and Scenarios let you keep common applications and launch-
 
 ## Favorites and Scenarios
 
-![Favorites page with starred applications and run-ready scenarios](.github/images/favorites.png)
+![Favorites page with starred applications and saved scenarios](.github/images/favorites.png)
 
 Star applications for quick access, or run a Scenario that opens one group of applications and closes another.
 
 ## Scenario details
 
-![Scenarios page with launch and close lists](.github/images/scenarios.png)
+![Scenarios page with per-scenario launch and close lists](.github/images/scenarios.png)
 
 Choose which apps to launch or close and follow the Scenario's progress. Missing apps stay visible as **Unavailable**.
 
@@ -95,23 +95,23 @@ Auxiliary tools, hidden applications, installers and documentation stay availabl
 
 ## Application details
 
-![App information dialog with file and launch details](.github/images/app-info.png)
+![Application information dialog with installation, status and detection details](.github/images/app-info.png)
 
 Inspect local file details, architecture, signature status and installation state for an application card.
 
 ## Settings and maintenance
 
-![AppNook 0.4.1 settings with Compact catalog density and Windows startup management](.github/images/settings.png)
+![KesVio settings with catalog density, startup and tray behaviour](.github/images/settings.png)
 
-General settings group appearance, startup, Windows integration and updates in one panel. Catalog cards use **Compact** by default. AppNook is listed under **Windows Settings → Apps → Startup** already switched off, so starting with Windows is a switch you turn on there; **Manage** opens that page. Scanning, backups and unclassified apps stay under **Advanced**.
+General settings group appearance, startup, Windows integration and updates in one panel. Catalog cards use **Compact** by default. KesVio is listed under **Windows Settings → Apps → Startup** already switched off, so starting with Windows is a switch you turn on there; **Manage** opens that page. Scanning, backups and unclassified apps stay under **Advanced**.
 
 Backups contain preferences only. If **Your changes are not being saved** appears, keep your export: imported settings may be lost after restart even when import reports success.
 
 ## Install
 
-1. Download [**`AppNook_0.4.1_x64-setup.exe`**](https://github.com/keskiyo/AppNook/releases/latest).
+1. Download [**`KesVio_0.5.0_x64-setup.exe`**](https://github.com/keskiyo/KesVio/releases/latest).
 2. Run the installer.
-3. Start AppNook and choose **Scan for apps**.
+3. Start KesVio and choose **Scan for apps**.
 
 > [!WARNING]
 > Released installers are not Authenticode-signed yet, so SmartScreen may show **Windows protected your PC**. Choose **More info → Run anyway** and download only from this repository's Releases. See [Code signing policy](#code-signing-policy).
@@ -126,11 +126,11 @@ Backups contain preferences only. If **Your changes are not being saved** appear
 
 ## Privacy
 
-AppNook is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine. The updater contacts this repository's Releases to check for updates and download an installer when you choose to update. These requests do not include your catalog. If WebView2 is missing, the installer also needs internet access to download the runtime from Microsoft.
+KesVio is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine. The updater contacts this repository's Releases to check for updates and download an installer when you choose to update. These requests do not include your catalog. If WebView2 is missing, the installer also needs internet access to download the runtime from Microsoft.
 
-AppNook also cannot remove software. It shows you which entries Windows has a registered uninstaller for and opens the Windows page for you; the removal itself is Windows' job. There is no code in the application that starts one — `git grep Command::new src-tauri/src` returns nothing.
+KesVio also cannot remove software. It shows you which entries Windows has a registered uninstaller for and opens the Windows page for you; the removal itself is Windows' job. There is no code in the application that starts one — `git grep Command::new src-tauri/src` returns nothing.
 
-For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). AppNook is available under the [MIT License](LICENSE).
+For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). KesVio is available under the [MIT License](LICENSE).
 
 ## Known limitations
 
@@ -162,19 +162,19 @@ What is verified instead: each release is built from this repository by the GitH
 You can check a download yourself, without trusting me:
 
 ```bash
-gh attestation verify AppNook_0.4.1_x64-setup.exe --repo keskiyo/AppNook
+gh attestation verify KesVio_0.5.0_x64-setup.exe --repo keskiyo/KesVio
 ```
 
 That asks GitHub whether this exact file was produced by this repository's release workflow, and names the commit it was built from.
 
 ```powershell
-(Get-FileHash -Algorithm SHA256 .\AppNook_0.4.1_x64-setup.exe).Hash.ToLower()
+(Get-FileHash -Algorithm SHA256 .\KesVio_0.5.0_x64-setup.exe).Hash.ToLower()
 ```
 
 Compare the result with the line in `SHA256SUMS.txt` on the same release page.
 
-AppNook has no telemetry or account, and the catalog it builds stays on the local machine. GitHub serves and logs update checks and installer downloads; Microsoft supplies the WebView2 runtime if it is missing during installation. See [Privacy](#privacy).
+KesVio has no telemetry or account, and the catalog it builds stays on the local machine. GitHub serves and logs update checks and installer downloads; Microsoft supplies the WebView2 runtime if it is missing during installation. See [Privacy](#privacy).
 
 ## Links
 
-[Documentation](Documentation.md) · [Releases](https://github.com/keskiyo/AppNook/releases) · [Telegram: @keskiyo](https://t.me/keskiyo)
+[Documentation](Documentation.md) · [Releases](https://github.com/keskiyo/KesVio/releases) · [Telegram: @keskiyo](https://t.me/keskiyo)

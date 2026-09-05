@@ -1,4 +1,14 @@
-import type { SectionHeadingProps } from './types'
+import type { LucideIcon } from 'lucide-react'
+import { countLabel } from '../lib/countLabel'
+
+export interface SectionHeadingProps {
+	icon: LucideIcon
+	title: string
+	titleId: string
+	count: number
+	noun: string
+	description: string
+}
 
 export function SectionHeading({
 	icon: Icon,
@@ -20,7 +30,7 @@ export function SectionHeading({
 						{title}
 					</h2>
 					<span className="shrink-0 text-sm text-(--text-muted)">
-						{count} {count === 1 ? noun : `${noun}s`}
+						{countLabel(count, noun)}
 					</span>
 				</div>
 				<p className="mt-0.5 text-sm text-(--text-muted)">

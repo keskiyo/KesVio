@@ -8,13 +8,13 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$NotesPath,
 
-  [string]$Repository = "keskiyo/AppNook"
+  [string]$Repository = "keskiyo/KesVio"
 )
 
 $ErrorActionPreference = "Stop"
 $version = $Tag.TrimStart("v")
 $latestPath = Join-Path $AssetsDir "latest.json"
-$setupName = "AppNook_${version}_x64-setup.exe"
+$setupName = "KesVio_${version}_x64-setup.exe"
 $setupPath = Join-Path $AssetsDir $setupName
 $signaturePath = "$setupPath.sig"
 $publishedSetupName = $setupName.Replace(" ", ".")

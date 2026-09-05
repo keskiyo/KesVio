@@ -1,10 +1,10 @@
-import { chooseCustomCategoryAccent } from '../../entities/category'
+import { chooseCustomCategoryAccent } from '../../../entities/category'
 import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
 	SetAppState,
-} from './types'
+} from '../types'
 
 interface CategoryActionOptions {
 	set: SetAppState

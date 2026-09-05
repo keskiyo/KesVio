@@ -147,7 +147,7 @@ describe('SettingsPage', () => {
 		await openAdvancedSettings()
 
 		for (const description of [
-			'Choose where AppNook scans.',
+			'Choose where KesVio scans.',
 			'Export or import your settings.',
 			'Rebuild the application catalog.',
 			'Export recent scan logs.',
@@ -205,7 +205,7 @@ describe('SettingsPage', () => {
 			}),
 		).not.toBeChecked()
 		expect(
-			screen.getByText('Closing the window quits AppNook.'),
+			screen.getByText('Closing the window quits KesVio.'),
 		).toBeInTheDocument()
 	})
 
@@ -753,7 +753,7 @@ describe('SettingsPage', () => {
 		expect(client.openTelegram).toHaveBeenCalledOnce()
 		await userEvent.click(
 			screen.getByRole('button', {
-				name: 'Open AppNook on GitHub',
+				name: 'Open KesVio on GitHub',
 			}),
 		)
 		expect(client.openGithub).toHaveBeenCalledOnce()

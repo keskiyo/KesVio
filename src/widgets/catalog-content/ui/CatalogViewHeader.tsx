@@ -1,4 +1,5 @@
 import { ArrowLeft } from 'lucide-react'
+import { countLabel } from '../../../shared/lib/countLabel'
 import type { CatalogViewHeaderProps } from '../types'
 
 export function CatalogViewHeader({
@@ -6,11 +7,12 @@ export function CatalogViewHeader({
 	title,
 	titleId,
 	count,
-	noun = 'application',
+	noun = 'app',
 	back,
+	action,
 }: CatalogViewHeaderProps) {
 	return (
-		<header className="mb-7 flex items-center gap-3">
+		<header className="mb-7 flex flex-wrap items-center gap-3">
 			{back && (
 				<button
 					type="button"
@@ -30,9 +32,10 @@ export function CatalogViewHeader({
 					{title}
 				</h1>
 				<span className="shrink-0 text-sm text-(--text-muted)">
-					{count} {count === 1 ? noun : `${noun}s`}
+					{countLabel(count, noun)}
 				</span>
 			</div>
+			{action && <div className="ml-auto shrink-0">{action}</div>}
 		</header>
 	)
 }

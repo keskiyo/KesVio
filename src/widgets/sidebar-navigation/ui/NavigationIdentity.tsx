@@ -14,7 +14,7 @@ export function NavigationIdentity({ onGoHome }: NavigationIdentityProps) {
 				className="size-10 shrink-0 rounded-xl object-cover ring-1 ring-violet-400/25 ring-inset"
 			/>
 			<span className="min-w-0 truncate text-[1.05rem] font-semibold tracking-tight text-(--text-primary)">
-				AppNook
+				KesVio
 			</span>
 		</button>
 	)

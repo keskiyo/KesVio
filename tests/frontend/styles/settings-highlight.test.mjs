@@ -1,39 +1,48 @@
-import { readFileSync } from 'node:fs'
+import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
+import { readStylesheet } from './readStylesheet.mjs'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const rules = []
+postcss.parse(readStylesheet()).walkRules(rule => {
+	if (rule.selector.includes('bg-violet-100')) rules.push(rule)
+})
 
-function rule(selector) {
-	const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)
-	const body = stylesheet.match(
-		new RegExp(String.raw`(^|\})\s*${escaped}\s*\{([^}]*)\}`, 'm'),
-	)?.[2]
-	expect(body, `${selector} exists`).toBeTruthy()
-	return body
-}
-
-/**
- * The dark-theme compatibility layer matches on the class *string*, so `[class*='bg-violet-100']`
- * also matched `hover:bg-violet-100/55` — and its `!important` declaration applied in the resting
- * state. Every use of that colour in the app is a hover variant, so the Telegram row and the
- * dialog dismiss buttons sat permanently lit instead of highlighting under the pointer.
- */
 describe('violet highlight compatibility rule', () => {
-	it('only paints while the pointer is on the control', () => {
-		expect(
-			rule(`.theme-graphite-surface [class*='bg-violet-100']:hover`),
-		).toContain('background-color')
-		expect(stylesheet).not.toMatch(
-			/\.theme-graphite-surface \[class\*='bg-violet-100'\]\s*\{/,
+	it.each([
+		'hover:bg-violet-100',
+		'hover:bg-violet-100/55',
+		'hover:bg-violet-100/70',
+		'hover:bg-violet-100/75',
+	])('only paints %s while the pointer is on the control', className => {
+		const wrapper = document.createElement('div')
+		wrapper.className = 'theme-graphite-surface'
+		const control = wrapper.appendChild(document.createElement('button'))
+		control.className = className
+		expect(rules.length).toBeGreaterThan(0)
+		const applicable = rules.filter(rule =>
+			control.matches(rule.selector.replace(/:hover\b/g, '')),
 		)
+		expect(applicable).toHaveLength(1)
+		expect(control.matches(applicable[0].selector)).toBe(false)
+		expect(applicable[0].selector.trim()).toMatch(/:hover$/)
+		expect(
+			applicable[0].nodes.some(node => node.prop === 'background-color'),
+		).toBe(true)
+		control.className = `prefix-${className}-suffix`
+		expect(
+			control.matches(applicable[0].selector.replace(/:hover\b/g, '')),
+		).toBe(false)
 	})
-
-	// A highlight lifts the surface; it does not replace it. The fill used to be near-opaque.
-	it('is a tint rather than a fill', () => {
-		const alpha = rule(
-			`.theme-graphite-surface [class*='bg-violet-100']:hover`,
-		).match(/oklch\([^)]*\/\s*([\d.]+)\s*\)/)?.[1]
-
-		expect(Number(alpha)).toBeLessThan(0.35)
+	it('uses a translucent tint rather than an opaque fill', () => {
+		expect(rules.length).toBeGreaterThan(0)
+		for (const rule of rules) {
+			const color = rule.nodes.find(
+				node => node.prop === 'background-color',
+			)?.value
+			const alpha = color?.match(/oklch\([^)]*\/\s*([\d.]+)\s*\)/)?.[1]
+			expect(alpha).toBeDefined()
+			expect(Number(alpha)).toBeGreaterThan(0)
+			expect(Number(alpha)).toBeLessThan(0.35)
+		}
 	})
 })

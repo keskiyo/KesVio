@@ -124,7 +124,7 @@ jobs:
               shell: pwsh
               run: |
                   $releases = gh api "repos/$env:REPOSITORY/releases" | ConvertFrom-Json
-                  $staleName = "AppNook $env:RELEASE_TAG"
+                  $staleName = "KesVio $env:RELEASE_TAG"
                   $stale = $releases | Where-Object {
                     $_.draft -and $_.name -eq $staleName
                   }
@@ -145,7 +145,7 @@ jobs:
                   TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
               with:
                   tagName: ${{ github.ref_name }}
-                  releaseName: 'AppNook ${{ github.ref_name }}'
+                  releaseName: 'KesVio ${{ github.ref_name }}'
                   releaseDraft: true
                   prerelease: false
 
@@ -176,10 +176,10 @@ jobs:
               run: |
                   $version = $env:RELEASE_TAG.TrimStart('v')
                   New-Item -ItemType Directory -Force -Path release-assets | Out-Null
-                  Copy-Item -LiteralPath "src-tauri/target/release/bundle/nsis/AppNook_${version}_x64-setup.exe" -Destination release-assets
-                  Copy-Item -LiteralPath "src-tauri/target/release/bundle/nsis/AppNook_${version}_x64-setup.exe.sig" -Destination release-assets
+                  Copy-Item -LiteralPath "src-tauri/target/release/bundle/nsis/KesVio_${version}_x64-setup.exe" -Destination release-assets
+                  Copy-Item -LiteralPath "src-tauri/target/release/bundle/nsis/KesVio_${version}_x64-setup.exe.sig" -Destination release-assets
                   # sha256sum's own format, so `sha256sum -c` and `Get-FileHash` both work on it.
-                  $setupName = "AppNook_${version}_x64-setup.exe"
+                  $setupName = "KesVio_${version}_x64-setup.exe"
                   $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath "release-assets/$setupName").Hash.ToLowerInvariant()
                   Set-Content -LiteralPath "release-assets/SHA256SUMS.txt" -Value "$hash  $setupName" -Encoding utf8NoBOM
 
@@ -189,7 +189,7 @@ jobs:
                 RELEASE_TAG: ${{ github.ref_name }}
               run: |
                   $version = $env:RELEASE_TAG.TrimStart('v')
-                  $setupPath = "release-assets/AppNook_${version}_x64-setup.exe"
+                  $setupPath = "release-assets/KesVio_${version}_x64-setup.exe"
                   powershell -NoProfile -File scripts/verify-updater-signature.ps1 `
                     -InstallerPath $setupPath `
                     -SignaturePath "$setupPath.sig"
@@ -217,7 +217,7 @@ jobs:
             - name: Attest build provenance
               uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
               with:
-                  subject-path: release-assets/AppNook_*_x64-setup.exe
+                  subject-path: release-assets/KesVio_*_x64-setup.exe
 
             - name: Replace manifest and publish release
               shell: pwsh

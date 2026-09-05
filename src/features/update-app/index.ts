@@ -6,4 +6,4 @@ export type {
 	UpdateCheckStatus,
 	UpdateInstallPhase,
 	UpdaterState,
-} from './model/useUpdater'
+} from './types'

@@ -1,0 +1,217 @@
+.telegram-accent {
+	color: var(--color-telegram-text);
+	background: color-mix(in oklab, var(--color-telegram) 15%, transparent);
+}
+
+.utility-accent-button {
+	background: var(--utility-accent);
+}
+
+.settings-toggle-track {
+	background: var(--surface-inset);
+	border: 1px solid var(--border-neutral);
+}
+
+.settings-toggle-knob {
+	background: oklch(0.97 0.004 270);
+}
+
+.utility-accent-button:hover {
+	background: var(--utility-accent-hover);
+}
+
+.category-count {
+	color: var(--text-primary);
+	border-color: color-mix(in oklab, var(--accent) 34%, transparent);
+	background: color-mix(in oklab, var(--accent) 20%, var(--surface-raised));
+}
+
+.navigation-category-row {
+	border-left-color: var(
+		--navigation-category-accent,
+		var(--category-neutral)
+	);
+}
+
+.navigation-category-row[data-category-accent='yellow'] {
+	--navigation-category-accent: var(--category-yellow);
+}
+
+.navigation-category-row[data-category-accent='cyan'] {
+	--navigation-category-accent: var(--category-cyan);
+}
+
+.navigation-category-row[data-category-accent='pink'] {
+	--navigation-category-accent: var(--category-pink);
+}
+
+.navigation-category-row[data-category-accent='green'] {
+	--navigation-category-accent: var(--category-green);
+}
+
+.navigation-category-row[data-category-accent='blue'] {
+	--navigation-category-accent: var(--category-blue);
+}
+
+.navigation-category-row[data-category-accent='orange'] {
+	--navigation-category-accent: var(--category-orange);
+}
+
+.navigation-category-row[data-category-accent='purple'] {
+	--navigation-category-accent: var(--category-purple);
+}
+
+.navigation-category-row[data-category-accent='red'] {
+	--navigation-category-accent: var(--category-red);
+}
+
+.navigation-category-row[data-category-accent='amber'] {
+	--navigation-category-accent: var(--category-amber);
+}
+
+.navigation-category-row[data-category-accent='lime'] {
+	--navigation-category-accent: var(--category-lime);
+}
+
+.navigation-category-row[data-category-accent='teal'] {
+	--navigation-category-accent: var(--category-teal);
+}
+
+.navigation-category-row[data-category-accent='azure'] {
+	--navigation-category-accent: var(--category-azure);
+}
+
+.navigation-category-row[data-category-accent='indigo'] {
+	--navigation-category-accent: var(--category-indigo);
+}
+
+.navigation-category-row[data-category-accent='magenta'] {
+	--navigation-category-accent: var(--category-magenta);
+}
+
+.navigation-category-row[data-category-accent='slate'] {
+	--navigation-category-accent: var(--category-slate);
+}
+
+.navigation-category-row[data-category-accent='neutral'] {
+	--navigation-category-accent: var(--category-neutral);
+}
+
+@layer components {
+	.lucide-trash2,
+	.lucide-folder-x,
+	.lucide-power,
+	.lucide-power-off,
+	.lucide-x {
+		color: var(--category-red);
+	}
+
+	.lucide-triangle-alert,
+	.lucide-search-x {
+		color: var(--category-orange);
+	}
+
+	.lucide-star,
+	.lucide-folder-open {
+		color: var(--category-yellow);
+	}
+
+	.lucide-play,
+	.lucide-list-checks,
+	.lucide-check,
+	.lucide-badge-check,
+	.lucide-shield-check,
+	.lucide-plus,
+	.lucide-folder-plus,
+	.lucide-circle-arrow-right,
+	.lucide-circle-arrow-up {
+		color: var(--category-green);
+	}
+
+	.lucide-refresh-cw,
+	.lucide-scan-search,
+	.lucide-folder-search,
+	.lucide-rotate-ccw,
+	.lucide-loader-circle,
+	.lucide-search,
+	.lucide-send {
+		color: var(--category-cyan);
+	}
+
+	.lucide-info,
+	.lucide-circle-help,
+	.lucide-file-text,
+	.lucide-external-link,
+	.lucide-download,
+	.lucide-file-down,
+	.lucide-scroll-text,
+	.lucide-upload,
+	.lucide-database-backup,
+	.lucide-hard-drive,
+	.lucide-table-properties,
+	.lucide-grid2x2,
+	.lucide-layout-grid,
+	.lucide-corner-down-left,
+	.lucide-history {
+		color: var(--category-blue);
+	}
+
+	.lucide-arrow-left,
+	.lucide-arrow-right,
+	.lucide-settings,
+	.lucide-sliders-horizontal,
+	.lucide-wrench,
+	.lucide-app-window,
+	.lucide-log-in,
+	.lucide-keyboard,
+	.lucide-clock,
+	.lucide-minimize2,
+	.lucide-menu,
+	.lucide-box,
+	.lucide-copy,
+	.lucide-clipboard-copy,
+	.lucide-square,
+	.lucide-chevron-down,
+	.lucide-chevron-right {
+		color: var(--category-purple);
+	}
+
+	.lucide-sparkles,
+	.lucide-wand-sparkles,
+	.lucide-pencil,
+	.lucide-eye-off {
+		color: var(--category-pink);
+	}
+
+	.lucide-grip,
+	.lucide-minus {
+		color: var(--category-slate);
+	}
+
+	.lucide-ellipsis-vertical,
+	.lucide-gamepad2,
+	.lucide-shopping-bag {
+		color: inherit;
+	}
+
+	.app-titlebar .lucide,
+	.icon-follows-color .lucide,
+	.danger-button .lucide,
+	button:disabled .lucide {
+		color: inherit;
+	}
+}
+
+.navigation-category-count {
+	border-color: color-mix(
+		in oklab,
+		var(--navigation-category-accent) 48%,
+		var(--border-neutral)
+	);
+	background: color-mix(
+		in oklab,
+		var(--navigation-category-accent) 16%,
+		var(--surface-inset)
+	);
+	color: var(--navigation-category-accent);
+}

@@ -1,7 +1,9 @@
 mod icon;
 mod queue;
+mod sources;
 
 pub(crate) use queue::HydrationQueue;
+pub(in crate::catalog) use sources::icon_source_candidates;
 
 use crate::catalog::{AppInfo, PlatformKind};
 use icon::hydrate_icon;

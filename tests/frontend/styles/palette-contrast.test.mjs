@@ -1,7 +1,8 @@
+import { readStylesheet } from './readStylesheet.mjs'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 const resultItem = readFileSync(
 	'src/features/command-palette/ui/CommandPalette/ResultItem.tsx',
 	'utf8',

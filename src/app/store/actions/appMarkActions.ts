@@ -1,11 +1,11 @@
-import { isCatalogArtifact } from '../../entities/app'
-import { addUnique, identityOf } from './reconciliation'
+import { isCatalogArtifact } from '../../../entities/app'
+import { addUnique, identityOf } from '../reconciliation'
 import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
 	SetAppState,
-} from './types'
+} from '../types'
 
 interface AppMarkOptions {
 	set: SetAppState

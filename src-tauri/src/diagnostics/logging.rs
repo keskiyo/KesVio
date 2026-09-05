@@ -3,7 +3,7 @@ use tauri::plugin::TauriPlugin;
 use tauri::Runtime;
 use tauri_plugin_log::{Builder, RotationStrategy, Target, TargetKind, TimezoneStrategy};
 
-pub(crate) const LOG_FILE_STEM: &str = "appnook";
+pub(crate) const LOG_FILE_STEM: &str = "kesvio";
 
 const MAX_LOG_FILE_BYTES: u128 = 4 * 1024 * 1024;
 const KEPT_LOG_FILES: usize = 8;

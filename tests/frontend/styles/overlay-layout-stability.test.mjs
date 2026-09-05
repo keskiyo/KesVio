@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { readStylesheet } from './readStylesheet.mjs'
 import { describe, expect, it } from 'vitest'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 
 describe('overlay layout stability', () => {
 	it('reserves the catalog scrollbar gutter while overlays lock scrolling', () => {

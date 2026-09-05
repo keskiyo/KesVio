@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $AssetsDir -PathType Container)) {
 
 $version = $Tag.TrimStart("v")
 $latestPath = Join-Path $AssetsDir "latest.json"
-$setupName = "AppNook_${version}_x64-setup.exe"
+$setupName = "KesVio_${version}_x64-setup.exe"
 $setupPath = Join-Path $AssetsDir $setupName
 $signaturePath = "$setupPath.sig"
 $checksumPath = Join-Path $AssetsDir "SHA256SUMS.txt"
@@ -85,7 +85,7 @@ if (Test-Path -LiteralPath $latestPath -PathType Leaf) {
       $errors.Add("latest.json packageSize '$($manifest.packageSize)' does not match $expectedSize")
     }
 
-    $expectedReleaseUrl = "https://github.com/keskiyo/AppNook/releases/tag/$Tag"
+    $expectedReleaseUrl = "https://github.com/keskiyo/KesVio/releases/tag/$Tag"
     if ($manifest.releaseUrl -ne $expectedReleaseUrl) {
       $errors.Add("latest.json releaseUrl '$($manifest.releaseUrl)' does not match $expectedReleaseUrl")
     }

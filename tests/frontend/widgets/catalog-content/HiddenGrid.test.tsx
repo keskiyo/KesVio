@@ -72,7 +72,7 @@ describe('HiddenGrid', () => {
 		expect(
 			within(view).getByRole('heading', { level: 1, name: 'Hidden' }),
 		).toBeInTheDocument()
-		expect(view).toHaveTextContent('2 applications')
+		expect(view).toHaveTextContent('2 apps')
 	})
 
 	it('returns to More from the title row', async () => {
@@ -92,7 +92,7 @@ describe('HiddenGrid', () => {
 		expect(screen.getByText('No hidden apps')).toBeVisible()
 		expect(
 			screen.getByRole('region', { name: 'Hidden' }),
-		).toHaveTextContent('0 applications')
+		).toHaveTextContent('0 apps')
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Back to More' }),
 		)

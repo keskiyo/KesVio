@@ -23,7 +23,7 @@ export function SettingsDiscoveryControls({
 				<SettingsSectionHeader
 					icon={HardDrive}
 					title="Application discovery"
-					description="Choose where AppNook scans."
+					description="Choose where KesVio scans."
 				/>
 				<SettingsToggle
 					label="Include fixed drives in Force full scan"

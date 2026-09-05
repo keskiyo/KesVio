@@ -2,14 +2,14 @@ import {
 	CATALOG_DENSITIES,
 	type CatalogDensity,
 	DEFAULT_CATALOG_DENSITY,
-} from '../../entities/app'
+} from '../../../entities/app'
 import {
 	type AppCategory,
 	type CategoryDefinition,
 	DEFAULT_CATEGORIES,
 	isCustomCategoryAccent,
 	stableCustomCategoryAccent,
-} from '../../entities/category'
+} from '../../../entities/category'
 
 export function normalizeDensity(value: unknown): CatalogDensity {
 	return CATALOG_DENSITIES.includes(value as CatalogDensity)

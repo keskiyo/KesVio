@@ -36,7 +36,7 @@ pub(crate) async fn export_diagnostics_log(app: tauri::AppHandle) -> Result<bool
         .dialog()
         .file()
         .set_title("Export diagnostics log")
-        .set_file_name("appnook-logs.xml")
+        .set_file_name("kesvio-logs.xml")
         .add_filter("XML files", &["xml"])
         .blocking_save_file()
     else {

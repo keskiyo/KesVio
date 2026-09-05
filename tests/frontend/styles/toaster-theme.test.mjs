@@ -1,7 +1,8 @@
+import { readStylesheet } from './readStylesheet.mjs'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 const app = readFileSync('src/app/App.tsx', 'utf8')
 
 function rule(selector) {

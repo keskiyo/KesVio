@@ -1,4 +1,4 @@
-import type { AppState, PersistPreferences, SetAppState } from './types'
+import type { AppState, PersistPreferences, SetAppState } from '../types'
 
 interface AppearanceOptions {
 	set: SetAppState

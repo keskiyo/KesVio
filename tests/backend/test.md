@@ -4,7 +4,7 @@ The Rust backend has no external integration-test crate. Tests live next to the
 modules they exercise in `#[cfg(test)]` blocks so they can validate private and
 `pub(crate)` behaviour without widening production APIs.
 
-Snapshot: `v0.4.0`.
+Snapshot: `v0.5.0`.
 
 - Rust: **677 test entries** in **100 source files**; one developer-only test is
   ignored in the normal run, so a green suite reports 676 passed. The ignored

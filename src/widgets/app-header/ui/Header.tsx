@@ -2,12 +2,11 @@ import { Menu } from 'lucide-react'
 import { useRef } from 'react'
 import { ScanButton } from './ScanButton'
 import { SearchField } from './SearchField'
+import { countLabel } from '../../../shared/lib/countLabel'
 import type { HeaderProps } from '../types'
 
 function catalogCountText(primaryAppCount: number, auxiliaryToolCount: number) {
-	const appLabel = primaryAppCount === 1 ? 'app' : 'apps'
-	const toolLabel = auxiliaryToolCount === 1 ? 'tool' : 'tools'
-	return `${primaryAppCount} ${appLabel} · ${auxiliaryToolCount} ${toolLabel}`
+	return `${countLabel(primaryAppCount, 'app')} · ${countLabel(auxiliaryToolCount, 'tool')}`
 }
 
 function statusText({
@@ -30,7 +29,7 @@ function statusText({
 		return `${scanProgress.stage}${scanProgress.location ? ` · ${scanProgress.location}` : ''}${scanProgress.totalRoots > 0 ? ` · ${scanProgress.completedRoots}/${scanProgress.totalRoots}` : ''}`
 	}
 	if (query.trim()) {
-		return `${visibleCount} ${visibleCount === 1 ? 'match' : 'matches'} in ${catalogCountText(primaryAppCount, auxiliaryToolCount)}`
+		return `${countLabel(visibleCount, 'match')} in ${catalogCountText(primaryAppCount, auxiliaryToolCount)}`
 	}
 	return `${catalogCountText(primaryAppCount, auxiliaryToolCount)} found`
 }

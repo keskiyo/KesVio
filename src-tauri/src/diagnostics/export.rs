@@ -21,7 +21,7 @@ pub(crate) fn log_directory_as_xml(directory: &Path, generated_unix: u64) -> Str
     let lines = collect_lines(directory);
     let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     xml.push_str(&format!(
-        "<diagnostics application=\"AppNook\" version=\"{}\" generatedUnix=\"{generated_unix}\" entries=\"{}\">\n",
+        "<diagnostics application=\"KesVio\" version=\"{}\" generatedUnix=\"{generated_unix}\" entries=\"{}\">\n",
         env!("CARGO_PKG_VERSION"),
         lines.len()
     ));
@@ -181,12 +181,12 @@ mod tests {
     fn the_document_wraps_every_line_of_every_log_file() {
         let directory = tempfile::tempdir().unwrap();
         std::fs::write(
-            directory.path().join("appnook_2026-09-02.log"),
+            directory.path().join("kesvio_2026-09-02.log"),
             "[2026-09-02][10:00:00][WARN][app_lib] Root <skipped>\n\n",
         )
         .unwrap();
         std::fs::write(
-            directory.path().join("appnook.log"),
+            directory.path().join("kesvio.log"),
             "raw crash line\n[2026-09-03][22:15:01][INFO][app_lib] Scan started\n",
         )
         .unwrap();
@@ -219,7 +219,7 @@ mod tests {
         for index in 0..MAX_EXPORTED_LINES + 10 {
             contents.push_str(&format!("[d][t][INFO][app_lib] line {index}\n"));
         }
-        std::fs::write(directory.path().join("appnook.log"), contents).unwrap();
+        std::fs::write(directory.path().join("kesvio.log"), contents).unwrap();
 
         let xml = log_directory_as_xml(directory.path(), 0);
 

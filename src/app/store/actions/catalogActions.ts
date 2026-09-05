@@ -1,13 +1,17 @@
-import { toAppClientError } from '../../shared/api/tauri/errors'
-import { reconcileScenarios } from '../../entities/scenario'
-import { mergeIcon, reconcileFirstSeen, reconcileMarks } from './reconciliation'
-import type { AppsClient, CatalogScanResult } from '../../entities/app'
+import { toAppClientError } from '../../../shared/api/tauri/errors'
+import { reconcileScenarios } from '../../../entities/scenario'
+import {
+	mergeIcon,
+	reconcileFirstSeen,
+	reconcileMarks,
+} from '../reconciliation'
+import type { AppsClient, CatalogScanResult } from '../../../entities/app'
 import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
 	SetAppState,
-} from './types'
+} from '../types'
 
 interface CatalogActionOptions {
 	set: SetAppState

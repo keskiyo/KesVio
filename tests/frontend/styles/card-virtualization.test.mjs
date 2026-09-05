@@ -1,7 +1,7 @@
-import { readFileSync } from 'node:fs'
+import { readStylesheet } from './readStylesheet.mjs'
 import { describe, expect, it } from 'vitest'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 
 // Off-screen cards skip layout/paint via CSS content-visibility — the dependency-free virtualization
 // that keeps large catalogs smooth. This locks the mechanism (and its menu-clip escape hatch) so a

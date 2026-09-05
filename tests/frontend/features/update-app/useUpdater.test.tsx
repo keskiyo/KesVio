@@ -20,10 +20,11 @@ function update(version: string) {
 		body: '## Highlights\n- Test update.',
 		rawJson: {
 			packageSize: 5_600_000,
-			releaseUrl: `https://github.com/keskiyo/AppNook/releases/tag/v${version}`,
+			releaseUrl: `https://github.com/keskiyo/KesVio/releases/tag/v${version}`,
 		},
 		download: vi.fn(),
 		install: vi.fn(),
+		close: vi.fn().mockResolvedValue(undefined),
 	}
 }
 
@@ -51,13 +52,13 @@ describe('useUpdater', () => {
 		unmount()
 		// This case is about dismissal, not cadence: clear the throttle so the second mount
 		// actually reaches the network the way a launch four hours later would.
-		localStorage.removeItem('appnook.last-update-check')
+		localStorage.removeItem('kesvio.last-update-check')
 
 		const second = renderHook(() => useUpdater())
 
 		await waitFor(() => expect(check).toHaveBeenCalledTimes(2))
 		expect(second.result.current.update).toBeNull()
-		expect(localStorage.getItem('appnook.dismissed-update-version')).toBe(
+		expect(localStorage.getItem('kesvio.dismissed-update-version')).toBe(
 			'0.2.2',
 		)
 	})
@@ -75,7 +76,7 @@ describe('useUpdater', () => {
 
 		await waitFor(() =>
 			expect(
-				Number(localStorage.getItem('appnook.last-update-check')),
+				Number(localStorage.getItem('kesvio.last-update-check')),
 			).toBeGreaterThan(0),
 		)
 		expect(check).toHaveBeenCalledTimes(1)
@@ -84,7 +85,7 @@ describe('useUpdater', () => {
 	it('checks again once the interval has passed', async () => {
 		check.mockResolvedValue(null)
 		const stale = Date.now() - 5 * 60 * 60 * 1000
-		localStorage.setItem('appnook.last-update-check', String(stale))
+		localStorage.setItem('kesvio.last-update-check', String(stale))
 
 		renderHook(() => useUpdater())
 
@@ -101,7 +102,7 @@ describe('useUpdater', () => {
 		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
 		await waitFor(() =>
 			expect(
-				Number(localStorage.getItem('appnook.last-update-check')),
+				Number(localStorage.getItem('kesvio.last-update-check')),
 			).toBeGreaterThan(0),
 		)
 		first.unmount()
@@ -109,7 +110,7 @@ describe('useUpdater', () => {
 		renderHook(() => useUpdater())
 
 		await waitFor(() =>
-			expect(localStorage.getItem('appnook.update-check-failures')).toBe(
+			expect(localStorage.getItem('kesvio.update-check-failures')).toBe(
 				'1',
 			),
 		)
@@ -118,9 +119,9 @@ describe('useUpdater', () => {
 
 	it('backs off further with each consecutive failure and recovers on success', async () => {
 		check.mockRejectedValue(new Error('network unreachable'))
-		localStorage.setItem('appnook.update-check-failures', '2')
+		localStorage.setItem('kesvio.update-check-failures', '2')
 		const sixHoursAgo = Date.now() - 6 * 60 * 60 * 1000
-		localStorage.setItem('appnook.last-update-check', String(sixHoursAgo))
+		localStorage.setItem('kesvio.last-update-check', String(sixHoursAgo))
 
 		const backedOff = renderHook(() => useUpdater())
 		await Promise.resolve()
@@ -128,22 +129,22 @@ describe('useUpdater', () => {
 		backedOff.unmount()
 
 		const dayAgo = Date.now() - 25 * 60 * 60 * 1000
-		localStorage.setItem('appnook.last-update-check', String(dayAgo))
+		localStorage.setItem('kesvio.last-update-check', String(dayAgo))
 		const retried = renderHook(() => useUpdater())
 		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
 		await waitFor(() =>
-			expect(localStorage.getItem('appnook.update-check-failures')).toBe(
+			expect(localStorage.getItem('kesvio.update-check-failures')).toBe(
 				'3',
 			),
 		)
 		retried.unmount()
 
 		check.mockResolvedValue(null)
-		localStorage.setItem('appnook.last-update-check', String(dayAgo))
+		localStorage.setItem('kesvio.last-update-check', String(dayAgo))
 		renderHook(() => useUpdater())
 
 		await waitFor(() =>
-			expect(localStorage.getItem('appnook.update-check-failures')).toBe(
+			expect(localStorage.getItem('kesvio.update-check-failures')).toBe(
 				'0',
 			),
 		)
@@ -158,12 +159,12 @@ describe('useUpdater', () => {
 
 		act(() => enabled.result.current.setAutomaticChecks(false))
 		expect(enabled.result.current.automaticChecks).toBe(false)
-		expect(localStorage.getItem('appnook.automatic-update-checks')).toBe(
+		expect(localStorage.getItem('kesvio.automatic-update-checks')).toBe(
 			'off',
 		)
 		enabled.unmount()
 
-		localStorage.removeItem('appnook.last-update-check')
+		localStorage.removeItem('kesvio.last-update-check')
 		const disabled = renderHook(() => useUpdater())
 		await Promise.resolve()
 		expect(check).toHaveBeenCalledTimes(1)
@@ -176,7 +177,7 @@ describe('useUpdater', () => {
 
 	it('resumes automatic checks when the reader turns them back on', async () => {
 		check.mockResolvedValue(null)
-		localStorage.setItem('appnook.automatic-update-checks', 'off')
+		localStorage.setItem('kesvio.automatic-update-checks', 'off')
 
 		const { result } = renderHook(() => useUpdater())
 		await Promise.resolve()
@@ -185,20 +186,20 @@ describe('useUpdater', () => {
 		act(() => result.current.setAutomaticChecks(true))
 
 		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
-		expect(localStorage.getItem('appnook.automatic-update-checks')).toBe(
+		expect(localStorage.getItem('kesvio.automatic-update-checks')).toBe(
 			'on',
 		)
 	})
 
 	it('checks again when the stored time is unusable or in the future', async () => {
 		check.mockResolvedValue(null)
-		localStorage.setItem('appnook.last-update-check', 'not a number')
+		localStorage.setItem('kesvio.last-update-check', 'not a number')
 		const first = renderHook(() => useUpdater())
 		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
 		first.unmount()
 
 		localStorage.setItem(
-			'appnook.last-update-check',
+			'kesvio.last-update-check',
 			String(Date.now() + 60 * 60 * 1000),
 		)
 		renderHook(() => useUpdater())
@@ -208,7 +209,7 @@ describe('useUpdater', () => {
 
 	it('never throttles the explicit check', async () => {
 		check.mockResolvedValue(null)
-		localStorage.setItem('appnook.last-update-check', String(Date.now()))
+		localStorage.setItem('kesvio.last-update-check', String(Date.now()))
 		const { result } = renderHook(() => useUpdater())
 		expect(check).not.toHaveBeenCalled()
 
@@ -241,7 +242,7 @@ describe('useUpdater', () => {
 	})
 
 	it('manual checks show a dismissed version again', async () => {
-		localStorage.setItem('appnook.dismissed-update-version', '0.2.2')
+		localStorage.setItem('kesvio.dismissed-update-version', '0.2.2')
 		check.mockResolvedValue(update('0.2.2'))
 
 		const { result } = renderHook(() => useUpdater({ autoCheck: false }))
@@ -256,13 +257,12 @@ describe('useUpdater', () => {
 			version: '0.2.2',
 			date: '2026-07-11T10:00:00Z',
 			packageSize: 5_600_000,
-			releaseUrl:
-				'https://github.com/keskiyo/AppNook/releases/tag/v0.2.2',
+			releaseUrl: 'https://github.com/keskiyo/KesVio/releases/tag/v0.2.2',
 		})
 	})
 
 	it('coalesces an automatic and manual check while preserving manual visibility', async () => {
-		localStorage.setItem('appnook.dismissed-update-version', '0.2.2')
+		localStorage.setItem('kesvio.dismissed-update-version', '0.2.2')
 		let resolveCheck:
 			((value: ReturnType<typeof update>) => void) | undefined
 		check.mockImplementation(
@@ -332,7 +332,7 @@ describe('useUpdater', () => {
 
 		expect(result.current.phase).toBe('failed')
 		expect(result.current.error).toBe(
-			'The update could not write the new version. Reinstall AppNook for the current user or download the installer manually.',
+			'The update could not write the new version. Reinstall KesVio for the current user or download the installer manually.',
 		)
 		expect(relaunch).not.toHaveBeenCalled()
 	})

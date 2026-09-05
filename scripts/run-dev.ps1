@@ -1,8 +1,9 @@
 $ErrorActionPreference = 'Stop'
-Set-Location -LiteralPath $PSScriptRoot
-$logPath = Join-Path $PSScriptRoot 'dev-launcher.log'
+$projectRoot = Split-Path -Parent $PSScriptRoot
+Set-Location -LiteralPath $projectRoot
+$logPath = Join-Path $projectRoot 'dev-launcher.log'
 
-Set-Content -LiteralPath $logPath -Value "[$(Get-Date -Format o)] Starting AppNook dev" -Encoding UTF8
+Set-Content -LiteralPath $logPath -Value "[$(Get-Date -Format o)] Starting KesVio dev" -Encoding UTF8
 
 try {
     foreach ($command in 'node', 'npm', 'cargo') {
@@ -11,7 +12,7 @@ try {
         }
     }
 
-    if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot 'node_modules'))) {
+    if (-not (Test-Path -LiteralPath (Join-Path $projectRoot 'node_modules'))) {
         & npm install 2>&1 | Out-File -LiteralPath $logPath -Append -Encoding utf8
         if ($LASTEXITCODE -ne 0) {
             throw "npm install exited with code $LASTEXITCODE"

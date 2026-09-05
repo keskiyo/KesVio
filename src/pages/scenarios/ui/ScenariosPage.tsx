@@ -39,19 +39,15 @@ export function ScenariosPage({
 
 	return (
 		<section aria-labelledby="scenarios-title" className="w-full">
-			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-				<div className="min-w-0 sm:flex-1">
-					<CatalogViewHeader
-						icon={ListChecks}
-						title="Scenarios"
-						titleId="scenarios-title"
-						count={scenarios.length}
-						noun="scenario"
-						back={{ label: 'Back to More', onBack }}
-					/>
-				</div>
-				<div className="flex shrink-0 justify-end sm:w-64">
-					{creating ? (
+			<CatalogViewHeader
+				icon={ListChecks}
+				title="Scenarios"
+				titleId="scenarios-title"
+				count={scenarios.length}
+				noun="scenario"
+				back={{ label: 'Back to More', onBack }}
+				action={
+					creating ? (
 						<ScenarioNameEditor
 							label="New scenario name"
 							onCancel={() => setCreating(false)}
@@ -71,9 +67,9 @@ export function ScenariosPage({
 							<Plus size={16} aria-hidden="true" />
 							New scenario
 						</button>
-					)}
-				</div>
-			</div>
+					)
+				}
+			/>
 			<div className="mx-auto max-w-3xl min-[1900px]:max-w-[80rem]">
 				{newestFirst.length ? (
 					<div className="grid grid-cols-1 items-start gap-3 min-[1900px]:grid-cols-2">

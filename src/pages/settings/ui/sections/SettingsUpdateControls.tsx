@@ -43,7 +43,7 @@ export function SettingsUpdateControls({
 					</button>
 					<button
 						type="button"
-						aria-label="Open AppNook on GitHub"
+						aria-label="Open KesVio on GitHub"
 						onClick={() => void onOpenGithub()}
 						className={ACTION_BUTTON_QUIET}
 					>

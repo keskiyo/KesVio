@@ -2,20 +2,20 @@ import {
 	appIdentity,
 	closeBlockedMessage,
 	isCloseBlocked,
-} from '../../entities/app'
+} from '../../../entities/app'
 import {
 	MAX_SCENARIO_ENTRIES,
 	MAX_SCENARIOS,
 	scenarioAppSnapshot,
 	type Scenario,
 	type ScenarioList,
-} from '../../entities/scenario'
+} from '../../../entities/scenario'
 import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
 	SetAppState,
-} from './types'
+} from '../types'
 
 interface ScenarioActionOptions {
 	set: SetAppState

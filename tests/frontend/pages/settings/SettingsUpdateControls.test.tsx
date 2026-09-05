@@ -40,7 +40,7 @@ describe('SettingsUpdateControls', () => {
 			screen.getByRole('button', { name: 'Check updates' }),
 		)
 		await userEvent.click(
-			screen.getByRole('button', { name: 'Open AppNook on GitHub' }),
+			screen.getByRole('button', { name: 'Open KesVio on GitHub' }),
 		)
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Open @keskiyo on Telegram' }),

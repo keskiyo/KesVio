@@ -1,6 +1,9 @@
-import { INSTALLERS_DOCS_CATEGORY, isCatalogArtifact } from '../../entities/app'
-import { addUnique, identityOf } from './reconciliation'
-import type { AppState, PersistPreferences, SetAppState } from './types'
+import {
+	INSTALLERS_DOCS_CATEGORY,
+	isCatalogArtifact,
+} from '../../../entities/app'
+import { addUnique, identityOf } from '../reconciliation'
+import type { AppState, PersistPreferences, SetAppState } from '../types'
 
 interface AppPlacementOptions {
 	set: SetAppState

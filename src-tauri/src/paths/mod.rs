@@ -6,6 +6,7 @@ use tauri::{AppHandle, Manager, Runtime};
 
 const DATA_DIRECTORY: &str = "data";
 const LOG_DIRECTORY: &str = "logs";
+const BUNDLE_IDENTIFIER: &str = "dev.neiroslop.kesvio";
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Locations {
@@ -46,7 +47,7 @@ pub(crate) fn report_dir() -> Option<PathBuf> {
     portable::existing_root(std::env::current_exe().ok().as_deref())
         .map(|root| root.join(DATA_DIRECTORY))
         .or_else(|| {
-            std::env::var_os("LOCALAPPDATA").map(|base| PathBuf::from(base).join("AppNook"))
+            std::env::var_os("LOCALAPPDATA").map(|base| PathBuf::from(base).join(BUNDLE_IDENTIFIER))
         })
 }
 
@@ -93,7 +94,7 @@ mod tests {
 
     fn resolved() -> Locations {
         Locations {
-            root: Some(PathBuf::from(r"C:\Apps\AppNook\AppNookData")),
+            root: Some(PathBuf::from(r"C:\Apps\KesVio\KesVioData")),
         }
     }
 
@@ -103,11 +104,11 @@ mod tests {
 
         assert_eq!(
             locations.data(),
-            Some(PathBuf::from(r"C:\Apps\AppNook\AppNookData\data"))
+            Some(PathBuf::from(r"C:\Apps\KesVio\KesVioData\data"))
         );
         assert_eq!(
             locations.logs(),
-            Some(PathBuf::from(r"C:\Apps\AppNook\AppNookData\logs"))
+            Some(PathBuf::from(r"C:\Apps\KesVio\KesVioData\logs"))
         );
     }
 
@@ -125,12 +126,29 @@ mod tests {
 
         assert_eq!(
             managed_directory(Some(&locations), Locations::data),
-            Some(PathBuf::from(r"C:\Apps\AppNook\AppNookData\data"))
+            Some(PathBuf::from(r"C:\Apps\KesVio\KesVioData\data"))
         );
         assert_eq!(
             managed_directory(Some(&locations), Locations::logs),
-            Some(PathBuf::from(r"C:\Apps\AppNook\AppNookData\logs"))
+            Some(PathBuf::from(r"C:\Apps\KesVio\KesVioData\logs"))
         );
+    }
+
+    #[test]
+    fn the_report_fallback_avoids_the_directory_the_per_user_installer_occupies() {
+        let Some(local) = std::env::var_os("LOCALAPPDATA") else {
+            return;
+        };
+        let base = PathBuf::from(local);
+        let Some(directory) = report_dir() else {
+            return;
+        };
+        if !directory.starts_with(&base) {
+            return;
+        }
+
+        assert_ne!(directory, base.join("KesVio"));
+        assert_eq!(directory, base.join(BUNDLE_IDENTIFIER));
     }
 
     #[test]

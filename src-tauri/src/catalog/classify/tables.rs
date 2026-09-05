@@ -1233,7 +1233,7 @@ pub(super) static RULES: &[Rule] = &[
         NAME,
         &["wsl", "ubuntu", "native tools", "cross tools"],
     ),
-    rule(Utilities, NameEq, NAME, &["appnook"]),
+    rule(Utilities, NameEq, NAME, &["kesvio"]),
     rule(Productivity, Publisher, PUBLISHER, &["1с-софт", "1c-soft"]),
     rule(Productivity, Product, PRODUCT, &["1с предприятие"]),
     rule(Productivity, Path, PATH, &[r"\1cv8\"]),

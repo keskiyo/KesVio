@@ -1,3 +1,4 @@
+import { readStylesheet } from './readStylesheet.mjs'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
@@ -5,7 +6,7 @@ const component = readFileSync(
 	'src/entities/app/ui/AppCard/PlatformBadge.tsx',
 	'utf8',
 )
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 
 describe('platform badge colors', () => {
 	it('uses one white-on-dark treatment for every platform', () => {

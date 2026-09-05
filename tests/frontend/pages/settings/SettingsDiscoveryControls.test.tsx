@@ -29,7 +29,7 @@ describe('SettingsDiscoveryControls', () => {
 			/>,
 		)
 
-		expect(screen.getByText('Choose where AppNook scans.')).toBeVisible()
+		expect(screen.getByText('Choose where KesVio scans.')).toBeVisible()
 		expect(
 			screen.getByRole('switch', {
 				name: 'Include fixed drives in Force full scan',

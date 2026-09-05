@@ -8,6 +8,14 @@ const updaterHook = readFileSync(
 	'src/features/update-app/model/useUpdater.ts',
 	'utf8',
 )
+const updateCheck = readFileSync(
+	'src/features/update-app/model/useUpdateCheck.ts',
+	'utf8',
+)
+const updateInstall = readFileSync(
+	'src/features/update-app/model/useUpdateInstall.ts',
+	'utf8',
+)
 
 // The webview is untrusted, so a capability is an attack surface, not a convenience. `*:default`
 // bundles every operation a plugin offers: `process:default` also grants `exit`, and
@@ -41,12 +49,16 @@ describe('Tauri capabilities', () => {
 	// The grant and the call site have to move together: dropping a plugin call without dropping
 	// its permission silently leaves the surface open.
 	it('matches the updater operations the hook actually performs', () => {
-		expect(updaterHook).toContain('check(')
-		expect(updaterHook).toContain('.download(')
-		expect(updaterHook).toContain('.install(')
-		expect(updaterHook).toContain('relaunch()')
+		expect(updaterHook).toMatch(/useUpdateCheck\(\s*check,/)
+		expect(updateCheck).toContain('.then(check)')
+		expect(updaterHook).toContain('useUpdateInstall(resource, relaunch)')
+		expect(updateInstall).toContain('.download(')
+		expect(updateInstall).toContain('.install(')
+		expect(updateInstall).toContain('relaunch()')
 		// `exit` and the combined download-and-install are not used and are not granted.
-		expect(updaterHook).not.toContain('downloadAndInstall')
-		expect(updaterHook).not.toContain('exit(')
+		for (const source of [updaterHook, updateCheck, updateInstall]) {
+			expect(source).not.toContain('downloadAndInstall')
+			expect(source).not.toContain('exit(')
+		}
 	})
 })

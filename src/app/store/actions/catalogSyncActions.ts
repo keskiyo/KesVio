@@ -1,10 +1,14 @@
-import { mergeIcon, reconcileFirstSeen, reconcileMarks } from './reconciliation'
+import {
+	mergeIcon,
+	reconcileFirstSeen,
+	reconcileMarks,
+} from '../reconciliation'
 import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
 	SetAppState,
-} from './types'
+} from '../types'
 
 interface CatalogSyncOptions {
 	set: SetAppState

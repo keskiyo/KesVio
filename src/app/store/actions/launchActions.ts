@@ -1,5 +1,5 @@
-import type { AppsClient } from '../../entities/app'
-import type { AppState, GetAppState, SetAppState } from './types'
+import type { AppsClient } from '../../../entities/app'
+import type { AppState, GetAppState, SetAppState } from '../types'
 
 const LAUNCH_CEILING_MS = 12000
 

@@ -1,5 +1,10 @@
 import { Star } from 'lucide-react'
-import type { FavoriteStarProps } from './types'
+export interface FavoriteStarProps {
+	label: string
+	pressed: boolean
+	className?: string
+	onToggle(): void
+}
 
 export function FavoriteStar({
 	label,

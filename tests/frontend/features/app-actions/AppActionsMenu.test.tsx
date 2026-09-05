@@ -81,7 +81,7 @@ function renderMovableMenu(
 	return { onClose, onMove }
 }
 
-// AppNook no longer removes software. The menu keeps the entry point a reader looks for and hands
+// KesVio no longer removes software. The menu keeps the entry point a reader looks for and hands
 // it to Windows, so `canUninstall` still means "Windows has a registered uninstaller for this" and
 // nothing in the menu can start a removal.
 describe('AppActionsMenu removal handover', () => {

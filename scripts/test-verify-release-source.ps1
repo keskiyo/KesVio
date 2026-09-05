@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $script = Join-Path $repoRoot "scripts/verify-release-source.ps1"
-$fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) "appnook-release-source-test-$([Guid]::NewGuid().ToString('N'))"
+$fixtureRoot = Join-Path ([IO.Path]::GetTempPath()) "kesvio-release-source-test-$([Guid]::NewGuid().ToString('N'))"
 
 # Runs the gate and returns its exit code without letting an expected failure abort the test.
 function Invoke-Gate {

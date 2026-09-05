@@ -1003,13 +1003,13 @@
 		"expected": "windows_features"
 	},
 	{
-		"name": "AppNook",
-		"path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\AppNook.lnk",
+		"name": "KesVio",
+		"path": "C:\\ProgramData\\Microsoft\\Windows\\Start Menu\\Programs\\KesVio.lnk",
 		"source": "start_menu",
 		"publisher": "keskiyo",
-		"productName": "AppNook",
-		"description": "AppNook",
-		"installLocation": "C:\\Users\\Example\\AppData\\Local\\AppNook",
+		"productName": "KesVio",
+		"description": "KesVio",
+		"installLocation": "C:\\Users\\Example\\AppData\\Local\\KesVio",
 		"expected": "utilities"
 	},
 	{
@@ -1111,8 +1111,8 @@
 	},
 	{
 		"_comment": "The catalog itself, seen through a Start Menu shortcut that carries no publisher.",
-		"name": "AppNook",
-		"path": "C:\\Users\\User\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\AppNook.lnk",
+		"name": "KesVio",
+		"path": "C:\\Users\\User\\AppData\\Roaming\\Microsoft\\Windows\\Start Menu\\Programs\\KesVio.lnk",
 		"expected": "utilities"
 	},
 	{

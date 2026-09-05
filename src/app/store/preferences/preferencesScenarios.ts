@@ -4,7 +4,7 @@ import {
 	type Scenario,
 	type ScenarioAppSnapshot,
 	normalizeScenarioAppSnapshot,
-} from '../../entities/scenario'
+} from '../../../entities/scenario'
 import { uniqueStrings } from './preferencesFields'
 
 function normalizeScenarioSnapshots(

@@ -20,12 +20,12 @@ describe('FrontendReadyGate', () => {
 		render(
 			<StrictMode>
 				<FrontendReadyGate signal={signal}>
-					<div>Rendered AppNook shell</div>
+					<div>Rendered KesVio shell</div>
 				</FrontendReadyGate>
 			</StrictMode>,
 		)
 
-		expect(screen.getByText('Rendered AppNook shell')).toBeInTheDocument()
+		expect(screen.getByText('Rendered KesVio shell')).toBeInTheDocument()
 		expect(signal).not.toHaveBeenCalled()
 		act(() => {
 			while (frames.length) frames.shift()?.(0)

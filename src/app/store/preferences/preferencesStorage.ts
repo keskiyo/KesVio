@@ -2,8 +2,6 @@ import { normalizePreferences } from './preferencesNormalize'
 import {
 	type AppPreferencesV18,
 	CURRENT_PREFERENCES_VERSION,
-	LEGACY_PREFERENCES_BACKUP_KEY,
-	LEGACY_PREFERENCES_KEY,
 	PREFERENCES_BACKUP_KEY,
 	PREFERENCES_KEY,
 	type PreferenceImportResult,
@@ -20,7 +18,7 @@ export function parsePreferenceImport(source: string): PreferenceImportResult {
 		if (!value || typeof value !== 'object' || Array.isArray(value)) {
 			return {
 				ok: false,
-				error: 'The selected file is not an AppNook backup.',
+				error: 'The selected file is not a KesVio backup.',
 			}
 		}
 		const version = (value as { version?: unknown }).version
@@ -31,20 +29,20 @@ export function parsePreferenceImport(source: string): PreferenceImportResult {
 		) {
 			return {
 				ok: false,
-				error: 'The selected file is not an AppNook backup.',
+				error: 'The selected file is not a KesVio backup.',
 			}
 		}
 		if (version > CURRENT_PREFERENCES_VERSION) {
 			return {
 				ok: false,
-				error: 'This backup was created by a newer version of AppNook.',
+				error: 'This backup was created by a newer version of KesVio.',
 			}
 		}
 		return { ok: true, preferences: normalizePreferences(value) }
 	} catch {
 		return {
 			ok: false,
-			error: 'The selected file is not an AppNook backup.',
+			error: 'The selected file is not a KesVio backup.',
 		}
 	}
 }
@@ -64,8 +62,6 @@ export function readPreferences(storage: Storage): AppPreferencesV18 {
 	return (
 		readSlot(storage, PREFERENCES_KEY) ??
 		readSlot(storage, PREFERENCES_BACKUP_KEY) ??
-		readSlot(storage, LEGACY_PREFERENCES_KEY) ??
-		readSlot(storage, LEGACY_PREFERENCES_BACKUP_KEY) ??
 		normalizePreferences(null)
 	)
 }

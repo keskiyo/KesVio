@@ -1,8 +1,9 @@
+import { readStylesheet } from './readStylesheet.mjs'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 
 function rule(selector) {
 	const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)

@@ -68,7 +68,7 @@ mod tests {
     #[test]
     fn pruning_removes_stale_logs_and_leaves_everything_else_alone() {
         let directory = tempfile::tempdir().unwrap();
-        let stale = directory.path().join("appnook_2026-01-01.log");
+        let stale = directory.path().join("kesvio_2026-01-01.log");
         let cache = directory.path().join("apps-cache.json");
         std::fs::write(&stale, "old").unwrap();
         std::fs::write(&cache, "{}").unwrap();
@@ -85,7 +85,7 @@ mod tests {
     #[test]
     fn a_fresh_log_survives_and_a_missing_directory_is_not_an_error() {
         let directory = tempfile::tempdir().unwrap();
-        let fresh = directory.path().join("appnook.log");
+        let fresh = directory.path().join("kesvio.log");
         std::fs::write(&fresh, "new").unwrap();
 
         assert_eq!(

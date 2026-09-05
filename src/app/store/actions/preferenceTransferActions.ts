@@ -5,14 +5,14 @@ import {
 	serializePreferences,
 	type AppPreferencesV18,
 	type PreferenceTransferResult,
-} from './preferences'
-import { reconcileMarks } from './reconciliation'
+} from '../preferences'
+import { reconcileMarks } from '../reconciliation'
 import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
 	SetAppState,
-} from './types'
+} from '../types'
 
 interface PreferenceTransferOptions {
 	set: SetAppState
@@ -94,7 +94,7 @@ export function createPreferenceTransferActions({
 		if (hasNewerStoredPreferences(storage)) {
 			return {
 				ok: false,
-				error: 'Settings cannot be replaced by this version of AppNook.',
+				error: 'Settings cannot be replaced by this version of KesVio.',
 			}
 		}
 		set(preferenceState(preferences))

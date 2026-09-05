@@ -1,5 +1,5 @@
-import type { AppsClient } from '../../entities/app'
-import type { AppState, GetAppState } from './types'
+import type { AppsClient } from '../../../entities/app'
+import type { AppState, GetAppState } from '../types'
 
 const HYDRATION_BATCH_SIZE = 128
 

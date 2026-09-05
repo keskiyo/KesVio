@@ -1,3 +1,4 @@
+import { readStylesheet } from './readStylesheet.mjs'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import * as lucide from 'lucide-react'
@@ -5,7 +6,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-const stylesheet = readFileSync('src/app/styles/index.css', 'utf8')
+const stylesheet = readStylesheet()
 
 function sourceFiles(directory, found = []) {
 	for (const entry of readdirSync(directory)) {

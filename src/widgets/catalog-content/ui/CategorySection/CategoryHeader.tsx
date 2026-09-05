@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight, Pencil } from 'lucide-react'
+import { countLabel } from '../../../../shared/lib/countLabel'
 import type { CategoryHeaderProps } from '../../types'
 
 export function CategoryHeader({
@@ -42,7 +43,7 @@ export function CategoryHeader({
 					{label}
 				</h2>
 				<span className="category-count ml-2.5 shrink-0 rounded-full border px-2.5 py-0.5 text-[0.7rem] font-medium">
-					{appCount} {appCount === 1 ? 'app' : 'apps'}
+					{countLabel(appCount, 'app')}
 				</span>
 			</button>
 			<button

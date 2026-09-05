@@ -34,15 +34,15 @@ describe('preferences', () => {
 	it('rejects malformed and newer backup documents', () => {
 		expect(parsePreferenceImport('{')).toEqual({
 			ok: false,
-			error: 'The selected file is not an AppNook backup.',
+			error: 'The selected file is not a KesVio backup.',
 		})
 		expect(parsePreferenceImport(JSON.stringify({}))).toEqual({
 			ok: false,
-			error: 'The selected file is not an AppNook backup.',
+			error: 'The selected file is not a KesVio backup.',
 		})
 		expect(parsePreferenceImport(JSON.stringify({ version: 19 }))).toEqual({
 			ok: false,
-			error: 'This backup was created by a newer version of AppNook.',
+			error: 'This backup was created by a newer version of KesVio.',
 		})
 	})
 
@@ -756,30 +756,20 @@ describe('preferences', () => {
 		expect(readPreferences(storage).favoriteAppIds).toEqual(['code'])
 	})
 
-	it('reads preferences left under the pre-rename storage keys', () => {
-		const stored = JSON.stringify({
-			...DEFAULT_PREFERENCES,
-			favoriteAppIds: ['code'],
-		})
-		const legacyPrimary = new Map<string, string>([
-			['windows-apps.preferences.v1', stored],
+	it('returns complete defaults when storage holds nothing this build wrote', () => {
+		const foreign = new Map<string, string>([
+			[
+				'some-other-product.preferences.v1',
+				'{"favoriteAppIds":["code"]}',
+			],
 		])
-		const legacyBackup = new Map<string, string>([
-			['windows-apps.preferences.v1.bak', stored],
-		])
-		const asStorage = (values: Map<string, string>) =>
-			({
-				getItem: (key: string) => values.get(key) ?? null,
-				setItem: (key: string, value: string) =>
-					void values.set(key, value),
-			}) as unknown as Storage
+		const storage = {
+			getItem: (key: string) => foreign.get(key) ?? null,
+			setItem: (key: string, value: string) =>
+				void foreign.set(key, value),
+		} as unknown as Storage
 
-		expect(
-			readPreferences(asStorage(legacyPrimary)).favoriteAppIds,
-		).toEqual(['code'])
-		expect(readPreferences(asStorage(legacyBackup)).favoriteAppIds).toEqual(
-			['code'],
-		)
+		expect(readPreferences(storage)).toEqual(DEFAULT_PREFERENCES)
 	})
 
 	it('keeps the backup one step behind the current value', () => {

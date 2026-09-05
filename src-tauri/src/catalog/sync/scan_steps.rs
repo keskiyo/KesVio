@@ -299,15 +299,15 @@ mod tests {
     #[test]
     fn only_the_verbose_flag_turns_on_per_step_logging() {
         assert!(verbose_steps_requested(arguments(&[
-            "AppNook.exe",
+            "KesVio.exe",
             "--verbose-scan"
         ])));
         assert!(verbose_steps_requested(arguments(&[
-            "AppNook.exe",
+            "KesVio.exe",
             "--VERBOSE-SCAN"
         ])));
         assert!(!verbose_steps_requested(arguments(&[
-            "AppNook.exe",
+            "KesVio.exe",
             "--autostart"
         ])));
         assert!(!verbose_steps_requested(arguments(&["--verbose-scan"])));

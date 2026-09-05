@@ -8,12 +8,14 @@ mod scan;
 pub(crate) mod scan_control;
 mod scan_sources;
 pub(crate) mod scan_steps;
+mod watch_paths;
 mod watcher;
 
 pub(crate) use delta::{compute_delta, CatalogDelta, CatalogDeltaDto};
 pub(crate) use document::{load_sanitized_cache, load_sanitized_document};
 pub(crate) use hydration::enqueue_hydration;
 pub(crate) use scan::{run_coordinated_scan, ScanCommit};
+pub(super) use watch_paths::{default_portable_exclusions, watcher_paths};
 pub(crate) use watcher::restart_change_watcher;
 
 use crate::catalog::cache::CatalogCache;

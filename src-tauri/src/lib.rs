@@ -69,7 +69,7 @@ pub fn run() {
                     diagnostics::MAX_LOG_AGE,
                 );
                 log::info!(
-                    "AppNook {} starting on {}: log retention {} hours, {removed} expired files removed",
+                    "KesVio {} starting on {}: log retention {} hours, {removed} expired files removed",
                     app.package_info().version,
                     std::env::consts::OS,
                     diagnostics::MAX_LOG_AGE.as_secs() / (60 * 60)

@@ -1,11 +1,11 @@
-# AppNook Technical Documentation
+# KesVio Technical Documentation
 
 Technical reference for maintainers. [README](README.md) is the user-facing
 overview; source and tests are the detailed implementation reference.
 
 ## 1. Product scope and environment
 
-AppNook is a local Windows catalog, launcher, and organization layer. It
+KesVio is a local Windows catalog, launcher, and organization layer. It
 discovers applications, sanitizes and deduplicates results, persists a compact
 cache, and launches applications through a React desktop UI. It cannot remove
 software: uninstalling is handed to Windows. It updates only itself from signed
@@ -64,6 +64,36 @@ Main source areas:
 | `src-tauri/src/platform/windows/`             | Windows-native boundary                                       |
 | `tests/frontend/`                             | Frontend tests mirroring source ownership                     |
 
+Store assembly stays in `src/app/store/`. Action factories live in `actions/`;
+preference schema, normalization and storage live in `preferences/`, behind the
+existing `preferences.ts` facade. Component-only props stay with their component.
+The stylesheet entry `src/app/styles/index.css` imports tokens, navigation, base,
+notifications, surfaces, theme, catalog and motion in cascade order. Theme rules
+match whole class tokens rather than arbitrary substrings.
+
+The frontend boundary checker builds a TypeScript-resolved import graph, including
+type imports, re-exports and literal dynamic imports. It rejects forbidden layer
+edges, private slice entry points and cycles. Its regression fixtures run with
+`node --test scripts/test-frontend-import-graph.mjs`.
+
+Updater orchestration lives in `features/update-app/model/useUpdater.ts`;
+checking, installation, preferences and native-resource ownership have separate
+modules. Concurrent checks share one request. Dismissed, replaced and late results
+close their native Update resource once; an active download/install retains its
+handle until the operation settles. Unmount prevents starting the next installation
+or relaunch step. Release metadata and errors are sanitized before presentation.
+
+Catalog record creation lives in `catalog/app_record.rs`, registry enrichment in
+`registry_enrichment.rs`, source candidates in `sources/`, watcher roots in
+`sync/watch_paths.rs`, and icon-source selection in `scan/hydration/sources.rs`.
+The catalog root coordinates these owners without duplicating their rules.
+
+Local launchers live in `scripts/run-dev.ps1` (development) and
+`scripts/run-dev-hidden.vbs` (launch the newest existing local executable).
+Both resolve the repository from their script location, independently of the
+caller's working directory. Build and tool configuration stays at the root where
+the corresponding tools expect it.
+
 Two shared pieces own behaviour that used to be copied per call site, so a
 change to either is a change everywhere it applies:
 
@@ -90,10 +120,9 @@ and hydration from icon extraction. `app_state/` separates catalog memory,
 launch-wait limiting. `platform/windows/icon_extractor/`
 separates image decoding, GDI bitmap encoding, shell icons and AppUserModelId
 lookups, so each `unsafe` block sits next to the ownership rules it depends on.
-`platform/windows/uninstall/` used to hold the argument-validation surface that
-kept a registry-supplied command from becoming an arbitrary process; the whole
-directory is gone, because the safest version of that boundary is not having the
-capability behind it.
+There is deliberately no module that turns a registry-supplied command into a
+process: the safest version of that boundary is not having the capability behind
+it.
 
 ## 4. IPC, events, and errors
 
@@ -165,7 +194,7 @@ frontend test reads the same file and holds it against the interfaces through
 `Required<T>` literals the compiler checks. Fields that legitimately live on one
 side only — the store's own marks, the backend's rollback switches — are listed
 by name in the frontend test rather than passed over in silence. Record a new
-contract with `APPNOOK_CONTRACT_UPDATE=1` and review the diff before
+contract with `KESVIO_CONTRACT_UPDATE=1` and review the diff before
 committing it.
 
 The same fixture carries `errorCodes`, the full list `AppError::code` can return.
@@ -191,7 +220,7 @@ startup registers a one-shot listener before background initialization begins.
 After the React shell commits, a readiness gate waits two animation frames and
 emits the event; only then does the backend show and focus the window. StrictMode
 cleanup suppresses the discarded effect. Tray-backed autostart registers no
-listener and remains hidden until the user opens AppNook from the tray, shortcut
+listener and remains hidden until the user opens KesVio from the tray, shortcut
 or a second ordinary launch.
 
 ## 5. Persisted data
@@ -221,10 +250,10 @@ different meaning: a document written by any older version simply lacks it and
 normalizes to `compact`, and an unrecognized or non-string value does the
 same rather than throwing.
 
-Everything AppNook writes itself lives beside the executable. `paths/` resolves
-`<install folder>\AppNookData` once per process: when that directory accepts a
-write, `AppNookData\data` holds the catalog cache, scan settings and window
-state, and `AppNookData\logs` holds the diagnostics log. A root that already
+Everything KesVio writes itself lives beside the executable. `paths/` resolves
+`<install folder>\KesVioData` once per process: when that directory accepts a
+write, `KesVioData\data` holds the catalog cache, scan settings and window
+state, and `KesVioData\logs` holds the diagnostics log. A root that already
 contains `data` or `logs` is one this copy has written before, so it is adopted on
 sight without any probe. A binary that repeatedly writes and deletes a file inside
 its own install directory is a dropper pattern, and the answer to "may I write
@@ -238,7 +267,7 @@ A debug build never creates the folder at all, so a development run leaves nothi
 in `target\debug`. When it cannot be written — an installation under
 `Program Files`, a read-only medium — every store falls back to the Tauri
 per-user locations
-(`%APPDATA%\dev.neiroslop.appnook` and `%LOCALAPPDATA%\dev.neiroslop.appnook\logs`)
+(`%APPDATA%\dev.neiroslop.kesvio` and `%LOCALAPPDATA%\dev.neiroslop.kesvio\logs`)
 and nothing else about the stores changes. The resolved root is managed state, so
 every caller asks `paths::data_dir` or `paths::log_dir` instead of Tauri
 directly, and the startup log names the data folder actually in use. The first
@@ -250,12 +279,12 @@ resolve the same folder through `paths::report_dir`, which reads the root withou
 creating one because those writers have no application handle.
 
 Because that folder sits inside the install directory, uninstalling has to reach
-it: Tauri's own uninstall section clears `%APPDATA%\dev.neiroslop.appnook` and
-`%LOCALAPPDATA%\dev.neiroslop.appnook` when the user ticks **Delete app data**,
+it: Tauri's own uninstall section clears `%APPDATA%\dev.neiroslop.kesvio` and
+`%LOCALAPPDATA%\dev.neiroslop.kesvio` when the user ticks **Delete app data**,
 and finishes with a `RMDir "$INSTDIR"` that is not recursive. Neither touches
-`AppNookData`, so `nsis/autostart-shortcut.nsh` does. On a normal uninstall it
-always removes `AppNookData\logs`, which is diagnostics rather than user data;
-with the box ticked it removes the whole `AppNookData` folder, and then the
+`KesVioData`, so `nsis/autostart-shortcut.nsh` does. On a normal uninstall it
+always removes `KesVioData\logs`, which is diagnostics rather than user data;
+with the box ticked it removes the whole `KesVioData` folder, and then the
 install directory itself once nothing is left in it. Every branch is guarded on
 `$UpdateMode <> 1`, because an update runs the previous uninstaller before the
 new installer: without that guard a version bump would delete the catalog,
@@ -269,9 +298,9 @@ setting back and forth, or closing a window that never moved, leaves the file an
 its timestamp alone. A document that is missing, malformed or written at an
 unsupported version never counts as a match, so recovery still replaces it.
 
-Preferences are the exception AppNook cannot place. They live in `localStorage`,
+Preferences are the exception KesVio cannot place. They live in `localStorage`,
 which belongs to the WebView2 user-data folder, and Tauri forces that folder to
-`%LOCALAPPDATA%\dev.neiroslop.appnook\EBWebView` whenever a window declares no
+`%LOCALAPPDATA%\dev.neiroslop.kesvio\EBWebView` whenever a window declares no
 `dataDirectory`; the configuration file accepts only a relative path resolved
 under the same local-data root, so no configuration change can move it beside the
 executable. Relocating it would mean building the main window in Rust instead of
@@ -279,7 +308,7 @@ from configuration and copying a live browser profile on first run. Preference
 export and import remain the supported way to carry that store between machines.
 
 The diagnostics log is a fourth store and is not user data. `diagnostics/` owns
-it: `tauri-plugin-log` writes `appnook.log` to the resolved log folder at
+it: `tauri-plugin-log` writes `kesvio.log` to the resolved log folder at
 `Info`, rotates at four megabytes keeping eight dated archives, and
 `prune_expired_logs` deletes any `*.log` older than six hours. Age is the file's
 modification time measured against `SystemTime::now`, so it follows the Windows
@@ -346,12 +375,6 @@ cache, executable paths, catalog icons, or scan folders. Each Scenario also
 retains a bounded 32 KiB name/icon snapshot per app identity so unavailable
 entries remain identifiable and removable; it is presentation data, never a
 launch target.
-
-Version 0.4.0 changes the application identity from `dev.neiroslop.windowsapps`
-to `dev.neiroslop.appnook`. The old and new installations use separate data
-locations. Export preferences from Windows Apps, import them in AppNook, add scan
-folders again and run a full scan to rebuild the catalog. Confirm the restored
-preferences survive a restart before removing the old installation.
 
 Import applies preferences in memory before attempting to persist them. If the
 write fails, `preferencesPersisted` becomes false and the shell displays the
@@ -759,7 +782,7 @@ fixtures and deterministic generated properties. Recording a new baseline is
 deliberate:
 
 ```powershell
-$env:APPNOOK_GOLDEN_UPDATE = "1"; cargo test --manifest-path src-tauri/Cargo.toml golden
+$env:KESVIO_GOLDEN_UPDATE = "1"; cargo test --manifest-path src-tauri/Cargo.toml golden
 ```
 
 ## 10. Desktop operations
@@ -779,10 +802,11 @@ by the Steam installation directory, so games remain explicit Scenario entries.
 
 ### Uninstall
 
-AppNook does not uninstall anything. The feature existed through 0.4.0 and was
-removed: it was the highest-consequence code in the project, it kept a persisted
-record of what the user had removed from their PC, and Windows already does the
-job. What is left is `canUninstall`, which reports that Windows has a registered
+KesVio does not uninstall anything, and deliberately never will: removing
+software is the highest-consequence code a catalog could carry, it would mean
+keeping a persisted record of what the user had removed from their PC, and
+Windows already does the job. What exists instead is `canUninstall`, which
+reports that Windows has a registered
 uninstaller for the entry and earns it 35 visibility points as a registered
 product, plus a menu item that opens the Windows page. Reading the
 `…\CurrentVersion\Uninstall` hives continues, because that is how installed
@@ -798,7 +822,7 @@ would have to reintroduce it deliberately.
 - Tray, global shortcut and window lifecycle are backend-owned.
 - A fresh direct installation registers startup and leaves it **switched off**.
   Windows lists nothing it has no entry for, so the installer creates
-  `$SMSTARTUP\AppNook.lnk` and, in the same guarded block, writes a
+  `$SMSTARTUP\KesVio.lnk` and, in the same guarded block, writes a
   `StartupApproved\StartupFolder` payload whose first byte is `0x03` — the value
   Explorer itself writes for a disabled entry. The result is a row under
   **Settings → Apps → Startup** that the user can switch on. The Settings page
@@ -830,7 +854,7 @@ would have to reintroduce it deliberately.
   sixteen pixels wide, nine tall — back on every start, and the window grew by
   that much each time it was reopened. The position is the outer position, which
   is what `set_position` takes.
-- Closing the window hides AppNook in the notification area, and
+- Closing the window hides KesVio in the notification area, and
   **Settings → Keep running in the tray** turns that into an ordinary quit. The
   flag lives in `LifecycleState`, so the close handler reads it without touching
   the disk; `set_close_behavior` writes the document and restores the previous
@@ -873,7 +897,7 @@ would have to reintroduce it deliberately.
   double the interval — four hours, eight, sixteen — capped at a day, and one
   success resets the count. **Automatic update checks** in Settings turns the
   automatic check off entirely; it is on by default, persists in
-  `appnook.automatic-update-checks`, and survives restarts and updates. The
+  `kesvio.automatic-update-checks`, and survives restarts and updates. The
   switch lives in the updater slice rather than the preferences document because
   the slice already owns its own storage keys and the answer is per-machine: a
   managed workstation that must not reach GitHub should not carry that setting
@@ -913,7 +937,7 @@ would have to reintroduce it deliberately.
 - Because the binary is unsigned and every release starts at zero reputation,
   behaviour that reputation-based antivirus scores heavily is avoided on
   purpose: no interpreter is started, and `mainBinaryName` ships the executable
-  as `AppNook.exe` rather than the Cargo package's generic `app.exe`. The
+  as `KesVio.exe` rather than the Cargo package's generic `app.exe`. The
   NSIS template records `MainBinaryName` in the uninstall key and deletes the
   previously installed binary when the name changes, so an update from a build
   that shipped `app.exe` leaves nothing behind.
@@ -938,11 +962,11 @@ would have to reintroduce it deliberately.
   that starts another process to remove installed software is a scored behaviour,
   and the strongest version of not being scored for it is not doing it.
 - A copy that has already resolved its data folder never probes it again. The
-  earlier build created and deleted `AppNookData\write-probe.tmp` on every start;
+  earlier build created and deleted `KesVioData\write-probe.tmp` on every start;
   an unsigned binary repeatedly testing whether it can write into its own install
   directory is a dropper pattern, and the answer cannot change between launches.
 
-### What AppNook does to this machine
+### What KesVio does to this machine
 
 Every capability the program uses, when it runs, and what bounds it. Nothing here
 is discretionary: each row is enforced by the boundary scripts, the capability
@@ -954,8 +978,8 @@ file or a named test.
 | Walk fixed drives for portable executables                       | **Force full scan only**, and only while the discovery toggle is on | `roots_for` retains fixed drives on refresh and walks them only on `SyncRequest::Force`.                                           |
 | `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry                             | Target resolved from a catalog id held in trusted state, never from the webview.                                                   |
 | `CreateToolhelp32Snapshot`, `OpenProcess`, `TerminateProcess`    | The explicit close action of a scenario                             | `WM_CLOSE` first; terminate only on refusal; batch capped; protected processes and this process excluded.                          |
-| Remove installed software                                        | Never                                                               | The capability was removed. No code path starts a removal; the card menu opens the Windows page instead.                           |
-| Write one `HKCU` value (`Software\keskiyo\AppNook`)              | Startup, only when the install directory changed                    | Read before write; the running program writes nothing else in the registry, ever.                                                  |
+| Remove installed software                                        | Never                                                               | There is no such capability. No code path starts a removal; the card menu opens the Windows page instead.                          |
+| Write one `HKCU` value (`Software\keskiyo\KesVio`)               | Startup, only when the install directory changed                    | Read before write; the running program writes nothing else in the registry, ever.                                                  |
 | Register a disabled Startup entry                                | The installer, on a fresh install only                              | Shortcut plus a `StartupApproved` value marked disabled. Never on update; the running program cannot.                              |
 | Write files                                                      | Catalog cache, scan settings, window state, logs                    | Only under the resolved data root. Atomic replace; identical values are not rewritten.                                             |
 | Network                                                          | The update check, and a download the user starts                    | GitHub release endpoint only. Automatic checks are throttled to one per four hours, and back off to a day after repeated failures. |
@@ -965,12 +989,11 @@ entry is the Startup shortcut the installer registers **disabled**, which exists
 so Windows can offer the choice; the running program can neither create it nor
 change it, and **Manage** only opens the Windows page where the user decides.
 
-AppNook also cannot remove software. The uninstall feature was removed in full —
-`platform/windows/uninstall/`, its four commands, the `Management_Deployment`
-WinRT feature and the `uninstall-history.json` store are gone, and `AppInfo` no
-longer carries an uninstall command at all. `git grep Command::new src-tauri/src`
+KesVio also cannot remove software. There is no uninstall surface at all: no
+command, no `Management_Deployment` WinRT feature, no stored record of removals,
+and `AppInfo` carries no uninstall command. `git grep Command::new src-tauri/src`
 returns nothing, which is the whole point: the claim is checkable rather than
-trusted. What remains is `canUninstall`, a boolean that means "Windows has a
+trusted. What exists is `canUninstall`, a boolean that means "Windows has a
 registered uninstaller for this entry". It is evidence, not a capability, and it
 is load-bearing: `visibility/mod.rs` gives a registry entry 35 points and the
 `RegisteredProduct` reason for it, so removing it would quietly change which
@@ -984,7 +1007,7 @@ software is discovered in the first place.
 
 Three independent checks, none of which requires trusting the author:
 
-- `gh attestation verify AppNook_<version>_x64-setup.exe --repo keskiyo/AppNook`
+- `gh attestation verify KesVio_<version>_x64-setup.exe --repo keskiyo/KesVio`
   — GitHub's own record that this file was produced by `release.yml` in this
   repository, at a named commit. `release.yml` attests the assets after
   `verify-release-assets.ps1` has passed and before the release leaves draft.
@@ -1101,7 +1124,7 @@ source is MIT-licensed; third-party notices are recorded in
 | Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                                  |
 | SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                      |
 | Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.             |
-| A scan never finishes          | Open `AppNookData\logs\appnook.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.  |
+| A scan never finishes          | Open `KesVioData\logs\kesvio.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.    |
 | A stall must be traced further | Start the application with `--verbose-scan`; every scanned item is logged until the run is over.                |
 | Closing the window hides it    | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                |
 | Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.    |
