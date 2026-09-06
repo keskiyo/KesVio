@@ -61,10 +61,6 @@ protocols an application registered with Windows, the purpose the vendor wrote i
 description, and the Start Menu group the shortcut lives in — so an unfamiliar player, editor or
 mail client still lands where it belongs.
 
-### Keep one card per application
-
-Shortcuts, registry entries, Store packages and other representations of the same program are merged into one card.
-
 ### Launch through the right system path
 
 Steam games open through Steam, packaged apps through Windows and executables directly.
@@ -73,13 +69,15 @@ Steam games open through Steam, packaged apps through Windows and executables di
 
 Favorites, categories and Scenarios let you keep common applications and launch-and-close setups close at hand.
 
-## Favorites and Scenarios
+## A look around
+
+### Favorites and Scenarios
 
 ![Favorites page with starred applications and saved scenarios](.github/images/favorites.png)
 
 Star applications for quick access, or run a Scenario that opens one group of applications and closes another.
 
-## Scenario details
+### Scenario details
 
 ![Scenarios page with per-scenario launch and close lists](.github/images/scenarios.png)
 
@@ -87,19 +85,19 @@ Choose which apps to launch or close and follow the Scenario's progress. Missing
 
 **Save your work first:** apps that do not close within five seconds are forcibly stopped, which can discard unsaved work.
 
-## More catalog views
+### More catalog views
 
 ![More page with Auxiliary tools, Scenarios, Hidden and Installers and Docs](.github/images/more.png)
 
 Auxiliary tools, hidden applications, installers and documentation stay available without crowding the main catalog.
 
-## Application details
+### Application details
 
 ![Application information dialog with installation, status and detection details](.github/images/app-info.png)
 
 Inspect local file details, architecture, signature status and installation state for an application card.
 
-## Settings and maintenance
+### Settings and maintenance
 
 ![KesVio settings with catalog density, startup and tray behaviour](.github/images/settings.png)
 
@@ -128,15 +126,9 @@ Backups contain preferences only. If **Your changes are not being saved** appear
 
 KesVio is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine. The updater contacts this repository's Releases to check for updates and download an installer when you choose to update. These requests do not include your catalog. If WebView2 is missing, the installer also needs internet access to download the runtime from Microsoft.
 
-KesVio also cannot remove software. It shows you which entries Windows has a registered uninstaller for and opens the Windows page for you; the removal itself is Windows' job. There is no code in the application that starts one — `git grep Command::new src-tauri/src` returns nothing.
+KesVio also cannot remove software. It shows you which entries Windows has a registered uninstaller for and opens the Windows page for you; the removal itself is Windows' job. There is no code in the application that starts one.
 
 What is stored, where, and what leaves the machine is listed in [Privacy Policy](PRIVACY.md). For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). KesVio is available under the [MIT License](LICENSE); the licenses of the packages it distributes are in [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt), which is also installed alongside the application.
-
-## Known limitations
-
-- Windows 10/11 and x64 only.
-- Released installers are not Authenticode-signed yet; SmartScreen may appear.
-- Microsoft Edge WebView2 is required.
 
 ## Development
 
@@ -172,8 +164,6 @@ That asks GitHub whether this exact file was produced by this repository's relea
 ```
 
 Compare the result with the line in `SHA256SUMS.txt` on the same release page.
-
-KesVio has no telemetry or account, and the catalog it builds stays on the local machine. GitHub serves and logs update checks and installer downloads; Microsoft supplies the WebView2 runtime if it is missing during installation. See [Privacy](#privacy).
 
 ## Links
 
