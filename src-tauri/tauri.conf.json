@@ -48,8 +48,11 @@
 		"license": "MIT",
 		"homepage": "https://github.com/keskiyo/KesVio",
 		"shortDescription": "Private application catalog and launcher for Windows.",
-		"longDescription": "KesVio discovers installed and portable applications on this computer, organizes them into categories and scenarios, and launches them. It removes no software: uninstalling stays with Windows. It works entirely offline: no telemetry, no accounts, and no uploads. Only the application itself updates, from signed GitHub releases.",
+		"longDescription": "KesVio discovers installed and portable applications on this computer, organizes them into categories and scenarios, and launches them. It removes no software: uninstalling stays with Windows. Catalog and preference data are processed locally: no telemetry, no accounts, and no uploads. Network access is used only to check for and download application updates from signed GitHub releases, and to install the WebView2 runtime if it is missing.",
 		"targets": ["nsis"],
+		"resources": {
+			"../THIRD_PARTY_LICENSES.txt": "THIRD_PARTY_LICENSES.txt"
+		},
 		"createUpdaterArtifacts": true,
 		"windows": {
 			"webviewInstallMode": {

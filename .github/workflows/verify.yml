@@ -182,6 +182,16 @@ jobs:
               shell: pwsh
               run: powershell -NoProfile -File scripts/test-verify-npm-audit.ps1
 
+            - name: Test third-party license gate
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/test-third-party-licenses.ps1
+
+            # THIRD_PARTY_LICENSES.txt ships inside the installer, so a dependency change must not
+            # reach a release while the bundled license texts still describe the previous graph.
+            - name: Verify third-party licenses
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/verify-third-party-licenses.ps1
+
             # Runtime dependencies admit no exceptions.
             - name: Audit runtime dependencies
               run: npm audit --omit=dev --audit-level=high

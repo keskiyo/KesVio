@@ -13,7 +13,7 @@
 
 <p align="center">
   <a href="https://github.com/keskiyo/KesVio/releases/tag/v0.5.0"><img src="https://img.shields.io/badge/version-0.5.0-7C3AED?style=flat-square" alt="Version"></a>
-  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square&amp;logo=windows11&amp;logoColor=white" alt="Windows">
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/architecture-x64-334155?style=flat-square" alt="Architecture">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&amp;logo=tauri&amp;logoColor=white" alt="Tauri">
   <img src="https://img.shields.io/badge/catalog-local--first-16A34A?style=flat-square" alt="Local first">
@@ -130,7 +130,7 @@ KesVio is local-first. It has no telemetry, cloud account, application-inventory
 
 KesVio also cannot remove software. It shows you which entries Windows has a registered uninstaller for and opens the Windows page for you; the removal itself is Windows' job. There is no code in the application that starts one — `git grep Command::new src-tauri/src` returns nothing.
 
-For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). KesVio is available under the [MIT License](LICENSE).
+What is stored, where, and what leaves the machine is listed in [Privacy Policy](PRIVACY.md). For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). KesVio is available under the [MIT License](LICENSE); the licenses of the packages it distributes are in [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt), which is also installed alongside the application.
 
 ## Known limitations
 
@@ -151,7 +151,7 @@ See [Technical Documentation](Documentation.md#16-verification-and-releases) for
 
 ## Contributing
 
-Bug reports and pull requests are welcome. Read [Technical Documentation](Documentation.md) before changing code or workflows.
+Bug reports and pull requests are welcome. Read [Contributing](CONTRIBUTING.md) for setup, the checks a change has to pass, and how contributions are licensed, and [Technical Documentation](Documentation.md) before changing code or workflows.
 
 ## Code signing policy
 
@@ -177,4 +177,4 @@ KesVio has no telemetry or account, and the catalog it builds stays on the local
 
 ## Links
 
-[Documentation](Documentation.md) · [Releases](https://github.com/keskiyo/KesVio/releases) · [Telegram: @keskiyo](https://t.me/keskiyo)
+[Documentation](Documentation.md) · [Privacy](PRIVACY.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Releases](https://github.com/keskiyo/KesVio/releases) · [Telegram: @keskiyo](https://t.me/keskiyo)

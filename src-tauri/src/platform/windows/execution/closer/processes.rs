@@ -33,7 +33,10 @@ fn open_process(access: PROCESS_ACCESS_RIGHTS, pid: u32) -> Option<OwnedHandle> 
 }
 
 pub(super) fn image_path_of(pid: u32) -> Option<String> {
-    let handle = open_process(PROCESS_QUERY_LIMITED_INFORMATION, pid)?;
+    image_path_from(&open_process(PROCESS_QUERY_LIMITED_INFORMATION, pid)?)
+}
+
+fn image_path_from(handle: &OwnedHandle) -> Option<String> {
     let mut buffer = [0u16; 32768];
     let mut length = buffer.len() as u32;
     // SAFETY: `buffer` is a live, fully initialized array owned by this frame, and `length` is
@@ -94,10 +97,17 @@ pub(super) fn running_images() -> Vec<(u32, String)> {
     processes
 }
 
-pub(super) fn terminate(pid: u32) -> bool {
-    let Some(handle) = open_process(PROCESS_TERMINATE, pid) else {
+pub(super) fn terminate_matching(pid: u32, matches: impl Fn(&str) -> bool) -> bool {
+    let Some(handle) = open_process(PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_TERMINATE, pid)
+    else {
         return false;
     };
+    let Some(image) = image_path_from(&handle) else {
+        return false;
+    };
+    if !matches(&image) {
+        return false;
+    }
     // SAFETY: the handle is borrowed from a live `OwnedHandle` opened with `PROCESS_TERMINATE`, so
     // it stays open for the call. A process that already exited makes this fail, which is reported
     // through the `Result`.
@@ -115,5 +125,18 @@ mod tests {
         let running = running_images();
 
         assert!(running.iter().all(|(pid, _)| *pid != own_pid));
+    }
+
+    #[test]
+    fn refuses_to_terminate_a_pid_whose_image_does_not_match() {
+        // SAFETY: `GetCurrentProcessId` takes no arguments and cannot fail.
+        let own_pid = unsafe { GetCurrentProcessId() };
+
+        assert!(!terminate_matching(own_pid, |_| false));
+    }
+
+    #[test]
+    fn reports_failure_for_a_pid_that_cannot_be_opened() {
+        assert!(!terminate_matching(u32::MAX, |_| true));
     }
 }
