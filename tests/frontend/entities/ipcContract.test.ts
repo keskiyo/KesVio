@@ -202,9 +202,22 @@ describe('IPC wire contract', () => {
 				'boolean',
 			)
 		})
+
+		// The tray owns the menu; the window only tells it what to show, so neither call answers
+		// with data the frontend could come to depend on.
+		it('answers both tray updates with nothing', () => {
+			expect(contract.commands).toHaveProperty('set_tray_scenarios')
+			expect(contract.commands).toHaveProperty('set_tray_running')
+			expect(contract.commands.set_tray_scenarios).toBeNull()
+			expect(contract.commands.set_tray_running).toBeNull()
+			expect(contract.commands.set_tray_scan_state).toBeNull()
+		})
 	})
 
 	describe('events', () => {
+		it('requests a tray full scan without accepting a path or command', () => {
+			expect(contract.events['tray://force-full-scan']).toBeNull()
+		})
 		it('describes the catalog delta', () => {
 			const declared: Required<CatalogDelta> = {
 				generation: 0,
@@ -283,6 +296,16 @@ describe('IPC wire contract', () => {
 				contract.events['close://progress'],
 				declared,
 				'CloseProgress',
+			)
+		})
+
+		// The tray echoes back an id the window gave it and nothing else: the scenario itself
+		// never crosses to Rust, so the payload cannot grow scenario data by accident.
+		it('describes a tray scenario run as the id alone', () => {
+			expectWireShape(
+				contract.events['tray://run-scenario'],
+				{ id: '' },
+				'TrayScenarioRun',
 			)
 		})
 	})

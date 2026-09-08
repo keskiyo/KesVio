@@ -8,7 +8,7 @@ import {
 	useCatalogNavigation,
 	useDesktopNavigation,
 } from '../widgets/sidebar-navigation'
-import { useScenarioRunner } from '../features/run-scenario'
+import { scenarioRunStatus, useScenarioRunner } from '../features/run-scenario'
 
 import { AppShellChrome } from './layout/AppShellChrome'
 import { Header } from '../widgets/app-header'
@@ -21,6 +21,8 @@ import { AppDialogs } from './layout/AppDialogs'
 import { AppViews } from './layout/AppViews'
 import { useCatalogBootstrap } from './model/useCatalogBootstrap'
 import { useDrawer } from './model/useDrawer'
+import { useTrayScenarios } from './model/useTrayScenarios'
+import { useTrayCatalogScan } from './model/useTrayCatalogScan'
 
 import { useIconRecovery } from '../entities/app'
 import { useGlobalShortcuts } from './model/useGlobalShortcuts'
@@ -88,6 +90,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 
 	useGlobalShortcuts({
 		onToggleQuickLaunch: dialogs.palette.toggle,
+		onToggleScenarios: dialogs.scenarioLauncher.toggle,
 		onSearchFromShortcut: useCallback(() => {
 			searchInputRef.current?.focus()
 			searchInputRef.current?.select()
@@ -114,7 +117,20 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		launch: state.launch,
 		closeApps: state.closeApps,
 		onCloseProgress: appsClient.onCloseProgress,
+		onStarted: state.markScenarioRun,
 		onFinished: feedback.reportScenarioRun,
+	})
+	useTrayScenarios({
+		systemClient,
+		scenarios: state.scenarios,
+		favoriteScenarioIds: state.favoriteScenarioIds,
+		runningName: scenarioRunner.runningName,
+		onRun: scenarioRunner.runById,
+	})
+	useTrayCatalogScan({
+		systemClient,
+		busy: isLoading || isRefreshing,
+		onForceFullScan: state.forceFullScan,
 	})
 
 	const { auxiliaryCount, favoriteCount, navigationCounts } = counts
@@ -212,6 +228,18 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 					dialogs={dialogs}
 					paletteApps={primaryApps}
 					paletteSuggestions={catalog.paletteSuggestions}
+					scenarioLauncher={{
+						scenarios: state.scenarios,
+						apps: catalogApps,
+						favoriteScenarioIds: state.favoriteScenarioIds,
+						runningId: scenarioRunner.runningId,
+						isScenarioRunning: scenarioRunner.isRunning,
+						runningStatus: scenarioRunStatus(
+							scenarioRunner.progress,
+						),
+						onRun: scenarioRunner.runById,
+						onToggleFavorite: state.toggleFavoriteScenario,
+					}}
 					onError={dialogs.reportFailure}
 				/>
 				<Toaster

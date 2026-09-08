@@ -25,7 +25,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $evidenceDirectory = Join-Path $repoRoot ".1localDocuments"
 $expectedProcessPath = [IO.Path]::GetFullPath($ProcessPath)
-$logsDirectory = Join-Path $env:LOCALAPPDATA "dev.neiroslop.kesvio\logs"
+$logsDirectory = Join-Path $env:LOCALAPPDATA "keskiyo.kesvio\logs"
 
 function Get-TargetProcess {
   try {

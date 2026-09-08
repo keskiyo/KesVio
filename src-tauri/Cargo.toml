@@ -59,6 +59,16 @@ windows = { version = "0.61", features = [
 minisign-verify = "=0.2.5"
 tempfile = "3.20"
 
+# Full debug symbols in every object file grew `target/debug` to 97 GB (53 GB of `.o` alone, plus the
+# `staticlib` archives listed under [lib]). Line tables keep backtraces and panic locations usable.
+[profile.dev]
+debug = "line-tables-only"
+
+# Dependencies are never stepped through, so they carry no debug info at all.
+[profile.dev.package."*"]
+debug = false
+opt-level = 1
+
 [profile.release]
 lto = "thin"
 codegen-units = 1

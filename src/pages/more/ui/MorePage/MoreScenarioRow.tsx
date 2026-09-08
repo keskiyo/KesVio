@@ -1,4 +1,5 @@
 import { ListChecks, Play } from 'lucide-react'
+import { relativeTimeLabel } from '../../../../shared/lib/relativeTime'
 import type { MoreScenarioRowProps } from './types'
 
 export function MoreScenarioRow({
@@ -11,6 +12,7 @@ export function MoreScenarioRow({
 	const runLabel = blocked
 		? `Run ${scenario.name} unavailable while another scenario is running`
 		: `Run ${scenario.name}`
+	const lastRun = relativeTimeLabel(scenario.lastRunAt)
 
 	return (
 		<li className="flex min-w-0 flex-auto items-center gap-3 border-t border-(--border-neutral) px-5 py-2.5 first:border-t-0">
@@ -23,6 +25,7 @@ export function MoreScenarioRow({
 				</span>
 				<span className="block truncate text-xs text-(--text-muted)">
 					{scenario.launchCount} launch · {scenario.closeCount} close
+					{lastRun ? ` · ran ${lastRun}` : ''}
 				</span>
 			</span>
 			<button

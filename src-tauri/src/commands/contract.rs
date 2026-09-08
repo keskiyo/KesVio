@@ -62,6 +62,9 @@ fn commands(app: &AppInfo) -> Value {
         "stale_copy_status": wire(super::links::stale_copy_sample()),
         "save_preferences_backup": wire(true),
         "export_diagnostics_log": wire(true),
+        "set_tray_scenarios": wire(()),
+        "set_tray_running": wire(()),
+        "set_tray_scan_state": wire(()),
     })
 }
 
@@ -92,6 +95,8 @@ fn events(app: &AppInfo) -> Value {
         }),
         "launch://status": wire(super::launch::status_sample()),
         "close://progress": super::close::progress_sample(),
+        "tray://run-scenario": crate::lifecycle::tray_run_scenario_sample(),
+        crate::lifecycle::FORCE_SCAN_EVENT: wire(()),
     })
 }
 

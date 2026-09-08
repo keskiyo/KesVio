@@ -1,6 +1,10 @@
 import { open } from '@tauri-apps/plugin-dialog'
 import type { SystemClient } from '../model/system.types'
-import { invokeTauri } from '../../../shared/api/tauri/client'
+import {
+	invokeIfTauri,
+	invokeTauri,
+	listenIfTauri,
+} from '../../../shared/api/tauri/client'
 
 export const tauriSystemClient: SystemClient = {
 	getSettings: () => invokeTauri('get_system_settings'),
@@ -23,4 +27,14 @@ export const tauriSystemClient: SystemClient = {
 	openInstalledCopy: () => invokeTauri('open_installed_copy'),
 	logClientError: (kind, detail) =>
 		invokeTauri('log_client_error', { kind, detail }),
+	setTrayScenarios: entries =>
+		invokeIfTauri('set_tray_scenarios', { entries }),
+	setTrayRunning: label => invokeIfTauri('set_tray_running', { label }),
+	setTrayScanState: busy => invokeIfTauri('set_tray_scan_state', { busy }),
+	onTrayForceFullScan: handler =>
+		listenIfTauri<null>('tray://force-full-scan', handler),
+	onTrayScenarioRun: handler =>
+		listenIfTauri<{ id: string }>('tray://run-scenario', payload =>
+			handler(payload.id),
+		),
 }

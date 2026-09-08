@@ -12,6 +12,7 @@ interface DialogOptions {
 
 export function useCatalogDialogs({ systemClient, onLaunch }: DialogOptions) {
 	const [paletteOpen, setPaletteOpen] = useState(false)
+	const [scenariosOpen, setScenariosOpen] = useState(false)
 	const appInfo = useAppInfoDialog()
 	const installerLaunch = useInstallerLaunch(onLaunch)
 
@@ -32,6 +33,12 @@ export function useCatalogDialogs({ systemClient, onLaunch }: DialogOptions) {
 			open: paletteOpen,
 			toggle: useCallback(() => setPaletteOpen(value => !value), []),
 			close: useCallback(() => setPaletteOpen(false), []),
+		},
+		scenarioLauncher: {
+			open: scenariosOpen,
+			toggle: useCallback(() => setScenariosOpen(value => !value), []),
+			show: useCallback(() => setScenariosOpen(true), []),
+			close: useCallback(() => setScenariosOpen(false), []),
 		},
 		reportFailure,
 	}

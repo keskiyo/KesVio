@@ -40,7 +40,7 @@ describe('preferences', () => {
 			ok: false,
 			error: 'The selected file is not a KesVio backup.',
 		})
-		expect(parsePreferenceImport(JSON.stringify({ version: 19 }))).toEqual({
+		expect(parsePreferenceImport(JSON.stringify({ version: 20 }))).toEqual({
 			ok: false,
 			error: 'This backup was created by a newer version of KesVio.',
 		})
@@ -109,7 +109,7 @@ describe('preferences', () => {
 
 	it('uses complete defaults', () => {
 		expect(DEFAULT_PREFERENCES).toMatchObject({
-			version: 18,
+			version: 19,
 			catalogDensity: 'compact',
 			favoriteScenarioIds: [],
 			categoryOrder: CATEGORY_ORDER,
@@ -160,7 +160,7 @@ describe('preferences', () => {
 		})
 
 		expect(migrated).toMatchObject({
-			version: 18,
+			version: 19,
 			favoriteAppIdentities: ['identity:codex'],
 		})
 		expect(migrated.categories).toContainEqual(
@@ -195,7 +195,7 @@ describe('preferences', () => {
 		)
 	})
 
-	it('upgrades a v17 document to v18 with the default density and no data loss', () => {
+	it('upgrades a v17 document to the current schema with the default density and no data loss', () => {
 		const upgraded = normalizePreferences({
 			version: 17,
 			favoriteAppIds: ['code'],
@@ -204,7 +204,7 @@ describe('preferences', () => {
 		})
 
 		expect(upgraded).toMatchObject({
-			version: 18,
+			version: 19,
 			catalogDensity: 'compact',
 			favoriteAppIds: ['code'],
 			hiddenAppIds: ['installer'],
@@ -228,7 +228,7 @@ describe('preferences', () => {
 	})
 
 	it('keeps a stored comfortable density on every supported version', () => {
-		for (const version of [1, 7, 9, 10, 11, 16, 17, 18]) {
+		for (const version of [1, 7, 9, 10, 11, 16, 17, 18, 19]) {
 			expect(
 				normalizePreferences({ version, catalogDensity: 'comfortable' })
 					.catalogDensity,
@@ -266,7 +266,7 @@ describe('preferences', () => {
 				collapsedCategories: ['other'],
 			}),
 		).toMatchObject({
-			version: 18,
+			version: 19,
 			favoriteAppIds: ['codex'],
 			collapsedCategories: ['other'],
 			categoryOverrides: {},
@@ -284,7 +284,7 @@ describe('preferences', () => {
 		})
 
 		expect(normalized).toMatchObject({
-			version: 18,
+			version: 19,
 			favoriteAppIds: ['code'],
 			unknownFields: {
 				experimentalLayout: { density: 'compact' },
@@ -318,7 +318,7 @@ describe('preferences', () => {
 		).toBe(true)
 
 		expect(JSON.parse(values.get(PREFERENCES_KEY) ?? '{}')).toMatchObject({
-			version: 18,
+			version: 19,
 			favoriteAppIds: ['code', 'editor'],
 			experimentalLayout: { density: 'compact' },
 		})
@@ -348,7 +348,7 @@ describe('preferences', () => {
 		})
 		// The id-keyed map is preserved (the store folds it into identities on the next catalog
 		// load); the new identity map defaults to empty so nothing is lost on upgrade.
-		expect(normalized.version).toBe(18)
+		expect(normalized.version).toBe(19)
 		expect(normalized.categoryOverrides).toEqual({ codex: 'ai' })
 		expect(normalized.categoryOverrideIdentities).toEqual({})
 	})
@@ -369,7 +369,7 @@ describe('preferences', () => {
 		})
 
 		expect(normalized).toMatchObject({
-			version: 18,
+			version: 19,
 			favoriteAppIds: ['cmd-shortcut'],
 			favoriteAppIdentities: [],
 			hiddenAppIds: ['cmd-shortcut'],
@@ -418,7 +418,7 @@ describe('preferences', () => {
 
 		// v8 could not carry the marks, so the upgrade must default them rather than invent any,
 		// and every field the older document did carry has to survive untouched.
-		expect(normalized.version).toBe(18)
+		expect(normalized.version).toBe(19)
 		expect(normalized.installerAppIds).toEqual([])
 		expect(normalized.installerAppIdentities).toEqual([])
 		expect(normalized.legacyCanonicalPreferences.installer).toEqual([])
@@ -454,7 +454,7 @@ describe('preferences', () => {
 
 		// v9 could not carry stamps, so a value under that key is not ours to trust; the store
 		// refills the map from the next catalog load.
-		expect(normalized.version).toBe(18)
+		expect(normalized.version).toBe(19)
 		expect(normalized.firstSeenAt).toEqual({})
 		expect(normalized.installerAppIdentities).toEqual(['preference:setup'])
 	})
@@ -484,7 +484,7 @@ describe('preferences', () => {
 		})
 
 		// v10 could not carry scenarios, so a value under that key is not ours to trust.
-		expect(normalized.version).toBe(18)
+		expect(normalized.version).toBe(19)
 		expect(normalized.scenarios).toEqual([])
 		expect(normalized.firstSeenAt).toEqual({
 			'preference:code': 1700000000000,
@@ -519,6 +519,7 @@ describe('preferences', () => {
 				launchAppSnapshots: {},
 				closeAppSnapshots: {},
 				createdAt: 1700000000000,
+				lastRunAt: null,
 			},
 		])
 	})
@@ -538,7 +539,7 @@ describe('preferences', () => {
 			],
 		})
 
-		expect(normalized.version).toBe(18)
+		expect(normalized.version).toBe(19)
 		expect(normalized.scenarios).toEqual([
 			{
 				id: 'work',
@@ -548,8 +549,50 @@ describe('preferences', () => {
 				launchAppSnapshots: {},
 				closeAppSnapshots: {},
 				createdAt: null,
+				lastRunAt: null,
 			},
 		])
+	})
+
+	// v18 predates run stamps. Stamping them during the migration would claim every scenario ran
+	// just now and reorder the tray around a fiction, so they upgrade unstamped.
+	it('upgrades a v18 scenario to an unrun one and keeps the rest of it', () => {
+		const normalized = normalizePreferences({
+			version: 18,
+			scenarios: [
+				{
+					id: 'work',
+					name: 'Work',
+					launchIdentities: ['a'],
+					closeIdentities: ['b'],
+					createdAt: 1700000000000,
+				},
+			],
+			favoriteScenarioIds: ['work'],
+		})
+
+		expect(normalized.version).toBe(19)
+		expect(normalized.favoriteScenarioIds).toEqual(['work'])
+		expect(normalized.scenarios[0]).toMatchObject({
+			launchIdentities: ['a'],
+			closeIdentities: ['b'],
+			createdAt: 1700000000000,
+			lastRunAt: null,
+		})
+	})
+
+	it('keeps a stored run stamp and drops an unusable one', () => {
+		const stamps = normalizePreferences({
+			version: 19,
+			scenarios: [
+				{ id: 'kept', name: 'Kept', lastRunAt: 1700000000000 },
+				{ id: 'nan', name: 'Nan', lastRunAt: Number.NaN },
+				{ id: 'past', name: 'Past', lastRunAt: -1 },
+				{ id: 'text', name: 'Text', lastRunAt: '1700000000000' },
+			],
+		}).scenarios.map(scenario => scenario.lastRunAt)
+
+		expect(stamps).toEqual([1700000000000, null, null, null])
 	})
 
 	// v12 had no starred scenarios, so the upgrade defaults them and leaves the scenarios alone.
@@ -559,7 +602,7 @@ describe('preferences', () => {
 			scenarios: [{ id: 'work', name: 'Work', createdAt: 1700000000000 }],
 		})
 
-		expect(normalized.version).toBe(18)
+		expect(normalized.version).toBe(19)
 		expect(normalized.favoriteScenarioIds).toEqual([])
 		expect(normalized.scenarios).toHaveLength(1)
 	})
@@ -670,7 +713,7 @@ describe('preferences', () => {
 				collapsedCategories: ['games', 'invalid'],
 			}),
 		).toEqual({
-			version: 18,
+			version: 19,
 			catalogDensity: 'compact',
 			categories: DEFAULT_PREFERENCES.categories,
 			categoryOrder: [
@@ -716,7 +759,7 @@ describe('preferences', () => {
 			documentAppIdentities: ['identity:handbook'],
 		})
 
-		expect(normalized.version).toBe(18)
+		expect(normalized.version).toBe(19)
 		expect(normalized.installerAppIds).toEqual(['setup'])
 		expect(normalized.installerAppIdentities).toEqual(['identity:setup'])
 		expect(normalized.documentAppIds).toEqual([])
@@ -797,11 +840,11 @@ describe('preferences', () => {
 		).toEqual(['a'])
 	})
 
-	// A newer build may have written a version 19 document; this build (v18) must not overwrite it
+	// A newer build may have written a version 20 document; this build (v19) must not overwrite it
 	// with the older shape and strip the fields it does not know about.
 	it('does not overwrite a document written by a newer version', () => {
 		const future = JSON.stringify({
-			version: 19,
+			version: 20,
 			favoriteAppIds: ['keep'],
 			futureField: 'preserved',
 		})

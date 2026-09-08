@@ -32,7 +32,7 @@ describe('toaster theme', () => {
 	})
 
 	// Sonner treats anything under 600px as a phone and stretches the toaster to the full viewport.
-	// The window can be dragged down to 560px, so that band is reachable and turned a one-line
+	// The window can be dragged down to 430px, so that band is reachable and turned a one-line
 	// notice into a bar across the catalog.
 	it('keeps the toast in its corner at the narrow window sizes Sonner calls mobile', () => {
 		const narrow = rule('.app-toaster[data-sonner-toaster]')

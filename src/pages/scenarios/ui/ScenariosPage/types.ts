@@ -1,7 +1,13 @@
-import type { AppInfo } from '../../../entities/app'
-import type { CategoryDefinition } from '../../../entities/category'
-import type { Scenario, ScenarioList } from '../../../entities/scenario'
-import type { ScenarioRunProgress } from '../../../features/run-scenario'
+import type { RefObject } from 'react'
+import type { AppInfo } from '../../../../entities/app'
+import type { CategoryDefinition } from '../../../../entities/category'
+import type {
+	Scenario,
+	ScenarioFilter,
+	ScenarioList,
+	ScenarioSort,
+} from '../../../../entities/scenario'
+import type { ScenarioRunProgress } from '../../../../features/run-scenario'
 
 export interface ScenariosPageProps {
 	scenarios: Scenario[]
@@ -29,4 +35,18 @@ export interface ScenariosPageProps {
 	onRemoveApp(id: string, list: ScenarioList, identity: string): void
 	onRun(scenario: Scenario): void
 	onToggleFavorite(id: string): void
+}
+
+export interface ScenariosToolbarProps {
+	query: string
+	filter: ScenarioFilter
+	sort: ScenarioSort
+	reversed: boolean
+	counts: Record<ScenarioFilter, number>
+	resultCount: number
+	inputRef: RefObject<HTMLInputElement>
+	onQueryChange(value: string): void
+	onFilterChange(filter: ScenarioFilter): void
+	onSortChange(sort: ScenarioSort): void
+	onToggleSortDirection(): void
 }

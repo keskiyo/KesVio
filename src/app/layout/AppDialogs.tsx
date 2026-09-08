@@ -1,6 +1,7 @@
 import { AppInfoDialog } from '../../features/view-app-details'
 import { CommandPalette } from '../../features/command-palette'
 import { InstallerLaunchDialog } from '../../features/launch-app'
+import { ScenarioRunDialog } from '../../features/manage-scenarios'
 import { AppErrorBoundary } from '../AppErrorBoundary'
 import type { AppDialogsProps } from '../types'
 
@@ -10,6 +11,7 @@ export function AppDialogs({
 	dialogs,
 	paletteApps,
 	paletteSuggestions,
+	scenarioLauncher,
 	onError,
 }: AppDialogsProps) {
 	const { appInfo, installerLaunch, palette } = dialogs
@@ -21,6 +23,12 @@ export function AppDialogs({
 					suggestions={paletteSuggestions}
 					onLaunch={installerLaunch.requestLaunch}
 					onClose={palette.close}
+				/>
+			)}
+			{dialogs.scenarioLauncher.open && (
+				<ScenarioRunDialog
+					{...scenarioLauncher}
+					onClose={dialogs.scenarioLauncher.close}
 				/>
 			)}
 			{appInfo.app && (

@@ -83,6 +83,10 @@ Star applications for quick access, or run a Scenario that opens one group of ap
 
 Choose which apps to launch or close and follow the Scenario's progress. Missing apps stay visible as **Unavailable**.
 
+Press **Ctrl+Shift+K** anywhere to open the Scenario launcher: search by scenario name or by the apps inside one, filter to favorites, recently run or scenarios that need attention, and run the one you land on with Enter. The tray menu offers up to five favorite scenarios, with recently run favorites first, so you can start one without opening the window. Removing a favorite also removes it from the tray; ordinary scenarios never fill the remaining slots.
+
+Use **Force scan** in the tray to rebuild discovery, including fixed drives when enabled. It opens the window for progress and cancellation and stays disabled while scanning.
+
 **Save your work first:** apps that do not close within five seconds are forcibly stopped, which can discard unsaved work.
 
 ### More catalog views
@@ -108,7 +112,7 @@ Backups contain preferences only. If **Your changes are not being saved** appear
 ## Install
 
 1. Download [**`KesVio_0.5.0_x64-setup.exe`**](https://github.com/keskiyo/KesVio/releases/latest).
-2. Run the installer.
+2. Run the installer. It asks for administrator rights and installs to `C:\Program Files\KesVio`; you can pick another folder on the install page.
 3. Start KesVio and choose **Scan for apps**.
 
 > [!WARNING]
@@ -132,7 +136,7 @@ What is stored, where, and what leaves the machine is listed in [Privacy Policy]
 
 ## Development
 
-Prerequisites: Node.js 22, Rust 1.88+ with the MSVC toolchain, Microsoft C++ Build Tools, Windows SDK and the [Tauri Windows prerequisites](https://v2.tauri.app/start/prerequisites/).
+Prerequisites: the Node.js version in [`.node-version`](.node-version), the Rust MSVC toolchain pinned in [`rust-toolchain.toml`](rust-toolchain.toml), Microsoft C++ Build Tools, Windows SDK and the [Tauri Windows prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```powershell
 npm install

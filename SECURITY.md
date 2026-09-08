@@ -39,15 +39,21 @@ them will be closed as intended behaviour:
 - **The installer is not Authenticode-signed.** There is no code signing certificate behind this
   project, so SmartScreen warns on first run. Verify a download with `SHA256SUMS.txt` and the build
   provenance attestation published with every release instead.
-- **Antivirus engines flag the unsigned binary on machine-learning heuristics.** Unsigned desktop
-  applications start with no reputation. This is a false positive to be reported to the vendor, not
-  a vulnerability in KesVio.
 - **KesVio enumerates and can terminate processes**, and launches applications and installers
   through the shell. Both are documented features the user triggers.
 - **Scenario close force-terminates applications that ignore a close request after five seconds**,
   which can discard unsaved work. This is stated in the interface before the action runs.
 - Findings that require an attacker who already has code execution or administrator rights on the
   machine.
+
+## Antivirus detections
+
+Antivirus engines may flag an unsigned binary through heuristic or reputation-based detection.
+A detection is not automatically a false positive: each report needs review of the exact file.
+Report it privately using the process above, including the release version, download URL, file
+SHA-256, antivirus product and detection name. Check the checksum and build provenance against the
+same release; these establish the file's origin, not that it is safe. Suspected false positives can
+also be submitted to the antivirus vendor for analysis.
 
 ## What the project already does
 

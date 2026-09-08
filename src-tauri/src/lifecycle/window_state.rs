@@ -8,7 +8,7 @@ use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 const WINDOW_STATE_FILE: &str = "window-state.json";
 const WINDOW_STATE_TEMPORARY_FILE: &str = "window-state.json.tmp";
 const WINDOW_STATE_VERSION: u32 = 1;
-const MIN_WIDTH: u32 = 560;
+const MIN_WIDTH: u32 = 430;
 const MIN_HEIGHT: u32 = 520;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

@@ -1,6 +1,10 @@
 import { ChevronRight, Play } from 'lucide-react'
 import { resolveScenarioApps } from '../../../../entities/scenario'
 import { CollapsiblePanel } from '../../../../shared/ui/CollapsiblePanel'
+import { FavoriteStar } from '../../../../shared/ui/FavoriteStar'
+import { relativeTimeLabel } from '../../../../shared/lib/relativeTime'
+import { RUN_TARGET } from './data'
+import { ScenarioAppStack } from './ScenarioAppStack'
 import { ScenarioRunList } from './ScenarioRunList'
 import type { ScenarioRunRowProps } from './types'
 
@@ -9,9 +13,12 @@ export function ScenarioRunRow({
 	apps,
 	expanded,
 	running,
+	isFavorite,
 	isScenarioRunning,
+	runningStatus,
 	onToggle,
 	onRun,
+	onToggleFavorite,
 }: ScenarioRunRowProps) {
 	const panelId = `scenario-contents-${scenario.id}`
 	const launch = resolveScenarioApps(
@@ -28,10 +35,19 @@ export function ScenarioRunRow({
 	const runLabel = blocked
 		? `Run ${scenario.name} unavailable while another scenario is running`
 		: `Run ${scenario.name}`
+	const lastRun = relativeTimeLabel(scenario.lastRunAt)
+	const missing = launch.missing + close.missing
+	const meta = [
+		`${scenario.launchIdentities.length} launch · ${scenario.closeIdentities.length} close`,
+		lastRun ? `ran ${lastRun}` : null,
+		missing ? `${missing} unavailable` : null,
+	]
+		.filter(Boolean)
+		.join(' · ')
 
 	return (
 		<li className="border-t border-(--border-neutral) first:border-t-0">
-			<div className="flex min-w-0 items-center gap-3 px-4 py-2.5">
+			<div className="flex min-w-0 items-center gap-2 px-4 py-2.5">
 				<button
 					type="button"
 					aria-expanded={expanded}
@@ -49,12 +65,26 @@ export function ScenarioRunRow({
 							{scenario.name}
 						</span>
 						<span className="block truncate text-xs text-(--text-muted)">
-							{scenario.launchIdentities.length} launch ·{' '}
-							{scenario.closeIdentities.length} close
+							{running && runningStatus ? runningStatus : meta}
 						</span>
 					</span>
+					<ScenarioAppStack
+						apps={launch.apps}
+						extra={launch.unavailable.length}
+					/>
 				</button>
+				<FavoriteStar
+					pressed={isFavorite}
+					className="shrink-0"
+					label={
+						isFavorite
+							? `Remove ${scenario.name} from favorites`
+							: `Add ${scenario.name} to favorites`
+					}
+					onToggle={() => onToggleFavorite(scenario.id)}
+				/>
 				<button
+					{...{ [RUN_TARGET]: '' }}
 					type="button"
 					aria-label={runLabel}
 					disabled={isScenarioRunning}

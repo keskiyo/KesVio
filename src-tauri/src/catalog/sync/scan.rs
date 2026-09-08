@@ -1,12 +1,15 @@
-use super::document::load_sanitized_document;
+use super::commit::write_catalog_under_lock;
 use super::hydration::enqueue_hydration;
-use crate::app_state::{cached_details_for_catalog, remember_catalog, AppState};
-use crate::catalog::cache;
+use crate::app_state::AppState;
 use crate::catalog::scan_coordinator::{ScanJob, Submission};
-use crate::catalog::sync::{compute_delta, CatalogDeltaDto, SyncRequest};
-use crate::catalog::{self, AppInfo};
+use crate::catalog::sync::{CatalogDeltaDto, SyncRequest};
+use crate::catalog::AppInfo;
 use crate::error::AppError;
+use std::sync::mpsc::{Receiver, RecvTimeoutError};
+use std::time::{Duration, Instant};
 use tauri::{Emitter, Manager};
+
+const WAIT_REPORT_INTERVAL: Duration = Duration::from_secs(5);
 
 #[derive(Clone)]
 pub(crate) struct ScanCommit {
@@ -14,77 +17,23 @@ pub(crate) struct ScanCommit {
     pub generation: u64,
 }
 
-struct ScanOutcome {
-    apps: Vec<AppInfo>,
-    generation: u64,
-    diagnostics: Option<crate::catalog::cache::CatalogDiagnostics>,
-    delta: crate::catalog::sync::CatalogDelta,
-    app_data_dir: std::path::PathBuf,
-}
-
-fn write_catalog_under_lock(
-    app: &tauri::AppHandle,
-    job: &ScanJob<ScanCommit>,
-) -> Result<ScanOutcome, AppError> {
-    let state = app.state::<AppState>();
-    let _guard = state
-        .sync_lock
-        .lock()
-        .map_err(|_| "Application synchronization is temporarily unavailable".to_string())?;
-    let app_data_dir = crate::paths::data_dir(app)
-        .map_err(|error| format!("Could not open the application data folder: {error}"))?;
-    let previous = load_sanitized_document(&app_data_dir).unwrap_or_default();
-    let settings = catalog::scan_settings::read(&app_data_dir);
-    let mut document = catalog::sync::synchronize(
-        &previous,
-        &settings,
-        job.request,
-        |progress| {
-            let _ = app.emit("scan://progress", progress);
-        },
-        || job.cancelled.load(std::sync::atomic::Ordering::Relaxed),
-    );
-    if job.cancelled.load(std::sync::atomic::Ordering::Relaxed) {
-        return Err(AppError::ScanCancelled);
-    }
-    document.app_details =
-        cached_details_for_catalog(state.inner(), &document.apps, document.app_details);
-    let delta = compute_delta(document.generation, &previous.apps, &document.apps);
-    cache::write_document(&app_data_dir, &document)
-        .map_err(|error| format!("Could not save the application cache: {error}"))?;
-    remember_catalog(state.inner(), &document.apps);
-    let live_ids = document
-        .apps
-        .iter()
-        .map(|app| app.id.clone())
-        .collect::<Vec<_>>();
-    catalog::icon_cache::retain_only(&app_data_dir, &live_ids);
-    prune_expired_logs(app);
-    Ok(ScanOutcome {
-        apps: document.apps,
-        generation: document.generation,
-        diagnostics: document.diagnostics,
-        delta,
-        app_data_dir,
-    })
-}
-
-fn prune_expired_logs(app: &tauri::AppHandle) {
-    let Ok(log_dir) = crate::paths::log_dir(app) else {
-        return;
-    };
-    crate::diagnostics::prune_expired_logs(
-        &log_dir,
-        std::time::SystemTime::now(),
-        crate::diagnostics::MAX_LOG_AGE,
-    );
-}
-
 fn synchronize_catalog_once(
     app: &tauri::AppHandle,
     job: &ScanJob<ScanCommit>,
 ) -> Result<ScanCommit, AppError> {
-    let outcome = write_catalog_under_lock(app, job)?;
+    let _operation = crate::diagnostics::Operation::start("catalog synchronization");
+    let outcome = write_catalog_under_lock(app, job).inspect_err(|error| {
+        log::error!(
+            "Catalog synchronization failed: request={:?} code={} error={error}",
+            job.request,
+            error.code()
+        );
+    })?;
+    log::info!(
+        "Catalog publication: generation={} records={}",
+        outcome.generation,
+        outcome.apps.len()
+    );
     if let Some(diagnostics) = &outcome.diagnostics {
         let _ = app.emit("catalog://diagnostics", diagnostics);
     }
@@ -103,6 +52,7 @@ fn synchronize_catalog_once(
     } else {
         outcome.apps.iter().map(|app| app.id.clone()).collect()
     };
+    log::info!("Catalog publication: scheduling icon hydration");
     enqueue_hydration(
         app.clone(),
         outcome.app_data_dir,
@@ -116,6 +66,38 @@ fn synchronize_catalog_once(
     })
 }
 
+fn await_scan_result(
+    request: SyncRequest,
+    receiver: Receiver<Result<ScanCommit, AppError>>,
+) -> Result<ScanCommit, AppError> {
+    let waiting_since = Instant::now();
+    loop {
+        match receiver.recv_timeout(WAIT_REPORT_INTERVAL) {
+            Ok(result) => {
+                log::info!(
+                    "Scan result received: request={request:?} waitedMs={}",
+                    waiting_since.elapsed().as_millis()
+                );
+                return result;
+            }
+            Err(RecvTimeoutError::Timeout) => log::warn!(
+                "Scan result still pending after {}s: request={request:?}",
+                waiting_since.elapsed().as_secs()
+            ),
+            Err(RecvTimeoutError::Disconnected) => {
+                log::error!(
+                    "Scan result was never delivered: request={request:?} waitedMs={}",
+                    waiting_since.elapsed().as_millis()
+                );
+                return Err(AppError::Interrupted {
+                    context: "Application scan result",
+                    source: "the scan finished without answering this request".into(),
+                });
+            }
+        }
+    }
+}
+
 pub(crate) fn run_coordinated_scan(
     app: &tauri::AppHandle,
     request: SyncRequest,
@@ -123,8 +105,11 @@ pub(crate) fn run_coordinated_scan(
 ) -> Result<Option<ScanCommit>, AppError> {
     let state = app.state::<AppState>();
     let coordinator = &state.scan_coordinator;
+    let _operation = crate::diagnostics::Operation::start("coordinated scan request");
+    log::info!("Scan submitted: request={request:?} wantsResult={wants_result}");
     match coordinator.submit(request, wants_result) {
         Submission::Start { job, receiver } => {
+            log::info!("Scan submission started: request={request:?}");
             if let Some(receiver) = receiver {
                 let result = synchronize_catalog_once(app, &job);
                 if let Some(next) = coordinator.complete(job, result) {
@@ -133,20 +118,20 @@ pub(crate) fn run_coordinated_scan(
                         process_scan_chain(&handle, next);
                     });
                 }
-                receiver
-                    .recv()
-                    .map_err(|_| "Application scan result was interrupted".to_string())?
-                    .map(Some)
+                await_scan_result(request, receiver).map(Some)
             } else {
                 process_scan_chain(app, job);
                 Ok(None)
             }
         }
-        Submission::Wait(receiver) => receiver
-            .recv()
-            .map_err(|_| "Application scan result was interrupted".to_string())?
-            .map(Some),
-        Submission::Coalesced => Ok(None),
+        Submission::Wait(receiver) => {
+            log::info!("Scan submission waiting: request={request:?}");
+            await_scan_result(request, receiver).map(Some)
+        }
+        Submission::Coalesced => {
+            log::info!("Scan submission coalesced: request={request:?}");
+            Ok(None)
+        }
     }
 }
 
@@ -158,5 +143,41 @@ fn process_scan_chain(app: &tauri::AppHandle, mut job: ScanJob<ScanCommit>) {
             break;
         };
         job = next;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc;
+
+    fn commit() -> ScanCommit {
+        ScanCommit {
+            apps: Vec::new(),
+            generation: 7,
+        }
+    }
+
+    #[test]
+    fn a_delivered_result_is_returned_to_the_caller() {
+        let (sender, receiver) = mpsc::channel();
+        sender.send(Ok(commit())).expect("the receiver is alive");
+
+        let result = await_scan_result(SyncRequest::Refresh, receiver);
+
+        assert_eq!(result.map(|commit| commit.generation).ok(), Some(7));
+    }
+
+    #[test]
+    fn a_waiter_the_coordinator_dropped_reports_an_interruption_instead_of_waiting_forever() {
+        let (sender, receiver) = mpsc::channel::<Result<ScanCommit, AppError>>();
+        drop(sender);
+
+        let result = await_scan_result(SyncRequest::Refresh, receiver);
+
+        assert_eq!(
+            result.err().map(|error| error.code()),
+            Some("OPERATION_INTERRUPTED")
+        );
     }
 }

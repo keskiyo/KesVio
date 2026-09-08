@@ -32,6 +32,7 @@ const UNINSTALL: &[(winreg::HKEY, &str)] = &[
 ];
 
 pub(crate) fn launchable_executables() -> Vec<String> {
+    let _operation = crate::diagnostics::Operation::start("registered launch targets");
     APP_PATHS
         .iter()
         .flat_map(|(hive, subkey)| subkey_default_values(*hive, subkey))
@@ -39,6 +40,7 @@ pub(crate) fn launchable_executables() -> Vec<String> {
 }
 
 pub(crate) fn installer_bundles() -> Vec<String> {
+    let _operation = crate::diagnostics::Operation::start("registered installer bundles");
     UNINSTALL
         .iter()
         .flat_map(|(hive, subkey)| values_named(*hive, subkey, "BundleCachePath"))
@@ -58,16 +60,28 @@ fn for_each_subkey(
     subkey: &str,
     read: impl Fn(&RegKey) -> Option<String>,
 ) -> Vec<String> {
-    let Ok(root) = RegKey::predef(hive).open_subkey(subkey) else {
-        return Vec::new();
+    log::info!("Registered targets: opening {subkey}");
+    let root = match RegKey::predef(hive).open_subkey(subkey) {
+        Ok(root) => root,
+        Err(error) => {
+            log::warn!(
+                "Registered targets root unavailable: osCode={:?} kind={:?}",
+                error.raw_os_error(),
+                error.kind()
+            );
+            return Vec::new();
+        }
     };
-    root.enum_keys()
+    let values: Vec<String> = root
+        .enum_keys()
         .filter_map(Result::ok)
         .filter_map(|name| root.open_subkey(name).ok())
         .filter_map(|key| read(&key))
         .map(|value| value.trim().trim_matches('"').to_string())
         .filter(|value| !value.is_empty())
-        .collect()
+        .collect();
+    log::info!("Registered targets root returned: records={}", values.len());
+    values
 }
 
 #[cfg(test)]

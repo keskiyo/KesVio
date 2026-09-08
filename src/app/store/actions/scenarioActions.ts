@@ -32,6 +32,7 @@ type ScenarioActions = Pick<
 	| 'addScenarioApp'
 	| 'removeScenarioApp'
 	| 'toggleFavoriteScenario'
+	| 'markScenarioRun'
 >
 
 function nameTaken(
@@ -100,6 +101,7 @@ export function createScenarioActions({
 						launchAppSnapshots: {},
 						closeAppSnapshots: {},
 						createdAt: Date.now(),
+						lastRunAt: null,
 					},
 				],
 			}))
@@ -126,6 +128,13 @@ export function createScenarioActions({
 				),
 			}))
 			persist()
+		},
+		markScenarioRun(id) {
+			if (!get().scenarios.some(scenario => scenario.id === id)) return
+			updateScenario(id, scenario => ({
+				...scenario,
+				lastRunAt: Date.now(),
+			}))
 		},
 		toggleFavoriteScenario(id) {
 			if (!get().scenarios.some(scenario => scenario.id === id)) return

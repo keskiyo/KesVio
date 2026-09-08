@@ -33,7 +33,7 @@ export function AppDrawer(props: AppDrawerProps) {
 				role="dialog"
 				aria-modal="true"
 				aria-label="App navigation"
-				className="drawer-panel absolute inset-y-0 left-0 flex w-[min(22rem,88vw)] flex-col border-r border-slate-300/70 bg-slate-50 shadow-(--shadow-drawer)"
+				className="drawer-panel absolute inset-y-0 left-0 flex w-full flex-col border-slate-300/70 bg-slate-50 shadow-(--shadow-drawer) sm:w-[min(22rem,88vw)] sm:border-r"
 			>
 				<div className="flex items-center justify-between gap-3 border-b border-slate-300/65 px-4 py-4">
 					<NavigationIdentity onGoHome={props.onGoHome} />

@@ -46,7 +46,7 @@ impl fmt::Display for AppError {
 }
 
 impl AppError {
-    fn code(&self) -> &'static str {
+    pub(crate) fn code(&self) -> &'static str {
         match self {
             Self::AppDataDir(_) => "APP_DATA_UNAVAILABLE",
             Self::Interrupted { .. } => "OPERATION_INTERRUPTED",

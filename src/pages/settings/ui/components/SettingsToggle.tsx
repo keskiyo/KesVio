@@ -15,7 +15,7 @@ export function SettingsToggle({
 			aria-checked={checked}
 			disabled={disabled}
 			onClick={onToggle}
-			className="shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) disabled:opacity-50"
+			className="ml-auto shrink-0 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) disabled:opacity-50"
 		>
 			<ToggleTrack checked={checked} />
 		</button>

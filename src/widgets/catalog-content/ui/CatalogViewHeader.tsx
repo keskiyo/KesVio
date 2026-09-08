@@ -35,7 +35,11 @@ export function CatalogViewHeader({
 					{countLabel(count, noun)}
 				</span>
 			</div>
-			{action && <div className="ml-auto shrink-0">{action}</div>}
+			{action && (
+				<div className="grid w-full sm:ml-auto sm:flex sm:w-auto sm:shrink-0">
+					{action}
+				</div>
+			)}
 		</header>
 	)
 }

@@ -404,7 +404,9 @@ describe('UX quality — keyboard & native (round 3)', () => {
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Scan for apps' }),
 		)
-		await screen.findByText('Could not refresh the application list')
+		await screen.findByText(
+			'Could not refresh the application list (INTERNAL)',
+		)
 
 		expect(errorToast).toHaveBeenCalledTimes(1)
 	})

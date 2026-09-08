@@ -1,11 +1,14 @@
 import { ListChecks, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
 	ScenarioCard,
 	ScenarioNameEditor,
-} from '../../../features/manage-scenarios'
-import { sortScenariosByNewest } from '../../../entities/scenario'
-import { CatalogViewHeader } from '../../../widgets/catalog-content'
+	useScenarioFilters,
+} from '../../../../features/manage-scenarios'
+import { scenarioRunStatus } from '../../../../features/run-scenario'
+import { CatalogViewHeader } from '../../../../widgets/catalog-content'
+import { ScenariosEmpty } from './ScenariosEmpty'
+import { ScenariosToolbar } from './ScenariosToolbar'
 import type { ScenariosPageProps } from './types'
 
 export function ScenariosPage({
@@ -27,15 +30,9 @@ export function ScenariosPage({
 	onToggleFavorite,
 }: ScenariosPageProps) {
 	const [creating, setCreating] = useState(false)
-	const newestFirst = sortScenariosByNewest(scenarios)
-	const runningStatus = runProgress
-		? [
-				`${runProgress.phase === 'launching' ? 'Launching' : 'Closing'} ${runProgress.completed}/${runProgress.total}`,
-				runProgress.detail,
-			]
-				.filter(Boolean)
-				.join(' · ')
-		: undefined
+	const searchRef = useRef<HTMLInputElement>(null)
+	const filters = useScenarioFilters({ scenarios, apps, favoriteScenarioIds })
+	const runningStatus = scenarioRunStatus(runProgress ?? null)
 
 	return (
 		<section aria-labelledby="scenarios-title" className="w-full">
@@ -62,7 +59,7 @@ export function ScenariosPage({
 							type="button"
 							aria-label="Add scenario"
 							onClick={() => setCreating(true)}
-							className="inline-flex h-9 items-center gap-2 rounded-lg border border-(--border-neutral) bg-(--surface-panel) px-3 text-sm font-medium text-(--text-primary) transition-colors hover:border-(--accent) hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
+							className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-(--border-neutral) bg-(--surface-panel) px-3 text-sm font-medium text-(--text-primary) transition-colors hover:border-(--accent) hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
 						>
 							<Plus size={16} aria-hidden="true" />
 							New scenario
@@ -71,9 +68,24 @@ export function ScenariosPage({
 				}
 			/>
 			<div className="mx-auto max-w-3xl min-[1900px]:max-w-[80rem]">
-				{newestFirst.length ? (
+				{scenarios.length > 0 && (
+					<ScenariosToolbar
+						query={filters.query}
+						filter={filters.filter}
+						sort={filters.sort}
+						reversed={filters.reversed}
+						counts={filters.counts}
+						resultCount={filters.results.length}
+						inputRef={searchRef}
+						onQueryChange={filters.setQuery}
+						onFilterChange={filters.setFilter}
+						onSortChange={filters.setSort}
+						onToggleSortDirection={filters.toggleSortDirection}
+					/>
+				)}
+				{filters.results.length ? (
 					<div className="grid grid-cols-1 items-start gap-3 min-[1900px]:grid-cols-2">
-						{newestFirst.map(scenario => (
+						{filters.results.map(scenario => (
 							<ScenarioCard
 								key={scenario.id}
 								scenario={scenario}
@@ -100,18 +112,10 @@ export function ScenariosPage({
 						))}
 					</div>
 				) : (
-					<div className="grid min-h-[40vh] place-items-center text-center">
-						<div className="max-w-sm">
-							<h2 className="text-lg font-semibold">
-								No scenarios yet
-							</h2>
-							<p className="mt-2 text-sm text-(--text-muted)">
-								A scenario starts the apps in its launch list
-								and closes the ones in its close list, in one
-								click.
-							</p>
-						</div>
-					</div>
+					<ScenariosEmpty
+						filtered={filters.isFiltered}
+						onReset={filters.reset}
+					/>
 				)}
 			</div>
 		</section>

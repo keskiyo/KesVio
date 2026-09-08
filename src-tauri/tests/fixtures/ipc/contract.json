@@ -107,7 +107,7 @@
         "error": "The shortcut has not been registered yet.",
         "label": "Win+Shift+Q"
       },
-      "version": "0.4.0"
+      "version": "0.5.0"
     },
     "open_startup_settings": null,
     "refresh_apps": {
@@ -189,6 +189,9 @@
       "excludedPaths": [],
       "includedPaths": []
     },
+    "set_tray_running": null,
+    "set_tray_scan_state": null,
+    "set_tray_scenarios": null,
     "stale_copy_status": {
       "installLocation": "C:\\Program Files\\KesVio",
       "installedVersion": "0.3.8"
@@ -314,6 +317,10 @@
       "location": "C:\\Program Files",
       "stage": "Windows applications",
       "totalRoots": 3
+    },
+    "tray://force-full-scan": null,
+    "tray://run-scenario": {
+      "id": "custom:1"
     }
   }
 }

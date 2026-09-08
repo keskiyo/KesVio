@@ -60,6 +60,7 @@ pub fn run() {
             }
         })
         .setup(move |app| {
+            diagnostics::install_panic_hook();
             paths::adopt_previous_documents(app.handle());
             paths::remove_retired_documents(app.handle());
             if let Ok(log_dir) = paths::log_dir(app.handle()) {
@@ -119,7 +120,10 @@ pub fn run() {
             commands::links::stale_copy_status,
             commands::links::open_installed_copy,
             commands::diagnostics::log_client_error,
-            commands::diagnostics::export_diagnostics_log
+            commands::diagnostics::export_diagnostics_log,
+            commands::tray::set_tray_scenarios,
+            commands::tray::set_tray_running,
+            commands::tray::set_tray_scan_state
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

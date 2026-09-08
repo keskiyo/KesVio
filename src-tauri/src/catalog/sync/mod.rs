@@ -1,4 +1,5 @@
 mod assemble;
+mod commit;
 mod delta;
 mod document;
 mod health;
@@ -52,19 +53,11 @@ pub(crate) fn synchronize(
     request: SyncRequest,
     progress: impl Fn(ScanProgress),
     is_cancelled: impl Fn() -> bool + Sync,
+    steps: &scan_steps::StepTracker,
 ) -> CatalogCache {
     let started_at = Instant::now();
     let attempted_at = health::seconds_since_epoch();
-    let watchdog = scan_steps::ScanWatchdog::start();
-    let steps = watchdog.tracker();
-    let scan = scan_sources::scan_all(
-        previous,
-        settings,
-        request,
-        &progress,
-        &is_cancelled,
-        &steps,
-    );
+    let scan = scan_sources::scan_all(previous, settings, request, &progress, &is_cancelled, steps);
     assemble::assemble(
         previous,
         scan,
@@ -72,7 +65,7 @@ pub(crate) fn synchronize(
         request,
         started_at,
         attempted_at,
-        &steps,
+        steps,
     )
 }
 

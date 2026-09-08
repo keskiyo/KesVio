@@ -1,6 +1,7 @@
 import type { StoreApi } from 'zustand/vanilla'
 import type { AppInfo, AppsClient } from '../entities/app'
 import type { CategoryDefinition } from '../entities/category'
+import type { Scenario } from '../entities/scenario'
 import type { StaleCopyInfo, SystemClient } from '../entities/system'
 import type { useScenarioRunner } from '../features/run-scenario'
 import type { useUpdater } from '../features/update-app'
@@ -32,12 +33,24 @@ export interface AppShellChromeProps {
 	onDismissStaleCopy: () => void
 }
 
+export interface ScenarioLauncherControl {
+	scenarios: Scenario[]
+	apps: AppInfo[]
+	favoriteScenarioIds: string[]
+	runningId: string | null
+	isScenarioRunning: boolean
+	runningStatus?: string
+	onRun(id: string): void
+	onToggleFavorite(id: string): void
+}
+
 export interface AppDialogsProps {
 	appsClient: Pick<AppsClient, 'getAppDetails' | 'openAppFolder'>
 	categories: CategoryDefinition[]
 	dialogs: ReturnType<typeof useCatalogDialogs>
 	paletteApps: AppInfo[]
 	paletteSuggestions: AppInfo[]
+	scenarioLauncher: ScenarioLauncherControl
 	onError(kind: string, detail: string): void
 }
 

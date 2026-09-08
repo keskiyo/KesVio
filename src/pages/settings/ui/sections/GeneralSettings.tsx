@@ -1,6 +1,7 @@
 import { AppWindow, Keyboard, Minimize2 } from 'lucide-react'
 import { ACTION_BUTTON_PRIMARY, ROW_CHIP } from '../../data'
 import { CatalogDensityRow } from './CatalogDensityRow'
+import { SettingsRow } from '../components/SettingsRow'
 import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
 import { SettingsToggle } from '../components/SettingsToggle'
 import { SettingsUpdateControls } from './SettingsUpdateControls'
@@ -35,7 +36,7 @@ export function GeneralSettings({
 				<StartupSettingsRow
 					onOpenStartupSettings={onOpenStartupSettings}
 				/>
-				<div className="flex items-center gap-4 border-b border-slate-200 p-5">
+				<div className="flex flex-wrap items-center gap-4 border-b border-slate-200 p-5">
 					<SettingsSectionHeader
 						icon={Minimize2}
 						title="Keep running in the tray"
@@ -53,22 +54,20 @@ export function GeneralSettings({
 					/>
 				</div>
 				<p className={SECTION_LABEL}>System</p>
-				<div className="flex items-center gap-4 border-b border-slate-200 p-5">
-					<SettingsSectionHeader
-						icon={Keyboard}
-						title="Global shortcut"
-						description="Works in any keyboard layout."
-					/>
+				<SettingsRow
+					icon={Keyboard}
+					title="Global shortcut"
+					description="Works in any keyboard layout."
+				>
 					<kbd className={ROW_CHIP}>
 						{settings?.shortcut.label ?? 'Win+Shift+Q'}
 					</kbd>
-				</div>
-				<div className="flex items-center gap-4 border-b border-slate-200 p-5">
-					<SettingsSectionHeader
-						icon={AppWindow}
-						title="Windows installed apps"
-						description="Open Windows Settings."
-					/>
+				</SettingsRow>
+				<SettingsRow
+					icon={AppWindow}
+					title="Windows installed apps"
+					description="Open Windows Settings."
+				>
 					<button
 						type="button"
 						aria-label="Open Windows installed apps"
@@ -77,7 +76,7 @@ export function GeneralSettings({
 					>
 						Open
 					</button>
-				</div>
+				</SettingsRow>
 				<p className={SECTION_LABEL}>Updates &amp; links</p>
 				<SettingsUpdateControls
 					updater={updater}

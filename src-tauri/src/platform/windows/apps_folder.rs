@@ -43,8 +43,18 @@ pub(crate) fn start_apps(
     is_cancelled: &dyn Fn() -> bool,
     on_step: &dyn Fn(&str),
 ) -> Option<Vec<StartAppEntry>> {
+    let _operation = crate::diagnostics::Operation::start("Shell AppsFolder enumeration");
+    log::info!("AppsFolder: COM initialization");
     ensure_initialized();
-    enumerate(is_cancelled, on_step).ok()
+    log::info!("AppsFolder: binding");
+    enumerate(is_cancelled, on_step)
+        .inspect_err(|error| {
+            log::warn!(
+                "AppsFolder enumeration unavailable: hresult={:?}",
+                error.code()
+            );
+        })
+        .ok()
 }
 
 fn enumerate(
@@ -84,9 +94,11 @@ fn enumerate(
 }
 
 fn read_entry(item: &IShellItem, on_step: &dyn Fn(&str)) -> Option<StartAppEntry> {
+    on_step("AppsFolder parsing name");
     let app_id = display_name(item, SIGDN_PARENTRELATIVEPARSING)?;
     on_step(&app_id);
     let name = display_name(item, SIGDN_NORMALDISPLAY)?;
+    on_step("AppsFolder property interface");
     let properties = item.cast::<IShellItem2>().ok();
     Some(StartAppEntry {
         target: properties
@@ -110,11 +122,24 @@ fn display_name(item: &IShellItem, form: SIGDN) -> Option<String> {
     // valid. On success the shell allocates a null-terminated UTF-16 buffer with the COM task
     // allocator and transfers it to us; `CoTaskString::own` takes that ownership on the same line,
     // so it is freed on every path out. On failure nothing is allocated.
-    let raw = unsafe { item.GetDisplayName(form) }.ok()?;
+    let raw = unsafe { item.GetDisplayName(form) }
+        .inspect_err(|error| {
+            log::warn!(
+                "AppsFolder display name unavailable: form={} hresult={:?}",
+                form.0,
+                error.code()
+            );
+        })
+        .ok()?;
     CoTaskString::own(raw).to_trimmed()
 }
 
 fn string_property(item: &IShellItem2, key: &PROPERTYKEY) -> Option<String> {
+    log::info!(
+        "AppsFolder property requested: fmtid={:?} pid={}",
+        key.fmtid,
+        key.pid
+    );
     // SAFETY: `item` and `key` are both live for the whole call — the key is a constant and the
     // interface is borrowed from the caller. Entries that carry no such property fail, which
     // `.ok()?` turns into `None` before anything is allocated. On success the shell hands us a
@@ -125,48 +150,4 @@ fn string_property(item: &IShellItem2, key: &PROPERTYKEY) -> Option<String> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn enumerates_the_apps_folder_without_an_interpreter() {
-        let never = || false;
-
-        let Some(entries) = start_apps(&never, &|_| {}) else {
-            return;
-        };
-
-        assert!(entries.len() <= MAX_ENTRIES + BATCH);
-        for entry in &entries {
-            assert!(!entry.name.is_empty());
-            assert!(!entry.app_id.is_empty());
-            assert_eq!(entry.name.trim(), entry.name);
-            assert!(entry.target.as_deref() != Some(""));
-        }
-    }
-
-    #[test]
-    fn a_packaged_entry_carries_the_full_name_its_uninstall_needs() {
-        let never = || false;
-
-        let Some(entries) = start_apps(&never, &|_| {}) else {
-            return;
-        };
-
-        for package in entries.iter().filter_map(|entry| entry.package.as_ref()) {
-            assert!(package.full_name.contains('_'));
-            assert!(package.install_location.as_deref() != Some(""));
-        }
-    }
-
-    #[test]
-    fn a_cancelled_scan_stops_before_the_first_batch() {
-        let cancelled = || true;
-        let steps = std::cell::Cell::new(0);
-
-        let entries = start_apps(&cancelled, &|_| steps.set(steps.get() + 1));
-
-        assert_eq!(entries, Some(Vec::new()));
-        assert_eq!(steps.get(), 0);
-    }
-}
+mod tests;

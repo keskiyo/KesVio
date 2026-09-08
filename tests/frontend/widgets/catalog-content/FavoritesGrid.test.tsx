@@ -168,6 +168,23 @@ describe('FavoritesGrid', () => {
 		expect(screen.queryByText('No favorites yet')).not.toBeInTheDocument()
 	})
 
+	// Nothing else in the interface names the launcher shortcut, so a starred scenario is where
+	// someone who has never pressed it is standing.
+	it('names the launcher shortcut beside the starred scenarios', () => {
+		render(<FavoritesGrid {...props([], [gaming])} />)
+
+		const section = screen.getByRole('region', { name: 'Scenarios' })
+		expect(section).toHaveTextContent(
+			'Run any scenario from anywhere with Ctrl+Shift+K',
+		)
+	})
+
+	it('names no shortcut when no scenario is starred', () => {
+		render(<FavoritesGrid {...props([favorite('steam', 'Steam')], [])} />)
+
+		expect(screen.queryByText(/Ctrl\+Shift\+K/)).toBeNull()
+	})
+
 	it('unstars a scenario from its own card', async () => {
 		const view = props([], [gaming])
 		render(<FavoritesGrid {...view} />)

@@ -28,6 +28,10 @@ export interface SettingsSectionHeaderProps {
 	description: ReactNode
 }
 
+export interface SettingsRowProps extends SettingsSectionHeaderProps {
+	children: ReactNode
+}
+
 export interface DensityControlProps {
 	density: CatalogDensity
 	onSelect(density: CatalogDensity): void

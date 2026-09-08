@@ -59,6 +59,7 @@ function setup(options: {
 	onCloseProgress?: (
 		handler: (progress: CloseProgress) => void,
 	) => Promise<() => void>
+	onStarted?: (id: string) => void
 	onFinished?: (summary: ScenarioRunSummary) => void
 }) {
 	const launch = vi.fn(options.launch ?? (async () => undefined))
@@ -72,6 +73,7 @@ function setup(options: {
 			launch,
 			closeApps,
 			onCloseProgress: options.onCloseProgress,
+			onStarted: options.onStarted,
 			onFinished: options.onFinished,
 		}),
 	)
@@ -435,5 +437,79 @@ describe('useScenarioRunner', () => {
 
 			expect(launch).not.toHaveBeenCalled()
 		})
+	})
+
+	describe('run stamps', () => {
+		// The stamp is taken at the start, so a run interrupted by a crash or a quit still counts
+		// as the last thing this scenario did.
+		it('reports the start before the first app is launched', async () => {
+			const order: string[] = []
+			const { view } = setup({
+				apps: [app('game')],
+				launch: vi.fn(async () => {
+					order.push('launch')
+				}),
+				onStarted: id => order.push(`started:${id}`),
+			})
+
+			await act(async () => {
+				await view.result.current.run(
+					scenario({ launchIdentities: ['game'] }),
+				)
+			})
+
+			expect(order).toEqual(['started:gaming', 'launch'])
+		})
+
+		it('reports a start once per run, never for a refused one', async () => {
+			const onStarted = vi.fn()
+			const { view } = setup({
+				apps: [app('game')],
+				launch: vi.fn(
+					() => new Promise<void>(resolve => setTimeout(resolve, 0)),
+				),
+				onStarted,
+			})
+			const entry = scenario({ launchIdentities: ['game'] })
+
+			await act(async () => {
+				const first = view.result.current.run(entry)
+				await view.result.current.run(entry)
+				await first
+			})
+
+			expect(onStarted).toHaveBeenCalledOnce()
+			expect(onStarted).toHaveBeenCalledWith('gaming')
+		})
+	})
+
+	// The tray tooltip is the only feedback a run gets while the window is hidden.
+	it('names the scenario that is running while it runs', async () => {
+		let release = () => undefined as void
+		const { view } = setup({
+			apps: [app('game')],
+			scenarios: [scenario({ launchIdentities: ['game'] })],
+			launch: vi.fn(
+				() =>
+					new Promise<void>(resolve => {
+						release = resolve
+					}),
+			),
+		})
+		expect(view.result.current.runningName).toBeNull()
+
+		let run: Promise<void> | undefined
+		await act(async () => {
+			run = view.result.current.run(
+				scenario({ launchIdentities: ['game'] }),
+			)
+		})
+		expect(view.result.current.runningName).toBe('Gaming')
+
+		await act(async () => {
+			release()
+			await run
+		})
+		expect(view.result.current.runningName).toBeNull()
 	})
 })

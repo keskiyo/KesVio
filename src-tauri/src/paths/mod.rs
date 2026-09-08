@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager, Runtime};
 
 const DATA_DIRECTORY: &str = "data";
 const LOG_DIRECTORY: &str = "logs";
-const BUNDLE_IDENTIFIER: &str = "dev.neiroslop.kesvio";
+const BUNDLE_IDENTIFIER: &str = "keskiyo.kesvio";
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Locations {

@@ -46,7 +46,11 @@ pub(crate) async fn export_diagnostics_log(app: tauri::AppHandle) -> Result<bool
         .into_path()
         .map_err(|error| AppError::ExportDiagnostics(error.to_string()))?;
     run_blocking("Diagnostics log export", move || {
-        let generated = diagnostics::unix_seconds(std::time::SystemTime::now());
+        log::info!("Diagnostics export starting");
+        log::logger().flush();
+        let now = std::time::SystemTime::now();
+        diagnostics::prune_expired_logs(&directory, now, diagnostics::MAX_LOG_AGE);
+        let generated = diagnostics::unix_seconds(now);
         std::fs::write(
             path,
             diagnostics::log_directory_as_xml(&directory, generated),

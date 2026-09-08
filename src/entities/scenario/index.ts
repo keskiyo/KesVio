@@ -19,4 +19,22 @@ export {
 	scenarioAppSnapshot,
 } from './lib/scenarioSnapshots'
 export { filterFavoriteScenarios } from './lib/scenarioFavorites'
-export { sortScenariosByNewest } from './lib/scenarioOrder'
+export {
+	sortScenariosByName,
+	sortScenariosByNewest,
+	sortScenariosByRecency,
+} from './lib/scenarioOrder'
+export {
+	type ScenarioCounts,
+	type ScenarioFilter,
+	type ScenarioSort,
+	countScenarioFilters,
+	filterScenarios,
+	sortScenarios,
+} from './lib/scenarioFilters'
+export { rankScenariosByQuery } from './lib/scenarioSearch'
+export {
+	MAX_TRAY_SCENARIOS,
+	type TrayScenarioEntry,
+	pickTrayScenarios,
+} from './lib/scenarioTrayEntries'

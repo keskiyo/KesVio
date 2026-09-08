@@ -1,0 +1,49 @@
+name: '💡 Feature request'
+description: Suggest an improvement to KesVio.
+body:
+    - type: markdown
+      attributes:
+          value: |
+              You can fill out this form in English or Russian. Можно отвечать на русском или английском.
+
+              Give the issue a short, descriptive title. Describe one improvement per issue.
+              KesVio is a local application catalog and launcher for Windows 10/11. Check the [current features](https://github.com/keskiyo/KesVio#readme) before proposing an addition.
+              Everything posted here is public. Remove personal or sensitive information from text and attachments.
+              For security vulnerabilities, use [private reporting](https://github.com/keskiyo/KesVio/security/advisories/new) instead of this public form.
+    - type: textarea
+      id: problem
+      attributes:
+          label: Problem to solve
+          description: Describe what you are trying to do and what makes it difficult today.
+          placeholder: 'For example: I want to share a Scenario with a friend without exporting all my preferences.'
+      validations:
+          required: true
+    - type: textarea
+      id: proposed-behavior
+      attributes:
+          label: Proposed behavior
+          description: How would you like KesVio to work? Explain what the user would do and the expected result.
+      validations:
+          required: true
+    - type: textarea
+      id: alternatives
+      attributes:
+          label: Alternatives considered
+          description: Optional. Describe any workarounds you use or other solutions you considered.
+      validations:
+          required: false
+    - type: textarea
+      id: supporting-material
+      attributes:
+          label: Additional context
+          description: Optional. Add examples, sketches or screenshots. This issue is public; remove personal or sensitive information before posting.
+      validations:
+          required: false
+    - type: checkboxes
+      id: duplicate-check
+      attributes:
+          label: Before submitting
+          description: Search [open and closed issues](https://github.com/keskiyo/KesVio/issues?q=is%3Aissue) first. If the same idea was proposed, add your use case there.
+          options:
+              - label: I have checked existing issues for this suggestion.
+                required: true

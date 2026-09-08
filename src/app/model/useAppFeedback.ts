@@ -35,10 +35,11 @@ export function useAppFeedback({ onLaunch, onRefresh }: AppFeedbackOptions) {
 			await onRefresh()
 			toast.success('Application list refreshed')
 		} catch (error) {
-			if (toAppClientError(error).code === 'SCAN_CANCELLED') {
+			const { code } = toAppClientError(error)
+			if (code === 'SCAN_CANCELLED') {
 				toast.info('Application scan cancelled')
 			} else {
-				toast.error('Could not refresh the application list')
+				toast.error(`Could not refresh the application list (${code})`)
 			}
 		}
 	}, [onRefresh])

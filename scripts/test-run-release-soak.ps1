@@ -12,7 +12,7 @@ foreach ($requiredPattern in @(
   '\[string\]\$ProcessPath',
   '\[int\]\$RefreshCancelCycles = 100',
   '\[int\]\$IdleMinutes = 120',
-  '\$logsDirectory = Join-Path \$env:LOCALAPPDATA "dev\.neiroslop\.kesvio\\logs"',
+  '\$logsDirectory = Join-Path \$env:LOCALAPPDATA "keskiyo\.kesvio\\logs"',
   'Get-CimInstance -ClassName Win32_Process -Filter "ParentProcessId = \$parentProcessId"',
   'childWorkingSetBytes = \$descendants\.bytes',
   'totalWorkingSetBytes = \[long\]\$target\.WorkingSet64 \+ \$descendants\.bytes',

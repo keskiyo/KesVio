@@ -2,6 +2,7 @@ import { Clock, ExternalLink, RefreshCw, Send } from 'lucide-react'
 import { ACTION_BUTTON_PRIMARY, ACTION_BUTTON_QUIET } from '../../data'
 import { GithubIcon } from '../../../../shared/ui/GithubIcon'
 import type { SettingsUpdateControlsProps } from '../../types'
+import { SettingsRow } from '../components/SettingsRow'
 import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
 import { SettingsToggle } from '../components/SettingsToggle'
 import { updateStatusText } from './updateStatusText'
@@ -13,46 +14,41 @@ export function SettingsUpdateControls({
 }: SettingsUpdateControlsProps) {
 	return (
 		<>
+			<SettingsRow
+				icon={GithubIcon}
+				title="Updates and source"
+				description={
+					updater.update
+						? `Version ${updater.update.version} is available.`
+						: updateStatusText(updater.status)
+				}
+			>
+				<button
+					type="button"
+					disabled={updater.status === 'checking'}
+					onClick={() => void updater.checkNow()}
+					className={ACTION_BUTTON_PRIMARY}
+				>
+					<RefreshCw
+						size={16}
+						className={
+							updater.status === 'checking' ? 'animate-spin' : ''
+						}
+						aria-hidden="true"
+					/>
+					Check updates
+				</button>
+				<button
+					type="button"
+					aria-label="Open KesVio on GitHub"
+					onClick={() => void onOpenGithub()}
+					className={ACTION_BUTTON_QUIET}
+				>
+					<GithubIcon size={16} aria-hidden="true" />
+					keskiyo
+				</button>
+			</SettingsRow>
 			<div className="flex flex-wrap items-center gap-4 border-b border-slate-200 p-5">
-				<SettingsSectionHeader
-					icon={GithubIcon}
-					title="Updates and source"
-					description={
-						updater.update
-							? `Version ${updater.update.version} is available.`
-							: updateStatusText(updater.status)
-					}
-				/>
-				<div className="ml-auto grid w-full shrink-0 grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:justify-end">
-					<button
-						type="button"
-						disabled={updater.status === 'checking'}
-						onClick={() => void updater.checkNow()}
-						className={ACTION_BUTTON_PRIMARY}
-					>
-						<RefreshCw
-							size={16}
-							className={
-								updater.status === 'checking'
-									? 'animate-spin'
-									: ''
-							}
-							aria-hidden="true"
-						/>
-						Check updates
-					</button>
-					<button
-						type="button"
-						aria-label="Open KesVio on GitHub"
-						onClick={() => void onOpenGithub()}
-						className={ACTION_BUTTON_QUIET}
-					>
-						<GithubIcon size={16} aria-hidden="true" />
-						keskiyo
-					</button>
-				</div>
-			</div>
-			<div className="flex items-center gap-4 border-b border-slate-200 p-5">
 				<SettingsSectionHeader
 					icon={Clock}
 					title="Automatic update checks"

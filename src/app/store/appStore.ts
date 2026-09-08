@@ -12,11 +12,11 @@ import { createPersist } from './persist'
 import { createPreferenceTransferActions } from './actions/preferenceTransferActions'
 import { createScenarioActions } from './actions/scenarioActions'
 import { readPreferences } from './preferences'
-import type { AppPreferencesV18 } from './preferences'
+import type { AppPreferencesV19 } from './preferences'
 import type { AppsClient } from '../../entities/app'
 import type { AppState } from './types'
 
-function initialState(preferences: AppPreferencesV18) {
+function initialState(preferences: AppPreferencesV19) {
 	return {
 		apps: [],
 		query: '',

@@ -50,8 +50,28 @@ describe('useAppFeedback', () => {
 		await act(() => result.current.refresh())
 
 		expect(toastError).toHaveBeenCalledWith(
-			'Could not refresh the application list',
+			'Could not refresh the application list (INTERNAL)',
 		)
 		expect(toastInfo).not.toHaveBeenCalled()
+	})
+
+	// The scan failures worth diagnosing differ only by code, so the toast carries it: a support
+	// request now names OPERATION_INTERRUPTED or SCAN_COALESCED without asking for the log file.
+	it('names the backend error code in the failure toast', async () => {
+		const { result } = renderHook(() =>
+			useAppFeedback({
+				onLaunch: vi.fn().mockResolvedValue(undefined),
+				onRefresh: vi.fn().mockRejectedValue({
+					code: 'OPERATION_INTERRUPTED',
+					message: 'The operation was interrupted. Try again.',
+				}),
+			}),
+		)
+
+		await act(() => result.current.refresh())
+
+		expect(toastError).toHaveBeenCalledWith(
+			'Could not refresh the application list (OPERATION_INTERRUPTED)',
+		)
 	})
 })

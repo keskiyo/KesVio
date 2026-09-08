@@ -7,7 +7,7 @@ import {
 } from './preferencesFields'
 import { normalizeScenarios } from './preferencesScenarios'
 import {
-	type AppPreferencesV18,
+	type AppPreferencesV19,
 	DEFAULT_PREFERENCES,
 	type LegacyCanonicalPreferences,
 } from './preferencesSchema'
@@ -71,7 +71,7 @@ function readLegacy(
 	}
 }
 
-export function normalizePreferences(value: unknown): AppPreferencesV18 {
+export function normalizePreferences(value: unknown): AppPreferencesV19 {
 	if (!value || typeof value !== 'object')
 		return structuredClone(DEFAULT_PREFERENCES)
 	const raw = value as Record<string, unknown>
@@ -100,7 +100,7 @@ export function normalizePreferences(value: unknown): AppPreferencesV18 {
 		),
 	)
 	return {
-		version: 18,
+		version: 19,
 		catalogDensity: normalizeDensity(raw.catalogDensity),
 		categories,
 		categoryOrder,

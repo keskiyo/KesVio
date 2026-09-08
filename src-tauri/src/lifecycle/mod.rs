@@ -1,33 +1,24 @@
 mod presentation;
 mod startup;
 mod state;
+mod tray;
 pub(crate) mod window_state;
 
 pub(crate) use presentation::prepare_main_window;
 pub(crate) use startup::spawn as start_background_initialization;
 pub(crate) use state::LifecycleState;
-
-use std::ffi::OsStr;
-use std::sync::Arc;
-use tauri::{
-    menu::{Menu, MenuItem},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager,
+#[cfg(test)]
+pub(crate) use tray::run_scenario_sample as tray_run_scenario_sample;
+pub(crate) use tray::set_scan_state as set_tray_scan_state;
+#[cfg(test)]
+pub(crate) use tray::FORCE_SCAN_EVENT;
+pub(crate) use tray::{
+    apply_running as set_tray_running, apply_scenarios as set_tray_scenarios, setup_tray,
+    TrayScenario, MAX_SCENARIO_ID_CHARS, MAX_TRAY_SCENARIOS,
 };
 
-#[derive(Debug, PartialEq, Eq)]
-enum TrayAction {
-    Open,
-    Quit,
-}
-
-fn tray_action(id: &str) -> Option<TrayAction> {
-    match id {
-        "open" => Some(TrayAction::Open),
-        "quit" => Some(TrayAction::Quit),
-        _ => None,
-    }
-}
+use std::ffi::OsStr;
+use tauri::{AppHandle, Manager};
 
 pub(crate) fn show_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -58,53 +49,9 @@ where
     !starts_hidden_from_autostart(args)
 }
 
-pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "Open KesVio", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&open, &quit])?;
-    let icon = app.default_window_icon().cloned();
-    let mut builder = TrayIconBuilder::with_id("kesvio")
-        .menu(&menu)
-        .show_menu_on_left_click(false)
-        .tooltip("KesVio")
-        .on_menu_event(move |app, event| match tray_action(event.id().as_ref()) {
-            Some(TrayAction::Open) => show_main_window(app),
-            Some(TrayAction::Quit) => {
-                window_state::persist(app, &state);
-                state.mark_quitting();
-                app.exit(0);
-            }
-            None => {}
-        })
-        .on_tray_icon_event(|tray, event| {
-            if matches!(
-                event,
-                TrayIconEvent::Click {
-                    button: MouseButton::Left,
-                    button_state: MouseButtonState::Up,
-                    ..
-                }
-            ) {
-                show_main_window(tray.app_handle());
-            }
-        });
-    if let Some(icon) = icon {
-        builder = builder.icon(icon);
-    }
-    builder.build(app)?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn tray_menu_ids_map_to_explicit_actions() {
-        assert_eq!(tray_action("open"), Some(TrayAction::Open));
-        assert_eq!(tray_action("quit"), Some(TrayAction::Quit));
-        assert_eq!(tray_action("unknown"), None);
-    }
 
     #[test]
     fn autostart_mode_requires_an_exact_argument() {

@@ -7,6 +7,12 @@ import {
 } from '../../../entities/scenario'
 import { uniqueStrings } from './preferencesFields'
 
+function normalizeMoment(value: unknown): number | null {
+	return typeof value === 'number' && Number.isFinite(value) && value > 0
+		? value
+		: null
+}
+
 function normalizeScenarioSnapshots(
 	value: unknown,
 	identities: string[],
@@ -32,7 +38,6 @@ export function normalizeScenarios(value: unknown): Scenario[] {
 		const name = typeof raw.name === 'string' ? raw.name.trim() : ''
 		if (!id || !name || seenIds.has(id)) continue
 		seenIds.add(id)
-		const createdAt = raw.createdAt
 		const launchIdentities = uniqueStrings(raw.launchIdentities).slice(
 			0,
 			MAX_SCENARIO_ENTRIES,
@@ -55,12 +60,8 @@ export function normalizeScenarios(value: unknown): Scenario[] {
 			closeIdentities,
 			launchAppSnapshots,
 			closeAppSnapshots,
-			createdAt:
-				typeof createdAt === 'number' &&
-				Number.isFinite(createdAt) &&
-				createdAt > 0
-					? createdAt
-					: null,
+			createdAt: normalizeMoment(raw.createdAt),
+			lastRunAt: normalizeMoment(raw.lastRunAt),
 		})
 	}
 	return scenarios

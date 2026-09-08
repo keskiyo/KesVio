@@ -41,11 +41,10 @@ function runControl(
 	value: Partial<MorePageProps['scenarioRun']> = {},
 ): MorePageProps['scenarioRun'] {
 	return {
-		scenarios: [],
-		apps: [],
 		runningId: null,
 		isScenarioRunning: false,
 		onRun: vi.fn(),
+		onViewAll: vi.fn(),
 		...value,
 	}
 }
@@ -220,6 +219,7 @@ describe('MorePage', () => {
 					launchCount: 3,
 					closeCount: 2,
 					createdAt: new Date(2026, 7, 4, 12).getTime(),
+					lastRunAt: null,
 				},
 			],
 		})
@@ -252,6 +252,7 @@ describe('MorePage', () => {
 						launchCount: 3,
 						closeCount: 2,
 						createdAt: null,
+						lastRunAt: null,
 					},
 				],
 			},
@@ -278,6 +279,7 @@ describe('MorePage', () => {
 						launchCount: 1,
 						closeCount: 0,
 						createdAt: null,
+						lastRunAt: null,
 					},
 					{
 						id: 'work',
@@ -285,6 +287,7 @@ describe('MorePage', () => {
 						launchCount: 1,
 						closeCount: 0,
 						createdAt: null,
+						lastRunAt: null,
 					},
 				],
 			},
@@ -338,7 +341,9 @@ describe('MorePage', () => {
 	})
 
 	// Only this card: the preview cuts the list off, and the rest of it is something to run.
-	it('opens every scenario over the page from the scenarios card', async () => {
+	// The launcher itself lives at the app root now, so the card only asks for it.
+	it('asks for the scenario launcher from the scenarios card', async () => {
+		const onViewAll = vi.fn()
 		renderPage(
 			vi.fn(),
 			{
@@ -350,20 +355,11 @@ describe('MorePage', () => {
 						launchCount: 1,
 						closeCount: 0,
 						createdAt: null,
+						lastRunAt: null,
 					},
 				],
 			},
-			runControl({
-				scenarios: [
-					{
-						id: 'work',
-						name: 'Work',
-						launchIdentities: [],
-						closeIdentities: [],
-						createdAt: null,
-					},
-				],
-			}),
+			runControl({ onViewAll }),
 		)
 
 		expect(
@@ -371,10 +367,8 @@ describe('MorePage', () => {
 		).toHaveLength(1)
 		await userEvent.click(screen.getByRole('button', { name: /^View all/ }))
 
-		const dialog = screen.getByRole('dialog', { name: 'All scenarios' })
-		// The dialog shows the whole list, not the three the card previewed.
-		expect(dialog).toHaveTextContent('Work')
-		expect(dialog.parentElement?.parentElement).toBe(document.body)
+		expect(onViewAll).toHaveBeenCalledOnce()
+		expect(screen.queryByRole('dialog')).toBeNull()
 	})
 
 	// A row that opens a dialog listing the same scenarios already on the card is a dead click,
@@ -389,6 +383,7 @@ describe('MorePage', () => {
 					launchCount: 1,
 					closeCount: 0,
 					createdAt: null,
+					lastRunAt: null,
 				},
 				{
 					id: 'work',
@@ -396,6 +391,7 @@ describe('MorePage', () => {
 					launchCount: 2,
 					closeCount: 1,
 					createdAt: null,
+					lastRunAt: null,
 				},
 			],
 		})

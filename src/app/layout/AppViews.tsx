@@ -39,11 +39,10 @@ export function AppViews({
 					recentApps={derivations.recentApps}
 					preview={morePreview}
 					scenarioRun={{
-						scenarios: state.scenarios,
-						apps: catalogApps,
 						runningId: scenarioRunner.runningId,
 						isScenarioRunning: scenarioRunner.isRunning,
 						onRun: scenarioRunner.runById,
+						onViewAll: dialogs.scenarioLauncher.show,
 					}}
 					onSelectView={navigation.selectView}
 				/>

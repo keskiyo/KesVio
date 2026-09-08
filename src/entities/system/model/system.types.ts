@@ -1,3 +1,5 @@
+import type { TrayScenarioEntry } from '../../scenario'
+
 export interface GlobalShortcutStatus {
 	available: boolean
 	label: string
@@ -33,6 +35,11 @@ export interface SystemClient {
 	staleCopyStatus?(): Promise<StaleCopyInfo | null>
 	openInstalledCopy?(): Promise<void>
 	logClientError?(kind: string, detail: string): Promise<void>
+	setTrayScenarios?(entries: TrayScenarioEntry[]): Promise<void>
+	setTrayRunning?(label: string | null): Promise<void>
+	onTrayScenarioRun?(handler: (id: string) => void): Promise<() => void>
+	setTrayScanState?(busy: boolean): Promise<void>
+	onTrayForceFullScan?(handler: () => void): Promise<() => void>
 }
 
 export interface StaleCopyInfo {

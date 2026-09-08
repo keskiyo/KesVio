@@ -421,10 +421,38 @@ describe('scenario actions', () => {
 				launchAppSnapshots: {},
 				closeAppSnapshots: {},
 				createdAt: expect.any(Number),
+				lastRunAt: null,
 			},
 		])
 		expect(createAppStore(client(), storage).getState().scenarios).toEqual(
 			store.getState().scenarios,
 		)
+	})
+
+	// The tray and the Recent filter both rank by this stamp, so it has to outlive a restart.
+	it('stamps a scenario when a run starts and persists the stamp', () => {
+		const { storage, values } = memoryStorage()
+		const store = createAppStore(client(), storage, idFactory)
+		const created = store.getState().createScenario('Gaming')
+		const id = created.ok ? created.id : ''
+
+		store.getState().markScenarioRun(id)
+
+		const stamped = store.getState().scenarios[0].lastRunAt
+		expect(stamped).toEqual(expect.any(Number))
+		expect(
+			JSON.parse(values.get(PREFERENCES_KEY) ?? '{}').scenarios[0]
+				.lastRunAt,
+		).toBe(stamped)
+	})
+
+	it('ignores a run stamp for a scenario it does not have', () => {
+		const { storage } = memoryStorage()
+		const store = createAppStore(client(), storage, idFactory)
+		store.getState().createScenario('Gaming')
+
+		store.getState().markScenarioRun('missing')
+
+		expect(store.getState().scenarios[0].lastRunAt).toBeNull()
 	})
 })

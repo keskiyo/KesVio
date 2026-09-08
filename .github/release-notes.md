@@ -9,7 +9,7 @@ KesVio is a fast, private application catalog and launcher for Windows 10 and 11
 ## Install
 
 1. Download `KesVio_0.5.0_x64-setup.exe`.
-2. Run it. The installer needs no administrator rights and installs for the current user only. Because it is not Authenticode-signed, SmartScreen may show **Windows protected your PC**; choose **More info → Run anyway**.
+2. Run it. The installer asks for administrator rights and installs to `C:\Program Files\KesVio` by default; the install page lets you choose another folder. Because it is not Authenticode-signed, SmartScreen may show **Windows protected your PC**; choose **More info → Run anyway**.
 3. If Microsoft Edge WebView2 is missing, the embedded bootstrapper downloads it from Microsoft and requires internet access.
 
 ## Verifying this download

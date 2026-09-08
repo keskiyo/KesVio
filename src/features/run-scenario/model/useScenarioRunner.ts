@@ -20,6 +20,7 @@ interface RunnerOptions {
 	onCloseProgress?(
 		handler: (progress: CloseProgress) => void,
 	): Promise<() => void>
+	onStarted?(id: string): void
 	onFinished?(summary: ScenarioRunSummary): void
 }
 
@@ -29,6 +30,7 @@ export function useScenarioRunner({
 	launch,
 	closeApps,
 	onCloseProgress,
+	onStarted,
 	onFinished,
 }: RunnerOptions) {
 	const [runningId, setRunningId] = useState<string | null>(null)
@@ -63,6 +65,7 @@ export function useScenarioRunner({
 			if (activeRef.current) return
 			activeRef.current = true
 			setRunningId(scenario.id)
+			onStarted?.(scenario.id)
 			const toLaunch = resolveScenarioApps(
 				scenario.launchIdentities.slice(0, MAX_SCENARIO_ENTRIES),
 				apps,
@@ -132,7 +135,7 @@ export function useScenarioRunner({
 				onFinished?.(summary)
 			}
 		},
-		[apps, closeApps, launch, onFinished],
+		[apps, closeApps, launch, onFinished, onStarted],
 	)
 
 	const runById = useCallback(
@@ -143,5 +146,13 @@ export function useScenarioRunner({
 		[run, scenarios],
 	)
 
-	return { run, runById, runningId, isRunning: runningId !== null, progress }
+	return {
+		run,
+		runById,
+		runningId,
+		runningName:
+			scenarios.find(entry => entry.id === runningId)?.name ?? null,
+		isRunning: runningId !== null,
+		progress,
+	}
 }

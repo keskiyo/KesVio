@@ -9,12 +9,12 @@ checked rather than trusted.
 KesVio keeps its files in a `KesVioData` folder beside the executable whenever that location accepts
 writes, and falls back to your Windows user profile when it does not.
 
-| Data                                                                                           | Location                                                               |
-| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| Application catalog cache: names, executable and shortcut paths, icons, categories, your marks | `KesVioData\data\apps-cache.json`, or `%APPDATA%\dev.neiroslop.kesvio` |
-| Window size and position                                                                       | `KesVioData\data\`, or `%APPDATA%\dev.neiroslop.kesvio`                |
-| Interface preferences: theme, card density, sorting, scenarios, update preferences             | WebView2 local storage for the application                             |
-| Diagnostics log                                                                                | `KesVioData\logs\`, or `%LOCALAPPDATA%\dev.neiroslop.kesvio`           |
+| Data                                                                                           | Location                                                         |
+| ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Application catalog cache: names, executable and shortcut paths, icons, categories, your marks | `KesVioData\data\apps-cache.json`, or `%APPDATA%\keskiyo.kesvio` |
+| Window size and position                                                                       | `KesVioData\data\`, or `%APPDATA%\keskiyo.kesvio`                |
+| Interface preferences: theme, card density, sorting, scenarios, update preferences             | WebView2 local storage for the application                       |
+| Diagnostics log                                                                                | `KesVioData\logs\`, or `%LOCALAPPDATA%\keskiyo.kesvio`           |
 
 The catalog describes software installed on the machine. It is ordinary personal data in the sense
 that it says something about you, which is why it stays on the machine.

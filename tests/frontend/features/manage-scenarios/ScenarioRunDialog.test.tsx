@@ -44,12 +44,14 @@ function renderDialog(
 	value: {
 		scenarios?: Scenario[]
 		apps?: AppInfo[]
+		favoriteScenarioIds?: string[]
 		runningId?: string | null
 		isScenarioRunning?: boolean
 	} = {},
 ) {
 	const onRun = vi.fn()
 	const onClose = vi.fn()
+	const onToggleFavorite = vi.fn()
 	render(
 		<ScenarioRunDialog
 			scenarios={value.scenarios ?? [gaming]}
@@ -60,13 +62,15 @@ function renderDialog(
 					app('mail', 'Mail'),
 				]
 			}
+			favoriteScenarioIds={value.favoriteScenarioIds ?? []}
 			runningId={value.runningId ?? null}
 			isScenarioRunning={value.isScenarioRunning ?? false}
 			onRun={onRun}
+			onToggleFavorite={onToggleFavorite}
 			onClose={onClose}
 		/>,
 	)
-	return { onRun, onClose }
+	return { onRun, onClose, onToggleFavorite }
 }
 
 describe('ScenarioRunDialog', () => {
@@ -204,11 +208,176 @@ describe('ScenarioRunDialog', () => {
 		expect(onClose).toHaveBeenCalledTimes(2)
 	})
 
-	it('starts with the keyboard inside the dialog', () => {
+	it('starts with the keyboard in the search field', () => {
 		renderDialog()
 
 		expect(
-			screen.getByRole('button', { name: 'Close all scenarios' }),
+			screen.getByRole('searchbox', { name: 'Search scenarios' }),
 		).toHaveFocus()
+	})
+
+	it('narrows the list to the scenarios a query matches', async () => {
+		renderDialog({
+			scenarios: [gaming, scenario({ id: 'work', name: 'Work' })],
+		})
+
+		await userEvent.type(
+			screen.getByRole('searchbox', { name: 'Search scenarios' }),
+			'work',
+		)
+
+		expect(
+			screen.getByRole('button', { name: 'Run Work' }),
+		).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: 'Run Gaming' })).toBeNull()
+	})
+
+	// The apps are why a scenario exists, so its own name is not the only way back to it.
+	it('finds a scenario by an app it launches, in either keyboard layout', async () => {
+		renderDialog({
+			scenarios: [gaming, scenario({ id: 'work', name: 'Work' })],
+		})
+		const search = screen.getByRole('searchbox', {
+			name: 'Search scenarios',
+		})
+
+		await userEvent.type(search, 'backpack')
+		expect(
+			screen.getByRole('button', { name: 'Run Gaming' }),
+		).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: 'Run Work' })).toBeNull()
+
+		await userEvent.clear(search)
+		await userEvent.type(search, 'цщкл')
+		expect(
+			screen.getByRole('button', { name: 'Run Work' }),
+		).toBeInTheDocument()
+	})
+
+	it('offers a way out when nothing matches', async () => {
+		renderDialog()
+
+		await userEvent.type(
+			screen.getByRole('searchbox', { name: 'Search scenarios' }),
+			'nothing here',
+		)
+		expect(screen.queryByRole('button', { name: /^Run / })).toBeNull()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Clear search and filters' }),
+		)
+		expect(
+			screen.getByRole('button', { name: 'Run Gaming' }),
+		).toBeInTheDocument()
+	})
+
+	// Clearing removes the button that was clicked. Without somewhere to put the keyboard, focus
+	// fell to `body`, and arrow keys and Enter stopped reaching the dialog that was still open.
+	it('keeps the keyboard in the dialog after the clear button removes itself', async () => {
+		const { onRun } = renderDialog()
+
+		await userEvent.type(
+			screen.getByRole('searchbox', { name: 'Search scenarios' }),
+			'nothing here',
+		)
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Clear search and filters' }),
+		)
+
+		expect(
+			screen.getByRole('searchbox', { name: 'Search scenarios' }),
+		).toHaveFocus()
+		await userEvent.keyboard('{ArrowDown}{Enter}')
+		expect(onRun).toHaveBeenCalledWith('gaming')
+	})
+
+	it('keeps only the favorites when the favorites filter is pressed', async () => {
+		renderDialog({
+			scenarios: [gaming, scenario({ id: 'work', name: 'Work' })],
+			favoriteScenarioIds: ['work'],
+		})
+
+		await userEvent.click(
+			screen.getByRole('button', { name: /^Favorites/ }),
+		)
+
+		expect(
+			screen.getByRole('button', { name: 'Run Work' }),
+		).toBeInTheDocument()
+		expect(screen.queryByRole('button', { name: 'Run Gaming' })).toBeNull()
+	})
+
+	// Reaching a scenario should not cost a trip through every control of the rows above it.
+	it('moves between scenarios with the arrow keys and runs the one it reaches', async () => {
+		const { onRun } = renderDialog({
+			scenarios: [
+				scenario({ id: 'first', name: 'First', createdAt: 2_000 }),
+				scenario({ id: 'second', name: 'Second', createdAt: 1_000 }),
+			],
+		})
+
+		await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+		expect(screen.getByRole('button', { name: 'Run Second' })).toHaveFocus()
+
+		await userEvent.keyboard('{Enter}')
+		expect(onRun).toHaveBeenCalledWith('second')
+	})
+
+	it('returns to the search field when typing continues on a row', async () => {
+		renderDialog()
+
+		await userEvent.keyboard('{ArrowDown}')
+		expect(screen.getByRole('button', { name: 'Run Gaming' })).toHaveFocus()
+
+		await userEvent.keyboard('g')
+		expect(
+			screen.getByRole('searchbox', { name: 'Search scenarios' }),
+		).toHaveFocus()
+	})
+
+	it('marks a scenario as a favorite from the row', async () => {
+		const { onToggleFavorite } = renderDialog()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Add Gaming to favorites' }),
+		)
+
+		expect(onToggleFavorite).toHaveBeenCalledWith('gaming')
+	})
+
+	// The sort arrow used to be decoration: it showed a direction nothing could change.
+	it('reverses the order from the sort direction control', async () => {
+		renderDialog({
+			scenarios: [
+				scenario({ id: 'first', name: 'First', createdAt: 2_000 }),
+				scenario({ id: 'second', name: 'Second', createdAt: 1_000 }),
+			],
+		})
+		const order = () =>
+			screen
+				.getAllByRole('button', { name: /^Run / })
+				.map(button => button.getAttribute('aria-label'))
+		expect(order()).toEqual(['Run First', 'Run Second'])
+
+		const direction = screen.getByRole('button', { name: /default order/ })
+		expect(direction).toHaveAttribute('aria-pressed', 'false')
+		await userEvent.click(direction)
+
+		expect(order()).toEqual(['Run Second', 'Run First'])
+		expect(
+			screen.getByRole('button', { name: /reversed order/ }),
+		).toHaveAttribute('aria-pressed', 'true')
+	})
+
+	it('shows when a scenario last ran', () => {
+		renderDialog({
+			scenarios: [
+				{ ...gaming, lastRunAt: Date.now() - 2 * 60 * 60 * 1000 },
+			],
+		})
+
+		expect(
+			screen.getByRole('button', { expanded: false }),
+		).toHaveTextContent('ran 2h ago')
 	})
 })

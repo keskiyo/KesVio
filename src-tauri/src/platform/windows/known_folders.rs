@@ -21,14 +21,35 @@ pub(crate) fn user_folders() -> UserFolders {
 }
 
 fn known_folder(id: &GUID) -> Option<PathBuf> {
+    let _operation = crate::diagnostics::Operation::start("known folder resolution");
+    log::info!("Known folder requested: id={id:?}");
     // SAFETY: `id` points at a `FOLDERID_*` constant that lives for the whole program, so the
     // pointer is valid for the call. `KF_FLAG_DEFAULT` requests the current path without creating
     // anything, and passing no access token means "the calling user", which is the process owner.
     // On success the API allocates a null-terminated UTF-16 string that the caller owns;
     // `CoTaskString::own` takes that ownership immediately, so it is released exactly once on every
     // path out of this function. On failure nothing is allocated and there is nothing to release.
-    let path = unsafe { SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, None) }.ok()?;
-    CoTaskString::own(path).to_trimmed().map(PathBuf::from)
+    let path = unsafe { SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, None) };
+    let path = match path {
+        Ok(path) => path,
+        Err(error) => {
+            log::warn!(
+                "Known folder unavailable: id={id:?} hresult={:?}",
+                error.code()
+            );
+            return None;
+        }
+    };
+    let resolved = CoTaskString::own(path).to_trimmed().map(PathBuf::from);
+    let network = resolved.as_ref().is_some_and(|path| {
+        let value = path.to_string_lossy();
+        value.starts_with(r"\\") || value.starts_with("//")
+    });
+    log::info!(
+        "Known folder resolved: id={id:?} present={} network={network}",
+        resolved.is_some()
+    );
+    resolved
 }
 
 #[cfg(test)]

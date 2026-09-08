@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 
 interface GlobalShortcuts {
 	onToggleQuickLaunch: () => void
+	onToggleScenarios: () => void
 	onSearchFromShortcut: () => void
 	onFocusSearch: () => void
 }
@@ -16,6 +17,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 export function useGlobalShortcuts({
 	onToggleQuickLaunch,
+	onToggleScenarios,
 	onSearchFromShortcut,
 	onFocusSearch,
 }: GlobalShortcuts) {
@@ -23,9 +25,12 @@ export function useGlobalShortcuts({
 		function onKeyDown(event: KeyboardEvent) {
 			const typing = isTypingTarget(event.target)
 			const commandOrControl = event.ctrlKey || event.metaKey
+			const pressedK =
+				event.code === 'KeyK' || event.key.toLowerCase() === 'k'
+			const isScenarioShortcut =
+				commandOrControl && event.shiftKey && pressedK
 			const isQuickLaunchShortcut =
-				commandOrControl &&
-				(event.code === 'KeyK' || event.key.toLowerCase() === 'k')
+				commandOrControl && !event.shiftKey && pressedK
 			const isSearchShortcut =
 				commandOrControl &&
 				(event.code === 'KeyF' || event.key.toLowerCase() === 'f')
@@ -35,6 +40,12 @@ export function useGlobalShortcuts({
 			if (isPrintShortcut) {
 				event.preventDefault()
 				event.stopPropagation()
+				return
+			}
+			if (isScenarioShortcut) {
+				event.preventDefault()
+				event.stopPropagation()
+				onToggleScenarios()
 				return
 			}
 			if (isQuickLaunchShortcut) {
@@ -59,5 +70,10 @@ export function useGlobalShortcuts({
 			document.removeEventListener('keydown', onKeyDown, {
 				capture: true,
 			})
-	}, [onToggleQuickLaunch, onSearchFromShortcut, onFocusSearch])
+	}, [
+		onToggleQuickLaunch,
+		onToggleScenarios,
+		onSearchFromShortcut,
+		onFocusSearch,
+	])
 }

@@ -128,8 +128,8 @@ it.
 
 Command families cover catalog reads and scans, icon hydration, launch/close,
 details/folder, system settings, settings backup export,
-project links, update release links, stale-copy handling, and bounded
-interface-failure reporting. Commands return
+project links, update release links, stale-copy handling, tray menu contents,
+and bounded interface-failure reporting. Commands return
 `Result<T, AppError>`; errors expose stable `SCREAMING_SNAKE` codes and static
 safe messages. Internal paths, commands, registry values and upstream errors
 never reach the webview.
@@ -148,6 +148,40 @@ reported to the interface as coarse stages over `close://progress` — asking,
 a per-second countdown, then terminating — so the pause reads as deliberate
 rather than as a hang. A scenario run ends in a single summary notice counting
 launches, failures, closures and refusals; nothing is discarded silently.
+
+The tray offers up to five favorite scenarios, and `set_tray_scenarios` is how the window
+says which. The scenario itself never crosses to Rust: an entry is an opaque id
+and a display label, the backend stores neither, and picking one emits
+`tray://run-scenario` carrying that id back so the window runs it with the data
+it already owns. The command is a transport adapter and treats both fields as
+untrusted — the list is capped, a blank or over-long id is dropped, and a label
+is stripped of control characters, collapsed, truncated and has `&` escaped
+before it can reach a native menu as a mnemonic. An entry carries whether it is
+starred rather than a label that already shows it, so the marker stays a menu
+decision: the submenu prefixes a filled star to starred rows and a hollow one to
+the rest, which are a matched pair of the same width and therefore start every
+name at one column. It marks nothing when no offered scenario is starred, where
+a column of hollow stars would carry no information, and the mark is applied
+after truncation so a long name can never lose it. `set_tray_running` names the
+running scenario in the tooltip, which is the only feedback a run started from
+the tray gets while the window is hidden; the tray never shows the window by
+itself. Selection filters by favorite membership before ranking by last run,
+then fills remaining slots with the newest unrun favorites. It never includes
+nonfavorites; stale favorite ids are ignored. Removing the last favorite sends
+an empty list and the native menu hides the scenarios submenu.
+
+The tray's **Force scan** opens the main window and emits
+`tray://force-full-scan` with a null payload. `useTrayCatalogScan` calls the same
+store action used by catalog maintenance, so it preserves scan settings,
+exclusions, cancellation, catalog reconciliation and diagnostics. Safe completion,
+cancellation and failure messages appear in the window. The menu item is disabled
+until the frontend listener is registered and while startup or scanning is busy;
+`set_tray_scan_state` accepts only that boolean state. Pending requests are guarded
+against duplicate clicks, and listener cleanup disables the item. Its native
+handle belongs to app-managed `TrayScanState`. Rebuilding the scenario submenu
+creates a fresh native item from the stored enabled state and **Scanning…** label,
+so it retains no references to destroyed parent menus. Status IPC writes are
+serialized across scan, lifecycle and busy updates to preserve their order.
 
 No command removes software. The catalog reports whether Windows has a registered
 uninstaller for an entry, and **Uninstall** opens
@@ -230,15 +264,20 @@ Three stores contain user data:
 | Store         | Owner                          | Rules                                                                                                                                |
 | ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Catalog cache | `catalog/storage/cache.rs`     | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                |
-| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 18) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
+| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 19) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
 | Window state  | `lifecycle/window_state.rs`    | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                           |
 
 Window state is presentation-only and deliberately disposable: a missing,
 malformed or newer-versioned document restores nothing, the window opens at the
-configured 1250×720, centered, and closing hides to the tray. It is the one
+configured 446×740, centered, and closing hides to the tray. It is the one
 store whose loss costs the user nothing, so it never falls back to a backup copy
 and never blocks startup. Geometry is optional inside the document, because the
 close setting has to survive a session in which the window was never moved.
+
+Schema 19 adds `lastRunAt` to a scenario. Documents written before it upgrade
+unstamped rather than being stamped with the migration time, which would claim
+every scenario ran at once and reorder the tray and the Recent filter around a
+fiction. A stamp that is not a positive finite number degrades to none.
 
 Persisted-format changes must bump the appropriate version, upgrade every
 supported version, default new fields, preserve unknown data, safely handle
@@ -267,7 +306,7 @@ A debug build never creates the folder at all, so a development run leaves nothi
 in `target\debug`. When it cannot be written — an installation under
 `Program Files`, a read-only medium — every store falls back to the Tauri
 per-user locations
-(`%APPDATA%\dev.neiroslop.kesvio` and `%LOCALAPPDATA%\dev.neiroslop.kesvio\logs`)
+(`%APPDATA%\keskiyo.kesvio` and `%LOCALAPPDATA%\keskiyo.kesvio\logs`)
 and nothing else about the stores changes. The resolved root is managed state, so
 every caller asks `paths::data_dir` or `paths::log_dir` instead of Tauri
 directly, and the startup log names the data folder actually in use. The first
@@ -278,14 +317,18 @@ copied because they are derived data. The debug-only dedup and visibility report
 resolve the same folder through `paths::report_dir`, which reads the root without
 creating one because those writers have no application handle. When no root
 exists — a debug build, or a first run before the folder is created — it falls
-back to `%LOCALAPPDATA%\dev.neiroslop.kesvio`, never to a folder named after the
-product: the per-user installer occupies `%LOCALAPPDATA%\KesVio`, so a report
-written there would land inside the install directory and survive the
-non-recursive `RMDir "$INSTDIR"` that ends an uninstall.
+back to `%LOCALAPPDATA%\keskiyo.kesvio`, never to a folder named after the
+product: releases before 0.5.0 installed per user into `%LOCALAPPDATA%\KesVio`,
+so a report written there would land inside such an install directory and survive
+the non-recursive `RMDir "$INSTDIR"` that ends an uninstall.
 
-Because that folder sits inside the install directory, uninstalling has to reach
-it: Tauri's own uninstall section clears `%APPDATA%\dev.neiroslop.kesvio` and
-`%LOCALAPPDATA%\dev.neiroslop.kesvio` when the user ticks **Delete app data**,
+The installer defaults to a per-machine install under
+`%ProgramFiles%\KesVio` and still lets the user choose another directory, so the
+data root beside the executable is reached only where that directory accepts
+writes — a directory the user picked, or an older per-user install. Uninstalling
+has to reach it either way: Tauri's own uninstall section clears
+`%APPDATA%\keskiyo.kesvio` and
+`%LOCALAPPDATA%\keskiyo.kesvio` when the user ticks **Delete app data**,
 and finishes with a `RMDir "$INSTDIR"` that is not recursive. Neither touches
 `KesVioData`, so `nsis/autostart-shortcut.nsh` does. On a normal uninstall it
 always removes `KesVioData\logs`, which is diagnostics rather than user data;
@@ -305,7 +348,7 @@ unsupported version never counts as a match, so recovery still replaces it.
 
 Preferences are the exception KesVio cannot place. They live in `localStorage`,
 which belongs to the WebView2 user-data folder, and Tauri forces that folder to
-`%LOCALAPPDATA%\dev.neiroslop.kesvio\EBWebView` whenever a window declares no
+`%LOCALAPPDATA%\keskiyo.kesvio\EBWebView` whenever a window declares no
 `dataDirectory`; the configuration file accepts only a relative path resolved
 under the same local-data root, so no configuration change can move it beside the
 executable. Relocating it would mean building the main window in Rust instead of
@@ -313,60 +356,68 @@ from configuration and copying a live browser profile on first run. Preference
 export and import remain the supported way to carry that store between machines.
 
 The diagnostics log is a fourth store and is not user data. `diagnostics/` owns
-it: `tauri-plugin-log` writes `kesvio.log` to the resolved log folder at
-`Info`, rotates at four megabytes keeping eight dated archives, and
-`prune_expired_logs` deletes any `*.log` older than six hours. Age is the file's
-modification time measured against `SystemTime::now`, so it follows the Windows
-system clock the machine is set to, and a file stamped in the future is never
-treated as expired. Six hours is short on purpose: the log answers "what is this
-scan doing right now", it is read while the problem is still happening, and a
-scan that finished yesterday explains nothing about one that is stuck today. A
-tray application left open accumulates archives faster than anyone reads them,
-so the window is the useful one rather than the generous one. Pruning runs at
-startup and again after every completed scan, because that application can stay
-open for days and a startup-only sweep would keep far more than the window on
-exactly the machines that need diagnosing.
-The active file is held open by the plugin, so failing to delete it is expected
-and ignored. `export_diagnostics_log` renders the whole directory as one XML
-document — the newest twenty thousand lines, each parsed into a dated `entry`
-element and anything else preserved as a `line` element — and writes it wherever
-the save dialog points. Losing the whole directory costs nothing but the ability
-to explain the last few scans.
+it: `tauri-plugin-log` writes `kesvio.log` to the resolved log folder at `Info`,
+rotates at four megabytes, and keeps eight dated archives. `prune_expired_logs`
+deletes `*.log` files whose modification time is more than two hours before the
+current Windows system clock. Future-dated files are not expired. Pruning runs
+at startup, after each committed scan, and before XML export. This is a file-age
+policy: entries in an actively written file can be older than two hours, and
+locked files that cannot be removed are left intact. There is no idle timer.
 
-The scan writes one line per run, two lines per source and one per portable root,
-never per catalogued application. Root paths are recorded deliberately: a scan
-that stops is diagnosed by knowing which location it was walking. Each source
-logs `Source <key> starting` before it runs and its outcome the moment it
-finishes, rather than every outcome after the whole scan: a source that never
-returns must not hide the sources that already answered. Three lines split the
-Windows sources further, because each has a cheap half and a half that touches
-the filesystem — the registry entry count separates reading the hives from
-resolving every entry's target, the start-menu roots separate the folders chosen
-from the walk, and the apps-folder entry count separates the Shell enumeration
-from the package lookup. A run that stops between two of these lines names the
-call that blocked.
+Detailed scan steps are enabled by default, including normal launches and
+autostart. The former `--verbose-scan` flag is no longer needed. Source outcomes,
+counts, portable roots, and assembly steps remain recorded. Per-step lines carry
+the worker thread id; untrusted detail is limited to 512 characters and control
+characters are removed from these lines. Existing scan paths identify the
+location being walked. New start-apps conversion records use the entry index and
+hashed identity, with package/target presence and conversion outcome, without
+adding raw entry contents.
 
-Those lines bound a stage, not a call, so `sync/scan_steps.rs` adds the item.
-Every per-item loop records the step it is about to attempt into one slot whose
-detail buffer is reused, which costs an uncontended lock and a copy rather than an
-allocation. A watchdog thread, owned by `scan_all` and joined when it returns,
-reads that slot once a second and logs one `warn` line when the same step has been
-current for ten seconds, repeating at most every thirty. A healthy scan logs
-nothing, and the line arrives while the application is still hung instead of after
-it is killed. Stage budgets are checked between items, so a single blocking Win32
-or COM call inside one item can outlast every deadline; this is what names it.
-`--verbose-scan` on the command line additionally logs one `info` line per item,
-for a diagnostic run only.
+`sync/scan_steps.rs` owns the watchdog. `sync/commit.rs` starts it, so it covers
+the whole persistence transaction rather than `synchronize` alone: the earlier
+placement ended the moment scanning returned, which left the lock wait, the
+cached-details merge, the delta and the cache write with no stall reporting at
+all — exactly the window a scan was observed to hang in.
+It checks the current step once a second, reports a ten-second stall, and repeats
+at most every thirty seconds until progress advances. It joins its thread on
+exit and reports failure to start the watchdog. Blocking Win32 and COM calls can
+outlast cooperative deadlines. Marks before package-registry reads and machine
+facts separate these calls from Shell enumeration. Timed operation scopes log
+start, ordinary return, or panic with duration and thread id. Ordinary return
+means control returned, not necessarily success; explicit outcome records carry
+availability and scan errors. Known-folder calls record folder GUIDs, HRESULTs,
+and whether the resolved folder is a network path. Registry diagnostics record
+counts and numeric OS error codes. They do not dump registry values.
 
-The watchdog is owned by `synchronize`, not by source scanning, so it also covers
-assembly: merging sources, attaching registry metadata, checking that every target
-still exists, sanitizing and deduplicating, demoting console applications,
-attaching category reasons and close risk, and retaining cached details. Target
-availability is the reason that matters — it stats every catalogued path, so a
-target on an unreachable share blocks there rather than in a source. The
-instrumented loops are the registry entries, the Start Menu walk, the
-installer-cache walk, the AppsFolder items, the Steam libraries and every
-directory the portable walk enters.
+`sync/commit.rs` owns the persistence transaction. Its steps — lock acquisition,
+previous-document and settings loading, cached-details merge, delta, cache write,
+in-memory publication, and icon/log pruning — are watchdog marks rather than
+plain log lines, so a stall inside any of them names the step it stopped on.
+
+A caller that waits for another scan's result waits in `await_scan_result`, not
+on a bare `recv()`. It reports the outstanding request every five seconds, so an
+unanswered wait is visible in the log while it happens instead of only through a
+missing line. A sender the coordinator dropped without answering ends the wait
+with `OPERATION_INTERRUPTED` rather than blocking forever. Scan submission
+records whether work starts, waits, or is coalesced, and failed synchronization
+records the stable error code beside the safe application error. The frontend
+appends that code to the refresh failure toast, so the reader can name the
+failure without opening the log. These diagnostics do not change cancellation,
+scheduling, cache formats, or IPC payloads.
+
+A panic hook installed after logger initialization records Rust panic source
+location, thread id, and an explicitly captured backtrace, then flushes the logger
+and invokes the previous hook. Panic payloads are excluded from the file log.
+Backtrace output is capped at 128 lines of 1024 characters each; every frame line
+is a normal timestamped record. Release builds may lack symbol names. This hook
+cannot diagnose an OS process kill, power loss, or every native crash.
+
+`export_diagnostics_log` flushes logging and prunes expired files before rendering
+the newest twenty thousand lines as XML. Each formatted record becomes a dated
+`entry`, and unparsed lines remain `line` elements. File rotation and the export
+line cap bound the retained diagnostic history; particularly busy scans can
+rotate earlier records out before the two-hour age limit. Losing the directory
+costs only diagnostic history.
 
 Preferences preserve unknown root fields, which is also how a field this version
 stopped reading survives: scenario run history is no longer collected or parsed,
@@ -380,6 +431,12 @@ cache, executable paths, catalog icons, or scan folders. Each Scenario also
 retains a bounded 32 KiB name/icon snapshot per app identity so unavailable
 entries remain identifiable and removable; it is presentation data, never a
 launch target.
+
+A scenario keeps one `lastRunAt` stamp, overwritten on every run. That is
+ordering data, not the run history this version removed: no per-run record, no
+counters, and nothing about what a run did. It is written when the run starts
+rather than when it ends, so a run interrupted by a quit or a crash still counts
+as the last thing the scenario did.
 
 Import applies preferences in memory before attempting to persist them. If the
 write fails, `preferencesPersisted` becomes false and the shell displays the
@@ -490,7 +547,24 @@ scan only explicitly configured portable folders. Fixed-drive discovery is on
 by default and runs during **Force full scan**. An ordinary
 refresh retains already discovered fixed-drive portable applications while the
 option remains enabled, but drops their large directory index; disabling the
-option removes those retained records on the next refresh. A force scan bypasses
+option removes those retained records on the next refresh. A configured portable
+folder that is currently unavailable remains retained rather than being treated
+as removed from settings. While automatic drive coverage is enabled, cached local
+drive roots that are absent from Windows drive discovery and inaccessible are
+also retained. Root planning probes each cached drive once, does not infer drive
+coverage from UNC or relative targets, and never scans an unavailable root. On
+return, that drive follows the normal refresh/force policy. Confirmed missing
+application targets still follow the existing target-availability filter.
+Configured exclusions also remove matching retained applications while their
+root is unavailable, for both ordinary refresh and force scan.
+
+Deduplication applies auxiliary-tool reasons after merging records for the same
+executable. A merged card therefore cannot remain primary until the next cache
+load merely because a secondary record supplied its tool classification. Reasons
+from a different executable still cannot demote the main application. Cache
+sanitation and migration remain active.
+
+A force scan bypasses
 the previous filesystem index and shares the same three-minute cooperative
 traversal budget across portable roots that a refresh uses. Only cancellation
 discards a portable run: a run stopped by
@@ -528,7 +602,9 @@ A query token expands into variants before matching: the literal token, the
 token remapped between the English and Russian keyboard layouts, and a
 Cyrillic-to-Latin transliteration. Ranking keeps the literal variant above the
 rest, so a transliterated hit never displaces an exact one. Transliteration is
-letter-for-letter and does not resolve loanwords whose spelling diverges.
+letter-for-letter and does not resolve loanwords whose spelling diverges. The
+scenario launcher expands its query the same way and over the same helpers, so
+finding a scenario costs no more layout awareness than finding an application.
 
 Search stays inside the active view, and a query that also matches records
 outside it reports those counts with a direct link to the owning view, rather
@@ -611,6 +687,26 @@ changing the width of the obscured page underneath it.
 
 The More page previews every scenario while they all fit its card and spends the
 last slot on a "View all" row only once a scenario is left out of the preview.
+
+The scenario launcher is a root-level dialog rather than a page detail, reachable
+with Ctrl+Shift+K from any view and from that "View all" row. A shortcut nothing
+names is a shortcut nobody presses, so the two places that already hold scenarios
+name it: the Scenarios page above its list, and the Favorites view beside starred
+scenarios, which is the only one of the two a user reaches without going looking
+for scenarios in the first place. Neither hint renders when there is no scenario
+to run. It searches by
+scenario name and by the apps a scenario holds, so an entry the catalog no longer
+resolves stays findable by the name stored with it. Filters cover favorites and
+scenarios that have run; ordering is by last run, name or creation date, either
+way round, and a query orders by relevance instead. The direction control is a
+real toggle rather than an arrow that only depicts one: each sort has a natural
+order and the toggle reverses it, which is the one rule that reads the same for
+a date and for a name. Filters and ordering share one row at the supported
+minimum window width, which is what bounds how many filters this bar can hold; a
+scenario whose apps no longer resolve is reported on its own row instead, as a
+count beside its list sizes.
+Arrow keys move between the run buttons so Enter runs the scenario that has
+focus, and typing while a row is focused returns to the search field.
 
 Classification decisions are explainable in the interface, not only in source:
 the application information dialog reports the discovery source, where the
@@ -833,7 +929,11 @@ would have to reintroduce it deliberately.
 
 ### Windows integration and updates
 
-- Tray, global shortcut and window lifecycle are backend-owned.
+- Tray, global shortcut and window lifecycle are backend-owned. The tray menu is
+  the one part rebuilt at runtime: the icon keeps its `kesvio` id, and a scenario
+  update reaches it through `tray_by_id` on the main thread. A failure there is
+  logged and leaves the previous menu standing rather than surfacing an error the
+  user cannot act on.
 - A fresh direct installation registers startup and leaves it **switched off**.
   Windows lists nothing it has no entry for, so the installer creates
   `$SMSTARTUP\KesVio.lnk` and, in the same guarded block, writes a

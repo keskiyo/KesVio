@@ -9,6 +9,7 @@ pub(crate) mod diagnostics;
 pub(crate) mod launch;
 pub(crate) mod links;
 pub(crate) mod settings;
+pub(crate) mod tray;
 
 pub(super) const MAX_CATALOG_ID_LENGTH: usize = 512;
 
@@ -23,9 +24,12 @@ where
 {
     tauri::async_runtime::spawn_blocking(work)
         .await
-        .map_err(|error| AppError::Interrupted {
-            context,
-            source: error.to_string(),
+        .map_err(|error| {
+            log::error!("Blocking operation interrupted: context={context}");
+            AppError::Interrupted {
+                context,
+                source: error.to_string(),
+            }
         })
 }
 

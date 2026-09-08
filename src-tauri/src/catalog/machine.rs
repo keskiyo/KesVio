@@ -84,6 +84,7 @@ pub(in crate::catalog) struct MachineFacts {
 
 impl MachineFacts {
     pub(in crate::catalog) fn current() -> Self {
+        let _operation = crate::diagnostics::Operation::start("machine facts");
         Self {
             places: PlaceIndex::current(),
             registrations: Registrations::current(),

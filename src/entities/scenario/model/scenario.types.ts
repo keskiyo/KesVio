@@ -11,6 +11,7 @@ export interface Scenario {
 	launchAppSnapshots?: Record<string, ScenarioAppSnapshot>
 	closeAppSnapshots?: Record<string, ScenarioAppSnapshot>
 	createdAt: number | null
+	lastRunAt?: number | null
 }
 
 export type ScenarioList = 'launch' | 'close'
@@ -25,6 +26,7 @@ export interface ScenarioSummary {
 	launchCount: number
 	closeCount: number
 	createdAt: number | null
+	lastRunAt: number | null
 }
 
 export function summarizeScenario(scenario: Scenario): ScenarioSummary {
@@ -34,5 +36,6 @@ export function summarizeScenario(scenario: Scenario): ScenarioSummary {
 		launchCount: scenario.launchIdentities.length,
 		closeCount: scenario.closeIdentities.length,
 		createdAt: scenario.createdAt,
+		lastRunAt: scenario.lastRunAt ?? null,
 	}
 }

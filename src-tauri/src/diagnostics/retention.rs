@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
-pub(crate) const MAX_LOG_AGE: Duration = Duration::from_secs(6 * 60 * 60);
+pub(crate) const MAX_LOG_AGE: Duration = Duration::from_secs(2 * 60 * 60);
 
 pub(crate) fn prune_expired_logs(directory: &Path, now: SystemTime, max_age: Duration) -> usize {
     let Ok(entries) = std::fs::read_dir(directory) else {
@@ -40,8 +40,8 @@ mod tests {
     use std::time::{Duration, SystemTime};
 
     #[test]
-    fn logs_are_kept_for_six_hours_of_windows_clock_time() {
-        assert_eq!(MAX_LOG_AGE, Duration::from_secs(6 * 60 * 60));
+    fn logs_are_kept_for_two_hours_of_windows_clock_time() {
+        assert_eq!(MAX_LOG_AGE, Duration::from_secs(2 * 60 * 60));
     }
 
     #[test]

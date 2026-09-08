@@ -3,7 +3,7 @@
 	"productName": "KesVio",
 	"mainBinaryName": "KesVio",
 	"version": "0.5.0",
-	"identifier": "dev.neiroslop.kesvio",
+	"identifier": "keskiyo.kesvio",
 	"build": {
 		"frontendDist": "../dist",
 		"devUrl": "http://localhost:1420",
@@ -14,10 +14,10 @@
 		"windows": [
 			{
 				"title": "KesVio",
-				"width": 1250,
-				"height": 720,
-				"minWidth": 560,
-				"minHeight": 520,
+				"width": 446,
+				"height": 740,
+				"minWidth": 446,
+				"minHeight": 529,
 				"center": true,
 				"decorations": false,
 				"resizable": true,
@@ -60,6 +60,7 @@
 				"silent": true
 			},
 			"nsis": {
+				"installMode": "perMachine",
 				"installerIcon": "icons/icon.ico",
 				"uninstallerIcon": "icons/icon.ico",
 				"installerHooks": "nsis/autostart-shortcut.nsh"

@@ -87,6 +87,7 @@ export interface AppState {
 	): { ok: true } | { ok: false; error: string }
 	removeScenarioApp(id: string, list: ScenarioList, identity: string): void
 	toggleFavoriteScenario(id: string): void
+	markScenarioRun(id: string): void
 	setQuery(query: string): void
 	setActiveView(view: AppView): void
 	setCatalogDensity(density: CatalogDensity): void

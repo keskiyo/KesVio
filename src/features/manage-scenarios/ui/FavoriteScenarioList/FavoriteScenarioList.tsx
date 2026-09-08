@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import { sortScenariosByNewest } from '../../../../entities/scenario'
 import { SectionHeading } from '../../../../shared/ui/SectionHeading'
+import { ShortcutHint } from '../../../../shared/ui/ShortcutHint'
+import { LAUNCHER_SHORTCUT } from '../ScenarioRunDialog/data'
 import { FavoriteScenarioCard } from './FavoriteScenarioCard'
 import type { FavoriteScenarioListProps } from './types'
 
@@ -34,6 +36,11 @@ export function FavoriteScenarioList({
 				count={scenarios.length}
 				noun="scenario"
 				description="Run your configured scenarios"
+			/>
+			<ShortcutHint
+				label="Run any scenario from anywhere with"
+				keys={LAUNCHER_SHORTCUT}
+				className="mb-3"
 			/>
 			<ul className="grid grid-cols-1 items-start gap-3 min-[781px]:grid-cols-2 min-[1601px]:grid-cols-3">
 				{sortScenariosByNewest(scenarios).map(scenario => (

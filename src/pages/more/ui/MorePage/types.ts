@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { AppInfo, AppView } from '../../../../entities/app'
-import type { Scenario, ScenarioSummary } from '../../../../entities/scenario'
+import type { ScenarioSummary } from '../../../../entities/scenario'
 
 export interface MorePreviewItem {
 	app: AppInfo
@@ -8,11 +8,10 @@ export interface MorePreviewItem {
 }
 
 export interface ScenarioRunControl {
-	scenarios: Scenario[]
-	apps: AppInfo[]
 	runningId: string | null
 	isScenarioRunning: boolean
 	onRun(id: string): void
+	onViewAll(): void
 }
 
 export interface ScenarioPreviewControl {

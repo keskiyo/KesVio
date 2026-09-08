@@ -1,0 +1,75 @@
+name: '🐛 Bug report'
+description: Report a problem with KesVio.
+body:
+    - type: markdown
+      attributes:
+          value: |
+              You can fill out this form in English or Russian. Можно отвечать на русском или английском.
+
+              Give the issue a short, descriptive title. Report one problem per issue.
+              Everything posted here is public. Remove personal or sensitive information from text and attachments.
+              For security vulnerabilities, use [private reporting](https://github.com/keskiyo/KesVio/security/advisories/new) instead of this public form.
+    - type: input
+      id: kesvio-version
+      attributes:
+          label: KesVio version
+          description: Find the version at the top of Settings. If KesVio will not open or install, use the installer filename or write "Unknown". For a development build, include the commit if known.
+          placeholder: 'For example: 0.5.0'
+      validations:
+          required: true
+    - type: input
+      id: windows-version
+      attributes:
+          label: Windows version
+          description: Include your Windows version and OS build if known. You can find them by running winver.
+          placeholder: 'For example: Windows 11 24H2'
+      validations:
+          required: true
+    - type: textarea
+      id: steps-to-reproduce
+      attributes:
+          label: Steps to reproduce
+          description: Describe what you did and whether the problem happens every time. If it started after an update, include the previous and new versions if known. If you cannot reproduce it reliably, say so.
+          placeholder: |
+              1. Open KesVio.
+              2. ...
+              3. ...
+      validations:
+          required: true
+    - type: textarea
+      id: expected-behavior
+      attributes:
+          label: Expected behavior
+          description: What did you expect to happen?
+      validations:
+          required: true
+    - type: textarea
+      id: actual-behavior
+      attributes:
+          label: Actual behavior
+          description: What happened instead? Include the exact error message if one appeared.
+      validations:
+          required: true
+    - type: textarea
+      id: affected-apps
+      attributes:
+          label: Affected applications
+          description: Optional. For detection, category, duplicate, launch or Scenario problems, name the affected apps and their versions if known. Say whether they are desktop apps, Microsoft Store apps, Steam games or portable executables. For a Scenario, note which apps were meant to launch or close. Full paths and your entire catalog are not needed.
+          placeholder: 'For example: VLC, desktop installer; two cards appear after scanning.'
+      validations:
+          required: false
+    - type: textarea
+      id: supporting-material
+      attributes:
+          label: Screenshots or diagnostics
+          description: Optional. Attach screenshots or paste a relevant, redacted log excerpt. Scan logs can be exported through Settings → Advanced → Diagnostics log → Export log as XML. They contain scanned folder paths; remove private paths and other sensitive information first. If KesVio will not open, submit the report without a log.
+      validations:
+          required: false
+    - type: checkboxes
+      id: duplicate-check
+      attributes:
+          label: Before submitting
+          description: Search [open and closed issues](https://github.com/keskiyo/KesVio/issues?q=is%3Aissue) first. If the same problem was reported, add your details there.
+          options:
+              - label: I have checked existing issues for this problem.
+                required: true

@@ -1,6 +1,4 @@
 import { WandSparkles } from 'lucide-react'
-import { useState } from 'react'
-import { ScenarioRunDialog } from '../../../../features/manage-scenarios'
 import { buildMoreDestinations } from './data'
 import { MoreCard } from './MoreCard'
 import { MorePreviewRow } from './MorePreviewRow'
@@ -16,7 +14,6 @@ export function MorePage({
 	scenarioRun,
 	onSelectView,
 }: MorePageProps) {
-	const [viewingScenarios, setViewingScenarios] = useState(false)
 	const destinations = buildMoreDestinations({
 		auxiliaryCount,
 		hiddenCount,
@@ -27,7 +24,7 @@ export function MorePage({
 			runningId: scenarioRun.runningId,
 			isScenarioRunning: scenarioRun.isScenarioRunning,
 			onRun: scenarioRun.onRun,
-			onViewAll: () => setViewingScenarios(true),
+			onViewAll: scenarioRun.onViewAll,
 		},
 	})
 
@@ -70,16 +67,6 @@ export function MorePage({
 						))}
 					</ul>
 				</section>
-			)}
-			{viewingScenarios && (
-				<ScenarioRunDialog
-					scenarios={scenarioRun.scenarios}
-					apps={scenarioRun.apps}
-					runningId={scenarioRun.runningId}
-					isScenarioRunning={scenarioRun.isScenarioRunning}
-					onRun={scenarioRun.onRun}
-					onClose={() => setViewingScenarios(false)}
-				/>
 			)}
 		</section>
 	)

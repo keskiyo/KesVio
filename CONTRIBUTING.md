@@ -4,6 +4,19 @@ Bug reports, reproduction steps and focused pull requests are welcome. KesVio is
 Tauri 2 desktop application maintained by one person, so the rules below exist to keep review short
 rather than to make contributing hard.
 
+## Bug reports and feature requests
+
+Open [a new issue](https://github.com/keskiyo/KesVio/issues/new/choose) and choose **Bug report** or
+**Feature request**. You can fill out either form in English or Russian. Search open and closed
+issues first; add details to an existing report when it already covers your problem or idea.
+
+For bugs, include your KesVio and Windows versions, reproduction steps, expected behavior and
+actual behavior. If specific apps are affected, include their names and installation sources if
+known. If KesVio cannot open or install, use the installer filename for its version or write
+"Unknown"; a log is not required. Screenshots and diagnostics are optional. Issues are public, so remove personal
+or sensitive information before attaching anything. Report security vulnerabilities privately as
+described in [SECURITY.md](SECURITY.md).
+
 ## Licensing of contributions
 
 By submitting a contribution to KesVio, you agree that your contribution is licensed under the MIT
