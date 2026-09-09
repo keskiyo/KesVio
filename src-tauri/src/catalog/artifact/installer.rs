@@ -128,6 +128,8 @@ fn is_registered_product(app: &AppInfo) -> bool {
     }
 }
 
+// The `.get(..)` guard above proves the cut is a character boundary before the slice runs.
+#[expect(clippy::string_slice)]
 fn strong_installer_name(value: &str) -> bool {
     let filename = Path::new(value)
         .file_name()

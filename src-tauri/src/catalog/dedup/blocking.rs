@@ -57,6 +57,8 @@ fn is_executable_path(path: &str) -> bool {
     path.to_lowercase().ends_with(".exe")
 }
 
+// `separator` comes from `rfind('\\')`, a one-byte ASCII match, so it is a character boundary.
+#[expect(clippy::string_slice)]
 fn path_ancestors(path: &str) -> Vec<&str> {
     let mut ancestors = vec![path];
     let mut rest = path;

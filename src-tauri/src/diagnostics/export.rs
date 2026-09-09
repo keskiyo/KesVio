@@ -21,15 +21,27 @@ pub(crate) fn log_directory_as_xml(directory: &Path, generated_unix: u64) -> Str
     let lines = collect_lines(directory);
     let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     xml.push_str(&format!(
-        "<diagnostics application=\"KesVio\" version=\"{}\" generatedUnix=\"{generated_unix}\" entries=\"{}\">\n",
+        "<diagnostics application=\"KesVio\" version=\"{}\" generatedUnix=\"{generated_unix}\" entries=\"{}\" panics=\"{}\">\n",
         env!("CARGO_PKG_VERSION"),
-        lines.len()
+        lines.len(),
+        recorded_panics(&lines)
     ));
     for line in &lines {
         xml.push_str(&render(line));
     }
     xml.push_str("</diagnostics>\n");
     xml
+}
+
+fn recorded_panics(lines: &[String]) -> usize {
+    lines
+        .iter()
+        .filter(|line| {
+            parse(line).is_some_and(|entry| {
+                entry.target.ends_with("panic_log") && entry.message.starts_with("Rust panic:")
+            })
+        })
+        .count()
 }
 
 fn collect_lines(directory: &Path) -> Vec<String> {
@@ -87,6 +99,8 @@ fn render(line: &str) -> String {
     }
 }
 
+// Brackets are one ASCII byte each, so a `find(']')` index and its successor stay on boundaries.
+#[expect(clippy::string_slice)]
 fn parse(line: &str) -> Option<Entry<'_>> {
     let mut rest = line;
     let mut fields = [""; 4];
@@ -200,6 +214,25 @@ mod tests {
         assert!(xml.contains("Root &lt;skipped&gt;"));
         assert!(xml.contains("<line>raw crash line</line>"));
         assert!(xml.trim_end().ends_with("</diagnostics>"));
+    }
+
+    #[test]
+    fn the_export_header_counts_recorded_panics() {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join("kesvio.log"),
+            concat!(
+                "[2026-09-09][07:34:29][ERROR][app_lib::diagnostics::panic_log] Rust panic: thread=ThreadId(8) location=src\\a.rs:1:1\n",
+                "[2026-09-09][07:34:29][ERROR][app_lib::diagnostics::panic_log] Panic backtrace:    0: <unknown>\n",
+                "[2026-09-09][07:34:29][INFO][app_lib::catalog] Rust panic: is only an application name here\n",
+            ),
+        )
+        .unwrap();
+
+        let xml = log_directory_as_xml(directory.path(), 0);
+
+        assert!(xml.contains("entries=\"3\""));
+        assert!(xml.contains("panics=\"1\""));
     }
 
     #[test]

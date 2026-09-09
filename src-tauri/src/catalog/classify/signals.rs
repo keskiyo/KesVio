@@ -119,6 +119,8 @@ fn fold(value: &str) -> String {
         .collect()
 }
 
+// `open` is a `rfind('(')` byte index, so it always lands on a character boundary.
+#[expect(clippy::string_slice)]
 fn strip_qualifiers(value: &str) -> &str {
     let mut base = value.trim();
     while let Some(open) = base
@@ -171,14 +173,16 @@ fn product_evidence(value: String) -> String {
     value
 }
 
+// `is_char_boundary` gates the cut, so a non-ASCII carrier can never be split mid-character.
+#[expect(clippy::string_slice)]
 fn exe_stem(value: &str) -> String {
     let trimmed = value.trim().trim_matches('"');
-    let carrier = if trimmed.len() > 4 && trimmed[trimmed.len() - 4..].eq_ignore_ascii_case(".mui")
-    {
-        &trimmed[..trimmed.len() - 4]
-    } else {
-        trimmed
-    };
+    let carrier = trimmed
+        .len()
+        .checked_sub(4)
+        .filter(|cut| *cut > 0 && trimmed.is_char_boundary(*cut))
+        .filter(|cut| trimmed[*cut..].eq_ignore_ascii_case(".mui"))
+        .map_or(trimmed, |cut| &trimmed[..cut]);
     fold(
         Path::new(carrier)
             .file_stem()
@@ -201,6 +205,35 @@ mod tests {
         assert_eq!(exe_stem("DPInst.exe.Mui"), "dpinst");
         assert_eq!(exe_stem("ClientConsole.EXE"), "clientconsole");
         assert_eq!(exe_stem(r"C:\Program Files\App\editor.exe"), "editor");
+    }
+
+    #[test]
+    fn a_non_ascii_carrier_is_never_cut_inside_a_character() {
+        assert_eq!(exe_stem("Автозагрузка5"), "автозагрузка5");
+        assert_eq!(exe_stem("Панель.ex"), "панель");
+        assert_eq!(exe_stem("Настройка.exe.mui"), "настройка");
+    }
+
+    #[test]
+    fn every_character_width_survives_the_resource_stub_check() {
+        for carrier in [
+            "Автозагрузка5",
+            "設定アプリ1",
+            "설정도구2",
+            "إعدادات3",
+            "सेटिंग्स4",
+            "การตั้งค่า5",
+            "Ρυθμίσεις6",
+            "설정.ex",
+            "アプリ.ex",
+            "🚀🚀🚀.ex",
+            "🚀🚀🚀🚀",
+            "İnstaller1",
+        ] {
+            assert!(!exe_stem(carrier).is_empty(), "empty stem for {carrier}");
+        }
+        assert_eq!(exe_stem("設定.exe.mui"), "設定");
+        assert_eq!(exe_stem("🚀.exe.MUI"), "🚀");
     }
 
     // An InstallShield shortcut reports the packaging toolkit as publisher, product and

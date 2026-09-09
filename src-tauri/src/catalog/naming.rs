@@ -82,27 +82,69 @@ pub(super) fn normalized_portable_name(value: &str) -> String {
         .collect()
 }
 
+fn version_boundary(value: &str) -> Option<(usize, usize)> {
+    let mut previous: Option<(usize, char)> = None;
+    for (index, character) in value.char_indices() {
+        if let Some((separator_index, separator)) = previous {
+            if character.is_ascii_digit() && matches!(separator, '-' | '_' | ' ') {
+                return Some((separator_index, index));
+            }
+        }
+        previous = Some((index, character));
+    }
+    None
+}
+
+// `version_boundary` returns `char_indices` positions, so separator width does not matter.
+#[expect(clippy::string_slice)]
 fn clean_portable_name(value: &str) -> String {
     let trimmed = value.trim();
-    let version_start = trimmed
-        .char_indices()
-        .find(|(index, character)| {
-            *index > 0 && character.is_ascii_digit() && trimmed[..*index].ends_with(['-', '_', ' '])
-        })
-        .map(|(index, _)| index.saturating_sub(1));
-    version_start
-        .map_or(trimmed, |index| &trimmed[..index])
+    version_boundary(trimmed)
+        .map_or(trimmed, |(separator, _)| &trimmed[..separator])
         .replace(['_', '-'], " ")
         .trim()
         .to_string()
 }
 
+// `version_boundary` returns `char_indices` positions, so separator width does not matter.
+#[expect(clippy::string_slice)]
 pub(super) fn portable_version_from_stem(value: &str) -> Option<String> {
     let trimmed = value.trim();
-    let start = trimmed.char_indices().find_map(|(index, character)| {
-        (index > 0 && character.is_ascii_digit() && trimmed[..index].ends_with(['-', '_', ' ']))
-            .then_some(index)
-    })?;
-    let version = trimmed[start..].trim();
+    let (_, digits) = version_boundary(trimmed)?;
+    let version = trimmed[digits..].trim();
     (!version.is_empty()).then(|| version.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_version_suffix_is_cut_on_character_boundaries_in_every_script() {
+        for stem in [
+            "Проводник-2.1",
+            "設定アプリ-2.1",
+            "설정도구_3.0",
+            "إعدادات 4.2",
+            "सेटिंग्स-5",
+            "การตั้งค่า_6.1",
+            "🚀🚀-7.0",
+            "İnstaller-8",
+        ] {
+            assert!(
+                !clean_portable_name(stem).is_empty(),
+                "empty name for {stem}"
+            );
+            assert!(
+                portable_version_from_stem(stem).is_some(),
+                "no version for {stem}"
+            );
+        }
+        assert_eq!(clean_portable_name("設定アプリ-2.1"), "設定アプリ");
+        assert_eq!(
+            portable_version_from_stem("設定アプリ-2.1").as_deref(),
+            Some("2.1")
+        );
+        assert_eq!(clean_portable_name("🚀🚀-7.0"), "🚀🚀");
+    }
 }

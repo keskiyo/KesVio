@@ -46,6 +46,15 @@ pub(crate) struct AppState {
     pub(crate) shortcut_status: Mutex<crate::platform::windows::global_shortcut::Status>,
 }
 
+impl AppState {
+    pub(crate) fn lock_sync(&self) -> std::sync::MutexGuard<'_, ()> {
+        self.sync_lock.lock().unwrap_or_else(|poisoned| {
+            log::warn!("Synchronization lock recovered after a panic");
+            poisoned.into_inner()
+        })
+    }
+}
+
 #[cfg(test)]
 pub(crate) fn cached_app(name: &str, path: &str) -> catalog::AppInfo {
     use crate::catalog::{AppInfo, SourceKind};
@@ -76,5 +85,28 @@ pub(crate) fn cached_app(name: &str, path: &str) -> catalog::AppInfo {
         target_availability: None,
         category_reasons: Vec::new(),
         close_risk: None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_poisoned_synchronization_lock_still_admits_the_next_commit() {
+        let state = Arc::new(AppState::default());
+        let panicking = Arc::clone(&state);
+        let crashed = std::thread::spawn(move || {
+            let _guard = panicking.sync_lock.lock().expect("the lock starts healthy");
+            panic!("a scan panicked while holding the synchronization lock");
+        })
+        .join();
+
+        assert!(crashed.is_err());
+        assert!(state.sync_lock.is_poisoned());
+        assert!(state.sync_lock.lock().is_err());
+
+        drop(state.lock_sync());
+        drop(state.lock_sync());
     }
 }

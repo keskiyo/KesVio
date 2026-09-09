@@ -86,9 +86,7 @@ pub(crate) fn enqueue_hydration(
             return;
         }
         let post_state = app.state::<AppState>();
-        let Ok(_guard) = post_state.sync_lock.lock() else {
-            return;
-        };
+        let _guard = post_state.lock_sync();
         let Some(mut document) = cache::read_document(&app_data_dir) else {
             return;
         };

@@ -108,6 +108,8 @@ pub(in crate::catalog) fn installed_libraries() -> Vec<PathBuf> {
     libraries
 }
 
+// Indices come from `char_indices` and from the position after a one-byte ASCII quote.
+#[expect(clippy::string_slice)]
 fn quoted_values(value: &str) -> Vec<String> {
     let mut values = Vec::new();
     let mut start = None;

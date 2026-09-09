@@ -171,18 +171,27 @@ fn clean(value: Option<String>) -> Option<String> {
         .filter(|text| !text.is_empty())
 }
 
+// Indices come from `find('"')` and from an ASCII `.exe` byte match, never from a lowercase copy.
+#[expect(clippy::string_slice)]
 fn split_command(value: &str) -> Option<(String, String)> {
     let value = value.trim();
     if let Some(rest) = value.strip_prefix('"') {
         let end = rest.find('"')?;
         return Some((rest[..end].to_string(), rest[end + 1..].trim().to_string()));
     }
-    let lower = value.to_ascii_lowercase();
-    let end = lower.find(".exe").map(|index| index + 4)?;
+    let end = executable_suffix_end(value)?;
     Some((
         value[..end].trim().to_string(),
         value[end..].trim().to_string(),
     ))
+}
+
+fn executable_suffix_end(value: &str) -> Option<usize> {
+    value
+        .as_bytes()
+        .windows(4)
+        .position(|window| window.eq_ignore_ascii_case(b".exe"))
+        .map(|start| start + 4)
 }
 
 #[cfg(test)]
@@ -347,6 +356,16 @@ mod tests {
         })
         .unwrap();
         assert!(!app.can_uninstall);
+    }
+
+    #[test]
+    fn an_unquoted_command_splits_on_byte_offsets_of_the_value_itself() {
+        assert_eq!(
+            split_command(r"C:\İnstall\Setup.EXE /silent"),
+            Some((r"C:\İnstall\Setup.EXE".into(), "/silent".into()))
+        );
+        assert_eq!(executable_suffix_end("İ.exe"), Some(6));
+        assert_eq!(executable_suffix_end("İ"), None);
     }
 
     #[test]

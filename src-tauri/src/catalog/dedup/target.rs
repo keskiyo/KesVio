@@ -24,6 +24,8 @@ pub(in crate::catalog) fn normalize_path(value: &str) -> String {
         .to_lowercase()
 }
 
+// Every index comes from `find('%')`, and `%` is one ASCII byte, so all cuts are boundaries.
+#[expect(clippy::string_slice)]
 fn expand_windows_env(value: &str) -> String {
     let mut result = String::with_capacity(value.len());
     let mut rest = value;

@@ -318,14 +318,19 @@ resolve the same folder through `paths::report_dir`, which reads the root withou
 creating one because those writers have no application handle. When no root
 exists — a debug build, or a first run before the folder is created — it falls
 back to `%LOCALAPPDATA%\keskiyo.kesvio`, never to a folder named after the
-product: releases before 0.5.0 installed per user into `%LOCALAPPDATA%\KesVio`,
-so a report written there would land inside such an install directory and survive
-the non-recursive `RMDir "$INSTDIR"` that ends an uninstall.
+product: a per-user install occupies `%LOCALAPPDATA%\KesVio`, so a report written
+there would land inside the install directory and survive the non-recursive
+`RMDir "$INSTDIR"` that ends an uninstall.
 
-The installer defaults to a per-machine install under
-`%ProgramFiles%\KesVio` and still lets the user choose another directory, so the
-data root beside the executable is reached only where that directory accepts
-writes — a directory the user picked, or an older per-user install. Uninstalling
+The installer is per user. It sets no `installMode`, so NSIS defaults to
+`currentUser`, installs into `%LOCALAPPDATA%\KesVio` without elevation and still
+lets the user choose another directory. That keeps the data root beside the
+executable reachable: the install directory belongs to the user running KesVio,
+so it accepts writes. A per-machine install would not — an unelevated process
+cannot write under `%ProgramFiles%`, the root would silently fall back to
+`%APPDATA%\keskiyo.kesvio`, and the `KesVioData` cleanup below would have nothing
+to remove. KesVio is built for one user per computer, so the per-user install is
+the model that matches it. Uninstalling
 has to reach it either way: Tauri's own uninstall section clears
 `%APPDATA%\keskiyo.kesvio` and
 `%LOCALAPPDATA%\keskiyo.kesvio` when the user ticks **Delete app data**,
@@ -369,9 +374,13 @@ autostart. The former `--verbose-scan` flag is no longer needed. Source outcomes
 counts, portable roots, and assembly steps remain recorded. Per-step lines carry
 the worker thread id; untrusted detail is limited to 512 characters and control
 characters are removed from these lines. Existing scan paths identify the
-location being walked. New start-apps conversion records use the entry index and
-hashed identity, with package/target presence and conversion outcome, without
-adding raw entry contents.
+location being walked. Start-apps conversion records use the entry index and
+hashed identity, with package/target presence and conversion outcome. The
+conversion loop also marks each entry with its index and display name, so an
+unwind or a stall inside conversion names the entry it stopped on instead of the
+whole stage. The display name is bounded and control-stripped like every other
+step detail, and is less exposing than the shortcut paths the same log already
+records.
 
 `sync/scan_steps.rs` owns the watchdog. `sync/commit.rs` starts it, so it covers
 the whole persistence transaction rather than `synchronize` alone: the earlier
@@ -405,16 +414,46 @@ appends that code to the refresh failure toast, so the reader can name the
 failure without opening the log. These diagnostics do not change cancellation,
 scheduling, cache formats, or IPC payloads.
 
+A scan body that panics is contained rather than allowed to unwind through the
+coordinator. The panic still reaches the panic hook and is still recorded, but
+the scan fails with `SCAN_FAILED` and the coordinator completes the job
+normally: the active slot is released, every waiter is answered, and any pending
+request is promoted. The next submitted scan therefore starts, runs and
+publishes without restarting the application. `SCAN_FAILED` is distinct from
+`OPERATION_INTERRUPTED` so that a crashed scan is not read as a cancelled or
+shut-down one. The synchronization lock is acquired through `AppState::lock_sync`,
+which recovers a mutex poisoned by such a panic; the lock guards a file
+transaction rather than in-memory state, and the on-disk document is replaced
+atomically, so a recovered guard cannot expose a half-written catalog.
+
+Application names, paths and file metadata arrive from Windows in the user's
+language, so slicing a `&str` by a computed byte index can land inside a
+multi-byte character and panic. That is what emptied one catalog: `exe_stem` cut
+four bytes off a localized resource stub. `clippy::string_slice` is denied
+crate-wide to keep the class closed. Each remaining slice carries an
+`#[expect(clippy::string_slice)]` with a one-line reason naming why its index is
+a character boundary — a `.get()` guard that already returned `Some`, an index
+from `char_indices`, a `find` of a one-byte ASCII character, an explicit
+`is_char_boundary` check, or an ASCII byte match. A new slice cannot compile
+until its author states which of those applies.
+
 A panic hook installed after logger initialization records Rust panic source
 location, thread id, and an explicitly captured backtrace, then flushes the logger
 and invokes the previous hook. Panic payloads are excluded from the file log.
 Backtrace output is capped at 128 lines of 1024 characters each; every frame line
-is a normal timestamped record. Release builds may lack symbol names. This hook
-cannot diagnose an OS process kill, power loss, or every native crash.
+is a normal timestamped record. Release frames are reported as unknown: the
+MSVC toolchain keeps symbol names in a separate `.pdb`, the installer ships no
+`.pdb`, and no `strip` setting changes that. The panic source location, the
+recorded operation and the current scan step are what identify a release panic;
+the backtrace only bounds its depth. This hook cannot diagnose an OS process
+kill, power loss, or every native crash.
 
 `export_diagnostics_log` flushes logging and prunes expired files before rendering
 the newest twenty thousand lines as XML. Each formatted record becomes a dated
-`entry`, and unparsed lines remain `line` elements. File rotation and the export
+`entry`, and unparsed lines remain `line` elements. The document element carries
+a `panics` count alongside `entries`, so a reader sees whether the exported
+window contains a crash without searching for it; the count only summarises
+records already present and collects nothing new. File rotation and the export
 line cap bound the retained diagnostic history; particularly busy scans can
 rotate earlier records out before the two-hour age limit. Losing the directory
 costs only diagnostic history.

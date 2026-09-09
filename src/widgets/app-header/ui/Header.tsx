@@ -68,7 +68,7 @@ export function Header({
 						type="button"
 						aria-label="Open navigation"
 						onClick={onOpenNavigation}
-						className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/85 bg-white/65 text-slate-600 shadow-sm hover:border-violet-400/35 hover:text-violet-700 focus-visible:outline-2 focus-visible:outline-violet-500"
+						className="grid size-11 shrink-0 place-items-center rounded-xl border border-white/85 bg-white/65 text-slate-600 shadow-sm hover:border-violet-400/35 hover:text-violet-700 focus-visible:outline-2 focus-visible:outline-violet-500"
 					>
 						<Menu size={19} />
 					</button>

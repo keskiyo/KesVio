@@ -47,6 +47,8 @@ pub(crate) fn write_dev_report(apps: &[AppInfo]) {
     }
 }
 
+// The slice runs only when `get(..profile.len())` returned `Some`, which proves the boundary.
+#[expect(clippy::string_slice)]
 fn redact_path(value: &str, user_profile: Option<&str>) -> String {
     let Some(profile) = user_profile else {
         return value.to_string();

@@ -2,7 +2,7 @@
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "KesVio",
 	"mainBinaryName": "KesVio",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"identifier": "keskiyo.kesvio",
 	"build": {
 		"frontendDist": "../dist",
@@ -60,7 +60,6 @@
 				"silent": true
 			},
 			"nsis": {
-				"installMode": "perMachine",
 				"installerIcon": "icons/icon.ico",
 				"uninstallerIcon": "icons/icon.ico",
 				"installerHooks": "nsis/autostart-shortcut.nsh"

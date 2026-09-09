@@ -29,7 +29,7 @@ Release.md
 INFO.md
 gf_detect.py
 
-# AI-agent instructions — local working files, never committed
+# AI-agent instructions — local working files
 /AGENTS.md
 /src/AGENTS.md
 /src-tauri/AGENTS.md

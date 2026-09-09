@@ -130,6 +130,8 @@ pub(super) fn is_runtime_internal_path(path: &str) -> bool {
     .any(|marker| normalized.contains(marker))
 }
 
+// The slice runs only after `starts_with("7z")`, so byte two is a character boundary.
+#[expect(clippy::string_slice)]
 pub(crate) fn is_installer_file_name(stem: &str) -> bool {
     let lower = stem.to_lowercase();
     if lower.starts_with("7z")

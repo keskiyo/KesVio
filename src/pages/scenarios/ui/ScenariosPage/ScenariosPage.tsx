@@ -67,7 +67,7 @@ export function ScenariosPage({
 					)
 				}
 			/>
-			<div className="mx-auto max-w-3xl min-[1900px]:max-w-[80rem]">
+			<div className="mx-auto max-w-3xl min-[1900px]:max-w-7xl">
 				{scenarios.length > 0 && (
 					<ScenariosToolbar
 						query={filters.query}

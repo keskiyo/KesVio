@@ -258,6 +258,41 @@ mod tests {
     }
 
     #[test]
+    fn the_coordinator_starts_a_new_scan_after_a_panicking_one() {
+        let coordinator = ScanCoordinator::<u32>::default();
+        let Submission::Start { job, receiver } = coordinator.submit(SyncRequest::Refresh, true)
+        else {
+            panic!("refresh should start");
+        };
+        let receiver = receiver.expect("a result was requested");
+
+        assert!(coordinator
+            .complete(job, Err(AppError::ScanFailed))
+            .is_none());
+
+        assert_eq!(receiver.recv().unwrap(), Err(AppError::ScanFailed));
+        assert!(matches!(
+            coordinator.submit(SyncRequest::Refresh, true),
+            Submission::Start { .. }
+        ));
+    }
+
+    #[test]
+    fn a_waiter_of_a_panicking_scan_is_answered_rather_than_left_pending() {
+        let coordinator = ScanCoordinator::<u32>::default();
+        let Submission::Start { job, .. } = coordinator.submit(SyncRequest::Refresh, false) else {
+            panic!("refresh should start");
+        };
+        let Submission::Wait(waiter) = coordinator.submit(SyncRequest::Refresh, true) else {
+            panic!("a second refresh should wait for the active scan");
+        };
+
+        coordinator.complete(job, Err(AppError::ScanFailed));
+
+        assert_eq!(waiter.recv().unwrap(), Err(AppError::ScanFailed));
+    }
+
+    #[test]
     fn repeated_watch_requests_are_coalesced() {
         let coordinator = ScanCoordinator::<u32>::default();
         let Submission::Start { job: active, .. } = coordinator.submit(SyncRequest::Watch, false)

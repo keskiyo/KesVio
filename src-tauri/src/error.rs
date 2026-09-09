@@ -19,6 +19,7 @@ pub(crate) enum AppError {
         what: &'static str,
     },
     ScanCancelled,
+    ScanFailed,
     SaveScanSettings(String),
     SaveWindowSettings(String),
     SavePreferencesBackup(String),
@@ -52,6 +53,7 @@ impl AppError {
             Self::Interrupted { .. } => "OPERATION_INTERRUPTED",
             Self::Coalesced { .. } => "SCAN_COALESCED",
             Self::ScanCancelled => "SCAN_CANCELLED",
+            Self::ScanFailed => "SCAN_FAILED",
             Self::SaveScanSettings(_) => "SAVE_SCAN_SETTINGS_FAILED",
             Self::SaveWindowSettings(_) => "SAVE_WINDOW_SETTINGS_FAILED",
             Self::SavePreferencesBackup(_) => "SAVE_PREFERENCES_BACKUP_FAILED",
@@ -82,6 +84,7 @@ impl AppError {
             } => "The operation was interrupted. Try again.",
             Self::Coalesced { what: _what } => "The scan could not be completed. Try again.",
             Self::ScanCancelled => "Application scan cancelled.",
+            Self::ScanFailed => "The application scan stopped unexpectedly. Try again.",
             Self::SaveScanSettings(_source) => "Could not save scan settings. Try again.",
             Self::SaveWindowSettings(_source) => "Could not save the window setting. Try again.",
             Self::SavePreferencesBackup(_source) => "Could not save settings. Try again.",
@@ -116,6 +119,7 @@ pub(crate) fn every_variant() -> Vec<AppError> {
         },
         AppError::Coalesced { what: "x" },
         AppError::ScanCancelled,
+        AppError::ScanFailed,
         AppError::SaveScanSettings(String::new()),
         AppError::SaveWindowSettings(String::new()),
         AppError::SavePreferencesBackup(String::new()),
@@ -231,6 +235,7 @@ mod tests {
                 "SAVE_WINDOW_SETTINGS_FAILED",
                 "SCAN_CANCELLED",
                 "SCAN_COALESCED",
+                "SCAN_FAILED",
                 "SCAN_PATH_NOT_ABSOLUTE",
             ]
         );
@@ -275,6 +280,25 @@ mod tests {
             serde_json::json!({
                 "code": "SCAN_CANCELLED",
                 "message": "Application scan cancelled.",
+            })
+        );
+    }
+
+    #[test]
+    fn a_scan_failure_is_reported_under_its_own_error_code() {
+        assert_ne!(
+            AppError::ScanFailed.code(),
+            AppError::Interrupted {
+                context: "Application scan result",
+                source: String::new(),
+            }
+            .code()
+        );
+        assert_eq!(
+            serde_json::to_value(AppError::ScanFailed).unwrap(),
+            serde_json::json!({
+                "code": "SCAN_FAILED",
+                "message": "The application scan stopped unexpectedly. Try again.",
             })
         );
     }

@@ -66,6 +66,15 @@ fn synchronize_catalog_once(
     })
 }
 
+fn synchronize_catalog_guarded(
+    app: &tauri::AppHandle,
+    job: &ScanJob<ScanCommit>,
+) -> Result<ScanCommit, AppError> {
+    super::scan_guard::guarded("catalog synchronization", || {
+        synchronize_catalog_once(app, job)
+    })
+}
+
 fn await_scan_result(
     request: SyncRequest,
     receiver: Receiver<Result<ScanCommit, AppError>>,
@@ -111,7 +120,7 @@ pub(crate) fn run_coordinated_scan(
         Submission::Start { job, receiver } => {
             log::info!("Scan submission started: request={request:?}");
             if let Some(receiver) = receiver {
-                let result = synchronize_catalog_once(app, &job);
+                let result = synchronize_catalog_guarded(app, &job);
                 if let Some(next) = coordinator.complete(job, result) {
                     let handle = app.clone();
                     tauri::async_runtime::spawn_blocking(move || {
@@ -138,7 +147,7 @@ pub(crate) fn run_coordinated_scan(
 fn process_scan_chain(app: &tauri::AppHandle, mut job: ScanJob<ScanCommit>) {
     let state = app.state::<AppState>();
     loop {
-        let result = synchronize_catalog_once(app, &job);
+        let result = synchronize_catalog_guarded(app, &job);
         let Some(next) = state.scan_coordinator.complete(job, result) else {
             break;
         };

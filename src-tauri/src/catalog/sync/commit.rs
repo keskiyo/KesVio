@@ -25,10 +25,7 @@ pub(super) fn write_catalog_under_lock(
     let steps = watchdog.tracker();
     let state = app.state::<AppState>();
     steps.mark("commit", "waiting for synchronization lock");
-    let _guard = state
-        .sync_lock
-        .lock()
-        .map_err(|_| "Application synchronization is temporarily unavailable".to_string())?;
+    let _guard = state.lock_sync();
     steps.mark("commit", "synchronization lock acquired");
     steps.mark("commit", "resolving data directory");
     let app_data_dir = crate::paths::data_dir(app)

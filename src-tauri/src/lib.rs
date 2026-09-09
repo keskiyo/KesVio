@@ -1,4 +1,5 @@
 #![deny(unreachable_pub)]
+#![deny(clippy::string_slice)]
 
 mod app_state;
 mod catalog;

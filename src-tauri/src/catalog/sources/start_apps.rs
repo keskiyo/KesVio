@@ -31,7 +31,7 @@ pub(in crate::catalog) fn scan(control: &ScanControl) -> Option<Vec<AppInfo>> {
         crate::catalog::source::START_APPS_SOURCE,
         "machine facts and entry conversion",
     );
-    let apps = build_start_apps(entries, &executables);
+    let apps = build_start_apps(control, entries, &executables);
     control.step(
         crate::catalog::source::START_APPS_SOURCE,
         "conversion returned",
@@ -41,6 +41,7 @@ pub(in crate::catalog) fn scan(control: &ScanControl) -> Option<Vec<AppInfo>> {
 }
 
 fn build_start_apps(
+    control: &ScanControl,
     entries: Vec<StartAppEntry>,
     executables: &HashMap<String, String>,
 ) -> Vec<AppInfo> {
@@ -49,6 +50,10 @@ fn build_start_apps(
         .into_iter()
         .enumerate()
         .filter_map(|(index, entry)| {
+            control.step(
+                crate::catalog::source::START_APPS_SOURCE,
+                &format!("entry {index}: {}", entry.name.trim()),
+            );
             log::info!(
                 "Start-apps entry: index={index} id={} packaged={} targetPresent={}",
                 stable_id(&entry.app_id),

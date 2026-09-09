@@ -127,9 +127,7 @@ pub(crate) async fn reset_catalog_cache(
         {
             let state = app.state::<AppState>();
             state.scan_coordinator.cancel_all();
-            let _guard = state.sync_lock.lock().map_err(|_| {
-                AppError::ResetCatalogCache("catalog synchronization is unavailable".into())
-            })?;
+            let _guard = state.lock_sync();
             cache::reset(&app_data_dir)
                 .map_err(|error| AppError::ResetCatalogCache(error.to_string()))?;
             catalog::icon_cache::clear(&app_data_dir)

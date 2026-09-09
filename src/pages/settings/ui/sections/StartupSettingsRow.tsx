@@ -1,5 +1,5 @@
 import { LogIn } from 'lucide-react'
-import { ACTION_BUTTON_QUIET } from '../../data'
+import { ACTION_BUTTON_PRIMARY } from '../../data'
 import { SettingsRow } from '../components/SettingsRow'
 
 interface StartupSettingsRowProps {
@@ -19,7 +19,7 @@ export function StartupSettingsRow({
 				type="button"
 				aria-label="Manage startup in Windows"
 				onClick={() => void onOpenStartupSettings()}
-				className={ACTION_BUTTON_QUIET}
+				className={ACTION_BUTTON_PRIMARY}
 			>
 				Manage
 			</button>

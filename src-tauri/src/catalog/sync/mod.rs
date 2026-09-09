@@ -7,6 +7,7 @@ mod hydration;
 mod portable;
 mod scan;
 pub(crate) mod scan_control;
+mod scan_guard;
 mod scan_sources;
 pub(crate) mod scan_steps;
 mod watch_paths;

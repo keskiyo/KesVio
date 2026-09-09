@@ -68,6 +68,8 @@ pub(crate) fn validate_executable_path(value: &str) -> Result<PathBuf, RejectedT
     Ok(path.to_path_buf())
 }
 
+// Every index comes from `find('%')`, and `%` is one ASCII byte, so all cuts are boundaries.
+#[expect(clippy::string_slice)]
 pub(crate) fn expand_env(value: &str) -> String {
     let mut result = String::with_capacity(value.len());
     let mut rest = value;

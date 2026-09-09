@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/keskiyo/KesVio/releases/tag/v0.5.0"><img src="https://img.shields.io/badge/version-0.5.0-7C3AED?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/keskiyo/KesVio/releases/tag/v0.5.1"><img src="https://img.shields.io/badge/version-0.5.1-7C3AED?style=flat-square" alt="Version"></a>
   <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square" alt="Windows">
   <img src="https://img.shields.io/badge/architecture-x64-334155?style=flat-square" alt="Architecture">
   <img src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&amp;logo=tauri&amp;logoColor=white" alt="Tauri">
@@ -111,8 +111,8 @@ Backups contain preferences only. If **Your changes are not being saved** appear
 
 ## Install
 
-1. Download [**`KesVio_0.5.0_x64-setup.exe`**](https://github.com/keskiyo/KesVio/releases/latest).
-2. Run the installer. It asks for administrator rights and installs to `C:\Program Files\KesVio`; you can pick another folder on the install page.
+1. Download [**`KesVio_0.5.1_x64-setup.exe`**](https://github.com/keskiyo/KesVio/releases/latest).
+2. Run the installer. It needs no administrator rights and installs for the current user into `%LOCALAPPDATA%\KesVio`; you can pick another folder on the install page.
 3. Start KesVio and choose **Scan for apps**.
 
 > [!WARNING]
@@ -158,13 +158,13 @@ What is verified instead: each release is built from this repository by the GitH
 You can check a download yourself, without trusting me:
 
 ```bash
-gh attestation verify KesVio_0.5.0_x64-setup.exe --repo keskiyo/KesVio
+gh attestation verify KesVio_0.5.1_x64-setup.exe --repo keskiyo/KesVio
 ```
 
 That asks GitHub whether this exact file was produced by this repository's release workflow, and names the commit it was built from.
 
 ```powershell
-(Get-FileHash -Algorithm SHA256 .\KesVio_0.5.0_x64-setup.exe).Hash.ToLower()
+(Get-FileHash -Algorithm SHA256 .\KesVio_0.5.1_x64-setup.exe).Hash.ToLower()
 ```
 
 Compare the result with the line in `SHA256SUMS.txt` on the same release page.

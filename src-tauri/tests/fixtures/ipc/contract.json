@@ -107,7 +107,7 @@
         "error": "The shortcut has not been registered yet.",
         "label": "Win+Shift+Q"
       },
-      "version": "0.5.0"
+      "version": "0.5.1"
     },
     "open_startup_settings": null,
     "refresh_apps": {
@@ -223,6 +223,7 @@
     "SAVE_WINDOW_SETTINGS_FAILED",
     "SCAN_CANCELLED",
     "SCAN_COALESCED",
+    "SCAN_FAILED",
     "SCAN_PATH_NOT_ABSOLUTE"
   ],
   "events": {
