@@ -24,6 +24,7 @@ describe('useAppFeedback', () => {
 		const { result } = renderHook(() =>
 			useAppFeedback({
 				onLaunch: vi.fn().mockResolvedValue(undefined),
+				onFullScan: vi.fn().mockResolvedValue(undefined),
 				onRefresh: vi.fn().mockRejectedValue({
 					code: 'SCAN_CANCELLED',
 					message: 'Application scan cancelled.',
@@ -41,6 +42,7 @@ describe('useAppFeedback', () => {
 		const { result } = renderHook(() =>
 			useAppFeedback({
 				onLaunch: vi.fn().mockResolvedValue(undefined),
+				onFullScan: vi.fn().mockResolvedValue(undefined),
 				onRefresh: vi
 					.fn()
 					.mockRejectedValue(new Error('scan cancelled internally')),
@@ -61,6 +63,7 @@ describe('useAppFeedback', () => {
 		const { result } = renderHook(() =>
 			useAppFeedback({
 				onLaunch: vi.fn().mockResolvedValue(undefined),
+				onFullScan: vi.fn().mockResolvedValue(undefined),
 				onRefresh: vi.fn().mockRejectedValue({
 					code: 'OPERATION_INTERRUPTED',
 					message: 'The operation was interrupted. Try again.',

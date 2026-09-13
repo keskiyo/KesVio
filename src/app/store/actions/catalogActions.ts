@@ -2,6 +2,7 @@ import { toAppClientError } from '../../../shared/api/tauri/errors'
 import { reconcileScenarios } from '../../../entities/scenario'
 import {
 	mergeIcon,
+	reconcileDriveCategories,
 	reconcileFirstSeen,
 	reconcileMarks,
 } from '../reconciliation'
@@ -53,6 +54,7 @@ export function createCatalogActions({
 		)
 		const marks = reconcileMarks(get(), apps)
 		const scenarios = reconcileScenarios(get().scenarios, apps)
+		const drives = reconcileDriveCategories(get(), apps)
 		set({
 			apps,
 			hasCache: true,
@@ -60,8 +62,10 @@ export function createCatalogActions({
 			firstSeenAt,
 			...marks,
 			...(scenarios ? { scenarios } : {}),
+			...(drives ?? {}),
 		})
-		if (firstSeenAt !== previousFirstSeen || marks || scenarios) persist()
+		if (firstSeenAt !== previousFirstSeen || marks || scenarios || drives)
+			persist()
 	}
 
 	return {
@@ -85,6 +89,7 @@ export function createCatalogActions({
 					catalogDiagnostics: snapshot.diagnostics ?? null,
 					...reconcileMarks(get(), snapshot.apps),
 					...(scenarios ? { scenarios } : {}),
+					...(reconcileDriveCategories(get(), snapshot.apps) ?? {}),
 				})
 				persist()
 			} catch (error) {

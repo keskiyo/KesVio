@@ -30,7 +30,6 @@ pub(super) struct CandidateIdentity {
     pub(super) launch_mode: Option<String>,
     pub(super) install_root: Option<String>,
     pub(super) registry_product: Option<String>,
-    pub(super) portable_product: Option<String>,
     pub(super) path: String,
 }
 
@@ -70,8 +69,6 @@ impl CandidateIdentity {
                     install_root.clone().unwrap_or_default()
                 )
             }),
-            portable_product: (app.source_kind == SourceKind::Portable)
-                .then(|| format!("{}|{}", install_root.clone().unwrap_or_default(), family)),
             install_root,
             path: normalize_path(&app.path),
         }

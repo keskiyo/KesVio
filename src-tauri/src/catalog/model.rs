@@ -114,6 +114,8 @@ pub(crate) struct AppInfo {
     pub category_reasons: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub close_risk: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scan_folder: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]

@@ -41,6 +41,8 @@ pub(crate) struct AppState {
     pub(crate) hydration_queue: Mutex<catalog::hydration::HydrationQueue>,
     pub(crate) change_watcher:
         Mutex<Option<crate::platform::windows::change_watcher::WatcherGuard>>,
+    pub(crate) volume_watcher:
+        Mutex<Option<crate::platform::windows::volume_watcher::VolumeWatcherGuard>>,
     pub(crate) global_shortcut:
         Mutex<Option<crate::platform::windows::global_shortcut::ShortcutGuard>>,
     pub(crate) shortcut_status: Mutex<crate::platform::windows::global_shortcut::Status>,
@@ -85,6 +87,7 @@ pub(crate) fn cached_app(name: &str, path: &str) -> catalog::AppInfo {
         target_availability: None,
         category_reasons: Vec::new(),
         close_risk: None,
+        scan_folder: None,
     }
 }
 

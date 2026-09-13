@@ -34,6 +34,7 @@ fn sample_app() -> AppInfo {
     app.target_availability = Some("present".into());
     app.category_reasons = vec!["executable_product_match".into()];
     app.close_risk = Some("safe".into());
+    app.scan_folder = Some(r"D:\Apps".into());
     app
 }
 

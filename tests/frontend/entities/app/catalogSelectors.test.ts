@@ -155,6 +155,75 @@ describe('categorized app identity', () => {
 		expect(result[0]).toBe(catalog[0])
 	})
 
+	// A stick the user added as a scan folder reads as a container: everything found on it lands
+	// in its drive category, whatever the classifier made of each executable.
+	it('places an app found under an added drive root in that drive category', () => {
+		const stick = [
+			app({
+				id: 'rufus',
+				name: 'Rufus',
+				path: 'F:\\Tools\\rufus.exe',
+				category: 'utilities',
+				sourceKind: 'portable',
+				scanFolder: 'F:\\',
+			}),
+			app({
+				id: 'hxd',
+				name: 'HxD',
+				path: 'D:\\Apps\\HxD\\HxD.exe',
+				category: 'development',
+				sourceKind: 'portable',
+				scanFolder: 'D:\\Apps',
+			}),
+		]
+
+		const result = selectCategorizedApps(state(stick))
+
+		expect(result[0].category).toBe('drive:f')
+		expect(result[1]).toBe(stick[1])
+	})
+
+	// A selected drive is one exclusive container, including records that had an older override.
+	it('keeps a manually overridden app inside its drive category', () => {
+		const stick = [
+			app({
+				id: 'brotato',
+				name: 'Brotato',
+				path: 'F:\\Games\\Brotato\\Brotato.exe',
+				category: 'games',
+				sourceKind: 'portable',
+				scanFolder: 'F:\\',
+			}),
+		]
+
+		const result = selectCategorizedApps(state(stick, { brotato: 'games' }))
+
+		expect(result[0].category).toBe('drive:f')
+	})
+
+	it('keeps an installer exclusively inside its drive category', () => {
+		const stick = [
+			app({
+				id: 'setup',
+				name: 'Git Setup',
+				path: 'F:\\Git-2.51-64-bit.exe',
+				category: 'installers_docs',
+				artifactKind: 'installer',
+				sourceKind: 'portable',
+				scanFolder: 'F:\\',
+			}),
+		]
+
+		const result = selectCategorizedApps(state(stick))
+
+		expect(result[0].category).toBe('drive:f')
+		expect(result[0].artifactKind).toBe('application')
+		expect(filterVisibleApps(result, 'all', none, none)).toEqual(result)
+		expect(
+			filterVisibleApps(result, 'installers_docs', none, none),
+		).toEqual([])
+	})
+
 	it('turns a manual mark into an installer artifact', () => {
 		const result = selectCategorizedApps(
 			state(catalog, {}, [], {}, ['notepad']),

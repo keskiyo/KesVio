@@ -31,15 +31,7 @@ pub(in crate::catalog) fn portable_app(
     {
         return None;
     }
-    let parent_name = path
-        .parent()
-        .and_then(Path::file_name)
-        .map(|parent| parent.to_string_lossy().into_owned());
-    let name = naming::portable_display_name(
-        &stem,
-        parent_name.as_deref(),
-        metadata.product_name.as_deref(),
-    );
+    let name = display_name(&path, &stem, metadata.product_name.as_deref());
     let mut app = make_app(name, path.clone());
     app.source_kind = SourceKind::Portable;
     app.description = metadata.description;
@@ -62,6 +54,26 @@ pub(in crate::catalog) fn portable_app(
         .parent()
         .map(|value| value.to_string_lossy().into_owned());
     Some(app)
+}
+
+pub(in crate::catalog) fn refresh_display_name(app: &mut AppInfo) {
+    if app.source_kind != SourceKind::Portable {
+        return;
+    }
+    let path = Path::new(&app.path);
+    let Some(stem) = path.file_stem() else {
+        return;
+    };
+    let stem = stem.to_string_lossy().trim().to_string();
+    app.name = display_name(path, &stem, app.product_name.as_deref());
+}
+
+fn display_name(path: &Path, stem: &str, product_name: Option<&str>) -> String {
+    let parent_name = path
+        .parent()
+        .and_then(Path::file_name)
+        .map(|parent| parent.to_string_lossy().into_owned());
+    naming::portable_display_name(stem, parent_name.as_deref(), product_name)
 }
 
 fn is_known_standalone_portable(stem: &str) -> bool {

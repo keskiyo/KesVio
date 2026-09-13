@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useRef } from 'react'
 import { Toaster } from 'sonner'
 import { useStore } from 'zustand'
 import { useCatalogView } from '../widgets/catalog-content'
@@ -8,7 +8,6 @@ import {
 	useCatalogNavigation,
 	useDesktopNavigation,
 } from '../widgets/sidebar-navigation'
-import { scenarioRunStatus, useScenarioRunner } from '../features/run-scenario'
 
 import { AppShellChrome } from './layout/AppShellChrome'
 import { Header } from '../widgets/app-header'
@@ -21,10 +20,10 @@ import { AppDialogs } from './layout/AppDialogs'
 import { AppViews } from './layout/AppViews'
 import { useCatalogBootstrap } from './model/useCatalogBootstrap'
 import { useDrawer } from './model/useDrawer'
-import { useTrayScenarios } from './model/useTrayScenarios'
+import { useScenarioIntegration } from './model/useScenarioIntegration'
+import { useSearchAccess } from './model/useSearchAccess'
 import { useTrayCatalogScan } from './model/useTrayCatalogScan'
 
-import { useIconRecovery } from '../entities/app'
 import { useGlobalShortcuts } from './model/useGlobalShortcuts'
 import { useStaleCopy } from '../features/stale-copy'
 import { useUpdater } from '../features/update-app'
@@ -62,10 +61,10 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	const desktopNavigation = useDesktopNavigation()
 	const drawer = useDrawer(desktopNavigation)
 	const menuButtonRef = useRef<HTMLButtonElement>(null)
-	const searchInputRef = useRef<HTMLInputElement>(null)
 	const feedback = useAppFeedback({
 		onLaunch: state.launch,
 		onRefresh: state.refresh,
+		onFullScan: state.forceFullScan,
 	})
 	const dialogs = useCatalogDialogs({
 		systemClient,
@@ -84,48 +83,34 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		initialize,
 		error,
 		isLoading,
+		catalogGeneration: state.catalogGeneration,
 		visibleHydrationIds,
 		hydrateVisibleIcons,
 	})
 
+	const search = useSearchAccess({
+		isCatalogView:
+			activeView !== 'settings' &&
+			activeView !== 'more' &&
+			activeView !== 'scenarios',
+		setQuery: state.setQuery,
+		selectView: navigation.selectView,
+	})
 	useGlobalShortcuts({
 		onToggleQuickLaunch: dialogs.palette.toggle,
 		onToggleScenarios: dialogs.scenarioLauncher.toggle,
-		onSearchFromShortcut: useCallback(() => {
-			searchInputRef.current?.focus()
-			searchInputRef.current?.select()
-		}, []),
-		onFocusSearch: useCallback(() => searchInputRef.current?.focus(), []),
+		onSearchFromShortcut: search.select,
+		onFocusSearch: search.focus,
 	})
 
 	useCatalogChangeToast({ catalogChange, clearCatalogChange, isRefreshing })
 
-	const isCatalogView =
-		activeView !== 'settings' &&
-		activeView !== 'more' &&
-		activeView !== 'scenarios'
-	const changeQuery = useCallback(
-		(value: string) => {
-			state.setQuery(value)
-			if (value.trim() && !isCatalogView) navigation.selectView('all')
-		},
-		[isCatalogView, navigation, state],
-	)
-	const scenarioRunner = useScenarioRunner({
-		apps: catalogApps,
-		scenarios: state.scenarios,
-		launch: state.launch,
-		closeApps: state.closeApps,
-		onCloseProgress: appsClient.onCloseProgress,
-		onStarted: state.markScenarioRun,
-		onFinished: feedback.reportScenarioRun,
-	})
-	useTrayScenarios({
+	const scenarios = useScenarioIntegration({
+		state,
+		catalogApps,
+		appsClient,
 		systemClient,
-		scenarios: state.scenarios,
-		favoriteScenarioIds: state.favoriteScenarioIds,
-		runningName: scenarioRunner.runningName,
-		onRun: scenarioRunner.runById,
+		onFinished: feedback.reportScenarioRun,
 	})
 	useTrayCatalogScan({
 		systemClient,
@@ -155,7 +140,6 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		isRefreshing: state.isRefreshing,
 	})
 	const updater = useUpdater()
-	useIconRecovery(state.repairMissingIcons)
 	const { dismiss: dismissStaleCopy, staleCopy } = useStaleCopy(systemClient)
 
 	return (
@@ -191,11 +175,11 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							query={state.query}
 							isRefreshing={state.isRefreshing}
 							scanProgress={state.scanProgress}
-							onQueryChange={changeQuery}
+							onQueryChange={search.changeQuery}
 							onRefresh={feedback.refresh}
 							onCancelScan={state.cancelScan}
 							menuButtonRef={menuButtonRef}
-							searchInputRef={searchInputRef}
+							searchInputRef={search.searchInputRef}
 							onOpenNavigation={drawer.onOpen}
 							showMenu={!desktopNavigation}
 						/>
@@ -204,11 +188,11 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							catalog={catalog}
 							derivations={derivations}
 							navigation={navigation}
-							scenarioRunner={scenarioRunner}
+							scenarioRunner={scenarios.runner}
 							dialogs={dialogs}
 							updater={updater}
 							systemClient={systemClient}
-							onRefresh={feedback.refresh}
+							onFirstScan={feedback.fullScan}
 						/>
 					</div>
 				</div>
@@ -228,18 +212,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 					dialogs={dialogs}
 					paletteApps={primaryApps}
 					paletteSuggestions={catalog.paletteSuggestions}
-					scenarioLauncher={{
-						scenarios: state.scenarios,
-						apps: catalogApps,
-						favoriteScenarioIds: state.favoriteScenarioIds,
-						runningId: scenarioRunner.runningId,
-						isScenarioRunning: scenarioRunner.isRunning,
-						runningStatus: scenarioRunStatus(
-							scenarioRunner.progress,
-						),
-						onRun: scenarioRunner.runById,
-						onToggleFavorite: state.toggleFavoriteScenario,
-					}}
+					scenarioLauncher={scenarios.launcher}
 					onError={dialogs.reportFailure}
 				/>
 				<Toaster

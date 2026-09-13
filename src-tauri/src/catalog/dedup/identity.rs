@@ -23,11 +23,6 @@ pub(in crate::catalog) fn canonical_id(app: &AppInfo) -> String {
             return format!("registry:{registry_product}");
         }
     }
-    if let Some(portable_product) = identity.portable_product {
-        if !portable_product.trim_matches('|').is_empty() {
-            return format!("portable:{portable_product}");
-        }
-    }
     format!("path:{}", identity.path)
 }
 
@@ -61,13 +56,6 @@ pub(super) fn resolved_canonical_id(resolved: &ResolvedApp) -> String {
         .filter(|value| !value.trim_matches('|').is_empty())
     {
         return format!("registry:{registry_product}");
-    }
-    if let Some(portable_product) = identities
-        .iter()
-        .find_map(|identity| identity.portable_product.as_ref())
-        .filter(|value| !value.trim_matches('|').is_empty())
-    {
-        return format!("portable:{portable_product}");
     }
     canonical_id(&resolved.app)
 }

@@ -8,6 +8,7 @@ pub(crate) mod known_folders;
 mod locale;
 mod registry;
 mod shortcuts;
+pub(crate) mod volume_watcher;
 
 pub(crate) use execution::{
     close_risk, closer, exec_target, executable_metadata, is_console_subsystem, launcher,

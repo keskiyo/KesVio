@@ -3,12 +3,19 @@ export type UpdateDownloadEvent =
 	| { event: 'Progress'; data: { chunkLength: number } }
 	| { event: 'Finished' }
 
+export interface UpdateRequestOptions {
+	timeout: number
+}
+
 export interface UpdateHandle {
 	version: string
 	body?: string
 	date?: string
 	rawJson: Record<string, unknown>
-	download(onEvent: (event: UpdateDownloadEvent) => void): Promise<void>
+	download(
+		onEvent: (event: UpdateDownloadEvent) => void,
+		options: UpdateRequestOptions,
+	): Promise<void>
 	install(): Promise<void>
 	close(): Promise<void>
 }

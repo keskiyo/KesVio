@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { resolveScenarioApps } from '../../../../src/entities/scenario'
+import { buildScenarioLookup } from '../../../../src/entities/scenario/lib/scenarioCatalogLookup'
 import type { AppInfo } from '../../../../src/entities/app'
 
 function app(value: Partial<AppInfo> & Pick<AppInfo, 'id'>): AppInfo {
@@ -143,5 +144,19 @@ describe('resolveScenarioApps', () => {
 				iconBase64: null,
 			},
 		])
+	})
+
+	// Every scenario row resolves its two lists against the whole catalog, so the index is built
+	// once per catalog snapshot and follows the store's own rule that a changed catalog is a new
+	// array rather than a mutated one.
+	it('indexes a catalog once and again only when the catalog is a new array', () => {
+		const catalog = [app({ id: 'a' })]
+		const first = buildScenarioLookup(catalog)
+
+		expect(buildScenarioLookup(catalog)).toBe(first)
+		expect(buildScenarioLookup([...catalog])).not.toBe(first)
+		expect(buildScenarioLookup([...catalog]).byIdentity.get('a')).toBe(
+			catalog[0],
+		)
 	})
 })

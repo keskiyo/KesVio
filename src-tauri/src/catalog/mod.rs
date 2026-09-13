@@ -50,7 +50,7 @@ pub(crate) use scan::{
 };
 pub(crate) use sources::source;
 use sources::{installer_cache, portable, registry, start_apps, steam};
-use sources::{portable_app, steam_app};
+use sources::{portable_app, refresh_display_name, steam_app};
 use start_menu::scan_start_menu;
 #[cfg(test)]
 pub(crate) use start_menu::StartMenuScan;
@@ -76,6 +76,7 @@ fn classify_entries(apps: Vec<AppInfo>, registrations: &machine::Registrations) 
         })
         .collect::<Vec<_>>();
     tree::demote_nested_components(&mut classified, registrations);
+    tree::demote_sibling_companions(&mut classified);
     classified
 }
 
@@ -223,6 +224,7 @@ mod tests {
             target_availability: None,
             category_reasons: Vec::new(),
             close_risk: None,
+            scan_folder: None,
         }
     }
 

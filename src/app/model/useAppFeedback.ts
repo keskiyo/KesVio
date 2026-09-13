@@ -10,9 +10,28 @@ import {
 interface AppFeedbackOptions {
 	onLaunch(app: AppInfo): Promise<void>
 	onRefresh(): Promise<void>
+	onFullScan(): Promise<void>
 }
 
-export function useAppFeedback({ onLaunch, onRefresh }: AppFeedbackOptions) {
+async function reportScan(run: () => Promise<void>) {
+	try {
+		await run()
+		toast.success('Application list refreshed')
+	} catch (error) {
+		const { code } = toAppClientError(error)
+		if (code === 'SCAN_CANCELLED') {
+			toast.info('Application scan cancelled')
+		} else {
+			toast.error(`Could not refresh the application list (${code})`)
+		}
+	}
+}
+
+export function useAppFeedback({
+	onLaunch,
+	onRefresh,
+	onFullScan,
+}: AppFeedbackOptions) {
 	const launch = useCallback(
 		async function launch(app: AppInfo) {
 			try {
@@ -30,19 +49,8 @@ export function useAppFeedback({ onLaunch, onRefresh }: AppFeedbackOptions) {
 		[onLaunch],
 	)
 
-	const refresh = useCallback(async () => {
-		try {
-			await onRefresh()
-			toast.success('Application list refreshed')
-		} catch (error) {
-			const { code } = toAppClientError(error)
-			if (code === 'SCAN_CANCELLED') {
-				toast.info('Application scan cancelled')
-			} else {
-				toast.error(`Could not refresh the application list (${code})`)
-			}
-		}
-	}, [onRefresh])
+	const refresh = useCallback(() => reportScan(onRefresh), [onRefresh])
+	const fullScan = useCallback(() => reportScan(onFullScan), [onFullScan])
 
 	const reportScenarioRun = useCallback((summary: ScenarioRunSummary) => {
 		const message = scenarioRunSummaryMessage(summary)
@@ -56,5 +64,5 @@ export function useAppFeedback({ onLaunch, onRefresh }: AppFeedbackOptions) {
 		else toast.success(message)
 	}, [])
 
-	return { launch, refresh, reportScenarioRun }
+	return { launch, refresh, fullScan, reportScenarioRun }
 }

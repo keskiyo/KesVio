@@ -79,6 +79,17 @@ describe('useCatalogView', () => {
 	})
 
 	describe('icon hydration', () => {
+		it('covers every card in a catalog view beyond the first screen', () => {
+			const apps = Array.from({ length: 160 }, (_, index) =>
+				app(`App ${index}`),
+			)
+			const { result } = view({ apps })
+
+			expect(result.current.visibleHydrationIds.split('|')).toEqual(
+				apps.map(item => item.id),
+			)
+		})
+
 		// Scenario rows show each app by its icon, and that page renders no catalog grid — without
 		// its own hydration the tiles would sit on the fallback glyph.
 		it('covers the apps a scenario holds while the scenarios page is open', () => {

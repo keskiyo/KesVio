@@ -31,6 +31,7 @@
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
+          "scanFolder": "D:\\Apps",
           "sourceKind": "registry",
           "targetAvailability": "present",
           "version": "1.95.0",
@@ -76,6 +77,7 @@
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
+          "scanFolder": "D:\\Apps",
           "sourceKind": "registry",
           "targetAvailability": "present",
           "version": "1.95.0",
@@ -107,7 +109,7 @@
         "error": "The shortcut has not been registered yet.",
         "label": "Win+Shift+Q"
       },
-      "version": "0.5.1"
+      "version": "0.0.0-sample"
     },
     "open_startup_settings": null,
     "refresh_apps": {
@@ -133,6 +135,7 @@
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
+          "scanFolder": "D:\\Apps",
           "sourceKind": "registry",
           "targetAvailability": "present",
           "version": "1.95.0",
@@ -168,6 +171,7 @@
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
+          "scanFolder": "D:\\Apps",
           "sourceKind": "registry",
           "targetAvailability": "present",
           "version": "1.95.0",
@@ -262,6 +266,7 @@
           "preferenceIdentity": "preference:microsoft-visual-studio-code",
           "productName": "Visual Studio Code",
           "publisher": "Microsoft Corporation",
+          "scanFolder": "D:\\Apps",
           "sourceKind": "registry",
           "targetAvailability": "present",
           "version": "1.95.0",

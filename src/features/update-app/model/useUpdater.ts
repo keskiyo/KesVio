@@ -6,6 +6,7 @@ import { createUpdateResource } from './updateResource'
 import { useUpdateCheck } from './useUpdateCheck'
 import { useUpdateInstall } from './useUpdateInstall'
 import { updatePresentation } from '../lib/updatePresentation'
+import { UPDATE_CHECK_TIMEOUT_MS } from './updateTimeouts'
 
 export type {
 	AvailableUpdate,
@@ -14,10 +15,12 @@ export type {
 	UpdaterState,
 } from '../types'
 
+const checkForUpdate = () => check({ timeout: UPDATE_CHECK_TIMEOUT_MS })
+
 export function useUpdater(options?: { autoCheck?: boolean }): UpdaterState {
 	const [resource] = useState(createUpdateResource)
 	const { available, ...checking } = useUpdateCheck(
-		check,
+		checkForUpdate,
 		resource,
 		options?.autoCheck ?? true,
 	)

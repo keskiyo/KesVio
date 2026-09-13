@@ -2,10 +2,10 @@ use super::candidate::AppCandidate;
 
 use super::signals::{
     both_unversioned_portable_copies, conflicting_install_roots, conflicting_versions,
-    nested_install_root_and_family, publishers_conflict, registry_install_contains_exe,
-    same_folder_and_family, same_folder_helper_variant, same_package_family, same_portable_root,
-    same_version_portable_copy, shared, shortcut_same_family, shortcut_targets_executable,
-    versioned_portable_copy,
+    distinct_portable_launchers, nested_install_root_and_family, publishers_conflict,
+    registry_install_contains_exe, same_folder_and_family, same_folder_helper_variant,
+    same_package_family, same_portable_root, same_version_portable_copy, shared,
+    shortcut_same_family, shortcut_targets_executable, versioned_portable_copy,
 };
 use super::target::system_tool_alias;
 
@@ -47,6 +47,13 @@ pub(super) struct EvidenceSummary {
 }
 
 pub(super) fn should_merge(existing: &ResolvedApp, candidate: &AppCandidate) -> bool {
+    if existing
+        .candidates
+        .iter()
+        .any(|left| distinct_portable_launchers(left, candidate))
+    {
+        return false;
+    }
     if existing.candidates.iter().any(|left| {
         left.app.artifact_kind != candidate.app.artifact_kind
             && !summarize_evidence(left, candidate).has_identity_match

@@ -36,6 +36,7 @@ fn app(id: &str, path: &str) -> AppInfo {
         target_availability: None,
         category_reasons: Vec::new(),
         close_risk: None,
+        scan_folder: None,
     }
 }
 

@@ -2,6 +2,8 @@ use super::state::LifecycleState;
 use crate::paths;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::sync::Arc;
+use std::time::Duration;
 use std::{fs, io};
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 
@@ -10,6 +12,8 @@ const WINDOW_STATE_TEMPORARY_FILE: &str = "window-state.json.tmp";
 const WINDOW_STATE_VERSION: u32 = 1;
 const MIN_WIDTH: u32 = 430;
 const MIN_HEIGHT: u32 = 520;
+const PERSIST_SETTLE_DELAY: Duration = Duration::from_millis(500);
+const PERSIST_SETTLE_ROUNDS: u32 = 20;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -75,9 +79,9 @@ pub(crate) fn read(app_data_dir: &Path) -> WindowPreferences {
     }
 }
 
-pub(crate) fn write(app_data_dir: &Path, preferences: &WindowPreferences) -> io::Result<()> {
+pub(crate) fn write(app_data_dir: &Path, preferences: &WindowPreferences) -> io::Result<bool> {
     if stored_matches(app_data_dir, preferences) {
-        return Ok(());
+        return Ok(false);
     }
     fs::create_dir_all(app_data_dir)?;
     let bytes = serde_json::to_vec_pretty(&StoredWindowState {
@@ -88,7 +92,18 @@ pub(crate) fn write(app_data_dir: &Path, preferences: &WindowPreferences) -> io:
     .map_err(io::Error::other)?;
     let temporary = app_data_dir.join(WINDOW_STATE_TEMPORARY_FILE);
     fs::write(&temporary, bytes)?;
-    fs::rename(temporary, app_data_dir.join(WINDOW_STATE_FILE))
+    fs::rename(temporary, app_data_dir.join(WINDOW_STATE_FILE))?;
+    Ok(true)
+}
+
+fn describe(geometry: Option<WindowGeometry>) -> String {
+    match geometry {
+        Some(geometry) => format!(
+            "{}x{} at ({},{}) maximized={}",
+            geometry.width, geometry.height, geometry.x, geometry.y, geometry.maximized
+        ),
+        None => "none".to_owned(),
+    }
 }
 
 fn stored_matches(app_data_dir: &Path, preferences: &WindowPreferences) -> bool {
@@ -211,7 +226,34 @@ pub(crate) fn persist(app: &AppHandle, lifecycle: &LifecycleState) {
     let Ok(app_data_dir) = paths::data_dir(app) else {
         return;
     };
-    let _ = write(&app_data_dir, &preferences_of(lifecycle));
+    let preferences = preferences_of(lifecycle);
+    match write(&app_data_dir, &preferences) {
+        Ok(true) => log::info!("Window state persisted: {}", describe(preferences.geometry)),
+        Ok(false) => {}
+        Err(error) => log::warn!("Window state was not persisted: {error}"),
+    }
+}
+
+pub(crate) fn persist_when_settled(app: &AppHandle, lifecycle: &Arc<LifecycleState>) {
+    lifecycle.note_geometry_change();
+    if !lifecycle.claim_persist() {
+        return;
+    }
+    let app = app.clone();
+    let lifecycle = Arc::clone(lifecycle);
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut seen = lifecycle.geometry_changes();
+        for _ in 0..PERSIST_SETTLE_ROUNDS {
+            std::thread::sleep(PERSIST_SETTLE_DELAY);
+            let latest = lifecycle.geometry_changes();
+            if latest == seen {
+                break;
+            }
+            seen = latest;
+        }
+        lifecycle.release_persist();
+        persist(&app, &lifecycle);
+    });
 }
 
 fn screen_rects(window: &WebviewWindow) -> Vec<ScreenRect> {
@@ -235,6 +277,10 @@ fn restore(window: &WebviewWindow, app_data_dir: &Path, lifecycle: &LifecycleSta
         .geometry
         .and_then(|geometry| fit_to_screens(geometry, &screen_rects(window)))
     else {
+        log::info!(
+            "Window state not restored: stored {}, using the configured window",
+            describe(stored.geometry)
+        );
         return;
     };
     let _ = window.set_position(PhysicalPosition::new(fitted.x, fitted.y));
@@ -243,6 +289,12 @@ fn restore(window: &WebviewWindow, app_data_dir: &Path, lifecycle: &LifecycleSta
         let _ = window.maximize();
     }
     lifecycle.remember_geometry(fitted);
+    log::info!(
+        "Window state restored: stored {}, applied {}, window reports {}",
+        describe(stored.geometry),
+        describe(Some(fitted)),
+        describe(capture(window, None))
+    );
 }
 
 pub(crate) fn restore_main_window(app: &AppHandle, lifecycle: &LifecycleState) {
@@ -300,13 +352,31 @@ mod tests {
     fn rewriting_the_same_preferences_leaves_the_file_untouched() {
         let dir = tempfile::tempdir().unwrap();
         let saved = WindowPreferences::default();
-        write(dir.path(), &saved).unwrap();
+        assert!(write(dir.path(), &saved).unwrap());
         let path = dir.path().join(WINDOW_STATE_FILE);
         let written_at = fs::metadata(&path).unwrap().modified().unwrap();
 
-        write(dir.path(), &saved).unwrap();
+        assert!(!write(dir.path(), &saved).unwrap());
 
         assert_eq!(fs::metadata(&path).unwrap().modified().unwrap(), written_at);
+    }
+
+    #[test]
+    fn a_resized_window_reaches_the_stored_state_without_a_close() {
+        let dir = tempfile::tempdir().unwrap();
+        let before = WindowPreferences {
+            geometry: Some(geometry(100, 100, 1250, 720)),
+            hide_to_tray: true,
+        };
+        assert!(write(dir.path(), &before).unwrap());
+        let after = WindowPreferences {
+            geometry: Some(geometry(100, 100, 430, 658)),
+            hide_to_tray: true,
+        };
+
+        assert!(write(dir.path(), &after).unwrap());
+
+        assert_eq!(read(dir.path()), after);
     }
 
     #[test]

@@ -97,7 +97,7 @@ impl<T: Clone> ScanCoordinator<T> {
             };
         }
 
-        if request > active.request && request.is_interactive() {
+        if request.priority() > active.request.priority() && request.is_interactive() {
             active.cancelled.store(true, Ordering::Relaxed);
             let mut inherited = active.waiters.lock().expect("scan waiters poisoned");
             let mut combined = std::mem::take(&mut *inherited);
@@ -195,7 +195,7 @@ fn merge_pending<T>(
 ) {
     match pending {
         Some(current) => {
-            current.request = current.request.max(request);
+            current.request = current.request.merge(request);
             current.waiters.append(&mut waiters);
         }
         None => {
@@ -207,6 +207,7 @@ fn merge_pending<T>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::catalog::sync::WatchScope;
     use std::thread;
     use std::time::Duration;
 
@@ -295,17 +296,44 @@ mod tests {
     #[test]
     fn repeated_watch_requests_are_coalesced() {
         let coordinator = ScanCoordinator::<u32>::default();
-        let Submission::Start { job: active, .. } = coordinator.submit(SyncRequest::Watch, false)
+        let Submission::Start { job: active, .. } =
+            coordinator.submit(SyncRequest::Watch(WatchScope::START_MENU), false)
         else {
             panic!("watch should start");
         };
         assert!(matches!(
-            coordinator.submit(SyncRequest::Watch, false),
+            coordinator.submit(SyncRequest::Watch(WatchScope::PORTABLE), false),
+            Submission::Coalesced
+        ));
+        assert!(matches!(
+            coordinator.submit(SyncRequest::Watch(WatchScope::REGISTRY), false),
             Submission::Coalesced
         ));
         let next = coordinator.complete(active, Ok(1)).unwrap();
-        assert_eq!(next.request, SyncRequest::Watch);
+        assert_eq!(
+            next.request,
+            SyncRequest::Watch(WatchScope::PORTABLE.union(WatchScope::REGISTRY))
+        );
         assert!(coordinator.complete(next, Ok(1)).is_none());
+    }
+
+    #[test]
+    fn watch_scopes_union_without_becoming_a_full_scan() {
+        let request = SyncRequest::Watch(WatchScope::START_MENU)
+            .merge(SyncRequest::Watch(WatchScope::PORTABLE));
+
+        assert_eq!(
+            request,
+            SyncRequest::Watch(WatchScope::START_MENU.union(WatchScope::PORTABLE))
+        );
+    }
+
+    #[test]
+    fn an_interactive_request_replaces_pending_watch_scopes() {
+        assert_eq!(
+            SyncRequest::Watch(WatchScope::REGISTRY).merge(SyncRequest::Refresh),
+            SyncRequest::Refresh
+        );
     }
 
     #[test]

@@ -6,7 +6,17 @@ export interface ScenarioCatalogLookup {
 	byUniqueName: Map<string, AppInfo | null>
 }
 
+const lookups = new WeakMap<AppInfo[], ScenarioCatalogLookup>()
+
 export function buildScenarioLookup(apps: AppInfo[]): ScenarioCatalogLookup {
+	const cached = lookups.get(apps)
+	if (cached) return cached
+	const lookup = indexCatalog(apps)
+	lookups.set(apps, lookup)
+	return lookup
+}
+
+function indexCatalog(apps: AppInfo[]): ScenarioCatalogLookup {
 	const byIdentity = new Map<string, AppInfo>()
 	for (const app of apps) byIdentity.set(appIdentity(app), app)
 	for (const app of apps) {

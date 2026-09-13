@@ -101,6 +101,7 @@ fn build_start_apps(
                 target_availability: None,
                 category_reasons: Vec::new(),
                 close_risk: None,
+                scan_folder: None,
             };
             if let Some(identity) = entry.package.as_ref() {
                 package::apply(&mut app, identity, executables);

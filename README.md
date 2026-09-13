@@ -39,6 +39,8 @@ Windows keeps applications in several places. KesVio combines:
 
 When the same application is discovered from more than one source, it appears once rather than as a collection of duplicates.
 
+Add a drive root such as `F:\` under **Advanced → Scan folders** to keep applications found there in one exclusive **Disk F** category. The category follows the Windows drive letter, hides while the drive is disconnected, and returns after Windows reports the drive again.
+
 ## From discovery to launch
 
 1. **Discover** Windows software, Steam games and selected portable-app folders.

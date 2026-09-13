@@ -29,6 +29,7 @@ fn app(reasons: Vec<VisibilityReason>) -> AppInfo {
         target_availability: None,
         category_reasons: Vec::new(),
         close_risk: None,
+        scan_folder: None,
     }
 }
 
@@ -107,4 +108,39 @@ fn merged_card_preserves_artifact_kind_and_reserved_category() {
 
     assert_eq!(merged.artifact_kind, ArtifactKind::Installer);
     assert_eq!(merged.category, AppCategory::InstallersDocs);
+}
+
+#[test]
+fn a_registered_winner_keeps_the_matching_portable_scan_folder() {
+    let mut shortcut = app(Vec::new());
+    shortcut.source_kind = SourceKind::StartMenu;
+    shortcut.launch_kind = LaunchKind::Shortcut;
+    shortcut.path = r"C:\Menu\Example.lnk".into();
+    shortcut.resolved_path = Some(r"F:\Tools\Example\example.exe".into());
+    let mut portable = app(Vec::new());
+    portable.source_kind = SourceKind::Portable;
+    portable.path = r"F:\Tools\Example\example.exe".into();
+    portable.scan_folder = Some(r"F:\".into());
+
+    let merged = merge_app(shortcut, portable);
+
+    assert_eq!(merged.source_kind, SourceKind::StartMenu);
+    assert_eq!(merged.scan_folder.as_deref(), Some(r"F:\"));
+}
+
+#[test]
+fn a_scan_folder_from_another_copy_is_not_adopted() {
+    let mut shortcut = app(Vec::new());
+    shortcut.source_kind = SourceKind::StartMenu;
+    shortcut.launch_kind = LaunchKind::Shortcut;
+    shortcut.path = r"C:\Menu\Example.lnk".into();
+    shortcut.resolved_path = Some(r"D:\Apps\Example\example.exe".into());
+    let mut portable = app(Vec::new());
+    portable.source_kind = SourceKind::Portable;
+    portable.path = r"F:\Tools\Example\example.exe".into();
+    portable.scan_folder = Some(r"F:\".into());
+
+    let merged = merge_app(shortcut, portable);
+
+    assert_eq!(merged.scan_folder, None);
 }

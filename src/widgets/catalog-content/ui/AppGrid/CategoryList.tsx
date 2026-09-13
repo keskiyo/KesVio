@@ -3,6 +3,7 @@ import {
 	groupAppsByCategory,
 	sortFavoritesFirst,
 } from '../../../../entities/app'
+import { staysVisibleWhenEmpty } from '../../../../entities/category'
 import { CategorySection } from '../CategorySection/CategorySection'
 import type { AppGridProps } from './types'
 
@@ -14,13 +15,17 @@ export function CategoryList(props: AppGridProps) {
 	)
 	const visibleCategories = useMemo(
 		() =>
-			props.categoryOrder.filter(
-				category =>
-					groups.has(category) ||
-					(!props.hasQuery &&
-						props.categories.find(item => item.id === category)
-							?.builtIn === false),
-			),
+			props.categoryOrder.filter(category => {
+				if (groups.has(category)) return true
+				if (props.hasQuery) return false
+				const definition = props.categories.find(
+					item => item.id === category,
+				)
+				return (
+					definition !== undefined &&
+					staysVisibleWhenEmpty(definition)
+				)
+			}),
 		[groups, props.categoryOrder, props.categories, props.hasQuery],
 	)
 	return (

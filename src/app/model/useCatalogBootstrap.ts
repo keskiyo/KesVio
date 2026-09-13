@@ -6,6 +6,7 @@ interface BootstrapInput {
 	initialize(): Promise<() => void>
 	error: string | null
 	isLoading: boolean
+	catalogGeneration: number
 	visibleHydrationIds: string
 	hydrateVisibleIcons(ids: string[]): Promise<void>
 }
@@ -14,6 +15,7 @@ export function useCatalogBootstrap({
 	initialize,
 	error,
 	isLoading,
+	catalogGeneration,
 	visibleHydrationIds,
 	hydrateVisibleIcons,
 }: BootstrapInput) {
@@ -48,5 +50,5 @@ export function useCatalogBootstrap({
 		if (isLoading) return
 		const ids = visibleHydrationIds.split('|').filter(Boolean)
 		if (ids.length) void hydrateVisibleIcons(ids)
-	}, [hydrateVisibleIcons, isLoading, visibleHydrationIds])
+	}, [catalogGeneration, hydrateVisibleIcons, isLoading, visibleHydrationIds])
 }

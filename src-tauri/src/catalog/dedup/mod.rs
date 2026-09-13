@@ -183,6 +183,7 @@ mod tests {
             target_availability: None,
             category_reasons: Vec::new(),
             close_risk: None,
+            scan_folder: None,
         }
     }
 
@@ -692,6 +693,44 @@ mod tests {
             make(r"E:\B\Victoria6", "6.0.0.0"),
         ]);
         assert_eq!(different.len(), 2, "different versions stay separate");
+    }
+
+    #[test]
+    fn portable_sfx_launchers_with_different_targets_stay_separate() {
+        let make = |target: &str| {
+            let mut app = app("7-Zip SFX", target);
+            app.source_kind = SourceKind::Portable;
+            app.version = Some("23.01".into());
+            app.publisher = Some("Igor Pavlov".into());
+            app.install_location = Some(r"F:\SSTR\MInst\Portable".into());
+            app
+        };
+
+        let resolved = resolve(vec![
+            make(r"F:\SSTR\MInst\Portable\aida64_All.exe"),
+            make(r"F:\SSTR\MInst\Portable\AnyDesk_All.exe"),
+        ]);
+
+        assert_eq!(resolved.len(), 2);
+        assert_ne!(resolved[0].id, resolved[1].id);
+    }
+
+    #[test]
+    fn portable_architecture_variants_still_merge() {
+        let make = |target: &str| {
+            let mut app = app("DrvIndex", target);
+            app.source_kind = SourceKind::Portable;
+            app.publisher = Some("SSTR".into());
+            app.install_location = Some(r"F:\SSTR\DriverPacks".into());
+            app
+        };
+
+        let resolved = resolve(vec![
+            make(r"F:\SSTR\DriverPacks\DrvIndex_x32.exe"),
+            make(r"F:\SSTR\DriverPacks\DrvIndex_x64.exe"),
+        ]);
+
+        assert_eq!(resolved.len(), 1);
     }
 
     #[test]

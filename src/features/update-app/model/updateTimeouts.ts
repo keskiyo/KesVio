@@ -1,0 +1,2 @@
+export const UPDATE_CHECK_TIMEOUT_MS = 30_000
+export const UPDATE_DOWNLOAD_TIMEOUT_MS = 15 * 60 * 1000

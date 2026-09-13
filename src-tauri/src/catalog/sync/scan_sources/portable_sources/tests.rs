@@ -24,7 +24,7 @@ fn startup_keeps_cached_apps_when_a_drive_is_temporarily_absent() {
         &settings(true, Vec::new()),
         SyncRequest::Startup,
         vec![PathBuf::from(r"C:\")],
-        &previous,
+        Some(&previous),
         |path| path == Path::new(r"C:\"),
     );
     let scanned = portable::scan_roots(
@@ -53,7 +53,7 @@ fn refresh_scans_explicit_roots_and_retains_fixed_drives() {
         &settings(true, vec![explicit.path().to_string_lossy().into_owned()]),
         SyncRequest::Refresh,
         vec![fixed.clone()],
-        &[],
+        Some(&[]),
         |path| path.is_dir(),
     );
 
@@ -70,7 +70,7 @@ fn force_scan_removes_an_explicit_root_nested_under_a_fixed_drive() {
         &settings(true, vec![explicit.to_string_lossy().into_owned()]),
         SyncRequest::Force,
         vec![fixed.path().to_path_buf()],
-        &[],
+        Some(&[]),
         |path| path.is_dir(),
     );
 
@@ -85,7 +85,7 @@ fn disabled_fixed_drive_scanning_neither_scans_nor_retains_fixed_drives() {
         &settings(false, Vec::new()),
         SyncRequest::Refresh,
         vec![fixed],
-        &[],
+        Some(&[]),
         |path| path.is_dir(),
     );
 

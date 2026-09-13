@@ -195,6 +195,30 @@ describe('preferences', () => {
 		)
 	})
 
+	it('keeps a renamed drive category after preferences reload', () => {
+		const normalized = normalizePreferences({
+			version: 19,
+			categories: [
+				{
+					id: 'drive:f',
+					label: 'Rescue tools',
+					builtIn: false,
+					accent: 'red',
+				},
+			],
+			categoryOrder: ['drive:f'],
+		})
+
+		expect(normalized.categories).toContainEqual(
+			expect.objectContaining({
+				id: 'drive:f',
+				label: 'Rescue tools',
+				accent: 'red',
+			}),
+		)
+		expect(normalized.categoryOrder[0]).toBe('drive:f')
+	})
+
 	it('upgrades a v17 document to the current schema with the default density and no data loss', () => {
 		const upgraded = normalizePreferences({
 			version: 17,
@@ -684,7 +708,7 @@ describe('preferences', () => {
 			})),
 		})
 
-		// One click runs the whole scenario, so the work it can start is bounded on read too вЂ”
+		// One click runs the whole scenario, so the work it can start is bounded on read too —
 		// a hand-edited document cannot smuggle in an unbounded batch.
 		expect(normalized.scenarios).toHaveLength(50)
 		expect(normalized.scenarios[0]?.launchIdentities).toHaveLength(20)
@@ -792,7 +816,7 @@ describe('preferences', () => {
 			...DEFAULT_PREFERENCES,
 			favoriteAppIds: ['code', 'editor'],
 		})
-		// Whatever damages the primary value вЂ” a partial write, a hand-edit вЂ” must not take the
+		// Whatever damages the primary value — a partial write, a hand-edit — must not take the
 		// user's choices with it.
 		values.set(PREFERENCES_KEY, '{truncated')
 

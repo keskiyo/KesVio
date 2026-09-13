@@ -83,6 +83,7 @@ const appInfo: Required<AppInfo> = {
 	targetAvailability: null,
 	categoryReasons: [],
 	closeRisk: null,
+	scanFolder: null,
 }
 
 const scanSettings: Required<ScanSettings> = {

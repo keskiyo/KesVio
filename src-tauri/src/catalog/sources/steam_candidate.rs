@@ -33,5 +33,6 @@ pub(in crate::catalog) fn steam_app(game: SteamGame) -> AppInfo {
         target_availability: None,
         category_reasons: Vec::new(),
         close_risk: None,
+        scan_folder: None,
     }
 }

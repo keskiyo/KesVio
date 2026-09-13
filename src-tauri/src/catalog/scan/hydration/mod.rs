@@ -42,10 +42,11 @@ pub(crate) struct HydrationOutcome {
 
 pub(crate) fn hydrate_one(app_data_dir: &Path, app: &AppInfo, generation: u64) -> HydrationOutcome {
     let target = app.resolved_path.as_deref().unwrap_or(&app.path);
-    let metadata = Path::new(target)
-        .extension()
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("exe"))
-        .then(|| crate::platform::windows::executable_metadata::read(Path::new(target)));
+    let metadata = (needs_executable_metadata(app)
+        && Path::new(target)
+            .extension()
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("exe")))
+    .then(|| crate::platform::windows::executable_metadata::read(Path::new(target)));
     let icon = hydrate_icon(app_data_dir, app);
     let publisher = app
         .publisher
@@ -98,9 +99,17 @@ pub(crate) fn hydrate_one(app_data_dir: &Path, app: &AppInfo, generation: u64) -
     }
 }
 
+fn needs_executable_metadata(app: &AppInfo) -> bool {
+    app.description.is_none()
+        || app.version.is_none()
+        || app.publisher.is_none()
+        || app.product_name.is_none()
+        || app.original_filename.is_none()
+}
+
 #[cfg(test)]
 mod tests {
-    use super::hydrate_one;
+    use super::{hydrate_one, needs_executable_metadata};
     use crate::app_state::cached_app;
     use crate::catalog::PlatformKind;
 
@@ -113,5 +122,19 @@ mod tests {
         let outcome = hydrate_one(directory.path(), &app, 4);
 
         assert_eq!(outcome.patch.platform_kind, Some(PlatformKind::BattleNet));
+    }
+
+    #[test]
+    fn complete_scanner_metadata_does_not_require_another_executable_read() {
+        let mut app = cached_app("Editor", r"C:\Editor.exe");
+        app.description = Some("Editor".into());
+        app.version = Some("1.0".into());
+        app.publisher = Some("Vendor".into());
+        app.product_name = Some("Editor".into());
+        app.original_filename = Some("Editor.exe".into());
+
+        assert!(!needs_executable_metadata(&app));
+        app.version = None;
+        assert!(needs_executable_metadata(&app));
     }
 }

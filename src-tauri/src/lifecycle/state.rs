@@ -1,11 +1,13 @@
 use super::window_state::WindowGeometry;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 
 pub(crate) struct LifecycleState {
     quitting: AtomicBool,
     hides_to_tray: AtomicBool,
     geometry: Mutex<Option<WindowGeometry>>,
+    geometry_changes: AtomicU64,
+    persist_pending: AtomicBool,
 }
 
 impl Default for LifecycleState {
@@ -14,6 +16,8 @@ impl Default for LifecycleState {
             quitting: AtomicBool::new(false),
             hides_to_tray: AtomicBool::new(true),
             geometry: Mutex::new(None),
+            geometry_changes: AtomicU64::new(0),
+            persist_pending: AtomicBool::new(false),
         }
     }
 }
@@ -43,6 +47,22 @@ impl LifecycleState {
         if let Ok(mut current) = self.geometry.lock() {
             *current = Some(geometry);
         }
+    }
+
+    pub(crate) fn note_geometry_change(&self) -> u64 {
+        self.geometry_changes.fetch_add(1, Ordering::SeqCst) + 1
+    }
+
+    pub(crate) fn geometry_changes(&self) -> u64 {
+        self.geometry_changes.load(Ordering::SeqCst)
+    }
+
+    pub(crate) fn claim_persist(&self) -> bool {
+        !self.persist_pending.swap(true, Ordering::SeqCst)
+    }
+
+    pub(crate) fn release_persist(&self) {
+        self.persist_pending.store(false, Ordering::SeqCst);
     }
 }
 
@@ -96,6 +116,29 @@ mod tests {
     #[test]
     fn a_fresh_session_has_no_geometry_to_restore() {
         assert_eq!(LifecycleState::default().geometry(), None);
+    }
+
+    #[test]
+    fn every_geometry_change_advances_the_generation() {
+        let state = LifecycleState::default();
+        assert_eq!(state.geometry_changes(), 0);
+
+        assert_eq!(state.note_geometry_change(), 1);
+        assert_eq!(state.note_geometry_change(), 2);
+
+        assert_eq!(state.geometry_changes(), 2);
+    }
+
+    #[test]
+    fn only_one_persist_is_pending_at_a_time() {
+        let state = LifecycleState::default();
+
+        assert!(state.claim_persist());
+        assert!(!state.claim_persist());
+
+        state.release_persist();
+
+        assert!(state.claim_persist());
     }
 
     #[test]

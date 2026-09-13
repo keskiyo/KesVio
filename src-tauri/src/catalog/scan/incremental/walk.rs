@@ -5,7 +5,7 @@ use super::model::{
 };
 use crate::catalog::machine::MachineFacts;
 use crate::catalog::sync::scan_steps::StepTracker;
-use crate::catalog::{portable, portable_app};
+use crate::catalog::{portable, portable_app, refresh_display_name};
 use std::fs;
 use std::os::windows::fs::MetadataExt;
 use std::path::{Path, PathBuf};
@@ -50,7 +50,7 @@ pub(super) fn visit_directory(
         });
 
     if unchanged {
-        let mut record = cached.expect("checked above").clone();
+        let mut record = reused(cached.expect("checked above"));
         if context.verify_fingerprints {
             let (apps, executables) =
                 verify_cached_executables(&record, context.facts, &mut result.statistics);
@@ -73,7 +73,7 @@ pub(super) fn visit_directory(
     }
 
     let Ok(entries) = fs::read_dir(directory) else {
-        if let Some(record) = cached.cloned() {
+        if let Some(record) = cached.map(reused) {
             result.apps.extend(record.apps.iter().cloned());
             result.index.directories.insert(key, record);
         }
@@ -137,6 +137,14 @@ pub(super) fn visit_directory(
         }
         visit_directory(Path::new(&child), depth + 1, context, result);
     }
+}
+
+fn reused(cached: &DirectoryRecord) -> DirectoryRecord {
+    let mut record = cached.clone();
+    for app in &mut record.apps {
+        refresh_display_name(app);
+    }
+    record
 }
 
 fn cached_children_are_valid(parent: &Path, children: &[String]) -> bool {

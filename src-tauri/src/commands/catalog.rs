@@ -72,13 +72,6 @@ pub(crate) async fn get_apps(app: tauri::AppHandle) -> Result<CatalogSnapshot, A
         let state = app.state::<AppState>();
         remember_catalog(state.inner(), &apps);
     }
-    enqueue_hydration(
-        app.clone(),
-        app_data_dir,
-        generation,
-        apps.iter().map(|app| app.id.clone()).collect(),
-        false,
-    );
     Ok(CatalogSnapshot {
         has_cache,
         apps: apps.iter().map(CatalogAppDto::from).collect(),
@@ -172,7 +165,7 @@ pub(crate) async fn hydrate_visible_icons(
         paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let cache_dir = app_data_dir.clone();
     let Some(document) = run_blocking("Catalog cache read", move || {
-        cache::read_document(&cache_dir)
+        cache::read_hydration_document(&cache_dir)
     })
     .await?
     else {

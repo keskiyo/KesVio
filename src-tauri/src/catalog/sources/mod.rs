@@ -7,5 +7,5 @@ pub(super) mod start_apps;
 pub(super) mod steam;
 mod steam_candidate;
 
-pub(super) use portable_candidate::portable_app;
+pub(super) use portable_candidate::{portable_app, refresh_display_name};
 pub(super) use steam_candidate::steam_app;

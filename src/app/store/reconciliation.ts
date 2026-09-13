@@ -1,9 +1,46 @@
 import { appIdentity } from '../../entities/app'
-import type { AppCategory } from '../../entities/category'
+import {
+	type AppCategory,
+	type CategoryDefinition,
+	driveCategoryFor,
+	stableCustomCategoryAccent,
+} from '../../entities/category'
 import type { AppInfo } from '../../entities/app'
 import type { LegacyCanonicalPreferences } from './preferences'
 
 export const identityOf = appIdentity
+
+export interface DriveCategories {
+	categories: CategoryDefinition[]
+	categoryOrder: AppCategory[]
+}
+
+export function reconcileDriveCategories(
+	current: DriveCategories,
+	apps: AppInfo[],
+): DriveCategories | null {
+	const known = new Set(current.categories.map(category => category.id))
+	const added: CategoryDefinition[] = []
+	for (const app of apps) {
+		const drive = driveCategoryFor(app.scanFolder)
+		if (!drive || known.has(drive.id)) continue
+		known.add(drive.id)
+		added.push({
+			id: drive.id,
+			label: drive.label,
+			builtIn: false,
+			accent: stableCustomCategoryAccent(drive.id),
+		})
+	}
+	if (added.length === 0) return null
+	return {
+		categories: [...current.categories, ...added],
+		categoryOrder: [
+			...added.map(category => category.id),
+			...current.categoryOrder,
+		],
+	}
+}
 
 export interface CatalogMarks {
 	favoriteAppIds: string[]

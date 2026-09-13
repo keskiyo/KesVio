@@ -48,6 +48,7 @@ pub fn run() {
             match event {
                 tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => {
                     window_state::remember(window.app_handle(), &window_lifecycle);
+                    window_state::persist_when_settled(window.app_handle(), &window_lifecycle);
                 }
                 tauri::WindowEvent::CloseRequested { api, .. } => {
                     window_state::remember(window.app_handle(), &window_lifecycle);

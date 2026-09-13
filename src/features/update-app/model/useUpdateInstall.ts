@@ -5,6 +5,7 @@ import {
 	isUpdateInstalling,
 	updateErrorMessage,
 } from '../lib/updatePresentation'
+import { UPDATE_DOWNLOAD_TIMEOUT_MS } from './updateTimeouts'
 
 export function useUpdateInstall(
 	resource: UpdateResource,
@@ -37,25 +38,28 @@ export function useUpdateInstall(
 		try {
 			let total = 0,
 				downloaded = 0
-			await available.download(event => {
-				if (!mounted.current) return
-				if (event.event === 'Started') {
-					total = event.data.contentLength ?? 0
-					setTotalBytes(total || null)
-					setProgress(0)
-				} else if (event.event === 'Progress') {
-					downloaded += event.data.chunkLength
-					setDownloadedBytes(downloaded)
-					setProgress(
-						total
-							? Math.min(
-									100,
-									Math.round((downloaded / total) * 100),
-								)
-							: null,
-					)
-				}
-			})
+			await available.download(
+				event => {
+					if (!mounted.current) return
+					if (event.event === 'Started') {
+						total = event.data.contentLength ?? 0
+						setTotalBytes(total || null)
+						setProgress(0)
+					} else if (event.event === 'Progress') {
+						downloaded += event.data.chunkLength
+						setDownloadedBytes(downloaded)
+						setProgress(
+							total
+								? Math.min(
+										100,
+										Math.round((downloaded / total) * 100),
+									)
+								: null,
+						)
+					}
+				},
+				{ timeout: UPDATE_DOWNLOAD_TIMEOUT_MS },
+			)
 			if (!mounted.current) return
 			setPhase('verifying')
 			setProgress(100)

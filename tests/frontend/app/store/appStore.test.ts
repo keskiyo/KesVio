@@ -341,6 +341,78 @@ describe('app store', () => {
 		})
 	})
 
+	// A stick added as a scan folder becomes a category the moment its first record arrives, and
+	// the category is a real user category — persisted, placed first like any category the user
+	// creates, renameable — rather than a row the grid would drop for naming an id it does not know.
+	it('creates a persisted drive category for records found under an added drive root', async () => {
+		const stick = app({
+			id: 'rufus',
+			name: 'Rufus',
+			path: 'F:\\Tools\\rufus.exe',
+			category: 'utilities',
+			sourceKind: 'portable',
+			scanFolder: 'F:\\',
+		})
+		const values = new Map<string, string>()
+		const storage = {
+			getItem: (key: string) => values.get(key) ?? null,
+			setItem: (key: string, value: string) =>
+				void values.set(key, value),
+		} as unknown as Storage
+		const store = createAppStore(
+			client({
+				refreshApps: vi.fn().mockResolvedValue({
+					apps: [...apps, stick],
+					generation: 1,
+				}),
+			}),
+			storage,
+		)
+
+		await store.getState().refresh()
+
+		const category = store
+			.getState()
+			.categories.find(entry => entry.id === 'drive:f')
+		expect(category).toMatchObject({ label: 'Disk F', builtIn: false })
+		expect(category?.accent).toBeDefined()
+		expect(store.getState().categoryOrder[0]).toBe('drive:f')
+		expect(
+			JSON.parse(values.get(PREFERENCES_KEY) ?? '{}').categories.some(
+				(entry: { id: string }) => entry.id === 'drive:f',
+			),
+		).toBe(true)
+	})
+
+	it('keeps a renamed drive category through the next scan', async () => {
+		const stick = app({
+			id: 'rufus',
+			name: 'Rufus',
+			path: 'F:\\Tools\\rufus.exe',
+			category: 'utilities',
+			sourceKind: 'portable',
+			scanFolder: 'F:\\',
+		})
+		const store = createAppStore(
+			client({
+				refreshApps: vi
+					.fn()
+					.mockResolvedValue({ apps: [stick], generation: 1 }),
+			}),
+		)
+		await store.getState().refresh()
+		store.getState().renameCategory('drive:f', 'Strelec')
+
+		await store.getState().refresh()
+
+		expect(
+			store.getState().categories.filter(entry => entry.id === 'drive:f'),
+		).toEqual([expect.objectContaining({ label: 'Strelec' })])
+		expect(
+			store.getState().categoryOrder.filter(entry => entry === 'drive:f'),
+		).toHaveLength(1)
+	})
+
 	it('persists a manual installer mark and reloads it', () => {
 		const values = new Map<string, string>()
 		const storage = {
@@ -1331,8 +1403,8 @@ describe('app store', () => {
 
 	// Marks are stored twice: by catalog id and by durable identity. The id is derived from the
 	// path, so a reinstall, a moved shortcut or a source change gives the same application a new
-	// one. Reconciling only in `load()` meant every rescan РІР‚вЂќ including the background scan the
-	// watcher starts whenever anything is installed РІР‚вЂќ silently unfavourited and unhid entries.
+	// one. Reconciling only in `load()` meant every rescan — including the background scan the
+	// watcher starts whenever anything is installed — silently unfavourited and unhid entries.
 	describe('marks survive a rescan that changes catalog ids', () => {
 		const moved = app({
 			id: 'code-moved',

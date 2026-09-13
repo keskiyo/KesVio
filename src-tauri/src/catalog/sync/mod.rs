@@ -10,14 +10,18 @@ pub(crate) mod scan_control;
 mod scan_guard;
 mod scan_sources;
 pub(crate) mod scan_steps;
+mod volumes;
 mod watch_paths;
+mod watch_scope;
 mod watcher;
 
 pub(crate) use delta::{compute_delta, CatalogDelta, CatalogDeltaDto};
 pub(crate) use document::{load_sanitized_cache, load_sanitized_document};
 pub(crate) use hydration::enqueue_hydration;
 pub(crate) use scan::{run_coordinated_scan, ScanCommit};
+pub(crate) use volumes::start_volume_watcher;
 pub(super) use watch_paths::{default_portable_exclusions, watcher_paths};
+pub(crate) use watch_scope::WatchScope;
 pub(crate) use watcher::restart_change_watcher;
 
 use crate::catalog::cache::CatalogCache;
@@ -25,9 +29,9 @@ use crate::catalog::scan_settings::ScanSettings;
 use crate::catalog::ScanProgress;
 use std::time::Instant;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum SyncRequest {
-    Watch,
+    Watch(WatchScope),
     Startup,
     Refresh,
     Force,
@@ -38,9 +42,26 @@ impl SyncRequest {
         matches!(self, Self::Refresh | Self::Force)
     }
 
+    pub(crate) fn merge(self, other: Self) -> Self {
+        match (self, other) {
+            (Self::Watch(left), Self::Watch(right)) => Self::Watch(left.union(right)),
+            (left, right) if left.priority() >= right.priority() => left,
+            (_, right) => right,
+        }
+    }
+
+    pub(crate) fn priority(self) -> u8 {
+        match self {
+            Self::Watch(_) => 0,
+            Self::Startup => 1,
+            Self::Refresh => 2,
+            Self::Force => 3,
+        }
+    }
+
     fn label(self) -> &'static str {
         match self {
-            Self::Watch => "watch",
+            Self::Watch(_) => "watch",
             Self::Startup => "startup",
             Self::Refresh => "refresh",
             Self::Force => "force",
@@ -100,6 +121,7 @@ fn app(id: &str, name: &str) -> crate::catalog::AppInfo {
         target_availability: None,
         category_reasons: Vec::new(),
         close_risk: None,
+        scan_folder: None,
     }
 }
 

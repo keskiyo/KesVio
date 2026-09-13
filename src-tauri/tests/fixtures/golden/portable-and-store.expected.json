@@ -15,7 +15,7 @@
       "display_name": "Codex"
     },
     {
-      "canonical_id": "portable:d:\\downloads|filezilla",
+      "canonical_id": "path:d:\\downloads\\filezilla_3.67.0_win64-setup.exe",
       "preference_identity": "preference:9997921dbf482c85beb102d470e657dc607bc5447f28e808f58bbd7b33c9d978",
       "canonical_identity": "identity:835863a635cd3d0871333ee3f34094b00ac18455ccbafb096f8e3be360f96c55",
       "launch": "Executable|d:\\downloads\\filezilla_3.67.0_win64-setup.exe|",
@@ -26,7 +26,7 @@
       "display_name": "FileZilla"
     },
     {
-      "canonical_id": "portable:d:\\tools\\victoria537|hsp victoria",
+      "canonical_id": "path:d:\\tools\\victoria537\\victoria.exe",
       "preference_identity": "preference:f99d40d1db0e4076c4328944755a27df38da6cc945135b7209d6e48dfd9a58c4",
       "canonical_identity": "identity:11d7c5ea7c29b893090f3d8beaaa097e481e5e959893b2bcfd754b6f944c6be0",
       "launch": "Executable|d:\\tools\\victoria537\\victoria.exe|",
@@ -37,7 +37,7 @@
       "display_name": "HSP Victoria"
     },
     {
-      "canonical_id": "portable:e:\\portable\\victoria6|hsp victoria",
+      "canonical_id": "path:e:\\portable\\victoria6\\victoria.exe",
       "preference_identity": "preference:ed2205ef10b567970406ca7e993f4a732e1266cd7636af6becd5bccfbb6e57d9",
       "canonical_identity": "identity:0c5b6f757bd28c6dd01c5342c3e678b51d10e0bb9243dab5b910e477334966a3",
       "launch": "Executable|e:\\portable\\victoria6\\victoria.exe|",
@@ -79,20 +79,20 @@
       ]
     },
     {
-      "canonical_id": "portable:d:\\downloads|filezilla",
+      "canonical_id": "path:d:\\downloads\\filezilla_3.67.0_win64-setup.exe",
       "members": [
         "d:\\downloads\\filezilla_3.67.0_win64-setup.exe"
       ]
     },
     {
-      "canonical_id": "portable:d:\\tools\\victoria537|hsp victoria",
+      "canonical_id": "path:d:\\tools\\victoria537\\victoria.exe",
       "members": [
         "d:\\tools\\victoria537\\victoria.exe",
         "e:\\portable\\victoria537\\victoria.exe"
       ]
     },
     {
-      "canonical_id": "portable:e:\\portable\\victoria6|hsp victoria",
+      "canonical_id": "path:e:\\portable\\victoria6\\victoria.exe",
       "members": [
         "e:\\portable\\victoria6\\victoria.exe"
       ]

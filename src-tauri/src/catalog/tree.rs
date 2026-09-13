@@ -36,6 +36,82 @@ pub(super) fn demote_nested_components(apps: &mut [AppInfo], registrations: &Reg
     }
 }
 
+pub(super) fn demote_sibling_companions(apps: &mut [AppInfo]) {
+    let product_folders = registered_product_folders(apps);
+    if product_folders.is_empty() {
+        return;
+    }
+    let referenced = referenced_executables(apps);
+
+    for app in apps.iter_mut() {
+        if app.source_kind != SourceKind::Portable
+            || app.launch_kind == LaunchKind::AppUserModelId
+            || app.visibility_class != VisibilityClass::Primary
+        {
+            continue;
+        }
+        let Some(path) = executable_path(app) else {
+            continue;
+        };
+        if referenced.contains(&normalize(path)) {
+            continue;
+        }
+        let Some(directory) = Path::new(path).parent() else {
+            continue;
+        };
+        if !product_folders.contains(&normalize(&directory.to_string_lossy())) {
+            continue;
+        }
+        app.visibility_class = VisibilityClass::Auxiliary;
+        if !app
+            .visibility_reasons
+            .contains(&VisibilityReason::ProductComponent)
+        {
+            app.visibility_reasons
+                .push(VisibilityReason::ProductComponent);
+        }
+    }
+}
+
+fn registered_product_folders(apps: &[AppInfo]) -> HashSet<String> {
+    let mut folders = HashSet::new();
+    for app in apps {
+        if app.source_kind == SourceKind::Portable {
+            continue;
+        }
+        let Some(target) = app.resolved_path.as_deref().map(str::trim) else {
+            continue;
+        };
+        let Some(directory) = Path::new(target).parent() else {
+            continue;
+        };
+        let Some(folder) = directory.file_name().map(|value| value.to_string_lossy()) else {
+            continue;
+        };
+        if folder_names_product(&folder, app) {
+            folders.insert(normalize(&directory.to_string_lossy()));
+        }
+    }
+    folders
+}
+
+fn folder_names_product(folder: &str, app: &AppInfo) -> bool {
+    let folder = super::naming::normalized_portable_name(folder);
+    if folder.len() < 3 {
+        return false;
+    }
+    [Some(app.name.as_str()), app.product_name.as_deref()]
+        .into_iter()
+        .flatten()
+        .map(super::naming::normalized_portable_name)
+        .any(|product| {
+            product.len() >= 3
+                && (product == folder
+                    || product.starts_with(&folder)
+                    || folder.starts_with(&product))
+        })
+}
+
 fn publishers_by_directory(apps: &[AppInfo]) -> HashMap<String, HashSet<String>> {
     let mut directories: HashMap<String, HashSet<String>> = HashMap::new();
     for app in apps {
@@ -171,6 +247,7 @@ mod tests {
             target_availability: None,
             category_reasons: Vec::new(),
             close_risk: None,
+            scan_folder: None,
         }
     }
 
@@ -358,5 +435,117 @@ mod tests {
         assert!(apps
             .iter()
             .all(|app| app.visibility_class == VisibilityClass::Primary));
+    }
+
+    fn registered(name: &str, shortcut: &str, target: &str) -> AppInfo {
+        let mut app = portable(name, shortcut);
+        app.source_kind = SourceKind::StartMenu;
+        app.launch_kind = LaunchKind::Shortcut;
+        app.resolved_path = Some(target.into());
+        app
+    }
+
+    #[test]
+    fn unreferenced_siblings_of_a_registered_target_in_the_products_own_folder_are_components() {
+        let mut apps = vec![
+            registered(
+                "RivaTuner Statistics Server",
+                r"C:\Menu\RivaTuner Statistics Server.lnk",
+                r"D:\Apps\RivaTuner Statistics Server\RTSS.exe",
+            ),
+            portable("RTSS", r"D:\Apps\RivaTuner Statistics Server\RTSS.exe"),
+            portable(
+                "EncoderServer",
+                r"D:\Apps\RivaTuner Statistics Server\EncoderServer.exe",
+            ),
+            portable(
+                "RTSSHooksLoader",
+                r"D:\Apps\RivaTuner Statistics Server\RTSSHooksLoader.exe",
+            ),
+        ];
+
+        demote_sibling_companions(&mut apps);
+
+        assert_eq!(
+            classes(&apps),
+            vec![
+                ("RivaTuner Statistics Server", VisibilityClass::Primary),
+                ("RTSS", VisibilityClass::Primary),
+                ("EncoderServer", VisibilityClass::Auxiliary),
+                ("RTSSHooksLoader", VisibilityClass::Auxiliary),
+            ]
+        );
+        assert!(apps[2]
+            .visibility_reasons
+            .contains(&VisibilityReason::ProductComponent));
+    }
+
+    #[test]
+    fn a_shared_folder_that_names_no_product_demotes_nothing() {
+        let mut apps = vec![
+            registered(
+                "TgWsProxy",
+                r"C:\Menu\TgWsProxy.lnk",
+                r"D:\Downloads\TgWsProxy_windows.exe",
+            ),
+            portable("Rufus", r"D:\Downloads\rufus-4.11p.exe"),
+            portable("HxD", r"D:\Downloads\HxD.exe"),
+        ];
+
+        demote_sibling_companions(&mut apps);
+
+        assert!(apps
+            .iter()
+            .all(|app| app.visibility_class == VisibilityClass::Primary));
+    }
+
+    #[test]
+    fn a_companion_in_a_subfolder_is_outside_the_sibling_rule() {
+        let mut apps = vec![
+            registered(
+                "FurMark",
+                r"C:\Menu\FurMark.lnk",
+                r"D:\Apps\FurMark\FurMark_GUI.exe",
+            ),
+            portable("GPU-Z", r"D:\Apps\FurMark\gpuz\gpuz.exe"),
+        ];
+
+        demote_sibling_companions(&mut apps);
+
+        assert_eq!(apps[1].visibility_class, VisibilityClass::Primary);
+    }
+
+    #[test]
+    fn a_sibling_already_auxiliary_or_registered_is_left_as_it_is() {
+        let mut console = portable("rtss-cli", r"D:\Apps\RivaTuner Statistics Server\cli.exe");
+        console.visibility_class = VisibilityClass::Auxiliary;
+        console
+            .visibility_reasons
+            .push(VisibilityReason::ConsoleApplication);
+        let mut apps = vec![
+            registered(
+                "RivaTuner Statistics Server",
+                r"C:\Menu\RivaTuner Statistics Server.lnk",
+                r"D:\Apps\RivaTuner Statistics Server\RTSS.exe",
+            ),
+            console,
+        ];
+
+        demote_sibling_companions(&mut apps);
+
+        assert_eq!(
+            apps[1].visibility_reasons,
+            vec![VisibilityReason::ConsoleApplication]
+        );
+    }
+
+    #[test]
+    fn a_folder_matches_the_product_by_name_or_product_name_without_a_version() {
+        let mut app = registered("Python 3.13 (64-bit)", r"C:\Menu\Python.lnk", "");
+        app.product_name = Some("Python".into());
+        assert!(folder_names_product("Python313", &app));
+        assert!(folder_names_product("python-3.13.0", &app));
+        assert!(!folder_names_product("Downloads", &app));
+        assert!(!folder_names_product("Py", &app));
     }
 }

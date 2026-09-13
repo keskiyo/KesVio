@@ -123,6 +123,7 @@ pub(in crate::catalog) fn from_values(
         target_availability: None,
         category_reasons: Vec::new(),
         close_risk: None,
+        scan_folder: None,
     };
     app.artifact_kind = crate::catalog::artifact::classify(&app, internal_name.as_deref(), facts);
     if app.artifact_kind != crate::catalog::ArtifactKind::Application {

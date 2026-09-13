@@ -42,5 +42,6 @@ pub(super) fn make_app(name: String, path: PathBuf) -> AppInfo {
         target_availability: None,
         category_reasons: Vec::new(),
         close_risk: None,
+        scan_folder: None,
     }
 }

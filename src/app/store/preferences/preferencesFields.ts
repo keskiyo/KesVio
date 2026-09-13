@@ -8,6 +8,7 @@ import {
 	type CategoryDefinition,
 	DEFAULT_CATEGORIES,
 	isCustomCategoryAccent,
+	isDriveCategoryId,
 	stableCustomCategoryAccent,
 } from '../../../entities/category'
 
@@ -71,7 +72,7 @@ export function normalizeDefinitions(
 		const id = typeof raw.id === 'string' ? raw.id.trim() : ''
 		const label = typeof raw.label === 'string' ? raw.label.trim() : ''
 		if (
-			!id.startsWith('custom:') ||
+			(!id.startsWith('custom:') && !isDriveCategoryId(id)) ||
 			!label ||
 			labels.has(label.toLocaleLowerCase())
 		)

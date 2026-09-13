@@ -1,5 +1,5 @@
 mod roots;
-use roots::roots_for;
+use roots::{roots_for, stamp_scan_folders};
 
 use super::stage_log;
 use crate::catalog::cache::CatalogCache;
@@ -42,19 +42,20 @@ pub(super) fn scan(
             .collect::<Vec<_>>()
             .join(", ")
     );
-    let previous_apps = previous
+    let previous_snapshot = previous
         .sources
         .iter()
         .find(|snapshot| snapshot.key.0 == "portable")
-        .map(|snapshot| snapshot.apps.as_slice())
-        .unwrap_or_default();
-    let roots = roots_for(settings, request, fixed_roots, previous_apps, |path| {
+        .map(|snapshot| snapshot.apps.as_slice());
+    let previous_apps = previous_snapshot.unwrap_or_default();
+    let roots = roots_for(settings, request, fixed_roots, previous_snapshot, |path| {
         path.is_dir()
     });
     log::info!(
-        "Portable root coverage: scanned={} retained={} previousRecords={}",
+        "Portable root coverage: scanned={} retained={} previousSnapshot={} previousRecords={}",
         roots.scanned.len(),
         roots.retained.len(),
+        previous_snapshot.is_some(),
         previous_apps.len()
     );
     let mut excluded = catalog::default_portable_exclusions();
@@ -66,7 +67,7 @@ pub(super) fn scan(
         ScanMode::Incremental
     };
     let started_at = Instant::now();
-    let scan = portable::scan_roots(
+    let mut scan = portable::scan_roots(
         portable::PortableScanInput {
             previous_apps,
             previous_index: &previous.filesystem_index,
@@ -81,6 +82,7 @@ pub(super) fn scan(
         progress,
         is_cancelled,
     );
+    stamp_scan_folders(&mut scan.apps, &settings.included_paths);
     let replaced = adopts_results(scan.stop);
     let outcome = SourceOutcome {
         key: "portable",

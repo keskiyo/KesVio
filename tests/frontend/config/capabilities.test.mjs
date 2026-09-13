@@ -49,7 +49,10 @@ describe('Tauri capabilities', () => {
 	// The grant and the call site have to move together: dropping a plugin call without dropping
 	// its permission silently leaves the surface open.
 	it('matches the updater operations the hook actually performs', () => {
-		expect(updaterHook).toMatch(/useUpdateCheck\(\s*check,/)
+		expect(updaterHook).toContain(
+			'const checkForUpdate = () => check({ timeout: UPDATE_CHECK_TIMEOUT_MS })',
+		)
+		expect(updaterHook).toMatch(/useUpdateCheck\(\s*checkForUpdate,/)
 		expect(updateCheck).toContain('.then(check)')
 		expect(updaterHook).toContain('useUpdateInstall(resource, relaunch)')
 		expect(updateInstall).toContain('.download(')

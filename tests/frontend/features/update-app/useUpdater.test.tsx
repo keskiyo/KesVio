@@ -6,7 +6,7 @@ const check = vi.fn()
 const relaunch = vi.fn()
 
 vi.mock('@tauri-apps/plugin-updater', () => ({
-	check: () => check(),
+	check: (options?: unknown) => check(options),
 }))
 
 vi.mock('@tauri-apps/plugin-process', () => ({
@@ -71,6 +71,7 @@ describe('useUpdater', () => {
 
 		const first = renderHook(() => useUpdater())
 		await waitFor(() => expect(check).toHaveBeenCalledTimes(1))
+		expect(check).toHaveBeenCalledWith({ timeout: 30_000 })
 		first.unmount()
 		renderHook(() => useUpdater())
 
@@ -311,6 +312,12 @@ describe('useUpdater', () => {
 		await act(async () => result.current.install())
 
 		expect(download).toHaveBeenCalledTimes(2)
+		expect(download).toHaveBeenNthCalledWith(1, expect.any(Function), {
+			timeout: 15 * 60 * 1000,
+		})
+		expect(download).toHaveBeenNthCalledWith(2, expect.any(Function), {
+			timeout: 15 * 60 * 1000,
+		})
 		expect(install).toHaveBeenCalledOnce()
 		expect(relaunch).toHaveBeenCalledOnce()
 	})

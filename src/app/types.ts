@@ -63,7 +63,7 @@ export interface AppViewsProps {
 	dialogs: ReturnType<typeof useCatalogDialogs>
 	updater: ReturnType<typeof useUpdater>
 	systemClient: SystemClient
-	onRefresh(): Promise<void>
+	onFirstScan(): Promise<void>
 }
 
 export interface GlobalActivityBarProps {

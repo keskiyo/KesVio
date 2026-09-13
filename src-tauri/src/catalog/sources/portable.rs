@@ -13,7 +13,10 @@ pub(in crate::catalog) fn should_visit_directory(path: &Path, excluded: &[PathBu
         .unwrap_or_default()
         .to_string_lossy()
         .to_lowercase();
-    if name.ends_with(".asar.unpacked") {
+    if name.ends_with(".asar.unpacked")
+        || is_wine_library_directory(&name, Path::new(&path))
+        || is_managed_runtime_directory(&name)
+    {
         return false;
     }
     !matches!(
@@ -46,6 +49,42 @@ pub(in crate::catalog) fn should_visit_directory(path: &Path, excluded: &[PathBu
             | "temp"
             | "tmp"
     )
+}
+
+const WINE_ARCHITECTURE_DIRECTORIES: &[&str] = &[
+    "i386-windows",
+    "x86_64-windows",
+    "aarch64-windows",
+    "arm64ec-windows",
+    "i386-unix",
+    "x86_64-unix",
+];
+
+const AUTOMATION_BROWSER_DIRECTORIES: &[&str] = &["puppeteer", "ms-playwright", "ws-browser"];
+
+fn is_wine_library_directory(name: &str, path: &Path) -> bool {
+    if WINE_ARCHITECTURE_DIRECTORIES.contains(&name) {
+        return true;
+    }
+    name == "wine"
+        && path
+            .parent()
+            .and_then(Path::file_name)
+            .map(|parent| parent.to_string_lossy().to_lowercase())
+            .is_some_and(|parent| matches!(parent.as_str(), "lib" | "lib32" | "lib64"))
+}
+
+fn is_managed_runtime_directory(name: &str) -> bool {
+    AUTOMATION_BROWSER_DIRECTORIES.contains(&name)
+        || has_versioned_prefix(name, "chromium-")
+        || has_versioned_prefix(name, "win64-")
+        || (has_versioned_prefix(name, "cpython-") && name.contains("-windows-"))
+}
+
+fn has_versioned_prefix(name: &str, prefix: &str) -> bool {
+    name.strip_prefix(prefix)
+        .and_then(|rest| rest.chars().next())
+        .is_some_and(|first| first.is_ascii_digit())
 }
 
 pub(in crate::catalog) fn is_portable_candidate(path: &Path) -> bool {
@@ -252,6 +291,60 @@ mod tests {
             &[]
         ));
         assert!(should_visit_directory(Path::new(r"D:\Apps\Venvender"), &[]));
+    }
+
+    #[test]
+    fn skips_the_windows_side_of_a_wine_build() {
+        for path in [
+            Path::new(r"E:\Downloads\portproton\data\dist\WINE_LG_10-20\lib\wine\i386-windows"),
+            Path::new(r"E:\Downloads\portproton\data\dist\WINE_LG_10-20\lib\wine\x86_64-windows"),
+            Path::new(r"E:\Downloads\portproton\data\dist\WINE_LG_10-20\lib64\wine"),
+            Path::new(r"D:\Proton\lib\wine"),
+        ] {
+            assert!(!should_visit_directory(path, &[]), "{}", path.display());
+        }
+        assert!(should_visit_directory(Path::new(r"D:\Games\Wine"), &[]));
+        assert!(should_visit_directory(Path::new(r"D:\Apps\wine"), &[]));
+    }
+
+    #[test]
+    fn skips_browser_automation_caches() {
+        for path in [
+            Path::new(r"E:\DevCache\dot-cache\puppeteer"),
+            Path::new(r"E:\DevCache\dot-cache\puppeteer\chrome\win64-150.0.7871.24"),
+            Path::new(r"E:\DevCache\playwright\chromium-1228"),
+            Path::new(r"C:\Users\Example\AppData\Local\ms-playwright"),
+            Path::new(r"E:\DevCache\codeium\ws-browser"),
+        ] {
+            assert!(!should_visit_directory(path, &[]), "{}", path.display());
+        }
+        assert!(should_visit_directory(Path::new(r"D:\Apps\Chromium"), &[]));
+        assert!(should_visit_directory(
+            Path::new(r"D:\Apps\chromium-portable"),
+            &[]
+        ));
+        assert!(should_visit_directory(
+            Path::new(r"D:\Apps\win64-build"),
+            &[]
+        ));
+    }
+
+    #[test]
+    fn skips_package_manager_interpreter_directories() {
+        for path in [
+            Path::new(r"E:\DevCache\uv-roaming\python\cpython-3.13-windows-x86_64-none"),
+            Path::new(
+                r"C:\Users\Example\AppData\Roaming\uv\python\cpython-3.12.4-windows-x86_64-none",
+            ),
+        ] {
+            assert!(!should_visit_directory(path, &[]), "{}", path.display());
+        }
+        assert!(should_visit_directory(Path::new(r"C:\Python313"), &[]));
+        assert!(should_visit_directory(Path::new(r"D:\Apps\cpython"), &[]));
+        assert!(should_visit_directory(
+            Path::new(r"D:\src\cpython-3.13-source"),
+            &[]
+        ));
     }
 
     #[test]

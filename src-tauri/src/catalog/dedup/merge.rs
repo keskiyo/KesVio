@@ -122,6 +122,18 @@ pub(super) fn merge_app(left: AppInfo, right: AppInfo) -> AppInfo {
         primary.visibility_class = crate::catalog::VisibilityClass::Auxiliary;
     }
     primary.can_uninstall |= secondary.can_uninstall;
+    if primary.scan_folder.is_none() {
+        primary.scan_folder = secondary.scan_folder.filter(|folder| {
+            let target = primary
+                .resolved_path
+                .as_deref()
+                .unwrap_or(primary.path.as_str());
+            crate::catalog::path_is_within(
+                &crate::catalog::place::normalized_path(target),
+                &crate::catalog::place::normalized_path(folder),
+            )
+        });
+    }
     primary
 }
 

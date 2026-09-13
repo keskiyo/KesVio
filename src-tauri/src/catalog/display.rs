@@ -31,6 +31,7 @@ pub(crate) struct CatalogAppDto {
     pub target_availability: Option<String>,
     pub category_reasons: Vec<String>,
     pub close_risk: Option<String>,
+    pub scan_folder: Option<String>,
 }
 
 impl From<&AppInfo> for CatalogAppDto {
@@ -60,6 +61,7 @@ impl From<&AppInfo> for CatalogAppDto {
             target_availability: app.target_availability.clone(),
             category_reasons: app.category_reasons.clone(),
             close_risk: app.close_risk.clone(),
+            scan_folder: app.scan_folder.clone(),
         }
     }
 }

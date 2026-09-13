@@ -13,7 +13,6 @@ pub(super) struct ScanOutcome {
     pub(super) generation: u64,
     pub(super) diagnostics: Option<crate::catalog::cache::CatalogDiagnostics>,
     pub(super) delta: crate::catalog::sync::CatalogDelta,
-    pub(super) app_data_dir: std::path::PathBuf,
 }
 
 pub(super) fn write_catalog_under_lock(
@@ -86,7 +85,6 @@ pub(super) fn write_catalog_under_lock(
         generation: document.generation,
         diagnostics: document.diagnostics,
         delta,
-        app_data_dir,
     })
 }
 

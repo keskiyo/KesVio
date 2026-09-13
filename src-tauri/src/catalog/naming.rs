@@ -69,6 +69,7 @@ fn is_generic_product_name(value: &str) -> bool {
         "runtime",
         "launcher",
         "windows application",
+        "7-zip sfx",
     ]
     .iter()
     .any(|generic| value.trim().eq_ignore_ascii_case(generic))
@@ -99,11 +100,19 @@ fn version_boundary(value: &str) -> Option<(usize, usize)> {
 #[expect(clippy::string_slice)]
 fn clean_portable_name(value: &str) -> String {
     let trimmed = value.trim();
-    version_boundary(trimmed)
+    let base = version_boundary(trimmed)
         .map_or(trimmed, |(separator, _)| &trimmed[..separator])
-        .replace(['_', '-'], " ")
-        .trim()
-        .to_string()
+        .replace(['_', '-'], " ");
+    let mut parts = base.split_whitespace().collect::<Vec<_>>();
+    while parts.last().is_some_and(|part| {
+        matches!(
+            part.to_lowercase().as_str(),
+            "all" | "x32" | "x64" | "x86" | "amd64" | "win32" | "win64"
+        )
+    }) {
+        parts.pop();
+    }
+    parts.join(" ")
 }
 
 // `version_boundary` returns `char_indices` positions, so separator width does not matter.
@@ -146,5 +155,17 @@ mod tests {
             Some("2.1")
         );
         assert_eq!(clean_portable_name("🚀🚀-7.0"), "🚀🚀");
+    }
+
+    #[test]
+    fn sfx_container_metadata_does_not_replace_the_launcher_name() {
+        assert_eq!(
+            portable_display_name("AnyDesk_All", Some("Portable"), Some("7-Zip SFX")),
+            "AnyDesk"
+        );
+        assert_eq!(
+            portable_display_name("DrvIndex_x64", Some("DriverPacks"), Some("7-Zip SFX")),
+            "DrvIndex"
+        );
     }
 }

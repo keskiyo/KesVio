@@ -18,7 +18,6 @@ import { buildMorePreview } from '../lib/morePreview'
 
 export type { MorePreview, MorePreviewItem } from '../lib/morePreview'
 
-const HYDRATION_WINDOW = 48
 const PALETTE_SUGGESTIONS = 12
 
 interface CatalogViewState extends CategorizedAppsState {
@@ -167,10 +166,7 @@ export function useCatalogView(state: CatalogViewState) {
 		return filteredApps
 	}, [filteredApps, morePreview, scenarioApps, state.activeView])
 	const visibleHydrationIds = useMemo(
-		() =>
-			[...new Set(hydrationApps.map(app => app.id))]
-				.slice(0, HYDRATION_WINDOW)
-				.join('|'),
+		() => [...new Set(hydrationApps.map(app => app.id))].join('|'),
 		[hydrationApps],
 	)
 

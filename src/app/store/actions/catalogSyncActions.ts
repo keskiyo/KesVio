@@ -1,5 +1,6 @@
 import {
 	mergeIcon,
+	reconcileDriveCategories,
 	reconcileFirstSeen,
 	reconcileMarks,
 } from '../reconciliation'
@@ -52,7 +53,10 @@ export function createCatalogSyncActions({
 			})
 			const marks = reconcileMarks(get(), get().apps)
 			if (marks) set(marks)
-			if (get().firstSeenAt !== previousFirstSeen || marks) persist()
+			const drives = reconcileDriveCategories(get(), get().apps)
+			if (drives) set(drives)
+			if (get().firstSeenAt !== previousFirstSeen || marks || drives)
+				persist()
 		},
 		applyPatches(patches) {
 			const generation = get().catalogGeneration

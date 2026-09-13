@@ -9,7 +9,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 const CACHE_FILE: &str = "apps-cache.json";
-pub(crate) const CACHE_SCHEMA_VERSION: u32 = 10;
+pub(crate) const CACHE_SCHEMA_VERSION: u32 = 11;
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -71,17 +71,28 @@ impl Default for CatalogCache {
 }
 
 pub(crate) fn read_document(app_data_dir: &Path) -> Option<CatalogCache> {
+    read_document_with_promotions(app_data_dir, true)
+}
+
+pub(crate) fn read_hydration_document(app_data_dir: &Path) -> Option<CatalogCache> {
+    read_document_with_promotions(app_data_dir, false)
+}
+
+fn read_document_with_promotions(
+    app_data_dir: &Path,
+    promote_current_schema: bool,
+) -> Option<CatalogCache> {
     let primary = app_data_dir.join(CACHE_FILE);
     let backup = app_data_dir.join("apps-cache.json.bak");
     if let Some(document) = fs::read(&primary)
         .ok()
-        .and_then(|bytes| parse_document(&bytes))
+        .and_then(|bytes| parse_document(&bytes, promote_current_schema))
     {
         return Some(document);
     }
     match fs::read(backup)
         .ok()
-        .and_then(|bytes| parse_document(&bytes))
+        .and_then(|bytes| parse_document(&bytes, promote_current_schema))
     {
         Some(document) => {
             log::warn!(
@@ -98,14 +109,17 @@ pub(crate) fn read_document(app_data_dir: &Path) -> Option<CatalogCache> {
     }
 }
 
-fn parse_document(bytes: &[u8]) -> Option<CatalogCache> {
-    let places = crate::catalog::machine::MachineFacts::current();
+fn parse_document(bytes: &[u8], promote_current_schema: bool) -> Option<CatalogCache> {
     if let Ok(mut document) = serde_json::from_slice::<CatalogCache>(bytes) {
         if document.schema_version == CACHE_SCHEMA_VERSION {
-            promote_cached_artifacts(&mut document, &places);
+            if promote_current_schema {
+                let places = crate::catalog::machine::MachineFacts::current();
+                promote_cached_artifacts(&mut document, &places);
+            }
             return Some(document);
         }
-        if matches!(document.schema_version, 2..=9) {
+        if matches!(document.schema_version, 2..=10) {
+            let places = crate::catalog::machine::MachineFacts::current();
             if document.schema_version < 4 {
                 for app in &mut document.apps {
                     crate::catalog::visibility::apply_visibility(app);
@@ -139,6 +153,7 @@ fn parse_document(bytes: &[u8]) -> Option<CatalogCache> {
         return None;
     }
     let mut apps = serde_json::from_slice::<Vec<AppInfo>>(bytes).ok()?;
+    let places = crate::catalog::machine::MachineFacts::current();
     for app in &mut apps {
         app.icon_base64 = None;
         classify_artifact(app, &places);
@@ -325,6 +340,33 @@ mod tests {
     }
 
     #[test]
+    fn a_document_written_before_scan_folders_loads_without_one() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&serde_json::json!({
+                "schemaVersion": 10,
+                "generation": 3,
+                "apps": [{
+                    "id": "editor",
+                    "name": "Editor",
+                    "path": r"F:\Tools\editor.exe",
+                    "iconBase64": null,
+                    "sourceKind": "portable",
+                }],
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let document = read_document(dir.path()).unwrap();
+
+        assert_eq!(document.schema_version, 11);
+        assert_eq!(document.apps.len(), 1);
+        assert_eq!(document.apps[0].scan_folder, None);
+    }
+
+    #[test]
     fn recovers_from_backup_after_interrupted_cache_replacement() {
         let dir = tempfile::tempdir().unwrap();
         let backup = CatalogCache {
@@ -382,7 +424,7 @@ mod tests {
         let backup = fs::read(dir.path().join("apps-cache.json.bak")).unwrap();
 
         assert_eq!(read_document(dir.path()).unwrap().generation, 2);
-        assert_eq!(parse_document(&backup).unwrap().generation, 1);
+        assert_eq!(parse_document(&backup, true).unwrap().generation, 1);
     }
 
     #[test]
@@ -541,6 +583,27 @@ mod tests {
     }
 
     #[test]
+    fn hydration_read_keeps_the_already_published_artifact_classification() {
+        let dir = tempfile::tempdir().unwrap();
+        let amd = cached_app(
+            "AMD Software Compatibility Tool",
+            r"C:\Program Files\AMD\CIM\BIN64\AMDSoftwareCompatibilityTool.exe",
+        );
+        write_document(
+            dir.path(),
+            &CatalogCache {
+                apps: vec![amd],
+                ..CatalogCache::default()
+            },
+        )
+        .unwrap();
+
+        let loaded = read_hydration_document(dir.path()).unwrap();
+
+        assert_eq!(loaded.apps[0].artifact_kind, ArtifactKind::Application);
+    }
+
+    #[test]
     fn current_schema_promotes_url_backed_start_app_documentation() {
         let dir = tempfile::tempdir().unwrap();
         let mut website = cached_app("Node.js website", "https://nodejs.org/");
@@ -616,6 +679,7 @@ mod tests {
             target_availability: None,
             category_reasons: Vec::new(),
             close_risk: None,
+            scan_folder: None,
         };
         std::fs::write(
             dir.path().join(CACHE_FILE),
@@ -664,6 +728,7 @@ mod tests {
             target_availability: None,
             category_reasons: Vec::new(),
             close_risk: None,
+            scan_folder: None,
         };
         std::fs::write(
             dir.path().join(CACHE_FILE),
@@ -709,6 +774,7 @@ mod tests {
             target_availability: None,
             category_reasons: Vec::new(),
             close_risk: None,
+            scan_folder: None,
         };
         write_document(
             dir.path(),

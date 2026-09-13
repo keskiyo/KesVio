@@ -8,7 +8,10 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { Grid2X2, Plus, Settings, Star, WandSparkles } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { INSTALLERS_DOCS_CATEGORY } from '../../../../entities/app'
-import { categoryLabel } from '../../../../entities/category'
+import {
+	categoryLabel,
+	staysVisibleWhenEmpty,
+} from '../../../../entities/category'
 import { CategoryNameEditor } from '../../../../features/manage-category'
 import { NavItem } from './NavItem'
 import { SortableCategoryList } from './SortableCategoryList'
@@ -27,7 +30,10 @@ export function AppNavigation(props: AppNavigationProps) {
 	const visibleCategories = props.categoryOrder.filter(category => {
 		if (category === INSTALLERS_DOCS_CATEGORY) return false
 		const definition = props.categories.find(item => item.id === category)
-		return definition && (props.counts.has(category) || !definition.builtIn)
+		return (
+			definition &&
+			(props.counts.has(category) || staysVisibleWhenEmpty(definition))
+		)
 	})
 	const categoryDefinitions = new Map(
 		props.categories.map(category => [category.id, category]),

@@ -16,3 +16,11 @@ export {
 	isCustomCategoryAccent,
 	stableCustomCategoryAccent,
 } from './lib/categoryAccents'
+export {
+	DRIVE_CATEGORY_PREFIX,
+	type DriveCategory,
+	driveCategoryFor,
+	isDriveCategory,
+	isDriveCategoryId,
+	staysVisibleWhenEmpty,
+} from './lib/driveCategory'

@@ -15,7 +15,7 @@ export function AppViews({
 	dialogs,
 	updater,
 	systemClient,
-	onRefresh,
+	onFirstScan,
 }: AppViewsProps) {
 	const [scanPromptDismissed, setScanPromptDismissed] = useState(false)
 	const { catalogApps, counts, deferredQuery, filteredApps, morePreview } =
@@ -99,7 +99,7 @@ export function AppViews({
 					scanPrompt={{
 						isScanning: state.isRefreshing,
 						onDismiss: () => setScanPromptDismissed(true),
-						onScan: onRefresh,
+						onScan: onFirstScan,
 						onConfigureFolders: () =>
 							navigation.selectView('settings'),
 					}}

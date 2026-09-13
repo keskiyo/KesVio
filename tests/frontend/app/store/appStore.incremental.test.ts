@@ -119,6 +119,34 @@ describe('incremental app store updates', () => {
 
 		expect(store.getState().firstSeenAt['new-tool']).toBeGreaterThan(0)
 	})
+
+	// A background scan reaches the store as a delta rather than a commit, and a stick's first
+	// record can arrive that way; without the category the grid would have nowhere to put it.
+	it('creates the drive category for a record that arrives through a delta', async () => {
+		const store = createAppStore(client())
+		await store.getState().load()
+
+		store.getState().applyDelta({
+			generation: 3,
+			upserted: [
+				{
+					...code,
+					id: 'rufus',
+					name: 'Rufus',
+					path: 'F:\\Tools\\rufus.exe',
+					sourceKind: 'portable',
+					scanFolder: 'F:\\',
+				},
+			],
+			removedIds: [],
+			summary: { added: 1, removed: 0, updated: 0 },
+		})
+
+		expect(store.getState().categories).toContainEqual(
+			expect.objectContaining({ id: 'drive:f', label: 'Disk F' }),
+		)
+		expect(store.getState().categoryOrder).toContain('drive:f')
+	})
 })
 
 // A scan strips every icon from the records it returns and writes them back only through

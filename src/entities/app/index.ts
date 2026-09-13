@@ -39,7 +39,6 @@ export {
 	type SearchScopeCounts,
 } from './model/catalogSelectors'
 export { appIdentity } from './lib/appIdentity'
-export { useIconRecovery } from './model/useIconRecovery'
 export { deduplicateVisibleApps } from './lib/appDeduplication'
 export {
 	buildAppReport,

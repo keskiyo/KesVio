@@ -201,6 +201,59 @@ describe('AppNavigation', () => {
 		).toHaveAttribute('data-category-accent', 'orange')
 	})
 
+	// A pulled stick leaves its drive category with no apps; the sidebar drops it until the next
+	// scan finds the stick again, while a category the user created stays so apps can be moved in.
+	it('hides an empty drive category but keeps an empty user category', () => {
+		const drive: CategoryDefinition = {
+			id: 'drive:f',
+			label: 'Disk F',
+			builtIn: false,
+		}
+		const custom: CategoryDefinition = {
+			id: 'custom:work',
+			label: 'Work',
+			builtIn: false,
+		}
+		const { rerender } = render(
+			<AppNavigation
+				categoryOrder={['drive:f', 'custom:work']}
+				categories={[...categories, drive, custom]}
+				counts={new Map()}
+				activeView="all"
+				appCount={0}
+				favoriteCount={0}
+				onSelectView={vi.fn()}
+				onSelectCategory={vi.fn()}
+				onCreateCategory={() => ({ ok: true, id: 'custom:work' })}
+				onReorderCategory={vi.fn()}
+			/>,
+		)
+
+		expect(
+			screen.queryByRole('button', { name: 'Disk F' }),
+		).not.toBeInTheDocument()
+		expect(screen.getByRole('button', { name: 'Work' })).toBeInTheDocument()
+
+		rerender(
+			<AppNavigation
+				categoryOrder={['drive:f', 'custom:work']}
+				categories={[...categories, drive, custom]}
+				counts={new Map([['drive:f', 4]])}
+				activeView="all"
+				appCount={4}
+				favoriteCount={0}
+				onSelectView={vi.fn()}
+				onSelectCategory={vi.fn()}
+				onCreateCategory={() => ({ ok: true, id: 'custom:work' })}
+				onReorderCategory={vi.fn()}
+			/>,
+		)
+
+		expect(
+			screen.getByRole('button', { name: 'Disk F' }),
+		).toBeInTheDocument()
+	})
+
 	it('assigns the games category its stable yellow accent', () => {
 		render(
 			<AppNavigation

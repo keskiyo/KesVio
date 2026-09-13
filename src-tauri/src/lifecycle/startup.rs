@@ -1,6 +1,6 @@
 use crate::app_state::{remember_catalog, AppState};
 use crate::catalog;
-use crate::catalog::sync::{load_sanitized_cache, restart_change_watcher};
+use crate::catalog::sync::{load_sanitized_cache, restart_change_watcher, start_volume_watcher};
 use crate::paths;
 use crate::platform::windows::{global_shortcut, install_registry};
 use tauri::{AppHandle, Manager};
@@ -10,6 +10,7 @@ pub(crate) fn spawn(app: AppHandle) {
         let _ = tauri::async_runtime::spawn_blocking(move || {
             register_global_shortcut(&app);
             load_cached_catalog(&app);
+            start_volume_watcher(app.clone());
             sync_install_registry(&app);
         })
         .await;

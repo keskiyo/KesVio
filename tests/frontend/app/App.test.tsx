@@ -208,7 +208,7 @@ describe('App', () => {
 		expect(settings).toHaveTextContent('Settings')
 	})
 
-	it('rehydrates missing icons on the recovery timer', async () => {
+	it('does not rehydrate the whole catalog on a recovery timer', async () => {
 		vi.useFakeTimers({ shouldAdvanceTime: true })
 		const hydrateVisibleIcons = vi.fn().mockResolvedValue(undefined)
 		renderApp({ hydrateVisibleIcons })
@@ -221,7 +221,21 @@ describe('App', () => {
 			await Promise.resolve()
 		})
 
-		expect(hydrateVisibleIcons).toHaveBeenCalledOnce()
+		expect(hydrateVisibleIcons).not.toHaveBeenCalled()
+	})
+
+	it('rehydrates visible cards after a new catalog generation', async () => {
+		const hydrateVisibleIcons = vi.fn().mockResolvedValue(undefined)
+		renderApp({ hydrateVisibleIcons })
+		await screen.findByText('Steam')
+		await waitFor(() => expect(hydrateVisibleIcons).toHaveBeenCalledOnce())
+		hydrateVisibleIcons.mockClear()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Scan for apps' }),
+		)
+
+		await waitFor(() => expect(hydrateVisibleIcons).toHaveBeenCalledOnce())
 	})
 
 	it('uses the dark Graphite Surface theme and Neon Glass app cards', async () => {
@@ -440,6 +454,26 @@ describe('App', () => {
 		expect(
 			screen.getByRole('button', { name: 'Scan for apps' }),
 		).toBeInTheDocument()
+	})
+
+	// A routine refresh walks only the folders the user configured and keeps fixed drives from the
+	// previous snapshot; on a fresh catalog there is no previous snapshot, so the first scan used to
+	// find no portable applications at all until the user discovered Force full scan in Settings.
+	it('runs the first-run scan prompt as a full scan', async () => {
+		const getApps = vi.fn().mockResolvedValue({ apps: [], hasCache: false })
+		const forceFullScan = vi.fn().mockResolvedValue({ apps, generation: 1 })
+		const { client } = renderApp({ getApps, forceFullScan })
+		const prompt = (
+			await screen.findByText('Find your applications')
+		).closest('section') as HTMLElement
+
+		await userEvent.click(
+			within(prompt).getByRole('button', { name: 'Scan for apps' }),
+		)
+
+		await screen.findByRole('heading', { name: 'Games' })
+		expect(forceFullScan).toHaveBeenCalledTimes(1)
+		expect(client.refreshApps).not.toHaveBeenCalled()
 	})
 
 	it('filters applications from the English search field', async () => {

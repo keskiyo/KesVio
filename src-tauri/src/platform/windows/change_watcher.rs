@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use std::path::PathBuf;
@@ -20,24 +21,48 @@ use windows::Win32::System::Registry::{
 use windows::Win32::System::Threading::{CreateEventW, SetEvent, WaitForMultipleObjects, INFINITE};
 use windows::Win32::System::IO::{CancelIoEx, GetOverlappedResult, OVERLAPPED};
 
+const DEBOUNCE_DELAY: Duration = Duration::from_secs(8);
+const MIN_DISPATCH_INTERVAL: Duration = Duration::from_secs(30);
+const EVENT_BUFFER: usize = 64;
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub(crate) enum ChangeOrigin {
+    Registry,
+    Directory(PathBuf),
+    Unknown,
+}
+
 #[derive(Default)]
 struct DebounceState {
+    pending: BTreeSet<ChangeOrigin>,
     last_event: Option<Instant>,
+    last_dispatch: Option<Instant>,
 }
 
 impl DebounceState {
-    fn push(&mut self, now: Instant) {
+    fn push(&mut self, origin: ChangeOrigin, now: Instant) {
+        self.pending.insert(origin);
         self.last_event = Some(now);
     }
 
-    fn take_if_ready(&mut self, now: Instant, delay: Duration) -> bool {
-        let ready = self
+    fn take_if_ready(
+        &mut self,
+        now: Instant,
+        delay: Duration,
+        interval: Duration,
+    ) -> Option<Vec<ChangeOrigin>> {
+        let quiet = self
             .last_event
             .is_some_and(|last| now.saturating_duration_since(last) >= delay);
-        if ready {
+        let interval_elapsed = self
+            .last_dispatch
+            .is_none_or(|last| now.saturating_duration_since(last) >= interval);
+        if quiet && interval_elapsed && !self.pending.is_empty() {
             self.last_event = None;
+            self.last_dispatch = Some(now);
+            return Some(std::mem::take(&mut self.pending).into_iter().collect());
         }
-        ready
+        None
     }
 }
 
@@ -72,7 +97,7 @@ impl Drop for WatcherGuard {
 
 pub(crate) fn start(
     paths: Vec<PathBuf>,
-    on_change: Arc<dyn Fn() + Send + Sync>,
+    on_change: Arc<dyn Fn(Vec<ChangeOrigin>) + Send + Sync>,
 ) -> Option<WatcherGuard> {
     let stop = Arc::new(AtomicBool::new(false));
     // SAFETY: `CreateEventW` takes no caller-owned memory here — default security attributes, and
@@ -83,19 +108,32 @@ pub(crate) fn start(
     let Ok(stop_event) = (unsafe { CreateEventW(None, true, false, PCWSTR::null()) }) else {
         return None;
     };
-    let (sender, receiver) = mpsc::channel::<()>();
+    let (sender, receiver) = mpsc::sync_channel::<ChangeOrigin>(EVENT_BUFFER);
+    let overflowed = Arc::new(AtomicBool::new(false));
     let mut threads = Vec::new();
     let debounce_stop = Arc::clone(&stop);
+    let debounce_overflowed = Arc::clone(&overflowed);
     threads.push(std::thread::spawn(move || {
         let mut state = DebounceState::default();
         while !debounce_stop.load(Ordering::Acquire) {
             match receiver.recv_timeout(Duration::from_millis(200)) {
-                Ok(()) => state.push(Instant::now()),
+                Ok(origin) => state.push(origin, Instant::now()),
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
                 Err(mpsc::RecvTimeoutError::Disconnected) => break,
             }
-            if state.take_if_ready(Instant::now(), Duration::from_secs(8)) {
-                on_change();
+            for _ in 0..EVENT_BUFFER {
+                let Ok(origin) = receiver.try_recv() else {
+                    break;
+                };
+                state.push(origin, Instant::now());
+            }
+            if debounce_overflowed.swap(false, Ordering::AcqRel) {
+                state.push(ChangeOrigin::Unknown, Instant::now());
+            }
+            if let Some(origins) =
+                state.take_if_ready(Instant::now(), DEBOUNCE_DELAY, MIN_DISPATCH_INTERVAL)
+            {
+                on_change(origins);
             }
         }
     }));
@@ -105,6 +143,7 @@ pub(crate) fn start(
             threads.push(spawn_directory_watcher(
                 path,
                 sender.clone(),
+                Arc::clone(&overflowed),
                 Arc::clone(&stop),
                 stop_event.0 as isize,
             ));
@@ -128,6 +167,7 @@ pub(crate) fn start(
             root,
             subkey,
             sender.clone(),
+            Arc::clone(&overflowed),
             Arc::clone(&stop),
             stop_event.0 as isize,
         ));
@@ -141,13 +181,15 @@ pub(crate) fn start(
 
 fn spawn_directory_watcher(
     path: PathBuf,
-    sender: mpsc::Sender<()>,
+    sender: mpsc::SyncSender<ChangeOrigin>,
+    overflowed: Arc<AtomicBool>,
     stop: Arc<AtomicBool>,
     stop_event: isize,
 ) -> JoinHandle<()> {
     std::thread::spawn(move || {
         let stop_event = HANDLE(stop_event as *mut _);
         let wide = wide(path.as_os_str());
+        let origin = ChangeOrigin::Directory(path);
         // SAFETY: `wide` is a NUL-terminated UTF-16 buffer alive for the call; the two `None`
         // arguments are the optional security attributes and template handle.
         // `FILE_FLAG_BACKUP_SEMANTICS` is what makes opening a *directory* handle legal, and
@@ -227,7 +269,8 @@ fn spawn_directory_watcher(
                 let _ = unsafe { GetOverlappedResult(handle, &overlapped, &mut transferred, true) };
                 break;
             }
-            if wait.0 == WAIT_OBJECT_0.0 + 1 && sender.send(()).is_err() {
+            if wait.0 == WAIT_OBJECT_0.0 + 1 && !report_change(&sender, &overflowed, origin.clone())
+            {
                 break;
             }
         }
@@ -242,7 +285,8 @@ fn spawn_directory_watcher(
 fn spawn_registry_watcher(
     root: RegistryRoot,
     subkey: &'static str,
-    sender: mpsc::Sender<()>,
+    sender: mpsc::SyncSender<ChangeOrigin>,
+    overflowed: Arc<AtomicBool>,
     stop: Arc<AtomicBool>,
     stop_event: isize,
 ) -> JoinHandle<()> {
@@ -298,7 +342,9 @@ fn spawn_registry_watcher(
             if wait == WAIT_OBJECT_0 {
                 break;
             }
-            if wait.0 == WAIT_OBJECT_0.0 + 1 && sender.send(()).is_err() {
+            if wait.0 == WAIT_OBJECT_0.0 + 1
+                && !report_change(&sender, &overflowed, ChangeOrigin::Registry)
+            {
                 break;
             }
         }
@@ -310,6 +356,21 @@ fn spawn_registry_watcher(
     })
 }
 
+fn report_change(
+    sender: &mpsc::SyncSender<ChangeOrigin>,
+    overflowed: &AtomicBool,
+    origin: ChangeOrigin,
+) -> bool {
+    match sender.try_send(origin) {
+        Ok(()) => true,
+        Err(mpsc::TrySendError::Full(_)) => {
+            overflowed.store(true, Ordering::Release);
+            true
+        }
+        Err(mpsc::TrySendError::Disconnected(_)) => false,
+    }
+}
+
 fn wide(value: &OsStr) -> Vec<u16> {
     value.encode_wide().chain(Some(0)).collect()
 }
@@ -319,21 +380,67 @@ mod tests {
     use super::*;
 
     #[test]
-    fn repeated_events_are_coalesced_until_debounce_expires() {
-        let start = Instant::now();
+    fn debounce_unions_origins_and_waits_for_quiet() {
+        let now = Instant::now();
         let mut state = DebounceState::default();
-        state.push(start);
-        state.push(start + Duration::from_millis(500));
+        state.push(ChangeOrigin::Registry, now);
+        state.push(
+            ChangeOrigin::Directory(PathBuf::from(r"C:\Apps")),
+            now + Duration::from_secs(1),
+        );
 
-        assert!(!state.take_if_ready(start + Duration::from_secs(2), Duration::from_secs(2)));
-        assert!(state.take_if_ready(start + Duration::from_millis(2501), Duration::from_secs(2)));
-        assert!(!state.take_if_ready(start + Duration::from_secs(5), Duration::from_secs(2)));
+        assert!(state
+            .take_if_ready(
+                now + Duration::from_secs(8),
+                DEBOUNCE_DELAY,
+                MIN_DISPATCH_INTERVAL,
+            )
+            .is_none());
+        assert_eq!(
+            state
+                .take_if_ready(
+                    now + Duration::from_secs(9),
+                    DEBOUNCE_DELAY,
+                    MIN_DISPATCH_INTERVAL,
+                )
+                .unwrap()
+                .len(),
+            2
+        );
+    }
+
+    #[test]
+    fn cooldown_keeps_dirty_origins_until_dispatch_is_allowed() {
+        let now = Instant::now();
+        let mut state = DebounceState::default();
+        state.push(ChangeOrigin::Registry, now);
+        assert!(state
+            .take_if_ready(now + DEBOUNCE_DELAY, DEBOUNCE_DELAY, MIN_DISPATCH_INTERVAL,)
+            .is_some());
+        state.push(
+            ChangeOrigin::Directory(PathBuf::from(r"C:\Apps")),
+            now + Duration::from_secs(10),
+        );
+        assert!(state
+            .take_if_ready(
+                now + Duration::from_secs(20),
+                DEBOUNCE_DELAY,
+                MIN_DISPATCH_INTERVAL,
+            )
+            .is_none());
+        assert!(state
+            .take_if_ready(
+                now + Duration::from_secs(38),
+                DEBOUNCE_DELAY,
+                MIN_DISPATCH_INTERVAL,
+            )
+            .is_some());
     }
 
     #[test]
     fn watcher_guard_stops_blocked_registry_watchers() {
         let started = Instant::now();
-        let guard = start(Vec::new(), Arc::new(|| {}));
+        let guard = start(Vec::new(), Arc::new(|_| {}));
         assert!(guard.is_some());
         drop(guard);
         assert!(started.elapsed() < Duration::from_secs(2));
@@ -344,7 +451,7 @@ mod tests {
         let directory = tempfile::tempdir().unwrap();
         for _ in 0..5 {
             let started = Instant::now();
-            let guard = start(vec![directory.path().to_path_buf()], Arc::new(|| {}));
+            let guard = start(vec![directory.path().to_path_buf()], Arc::new(|_| {}));
             assert!(guard.is_some());
             drop(guard);
             assert!(started.elapsed() < Duration::from_secs(5));

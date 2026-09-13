@@ -229,6 +229,33 @@ mod fingerprint_tests {
     }
 
     #[test]
+    fn a_reused_record_takes_its_display_name_from_the_current_naming_rules() {
+        let (root, _executable, mut index) = indexed_editor();
+        pin_directory_timestamps(&mut index);
+        for record in index.directories.values_mut() {
+            for app in &mut record.apps {
+                app.name = "7-Zip SFX".into();
+                app.product_name = Some("7-Zip SFX".into());
+            }
+        }
+
+        let scanned = rescan(root.path(), &index);
+
+        assert_eq!(scanned.apps.len(), 1);
+        assert_eq!(scanned.apps[0].name, "Editor");
+        assert!(
+            scanned
+                .index
+                .directories
+                .values()
+                .flat_map(|record| &record.apps)
+                .all(|app| app.name == "Editor"),
+            "the index carries the corrected name forward"
+        );
+        assert_eq!(scanned.statistics.executables_inspected, 0);
+    }
+
+    #[test]
     fn an_unchanged_tree_costs_no_enumeration_and_no_metadata_reads() {
         let root = tempfile::tempdir().unwrap();
         for index in 0..50 {

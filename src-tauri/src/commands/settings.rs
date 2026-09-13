@@ -37,7 +37,7 @@ pub(crate) struct SystemSettings {
 #[cfg(test)]
 pub(super) fn settings_sample() -> SystemSettings {
     SystemSettings {
-        version: env!("CARGO_PKG_VERSION"),
+        version: "0.0.0-sample",
         shortcut: global_shortcut::Status::default(),
         scan_settings: catalog::scan_settings::ScanSettings::default(),
         fixed_drives: vec![r"C:\".into()],

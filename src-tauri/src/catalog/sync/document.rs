@@ -49,10 +49,6 @@ mod tests {
         settled
     }
 
-    // Hydration writes the icons back into the document, so the next load found records that
-    // differed from their sanitized form only by an icon and rewrote the whole file to strip them.
-    // On a real catalog that is a ten megabyte write per scan cycle, and it also threw away the
-    // icons hydration had just persisted.
     #[test]
     fn a_settled_document_is_not_rewritten_to_strip_its_icons() {
         let dir = tempfile::tempdir().unwrap();

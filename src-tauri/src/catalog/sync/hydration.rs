@@ -26,7 +26,7 @@ pub(crate) fn enqueue_hydration(
         let worker_app = app.clone();
         let hydrated = tauri::async_runtime::spawn_blocking(move || {
             let state = worker_app.state::<AppState>();
-            let Some(document) = cache::read_document(&hydration_dir) else {
+            let Some(document) = cache::read_hydration_document(&hydration_dir) else {
                 return Vec::new();
             };
             if document.generation != generation {
@@ -87,7 +87,7 @@ pub(crate) fn enqueue_hydration(
         }
         let post_state = app.state::<AppState>();
         let _guard = post_state.lock_sync();
-        let Some(mut document) = cache::read_document(&app_data_dir) else {
+        let Some(mut document) = cache::read_hydration_document(&app_data_dir) else {
             return;
         };
         if document.generation != generation {
@@ -117,9 +117,7 @@ fn apply_hydration_patches_to_document(
         target.original_filename = patch.original_filename.clone();
         target.install_location = patch.install_location.clone();
         target.can_uninstall = patch.can_uninstall.unwrap_or(target.can_uninstall);
-        if patch.icon_base64.is_some() {
-            target.icon_base64 = patch.icon_base64.clone();
-        }
+        target.icon_base64 = None;
     }
 }
 
@@ -128,7 +126,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn hydration_patches_persist_icons_without_erasing_existing_icons() {
+    fn hydration_patches_persist_metadata_without_embedding_icons() {
         use crate::app_state::cached_app;
 
         let mut first = cached_app("Code", r"C:\Code.exe");
@@ -173,13 +171,7 @@ mod tests {
             ],
         );
 
-        assert_eq!(
-            document.apps[0].icon_base64.as_deref(),
-            Some("data:image/png;base64,new")
-        );
-        assert_eq!(
-            document.apps[1].icon_base64.as_deref(),
-            Some("data:image/png;base64,old")
-        );
+        assert_eq!(document.apps[0].icon_base64, None);
+        assert_eq!(document.apps[1].icon_base64, None);
     }
 }

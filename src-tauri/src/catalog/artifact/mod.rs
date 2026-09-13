@@ -52,6 +52,7 @@ pub(super) mod testing {
             target_availability: None,
             category_reasons: Vec::new(),
             close_risk: None,
+            scan_folder: None,
         }
     }
 

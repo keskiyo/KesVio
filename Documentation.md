@@ -559,12 +559,26 @@ overwritten by an older build: the catalog treats it as absent, scans into
 memory, and skips the write so the file survives intact for the newer build.
 This mirrors the equivalent preference rule above.
 
+Cache schema 11 adds the optional `scanFolder` origin to catalog records. Schema
+10 loads with that value absent and upgrades in memory; older supported schemas
+continue through the same cumulative migration path.
+
 The document a load hands back carries no icons, because hydration owns them and
-fills them in afterwards. The copy on disk keeps them. Sanitizing a loaded
-document writes it back only when sanitizing actually changed something, so a
-catalog that has settled is read and never rewritten; stripping the icons before
-that comparison made every load look like a change and rewrote the whole file to
-throw away the icons hydration had just persisted.
+fills them in afterwards. PNG files in the content-addressed icon cache are the
+persistent source; `apps-cache.json` does not keep duplicate base64 payloads.
+Hydration persists newly learned textual metadata while clearing icon payloads
+before the atomic catalog write.
+
+Cards in the active catalog view request priority hydration through IPC batches
+of at most 128 IDs. A new catalog generation repeats that request, so a scan
+cannot leave the displayed cards without images. Startup, Refresh, Force,
+watcher scans, and the former three-hour recovery timer do not enqueue a
+whole-catalog pass. Hidden applications and other sections wait until their view
+or search makes them active. Hydration reuses scanner metadata instead of
+rereading an executable whose descriptive fields are already complete. It reads
+the already published current-schema document without rerunning structural
+artifact promotion, so its generation check, worker read and metadata write do
+not repeat registry discovery.
 
 Resetting the catalog removes every file belonging to the cache, including
 siblings left by earlier builds, and leaves scan settings and
@@ -583,19 +597,63 @@ snapshot where safe.
 Normal startup is cache-first. Background validation and incremental scans keep
 the UI usable while source work runs. Startup, watchers and ordinary refreshes
 scan only explicitly configured portable folders. Fixed-drive discovery is on
-by default and runs during **Force full scan**. An ordinary
+by default and runs during **Force full scan**. It also runs on a startup or
+refresh whose catalog holds no portable snapshot at all — a fresh install or a
+reset cache — because "retain what the last walk found" retains nothing there,
+and a first scan that returned no portable applications read as a broken
+scanner. A snapshot that exists but is empty does not trigger the walk, so a
+machine with no portable software keeps its routine scans cheap. Watch-triggered
+scans never walk the drives. For the same reason the first-run **Scan for apps**
+prompt requests a full scan rather than a refresh: that button is the one place
+where the user has asked for everything to be found. An ordinary
 refresh retains already discovered fixed-drive portable applications while the
 option remains enabled, but drops their large directory index; disabling the
 option removes those retained records on the next refresh. A configured portable
-folder that is currently unavailable remains retained rather than being treated
-as removed from settings. While automatic drive coverage is enabled, cached local
-drive roots that are absent from Windows drive discovery and inaccessible are
-also retained. Root planning probes each cached drive once, does not infer drive
+folder that is currently unavailable on a mounted drive remains retained rather
+than being treated as removed from settings; a configured folder whose drive
+letter is not mounted at all — a pulled stick, `F:\` itself or `F:\Apps` while
+`F:` is gone — is neither scanned nor retained, so any scan drops its records
+and the drive's entries leave the directory index with them. While automatic
+drive coverage is enabled, cached local drive roots that are absent from Windows
+drive discovery and inaccessible are also retained, except for the letters of
+those unmounted configured folders, so the two rules never disagree about one
+stick. Root planning probes each cached drive once, does not infer drive
 coverage from UNC or relative targets, and never scans an unavailable root. On
 return, that drive follows the normal refresh/force policy. Confirmed missing
 application targets still follow the existing target-availability filter.
 Configured exclusions also remove matching retained applications while their
 root is unavailable, for both ordinary refresh and force scan.
+
+The directory index caches the cards a walk built, and an incremental scan
+reuses them for a directory whose timestamp and children are unchanged without
+reading the executables again. A cached card's display name is not trusted
+across builds: it is re-derived from the facts the record carries — path,
+parent folder and product name — every time the record is reused, so a naming
+rule that changed after the walk, such as `7-Zip SFX` no longer counting as a
+product name, reaches every cached card on the next ordinary scan instead of
+waiting for a forced walk to rebuild the index.
+
+A volume watcher owns one hidden top-level window on its own thread and receives
+the `WM_DEVICECHANGE` volume arrival and removal broadcasts Windows sends to
+every top-level window; the window is a stock `STATIC` control subclassed
+through `SetWindowSubclass`, so no window class is registered, and the drive
+letters come from `dbcv_unitmask`. It starts once at startup, lives in
+`AppState`, and reads the scan settings at event time. A change whose letters
+touch a configured scan folder runs an ordinary refresh through the scan
+coordinator — not a forced walk of the fixed drives — so a pulled stick's
+applications disappear within the delta of that scan and a returned stick's
+come back; an arrival also restarts the change watcher so the folder is watched
+again. Letters that touch no scan folder change nothing.
+
+The Windows change watcher combines registry and directory notifications after
+eight quiet seconds and dispatches at most one background scan every thirty
+seconds. It retains notifications received during that interval instead of
+starting overlapping scans. Known Start Menu and configured portable roots scan
+only their affected source group, while registry notifications scan registry,
+Start Apps and installer-cache sources. Registry metadata is refreshed for every
+classified watcher scan. An unknown or overflowing notification falls back to
+all routine sources. Sources outside the selected group keep their cached apps
+and health state.
 
 Deduplication applies auxiliary-tool reasons after merging records for the same
 executable. A merged card therefore cannot remain primary until the next cache
@@ -627,15 +685,15 @@ binaries. The package map is best-effort: when it cannot be read, packaged
 entries keep their name, publisher, version and install location, and lose
 only the resolved executable.
 
-| Stage          | Invariant                                                                                                                                       |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Traversal      | Explicit folders on routine scans; fixed drives on forced scans; shared time, depth, entry and cancellation bounds; no reparse-point recursion. |
-| Classification | Artifact, visibility and category decisions are deterministic and explainable.                                                                  |
-| Deduplication  | Canonical identity and launch evidence prevent unrelated same-name applications from merging.                                                   |
-| Install root   | A record keeps an install location only while that location contains its own launch target.                                                     |
-| Cache          | Source-aware generation document; invalid data degrades safely.                                                                                 |
-| Hydration      | Icons/details are lazy, size-limited, trusted-ID-only and processed in bounded batches.                                                         |
-| Search         | Current view/category only; literal matches rank above corrected, transliterated and fuzzy matches.                                             |
+| Stage          | Invariant                                                                                                                                                                                                            |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Traversal      | Explicit folders on routine scans; fixed drives on forced scans and on the first routine scan of a catalog with no portable snapshot; shared time, depth, entry and cancellation bounds; no reparse-point recursion. |
+| Classification | Artifact, visibility and category decisions are deterministic and explainable.                                                                                                                                       |
+| Deduplication  | Canonical identity and launch evidence prevent unrelated same-name applications from merging.                                                                                                                        |
+| Install root   | A record keeps an install location only while that location contains its own launch target.                                                                                                                          |
+| Cache          | Source-aware generation document; invalid data degrades safely.                                                                                                                                                      |
+| Hydration      | Icons/details are lazy, size-limited, trusted-ID-only and processed in bounded batches.                                                                                                                              |
+| Search         | Current view/category only; literal matches rank above corrected, transliterated and fuzzy matches.                                                                                                                  |
 
 A query token expands into variants before matching: the literal token, the
 token remapped between the English and Russian keyboard layouts, and a
@@ -668,6 +726,57 @@ location only when that location actually contains its own launch target, so a
 merge or a registry match cannot attach a nested component's directory to a
 product. Without the second rule, an application that updates itself into a
 versioned folder produced a new identity on every update.
+
+Traversal also stays out of three kinds of folder that hold executables no one
+installed. A Wine build keeps its stub Windows binaries — `wmplayer.exe`,
+`taskmgr.exe`, `msiexec.exe` — under `lib/wine/<arch>-windows`, with Microsoft
+version resources that read as applications and installers; the `<arch>-windows`
+and `<arch>-unix` names and a `wine` folder directly under `lib` are skipped.
+Puppeteer, Playwright and editor sandboxes cache one Chrome for Testing per
+version under `puppeteer`, `ms-playwright`, `ws-browser` and numbered
+`chromium-<n>` and `win64-<version>` folders, a browser nobody launches by hand;
+those names are skipped. And uv unpacks interpreters into
+`cpython-<version>-windows-<arch>` folders, where `pythonw.exe` is a package
+manager's private runtime; a `cpython-` folder naming `-windows-` is skipped. A
+folder merely called `Chromium`, `wine` or `cpython` is still walked. Records
+these folders already contributed leave the catalog on the next scan that walks
+their drive again, which for a fixed drive outside the configured folders is the
+next forced scan.
+
+A scan folder that is a whole drive becomes a category. Add `F:\` under
+**Additional scan folder**, scan, and every application found on that drive
+lands in **Disk F** — a user category with the deterministic id `drive:f`, placed
+at the top of the sidebar the way a category the user creates is, so it can be
+renamed, reordered, collapsed and deleted like any other, and it comes back on
+the next scan while the folder is still configured. The backend states
+only the fact: every portable record carries `scanFolder`, the deepest added
+folder that contains it, or nothing when a forced walk of the fixed drives found
+it on its own; the frontend draws the conclusion, and only for a folder that is
+a drive root, so `D:\Apps` changes nothing and a fixed drive walked by a forced
+scan never becomes **Disk C**. The drive is one exclusive container: whatever
+the classifier made of an executable found on it — an installer, a document, an
+auxiliary tool, a card with an older "Move to" override — the selector places
+it in the drive category as a primary application, so a stick reads as the
+whole of what is on it and nothing from it turns up in Installers & Docs or
+Tools. Identity stays path-based, so the same stick mounted under another letter
+is another category with new ids; that is the price of not tracking volumes,
+and it is visible in the name. A stick that is out loses its records on the
+refresh the volume watcher runs when the letter goes away, and a drive category
+with nothing in it is hidden from the sidebar and the grid — unlike a category
+the user created, which stays visible while empty so applications can be moved
+into it — while its definition survives, so a renamed **Disk F** returns under
+its own name when the stick is plugged back in and scanned.
+
+One more rule reads the Start Menu as evidence about a folder. A shortcut whose
+target sits in a folder named after the shortcut's own product — RivaTuner's
+`RTSS.exe` in `RivaTuner Statistics Server\` — marks that folder as the
+product's own, and every other portable executable found directly in it that no
+shortcut references is that product's companion and moves to Tools:
+`EncoderServer.exe` and `RTSSHooksLoader.exe` carry no publisher, so the
+publisher-based nested rule could not see them, and they are siblings rather than
+descendants. A shared folder that names no product — a downloads folder holding
+one shortcut target beside unrelated programs — anchors nothing, and a companion
+in a subfolder of its own is left to the nested rule and to its own name.
 
 Before the first scan the catalog shows what will be scanned, that nothing runs
 automatically at startup, and that the data stays on the device, with the scan
@@ -1001,8 +1110,16 @@ would have to reintroduce it deliberately.
   opens at its configured default instead. A minimized window keeps the last
   geometry it had, and a maximized one keeps the rectangle it will restore to
   rather than the screen it currently fills. The geometry is tracked in memory
-  while the window moves and written once, when the window closes or the tray
-  quits. The stored size is the inner size, because `set_size` restores an inner
+  while the window moves and written when the window closes, when the tray
+  quits, and half a second after a move or resize has stopped. The settled write
+  exists because an update, a Windows shutdown or a kill ends the process with
+  no close event: with the close as the only write, the next start restored the
+  size from the last close rather than the size the window had, which read as
+  the window reopening larger than it was left. One waiter serves a burst of
+  events, it gives up after ten seconds of continuous movement, and the write
+  is the same no-op-when-unchanged write the close performs, so a drag costs one
+  file write at its end. Both the restore and each write are logged with the
+  geometry they saw. The stored size is the inner size, because `set_size` restores an inner
   size: storing the outer one instead added the invisible resize border —
   sixteen pixels wide, nine tall — back on every start, and the window grew by
   that much each time it was reopened. The position is the outer position, which
@@ -1035,7 +1152,9 @@ would have to reintroduce it deliberately.
   before installation; the signature does not cover the manifest itself.
   The private key exists only in CI secrets.
 - Download progress reports real bytes/percentage; verification, installation
-  and restart are indeterminate stages. Update failures retain a safe retry UI.
+  and restart are indeterminate stages. Manifest checks have a thirty-second
+  request timeout and user-started downloads have a fifteen-minute timeout.
+  Update failures retain a safe retry UI.
 - The downloaded installer runs in NSIS passive mode: non-interactive, but with
   a visible progress window. An unsigned installer that runs itself with no
   window at all is the shape of behaviour that heuristics score, and the user
@@ -1125,17 +1244,17 @@ Every capability the program uses, when it runs, and what bounds it. Nothing her
 is discretionary: each row is enforced by the boundary scripts, the capability
 file or a named test.
 
-| Capability                                                       | When it runs                                                        | Bound                                                                                                                              |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Read the uninstall registry hives, Start Menu, AppsFolder, Steam | Startup, refresh, watcher, Force full scan                          | Read-only. Stage budgets and cancellation bound every loop.                                                                        |
-| Walk fixed drives for portable executables                       | **Force full scan only**, and only while the discovery toggle is on | `roots_for` retains fixed drives on refresh and walks them only on `SyncRequest::Force`.                                           |
-| `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry                             | Target resolved from a catalog id held in trusted state, never from the webview.                                                   |
-| `CreateToolhelp32Snapshot`, `OpenProcess`, `TerminateProcess`    | The explicit close action of a scenario                             | `WM_CLOSE` first; terminate only on refusal; batch capped; protected processes and this process excluded.                          |
-| Remove installed software                                        | Never                                                               | There is no such capability. No code path starts a removal; the card menu opens the Windows page instead.                          |
-| Write one `HKCU` value (`Software\keskiyo\KesVio`)               | Startup, only when the install directory changed                    | Read before write; the running program writes nothing else in the registry, ever.                                                  |
-| Register a disabled Startup entry                                | The installer, on a fresh install only                              | Shortcut plus a `StartupApproved` value marked disabled. Never on update; the running program cannot.                              |
-| Write files                                                      | Catalog cache, scan settings, window state, logs                    | Only under the resolved data root. Atomic replace; identical values are not rewritten.                                             |
-| Network                                                          | The update check, and a download the user starts                    | GitHub release endpoint only. Automatic checks are throttled to one per four hours, and back off to a day after repeated failures. |
+| Capability                                                       | When it runs                                                             | Bound                                                                                                                                                                                            |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Read the uninstall registry hives, Start Menu, AppsFolder, Steam | Startup, refresh, watcher, Force full scan                               | Read-only. Stage budgets and cancellation bound every loop.                                                                                                                                      |
+| Walk fixed drives for portable executables                       | Force full scan, plus the first routine scan without a portable snapshot | Requires the discovery toggle. Later startup, refresh and watcher scans retain fixed-drive results instead of walking those drives.                                                              |
+| `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry                                  | Target resolved from a catalog id held in trusted state, never from the webview.                                                                                                                 |
+| `CreateToolhelp32Snapshot`, `OpenProcess`, `TerminateProcess`    | The explicit close action of a scenario                                  | `WM_CLOSE` first; terminate only on refusal; batch capped; protected processes and this process excluded.                                                                                        |
+| Remove installed software                                        | Never                                                                    | There is no such capability. No code path starts a removal; the card menu opens the Windows page instead.                                                                                        |
+| Write one `HKCU` value (`Software\keskiyo\KesVio`)               | Startup, only when the install directory changed                         | Read before write; the running program writes nothing else in the registry, ever.                                                                                                                |
+| Register a disabled Startup entry                                | The installer, on a fresh install only                                   | Shortcut plus a `StartupApproved` value marked disabled. Never on update; the running program cannot.                                                                                            |
+| Write files                                                      | Catalog cache, scan settings, window state, logs                         | Only under the resolved data root. Atomic replace; identical values are not rewritten.                                                                                                           |
+| Network                                                          | The update check, and a download the user starts                         | GitHub release endpoint only. Checks time out after 30 seconds; downloads after 15 minutes. Automatic checks are throttled to one per four hours, and back off to a day after repeated failures. |
 
 There is no telemetry, no account and no background upload. The one persistence
 entry is the Startup shortcut the installer registers **disabled**, which exists

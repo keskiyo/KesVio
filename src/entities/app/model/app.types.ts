@@ -60,6 +60,7 @@ export interface AppInfo {
 	targetAvailability?: string | null
 	categoryReasons?: string[]
 	closeRisk?: string | null
+	scanFolder?: string | null
 }
 
 export interface AppDetails {

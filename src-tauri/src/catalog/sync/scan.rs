@@ -1,5 +1,4 @@
 use super::commit::write_catalog_under_lock;
-use super::hydration::enqueue_hydration;
 use crate::app_state::AppState;
 use crate::catalog::scan_coordinator::{ScanJob, Submission};
 use crate::catalog::sync::{CatalogDeltaDto, SyncRequest};
@@ -42,24 +41,6 @@ fn synchronize_catalog_once(
         let _ = app.emit("catalog://delta", CatalogDeltaDto::from(&outcome.delta));
         let _ = app.emit("catalog://changed", summary);
     }
-    let hydration_ids = if job.request == SyncRequest::Watch {
-        outcome
-            .delta
-            .upserted
-            .iter()
-            .map(|app| app.id.clone())
-            .collect()
-    } else {
-        outcome.apps.iter().map(|app| app.id.clone()).collect()
-    };
-    log::info!("Catalog publication: scheduling icon hydration");
-    enqueue_hydration(
-        app.clone(),
-        outcome.app_data_dir,
-        outcome.generation,
-        hydration_ids,
-        false,
-    );
     Ok(ScanCommit {
         apps: outcome.apps,
         generation: outcome.generation,

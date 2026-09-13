@@ -1,5 +1,6 @@
 mod installer_sources;
 mod portable_sources;
+mod selection;
 mod stage_log;
 mod steam_sources;
 mod windows_sources;
@@ -14,6 +15,7 @@ use crate::catalog::sync::scan_control::ScanControl;
 use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::sync::SyncRequest;
 use crate::catalog::{self, ScanProgress};
+use selection::ScanSelection;
 
 pub(super) struct SourceScan {
     pub updates: Vec<SourceSnapshot>,
@@ -31,66 +33,86 @@ pub(super) fn scan_all(
     steps: &StepTracker,
 ) -> SourceScan {
     let control = ScanControl::with_steps(is_cancelled, steps.clone());
+    let selection = ScanSelection::for_request(request);
     log::info!(
         "Scan starting: request={request:?} fixedDrives={} includedPaths={} excludedPaths={}",
         settings.auto_scan_fixed_drives,
         settings.included_paths.len(),
         settings.excluded_paths.len()
     );
-    progress(ScanProgress {
-        stage: "Windows applications".into(),
-        location: None,
-        completed_roots: 0,
-        total_roots: 0,
+    if selection.registry || selection.start_menu || selection.start_apps {
+        progress(ScanProgress {
+            stage: "Windows applications".into(),
+            location: None,
+            completed_roots: 0,
+            total_roots: 0,
+        });
+    }
+
+    let windows = windows_sources::scan(&control, &selection);
+    let installers = selection
+        .installer
+        .then(|| installer_sources::scan(&control, progress));
+    let steam = selection
+        .steam
+        .then(|| steam_sources::scan(progress, is_cancelled, steps));
+    let steam_libraries = steam.as_ref().map_or_else(
+        || {
+            selection
+                .portable
+                .then(catalog::steam::installed_libraries)
+                .unwrap_or_default()
+        },
+        |scan| scan.libraries.clone(),
+    );
+    let portable = selection.portable.then(|| {
+        portable_sources::scan(
+            previous,
+            settings,
+            request,
+            steam_libraries,
+            progress,
+            is_cancelled,
+            steps,
+        )
     });
 
-    let windows = windows_sources::scan(&control);
-    let installers = installer_sources::scan(&control, progress);
-    let steam = steam_sources::scan(progress, is_cancelled, steps);
-    let portable = portable_sources::scan(
-        previous,
-        settings,
-        request,
-        steam.libraries,
-        progress,
-        is_cancelled,
-        steps,
-    );
-
-    let mut outcomes = windows.outcomes;
-    outcomes.push(installers.outcome);
-    outcomes.push(steam.outcome);
-    outcomes.push(portable.outcome);
+    let windows_sources::WindowsSources {
+        registry,
+        registry_metadata,
+        start_menu,
+        start_apps,
+        mut outcomes,
+    } = windows;
 
     let mut updates = Vec::new();
-    push_snapshot(&mut updates, "steam", steam.apps);
-    push_snapshot(&mut updates, "portable", portable.apps);
-    push_snapshot(
-        &mut updates,
-        catalog::source::REGISTRY_SOURCE,
-        windows.registry,
-    );
-    push_snapshot(
-        &mut updates,
-        catalog::source::START_MENU_SOURCE,
-        windows.start_menu,
-    );
-    push_snapshot(
-        &mut updates,
-        catalog::source::START_APPS_SOURCE,
-        windows.start_apps,
-    );
-    push_snapshot(
-        &mut updates,
-        catalog::source::INSTALLER_CACHE_SOURCE,
-        installers.apps,
-    );
+    if let Some(installers) = installers {
+        outcomes.push(installers.outcome);
+        push_snapshot(
+            &mut updates,
+            catalog::source::INSTALLER_CACHE_SOURCE,
+            installers.apps,
+        );
+    }
+    if let Some(steam) = steam {
+        outcomes.push(steam.outcome);
+        push_snapshot(&mut updates, "steam", steam.apps);
+    }
+    let mut filesystem_index = None;
+    if let Some(portable) = portable {
+        outcomes.push(portable.outcome);
+        filesystem_index = portable.filesystem_index;
+        push_snapshot(&mut updates, "portable", portable.apps);
+    }
+    push_snapshot(&mut updates, catalog::source::REGISTRY_SOURCE, registry);
+    push_snapshot(&mut updates, catalog::source::START_MENU_SOURCE, start_menu);
+    push_snapshot(&mut updates, catalog::source::START_APPS_SOURCE, start_apps);
 
     SourceScan {
         updates,
         outcomes,
-        registry_metadata: windows.registry_metadata,
-        filesystem_index: portable.filesystem_index,
+        registry_metadata,
+        filesystem_index,
     }
 }
 

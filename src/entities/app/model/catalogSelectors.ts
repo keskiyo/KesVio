@@ -6,7 +6,7 @@ import {
 } from '../lib/catalogArtifacts'
 import { filterAppsByQuery } from '../lib/catalogSearch'
 import type { AppInfo, AppView } from './app.types'
-import type { AppCategory } from '../../category'
+import { type AppCategory, driveCategoryFor } from '../../category'
 
 export type AppPredicate = (app: AppInfo) => boolean
 
@@ -193,6 +193,14 @@ export function selectCategorizedApps(state: CategorizedAppsState): AppInfo[] {
 	const documentIdentities = new Set(state.documentAppIdentities)
 	return deduplicateVisibleApps(
 		state.apps.map(app => {
+			const drive = driveCategoryFor(app.scanFolder)
+			if (drive)
+				return {
+					...app,
+					artifactKind: 'application' as const,
+					category: drive.id,
+					visibilityClass: 'primary' as const,
+				}
 			if (isCatalogArtifact(app)) {
 				return app.category === INSTALLERS_DOCS_CATEGORY
 					? app
