@@ -7,6 +7,7 @@ import {
 	Wrench,
 } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
+import { driveCategoryFor } from '../../../../entities/category'
 import { createPortal } from 'react-dom'
 import {
 	INSTALLERS_DOCS_CATEGORY,
@@ -36,6 +37,7 @@ export function AppActionsMenu({
 	const [showCategories, setShowCategories] = useState(false)
 	const [showArtifacts, setShowArtifacts] = useState(false)
 	const artifact = isCatalogArtifact(app) && !app.userPlacedArtifact
+	const drive = driveCategoryFor(app)
 	const {
 		menuRef,
 		categoryMenuRef,
@@ -66,7 +68,7 @@ export function AppActionsMenu({
 				aria-label={`${app.name} actions`}
 				className="motion-panel fixed z-[600] flex max-h-[calc(100vh-1.5rem)] w-56 max-w-[calc(100vw-1.5rem)] flex-col gap-0.5 overflow-y-auto rounded-xl border border-slate-200/85 bg-slate-50 p-2 text-left text-slate-700 shadow-(--shadow-menu)"
 			>
-				{!isHidden && !artifact && (
+				{!isHidden && !artifact && !drive && (
 					<>
 						<MenuItem
 							trailingIcon={ArrowRight}
@@ -90,6 +92,11 @@ export function AppActionsMenu({
 						onInfo(app)
 					}}
 				/>
+				{drive && (
+					<p className="px-3 py-2 text-xs text-(--text-muted)">
+						Grouped by scan drive. Category changes are unavailable.
+					</p>
+				)}
 				<MenuItem
 					icon={
 						isHidden ? RotateCcw : isUserPromoted ? Wrench : EyeOff
@@ -138,7 +145,7 @@ export function AppActionsMenu({
 					/>
 				)}
 			</div>
-			{!isHidden && !artifact && showCategories && (
+			{!isHidden && !artifact && !drive && showCategories && (
 				<CategorySubmenu
 					categories={categories}
 					categoryOrder={categoryOrder}
@@ -157,18 +164,22 @@ export function AppActionsMenu({
 					}}
 				/>
 			)}
-			{!isHidden && !artifact && showCategories && showArtifacts && (
-				<ArtifactSubmenu
-					menuRef={artifactMenuRef}
-					position={artifactPosition}
-					onKeyDown={onMenuKeyDown}
-					label={`Move ${app.name} to installers or docs`}
-					onSelect={kind => {
-						onMove(app.id, INSTALLERS_DOCS_CATEGORY, kind)
-						onClose()
-					}}
-				/>
-			)}
+			{!isHidden &&
+				!artifact &&
+				!drive &&
+				showCategories &&
+				showArtifacts && (
+					<ArtifactSubmenu
+						menuRef={artifactMenuRef}
+						position={artifactPosition}
+						onKeyDown={onMenuKeyDown}
+						label={`Move ${app.name} to installers or docs`}
+						onSelect={kind => {
+							onMove(app.id, INSTALLERS_DOCS_CATEGORY, kind)
+							onClose()
+						}}
+					/>
+				)}
 		</>,
 		document.querySelector<HTMLElement>('.app-shell') ?? document.body,
 	)

@@ -1,5 +1,6 @@
 mod finish;
 mod frames;
+mod graceful;
 mod identity;
 mod processes;
 
@@ -36,6 +37,7 @@ fn processes_of(target: &CloseTarget, running: &[(u32, String)]) -> Vec<u32> {
 
 pub(crate) fn close_processes(
     targets: &[CloseTarget],
+    allow_force: bool,
     progress: impl Fn(CloseStage),
 ) -> CloseOutcome {
     if targets.is_empty() {
@@ -64,8 +66,12 @@ pub(crate) fn close_processes(
         progress(CloseStage::Waiting { seconds_left });
         std::thread::sleep(std::time::Duration::from_secs(1));
     }
-    progress(CloseStage::Terminating);
-    finish(targets, &matched)
+    if allow_force {
+        progress(CloseStage::Terminating);
+        finish(targets, &matched)
+    } else {
+        graceful::outcome(targets, &matched, &running_images())
+    }
 }
 
 #[cfg(test)]
@@ -82,7 +88,7 @@ mod tests {
 
     #[test]
     fn reports_nothing_for_an_empty_request() {
-        assert_eq!(close_processes(&[], |_| {}), CloseOutcome::default());
+        assert_eq!(close_processes(&[], false, |_| {}), CloseOutcome::default());
     }
 
     // Nothing is running, so nothing is asked, waited for or terminated: a scenario that closes
@@ -93,6 +99,7 @@ mod tests {
 
         close_processes(
             &[target(r"C:\Nowhere\this-executable-does-not-exist.exe")],
+            false,
             |_| stages.set(stages.get() + 1),
         );
 
@@ -106,6 +113,7 @@ mod tests {
                 target(r"C:\Nowhere\this-executable-does-not-exist.exe"),
                 target(r"C:\Nowhere\neither-does-this-one.exe"),
             ],
+            false,
             |_| {},
         );
 

@@ -2,12 +2,13 @@ import { renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useGlobalShortcuts } from '../../../src/app/model/useGlobalShortcuts'
 
-function mount() {
+function mount(extra: { onUndo?: () => void } = {}) {
 	const handlers = {
 		onToggleQuickLaunch: vi.fn(),
 		onToggleScenarios: vi.fn(),
 		onSearchFromShortcut: vi.fn(),
 		onFocusSearch: vi.fn(),
+		...extra,
 	}
 	const view = renderHook(() => useGlobalShortcuts(handlers))
 	return { ...handlers, unmount: view.unmount }
@@ -134,6 +135,34 @@ describe('useGlobalShortcuts', () => {
 
 		expect(view.onToggleQuickLaunch).not.toHaveBeenCalled()
 		expect(view.onSearchFromShortcut).not.toHaveBeenCalled()
+	})
+
+	// Ctrl+Z in a text field is the field's own undo; the catalog undo answers only outside
+	// one, and only while there is something to undo, so the key keeps its browser meaning.
+	it('undoes on Ctrl+Z outside text fields when an undo is offered', () => {
+		const onUndo = vi.fn()
+		mount({ onUndo })
+
+		const outside = press('z', { ctrlKey: true })
+		expect(onUndo).toHaveBeenCalledOnce()
+		expect(outside.defaultPrevented).toBe(true)
+
+		const input = focusedInput()
+		const typed = press('z', { ctrlKey: true }, input)
+		expect(onUndo).toHaveBeenCalledOnce()
+		expect(typed.defaultPrevented).toBe(false)
+
+		const redo = press('z', { ctrlKey: true, shiftKey: true })
+		expect(onUndo).toHaveBeenCalledOnce()
+		expect(redo.defaultPrevented).toBe(false)
+	})
+
+	it('leaves Ctrl+Z alone when nothing can be undone', () => {
+		mount()
+
+		const event = press('z', { ctrlKey: true })
+
+		expect(event.defaultPrevented).toBe(false)
 	})
 
 	it('stops listening once unmounted', () => {

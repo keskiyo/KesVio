@@ -6,6 +6,6 @@ export function closeStageLabel(progress: CloseProgress): string {
 			? 'asking 1 app to close'
 			: `asking ${progress.running} apps to close`
 	if (progress.stage === 'waiting')
-		return `waiting ${progress.secondsLeft} s before force-closing`
+		return `waiting ${progress.secondsLeft} s for apps to close`
 	return 'force-closing what stayed open'
 }

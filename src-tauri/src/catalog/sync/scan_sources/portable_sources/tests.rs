@@ -1,12 +1,16 @@
 use super::*;
+use crate::catalog::volumes::ResolvedFolder;
 use std::path::Path;
 
-fn settings(auto_scan_fixed_drives: bool, included_paths: Vec<String>) -> ScanSettings {
-    ScanSettings {
-        auto_scan_fixed_drives,
-        included_paths,
-        ..ScanSettings::default()
-    }
+fn configured(paths: Vec<String>) -> Vec<ResolvedFolder> {
+    paths
+        .into_iter()
+        .map(|path| ResolvedFolder {
+            configured: path.clone(),
+            path,
+            volume: None,
+        })
+        .collect()
 }
 
 #[test]
@@ -21,7 +25,8 @@ fn startup_keeps_cached_apps_when_a_drive_is_temporarily_absent() {
         })
         .collect::<Vec<_>>();
     let roots = roots_for(
-        &settings(true, Vec::new()),
+        &[],
+        true,
         SyncRequest::Startup,
         vec![PathBuf::from(r"C:\")],
         Some(&previous),
@@ -50,7 +55,8 @@ fn refresh_scans_explicit_roots_and_retains_fixed_drives() {
     let explicit = tempfile::tempdir().unwrap();
     let fixed = PathBuf::from(r"D:\");
     let roots = roots_for(
-        &settings(true, vec![explicit.path().to_string_lossy().into_owned()]),
+        &configured(vec![explicit.path().to_string_lossy().into_owned()]),
+        true,
         SyncRequest::Refresh,
         vec![fixed.clone()],
         Some(&[]),
@@ -67,7 +73,8 @@ fn force_scan_removes_an_explicit_root_nested_under_a_fixed_drive() {
     let explicit = fixed.path().join("Tools");
     std::fs::create_dir_all(&explicit).unwrap();
     let roots = roots_for(
-        &settings(true, vec![explicit.to_string_lossy().into_owned()]),
+        &configured(vec![explicit.to_string_lossy().into_owned()]),
+        true,
         SyncRequest::Force,
         vec![fixed.path().to_path_buf()],
         Some(&[]),
@@ -82,7 +89,8 @@ fn force_scan_removes_an_explicit_root_nested_under_a_fixed_drive() {
 fn disabled_fixed_drive_scanning_neither_scans_nor_retains_fixed_drives() {
     let fixed = PathBuf::from(r"D:\");
     let roots = roots_for(
-        &settings(false, Vec::new()),
+        &[],
+        false,
         SyncRequest::Refresh,
         vec![fixed],
         Some(&[]),

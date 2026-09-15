@@ -298,7 +298,11 @@ describe('AppInfoDialog', () => {
 				.closest('section')!,
 		)
 		expect(screen.getByText('example-editor.exe')).toBeVisible()
-		expect(screen.getByText('Main catalog')).toBeVisible()
+		expect(
+			screen.getByText(
+				'Main catalog — Classification reason unavailable',
+			),
+		).toBeVisible()
 		expect(detection.getByText('Category')).toBeVisible()
 		expect(screen.queryByText('Why shown here')).not.toBeInTheDocument()
 	})

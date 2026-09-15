@@ -10,6 +10,8 @@ import type {
 import type { ScenarioRunProgress } from '../../../../features/run-scenario'
 
 export interface ScenariosPageProps {
+	importClient?: import('../../../../entities/scenario').ScenarioImportClient
+	onSetForceClose?(id: string, forceClose: boolean): boolean
 	scenarios: Scenario[]
 	apps: AppInfo[]
 	selectableApps: AppInfo[]

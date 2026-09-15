@@ -54,6 +54,9 @@ export function normalizeScenarios(value: unknown): Scenario[] {
 			closeIdentities,
 		)
 		scenarios.push({
+			...('forceClose' in raw
+				? { forceClose: raw.forceClose === true }
+				: {}),
 			id,
 			name,
 			launchIdentities,

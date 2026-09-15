@@ -23,6 +23,7 @@ export type AppErrorCode =
 	| 'SCAN_CANCELLED'
 	| 'SCAN_FAILED'
 	| 'SCAN_PATH_NOT_ABSOLUTE'
+	| 'STARTUP_ENTRY_UPDATE_FAILED'
 	| 'APP_DETAILS_UNAVAILABLE'
 
 interface AppErrorPayload {
@@ -65,6 +66,7 @@ export const APP_ERROR_CODES = {
 	SCAN_CANCELLED: true,
 	SCAN_FAILED: true,
 	SCAN_PATH_NOT_ABSOLUTE: true,
+	STARTUP_ENTRY_UPDATE_FAILED: true,
 	APP_DETAILS_UNAVAILABLE: true,
 } as const
 

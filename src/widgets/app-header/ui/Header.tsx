@@ -1,5 +1,6 @@
 import { Menu } from 'lucide-react'
 import { useRef } from 'react'
+import { FilterChip } from './FilterChip'
 import { ScanButton } from './ScanButton'
 import { SearchField } from './SearchField'
 import { countLabel } from '../../../shared/lib/countLabel'
@@ -41,6 +42,7 @@ export function Header({
 	query,
 	isRefreshing,
 	scanProgress,
+	activeFilter,
 	menuButtonRef,
 	searchInputRef,
 	onOpenNavigation,
@@ -70,7 +72,7 @@ export function Header({
 						onClick={onOpenNavigation}
 						className="grid size-11 shrink-0 place-items-center rounded-xl border border-white/85 bg-white/65 text-slate-600 shadow-sm hover:border-violet-400/35 hover:text-violet-700 focus-visible:outline-2 focus-visible:outline-violet-500"
 					>
-						<Menu size={19} />
+						<Menu size={19} aria-hidden="true" />
 					</button>
 				)}
 				<div className="flex min-w-0 flex-1 items-start gap-3">
@@ -88,6 +90,7 @@ export function Header({
 						>
 							{status}
 						</p>
+						{activeFilter && <FilterChip filter={activeFilter} />}
 					</div>
 					<ScanButton
 						isRefreshing={isRefreshing}

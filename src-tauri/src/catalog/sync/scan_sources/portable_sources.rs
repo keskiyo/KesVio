@@ -9,6 +9,7 @@ use crate::catalog::sync::health::SourceOutcome;
 use crate::catalog::sync::scan_control::StageStop;
 use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::sync::{portable, SyncRequest};
+use crate::catalog::volumes::{resolve_folders, TrackedVolume};
 use crate::catalog::{self, AppInfo, ScanProgress};
 use std::path::PathBuf;
 use std::time::Instant;
@@ -16,6 +17,8 @@ use std::time::Instant;
 pub(super) struct PortableSources {
     pub apps: Option<Vec<AppInfo>>,
     pub filesystem_index: Option<FilesystemIndex>,
+    pub volumes: Option<Vec<TrackedVolume>>,
+    pub unreachable_folders: usize,
     pub outcome: SourceOutcome,
 }
 
@@ -42,19 +45,33 @@ pub(super) fn scan(
             .collect::<Vec<_>>()
             .join(", ")
     );
+    steps.mark("portable", "volume identities");
+    let mounted = if settings.included_paths.is_empty() {
+        Vec::new()
+    } else {
+        crate::platform::windows::volumes::mounted_volumes()
+    };
+    let resolution = resolve_folders(&settings.included_paths, &previous.volumes, &mounted);
     let previous_snapshot = previous
         .sources
         .iter()
         .find(|snapshot| snapshot.key.0 == "portable")
         .map(|snapshot| snapshot.apps.as_slice());
     let previous_apps = previous_snapshot.unwrap_or_default();
-    let roots = roots_for(settings, request, fixed_roots, previous_snapshot, |path| {
-        path.is_dir()
-    });
+    let roots = roots_for(
+        &resolution.folders,
+        settings.auto_scan_fixed_drives,
+        request,
+        fixed_roots,
+        previous_snapshot,
+        |path| path.is_dir(),
+    );
     log::info!(
-        "Portable root coverage: scanned={} retained={} previousSnapshot={} previousRecords={}",
+        "Portable root coverage: scanned={} retained={} unreachable={} trackedVolumes={} previousSnapshot={} previousRecords={}",
         roots.scanned.len(),
         roots.retained.len(),
+        roots.unreachable,
+        resolution.tracked.len(),
         previous_snapshot.is_some(),
         previous_apps.len()
     );
@@ -82,7 +99,7 @@ pub(super) fn scan(
         progress,
         is_cancelled,
     );
-    stamp_scan_folders(&mut scan.apps, &settings.included_paths);
+    stamp_scan_folders(&mut scan.apps, &resolution.folders);
     let replaced = adopts_results(scan.stop);
     let outcome = SourceOutcome {
         key: "portable",
@@ -96,6 +113,8 @@ pub(super) fn scan(
     PortableSources {
         apps: replaced.then_some(scan.apps),
         filesystem_index: replaced.then_some(scan.filesystem_index),
+        volumes: replaced.then_some(resolution.tracked),
+        unreachable_folders: roots.unreachable,
         outcome,
     }
 }

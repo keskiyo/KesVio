@@ -1,6 +1,6 @@
 use super::document::load_sanitized_document;
 use super::scan::ScanCommit;
-use crate::app_state::{cached_details_for_catalog, remember_catalog, AppState};
+use crate::app_state::{cached_details_for_catalog, remember_catalog, remember_volumes, AppState};
 use crate::catalog::cache;
 use crate::catalog::scan_coordinator::ScanJob;
 use crate::catalog::sync::compute_delta;
@@ -31,6 +31,7 @@ pub(super) fn write_catalog_under_lock(
         .map_err(|error| format!("Could not open the application data folder: {error}"))?;
     steps.mark("commit", "loading previous document");
     let previous = load_sanitized_document(&app_data_dir).unwrap_or_default();
+    state.catalog_generation.observe(previous.generation);
     log::info!(
         "Catalog persistence: previous generation={} records={}",
         previous.generation,
@@ -56,6 +57,10 @@ pub(super) fn write_catalog_under_lock(
     document.app_details =
         cached_details_for_catalog(state.inner(), &document.apps, document.app_details);
     steps.mark("commit", "computing delta");
+    document.generation = state
+        .catalog_generation
+        .next(previous.generation)
+        .ok_or_else(|| "Catalog generation exhausted".to_owned())?;
     let delta = compute_delta(document.generation, &previous.apps, &document.apps);
     log::info!(
         "Catalog persistence: writing document generation={} records={}",
@@ -67,6 +72,7 @@ pub(super) fn write_catalog_under_lock(
         .map_err(|error| format!("Could not save the application cache: {error}"))?;
     steps.mark("commit", "document saved, updating in-memory catalog");
     remember_catalog(state.inner(), &document.apps);
+    remember_volumes(state.inner(), &document.volumes);
     let live_ids = document
         .apps
         .iter()

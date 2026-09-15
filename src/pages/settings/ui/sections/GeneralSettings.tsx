@@ -21,7 +21,7 @@ export function GeneralSettings({
 	onOpenGithub,
 	onOpenTelegram,
 	onOpenAppsSettings,
-	onOpenStartupSettings,
+	onSetStartupEnabled,
 }: GeneralSettingsProps) {
 	const hideToTray = settings?.hideToTrayOnClose ?? true
 	return (
@@ -34,7 +34,9 @@ export function GeneralSettings({
 				/>
 				<p className={SECTION_LABEL}>Startup &amp; window</p>
 				<StartupSettingsRow
-					onOpenStartupSettings={onOpenStartupSettings}
+					startupEntry={settings?.startupEntry ?? null}
+					saving={saving}
+					onSetStartupEnabled={onSetStartupEnabled}
 				/>
 				<div className="flex flex-wrap items-center gap-4 border-b border-slate-200 p-5">
 					<SettingsSectionHeader

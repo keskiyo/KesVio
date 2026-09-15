@@ -19,6 +19,13 @@ const cardActions = [
 	'src/pages/settings/ui/sections/PreferencesBackup/PreferencesBackup.tsx',
 	'src/pages/settings/ui/sections/UnclassifiedApps/UnclassifiedApps.tsx',
 ].map(read)
+const catalogMaintenance = read(
+	'src/pages/settings/ui/sections/CatalogMaintenance.tsx',
+)
+const catalogSources = read('src/pages/settings/ui/sections/CatalogSources.tsx')
+const diagnosticsLog = read(
+	'src/pages/settings/ui/sections/DiagnosticsLogExport/DiagnosticsLogExport.tsx',
+)
 
 /**
  * The trailing control of a settings row used to be written out at each call site, so the shortcut
@@ -66,5 +73,11 @@ describe('settings row controls', () => {
 				'${ACTION_BUTTON} utility-accent-button',
 			)
 		}
+	})
+
+	it('aligns advanced card actions through shared responsive layouts', () => {
+		expect(catalogMaintenance).toContain('SETTINGS_ACTION_FOOTER')
+		expect(diagnosticsLog).toContain('SETTINGS_ACTION_FOOTER')
+		expect(catalogSources).toContain('SETTINGS_SOURCE_ACTIONS')
 	})
 })

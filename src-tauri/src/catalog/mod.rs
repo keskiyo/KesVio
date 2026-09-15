@@ -17,6 +17,7 @@ mod model;
 mod naming;
 mod place;
 mod platform_kind;
+mod product_duplicates;
 mod registry_enrichment;
 mod scan;
 mod sources;
@@ -26,6 +27,7 @@ pub(crate) mod sync;
 pub(crate) mod target_availability;
 mod tree;
 mod visibility;
+pub(crate) mod volumes;
 
 use app_record::make_app;
 
@@ -87,32 +89,53 @@ fn retain_visible(classified: Vec<AppInfo>) -> Vec<AppInfo> {
         .collect()
 }
 
-fn filter_maintenance(apps: Vec<AppInfo>) -> Vec<AppInfo> {
-    let classified = classify_entries(apps, &machine::Registrations::current());
+fn filter_maintenance(apps: Vec<AppInfo>, registrations: &machine::Registrations) -> Vec<AppInfo> {
+    let classified = classify_entries(apps, registrations);
     visibility::write_dev_report(&classified);
     retain_visible(classified)
 }
 
+fn collapse_product_duplicates(
+    mut apps: Vec<AppInfo>,
+    registrations: &machine::Registrations,
+) -> Vec<AppInfo> {
+    product_duplicates::reject_product_duplicates(&mut apps, registrations);
+    let before = apps.len();
+    let kept = retain_visible(apps);
+    if kept.len() != before {
+        log::info!(
+            "Product duplicates collapsed: rejected={} kept={}",
+            before - kept.len(),
+            kept.len()
+        );
+    }
+    kept
+}
+
 pub(crate) fn sanitize(apps: Vec<AppInfo>) -> Vec<AppInfo> {
+    let registrations = machine::Registrations::current();
     let associations = machine::Associations::current();
-    dedup::deduplicate(
-        filter_maintenance(apps),
+    let deduplicated = dedup::deduplicate(
+        filter_maintenance(apps, &registrations),
         |app| classify::classify_app(app, &associations),
         crate::platform::windows::os_ui_script(),
-    )
+    );
+    collapse_product_duplicates(deduplicated, &registrations)
 }
 
 pub(crate) fn sanitize_reported(apps: Vec<AppInfo>) -> Vec<AppInfo> {
-    let filtered = filter_maintenance(apps);
+    let registrations = machine::Registrations::current();
+    let filtered = filter_maintenance(apps, &registrations);
     if dedup::dev_report_enabled() {
         dedup::write_dev_report(&filtered);
     }
     let associations = machine::Associations::current();
-    dedup::deduplicate(
+    let deduplicated = dedup::deduplicate(
         filtered,
         |app| classify::classify_app(app, &associations),
         crate::platform::windows::os_ui_script(),
-    )
+    );
+    collapse_product_duplicates(deduplicated, &registrations)
 }
 
 #[cfg(test)]
@@ -122,11 +145,12 @@ pub(in crate::catalog) fn sanitize_pinned(
     os_script: crate::platform::windows::NameScript,
 ) -> Vec<AppInfo> {
     let associations = machine::Associations::empty();
-    dedup::deduplicate(
+    let deduplicated = dedup::deduplicate(
         retain_visible(classify_entries(apps, registrations)),
         |app| classify::classify_app(app, &associations),
         os_script,
-    )
+    );
+    collapse_product_duplicates(deduplicated, registrations)
 }
 
 pub(crate) fn retain_present_targets(
@@ -225,6 +249,7 @@ mod tests {
             category_reasons: Vec::new(),
             close_risk: None,
             scan_folder: None,
+            volume_id: None,
         }
     }
 

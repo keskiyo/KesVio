@@ -14,7 +14,7 @@ describe('closeStageLabel', () => {
 		).toBe('asking 1 app to close')
 		expect(
 			closeStageLabel({ stage: 'waiting', running: 0, secondsLeft: 3 }),
-		).toBe('waiting 3 s before force-closing')
+		).toBe('waiting 3 s for apps to close')
 		expect(
 			closeStageLabel({
 				stage: 'terminating',

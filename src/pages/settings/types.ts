@@ -6,11 +6,13 @@ import type {
 	CatalogDensity,
 	CatalogDiagnostics,
 	SourceHealth,
+	SourceStatusRow,
 	TargetAvailabilityDiff,
 } from '../../entities/app'
 import type { AppCategory, CategoryDefinition } from '../../entities/category'
 import type {
 	ScanSettings,
+	StartupEntryState,
 	SystemClient,
 	SystemSettings,
 } from '../../entities/system'
@@ -57,6 +59,8 @@ export interface SettingsPageProps {
 		{ ok: true } | { ok: false; error: string }
 	onForceFullScan?: () => Promise<void>
 	onResetCatalogCache?: () => Promise<void>
+	onRefreshCatalog?: () => Promise<void>
+	isRefreshing?: boolean
 	catalogDiagnostics?: CatalogDiagnostics | null
 	unclassifiedApps?: AppInfo[]
 	categories?: CategoryDefinition[]
@@ -75,7 +79,13 @@ export interface GeneralSettingsProps {
 	onOpenGithub: SystemClient['openGithub']
 	onOpenTelegram: SystemClient['openTelegram']
 	onOpenAppsSettings: SystemClient['openAppsSettings']
-	onOpenStartupSettings: SystemClient['openStartupSettings']
+	onSetStartupEnabled(enabled: boolean): Promise<void>
+}
+
+export interface StartupSettingsRowProps {
+	startupEntry: StartupEntryState | null
+	saving: boolean
+	onSetStartupEnabled(enabled: boolean): Promise<void>
 }
 
 export interface CatalogMaintenanceProps {
@@ -89,6 +99,7 @@ export interface CatalogMaintenanceProps {
 }
 
 export interface DiagnosticsLogExportProps {
+	onPreview?(): Promise<string>
 	onExport(): Promise<boolean>
 }
 
@@ -96,8 +107,15 @@ export interface ScanDiagnosticsProps {
 	diagnostics: CatalogDiagnostics
 }
 
-export interface SourceHealthTableProps {
+export interface CatalogSourcesProps {
 	sources: SourceHealth[]
+	lastScanAt: number | null
+	scanning: boolean
+	onRefresh?: () => Promise<void>
+}
+
+export interface SourceHealthTableProps {
+	rows: SourceStatusRow[]
 }
 
 export interface TargetAvailabilityPanelProps {

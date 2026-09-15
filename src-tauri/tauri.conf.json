@@ -2,7 +2,7 @@
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "KesVio",
 	"mainBinaryName": "KesVio",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"identifier": "keskiyo.kesvio",
 	"build": {
 		"frontendDist": "../dist",

@@ -3,7 +3,7 @@ import {
 	parsePreferenceImport,
 	readPreferenceBackup,
 	serializePreferences,
-	type AppPreferencesV19,
+	type AppPreferencesV22,
 	type PreferenceTransferResult,
 } from '../preferences'
 import { reconcileMarks } from '../reconciliation'
@@ -29,9 +29,9 @@ type PreferenceTransferActions = Pick<
 	| 'restorePreferencesBackup'
 >
 
-function preferencesFromState(state: AppState): AppPreferencesV19 {
+function preferencesFromState(state: AppState): AppPreferencesV22 {
 	return {
-		version: 19,
+		version: 22,
 		catalogDensity: state.catalogDensity,
 		categories: state.categories,
 		categoryOrder: state.categoryOrder,
@@ -51,12 +51,13 @@ function preferencesFromState(state: AppState): AppPreferencesV19 {
 		scenarios: state.scenarios,
 		favoriteScenarioIds: state.favoriteScenarioIds,
 		firstSeenAt: state.firstSeenAt,
+		savedFilters: state.savedFilters,
 		legacyCanonicalPreferences: state.legacyCanonicalPreferences,
 		unknownFields: state.unknownPreferenceFields,
 	}
 }
 
-function preferenceState(preferences: AppPreferencesV19) {
+function preferenceState(preferences: AppPreferencesV22) {
 	return {
 		catalogDensity: preferences.catalogDensity,
 		categories: preferences.categories,
@@ -77,6 +78,7 @@ function preferenceState(preferences: AppPreferencesV19) {
 		scenarios: preferences.scenarios,
 		favoriteScenarioIds: preferences.favoriteScenarioIds,
 		firstSeenAt: preferences.firstSeenAt,
+		savedFilters: preferences.savedFilters,
 		legacyCanonicalPreferences: preferences.legacyCanonicalPreferences,
 		unknownPreferenceFields: preferences.unknownFields ?? {},
 	}
@@ -89,7 +91,7 @@ export function createPreferenceTransferActions({
 	storage,
 }: PreferenceTransferOptions): PreferenceTransferActions {
 	function applyPreferences(
-		preferences: AppPreferencesV19,
+		preferences: AppPreferencesV22,
 	): PreferenceTransferResult {
 		if (hasNewerStoredPreferences(storage)) {
 			return {
@@ -97,7 +99,11 @@ export function createPreferenceTransferActions({
 				error: 'Settings cannot be replaced by this version of KesVio.',
 			}
 		}
-		set(preferenceState(preferences))
+		set(state => ({
+			...preferenceState(preferences),
+			undoable: null,
+			preferencesRevision: state.preferencesRevision + 1,
+		}))
 		set(reconcileMarks(get(), get().apps) ?? {})
 		persist()
 		return { ok: true }

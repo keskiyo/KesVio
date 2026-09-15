@@ -9,6 +9,46 @@ fn tray_menu_ids_map_to_explicit_actions() {
         tray_action("force-full-scan"),
         Some(TrayAction::ForceFullScan)
     );
+    assert_eq!(tray_action("search"), Some(TrayAction::Search));
+    assert_eq!(
+        tray_action("show-favorites"),
+        Some(TrayAction::ShowFavorites)
+    );
+    assert_eq!(tray_action("catalog-status"), None);
+    assert_eq!(tray_action("pause:30"), None);
+    assert_eq!(tray_action("resume-scans"), None);
+}
+
+#[test]
+fn a_favorite_menu_id_carries_the_catalog_id_it_launches() {
+    assert_eq!(
+        tray_action("favorite:path:c:\\tools\\editor.exe"),
+        Some(TrayAction::LaunchApp("path:c:\\tools\\editor.exe".into()))
+    );
+    assert_eq!(tray_action("favorite:"), None);
+    assert_eq!(
+        tray_action(&format!(
+            "favorite:{}",
+            "a".repeat(MAX_SCENARIO_ID_CHARS + 1)
+        )),
+        None
+    );
+}
+
+fn favorite(label: &str) -> TrayFavorite {
+    TrayFavorite {
+        id: label.to_lowercase(),
+        label: label.into(),
+    }
+}
+
+// Two favorites with the same display name would be two identical rows with different
+// targets; a position suffix keeps each row tied to what it launches.
+#[test]
+fn identical_favorite_names_stay_distinguishable() {
+    let labels = favorite_labels(&[favorite("Editor"), favorite("Editor"), favorite("Tool")]);
+
+    assert_eq!(labels, vec!["Editor (1)", "Editor (2)", "Tool"]);
 }
 
 #[test]
@@ -78,6 +118,20 @@ fn a_scenario_that_omits_the_favorite_flag_is_read_as_unstarred() {
 
     assert!(!parsed.favorite);
     assert_eq!(menu_label(&parsed, false), "Gaming");
+}
+
+// The tray copy is the one the user learned and the one the documentation names; a change here is
+// a deliberate edit of this test, never a side effect of a refactor.
+#[test]
+fn the_tray_copy_is_pinned() {
+    assert_eq!(OPEN_LABEL, "Open KesVio");
+    assert_eq!(SEARCH_LABEL, "Search");
+    assert_eq!(FAVORITES_LABEL, "Favorite apps");
+    assert_eq!(SHOW_ALL_FAVORITES_LABEL, "Show all favorites…");
+    assert_eq!(SCENARIOS_LABEL, "Scenarios");
+    assert_eq!(QUIT_LABEL, "Quit");
+    assert_eq!(super::super::scan::label(false), "Force scan");
+    assert_eq!(super::super::scan::label(true), "Scanning…");
 }
 
 #[test]

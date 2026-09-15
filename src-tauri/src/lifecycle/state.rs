@@ -1,10 +1,14 @@
+use super::quiet_start::QuietStartGate;
 use super::window_state::WindowGeometry;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::time::Duration;
 
 pub(crate) struct LifecycleState {
     quitting: AtomicBool,
     hides_to_tray: AtomicBool,
+    quiet_start: AtomicBool,
+    startup_scan_gate: QuietStartGate,
     geometry: Mutex<Option<WindowGeometry>>,
     geometry_changes: AtomicU64,
     persist_pending: AtomicBool,
@@ -15,6 +19,8 @@ impl Default for LifecycleState {
         Self {
             quitting: AtomicBool::new(false),
             hides_to_tray: AtomicBool::new(true),
+            quiet_start: AtomicBool::new(false),
+            startup_scan_gate: QuietStartGate::default(),
             geometry: Mutex::new(None),
             geometry_changes: AtomicU64::new(0),
             persist_pending: AtomicBool::new(false),
@@ -25,6 +31,30 @@ impl Default for LifecycleState {
 impl LifecycleState {
     pub(crate) fn mark_quitting(&self) {
         self.quitting.store(true, Ordering::SeqCst);
+    }
+
+    pub(crate) fn begin_quiet_start(&self) {
+        self.quiet_start.store(true, Ordering::SeqCst);
+    }
+
+    pub(crate) fn quiet_start(&self) -> bool {
+        self.quiet_start.load(Ordering::SeqCst)
+    }
+
+    pub(crate) fn end_quiet_start(&self) -> bool {
+        let ended = self.quiet_start.swap(false, Ordering::SeqCst);
+        if ended {
+            self.startup_scan_gate.wake();
+        }
+        ended
+    }
+
+    pub(crate) fn wait_out_quiet_start(&self, timeout: Duration) -> bool {
+        if !self.quiet_start() {
+            return false;
+        }
+        self.startup_scan_gate.wait(timeout);
+        true
     }
 
     pub(crate) fn hides_to_tray(&self) -> bool {
@@ -139,6 +169,40 @@ mod tests {
         state.release_persist();
 
         assert!(state.claim_persist());
+    }
+
+    #[test]
+    fn a_fresh_session_is_not_a_quiet_start() {
+        let state = LifecycleState::default();
+        assert!(!state.quiet_start());
+        assert!(!state.end_quiet_start());
+        assert!(!state.wait_out_quiet_start(Duration::from_secs(1)));
+    }
+
+    #[test]
+    fn a_quiet_start_ends_exactly_once() {
+        let state = LifecycleState::default();
+        state.begin_quiet_start();
+        assert!(state.quiet_start());
+
+        assert!(state.end_quiet_start());
+        assert!(!state.quiet_start());
+        assert!(!state.end_quiet_start());
+    }
+
+    #[test]
+    fn ending_a_quiet_start_releases_a_deferred_scan() {
+        let state = std::sync::Arc::new(LifecycleState::default());
+        state.begin_quiet_start();
+        let releaser = std::sync::Arc::clone(&state);
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(10));
+            releaser.end_quiet_start();
+        });
+        let started = std::time::Instant::now();
+
+        assert!(state.wait_out_quiet_start(Duration::from_secs(5)));
+        assert!(started.elapsed() < Duration::from_secs(5));
     }
 
     #[test]

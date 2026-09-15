@@ -16,6 +16,8 @@ export function AppViews({
 	updater,
 	systemClient,
 	onFirstScan,
+	onRefreshCatalog,
+	onUndo,
 }: AppViewsProps) {
 	const [scanPromptDismissed, setScanPromptDismissed] = useState(false)
 	const { catalogApps, counts, deferredQuery, filteredApps, morePreview } =
@@ -44,6 +46,11 @@ export function AppViews({
 						onRun: scenarioRunner.runById,
 						onViewAll: dialogs.scenarioLauncher.show,
 					}}
+					lastChange={
+						state.undoable
+							? { label: state.undoable.label, onUndo }
+							: undefined
+					}
 					onSelectView={navigation.selectView}
 				/>
 			)}
@@ -59,7 +66,12 @@ export function AppViews({
 					favoriteScenarioIds={state.favoriteScenarioIds}
 					onBack={() => navigation.selectView('more')}
 					onCreate={state.createScenario}
+					importClient={{
+						inspect: state.inspectScenarioImport,
+						apply: state.importSelectedScenarios,
+					}}
 					onRename={state.renameScenario}
+					onSetForceClose={state.setScenarioForceClose}
 					onDelete={state.deleteScenario}
 					onAddApp={state.addScenarioApp}
 					onRemoveApp={state.removeScenarioApp}
@@ -80,6 +92,8 @@ export function AppViews({
 					onRestorePreferencesBackup={state.restorePreferencesBackup}
 					onForceFullScan={state.forceFullScan}
 					onResetCatalogCache={state.resetCatalogCache}
+					onRefreshCatalog={onRefreshCatalog}
+					isRefreshing={state.isRefreshing}
 					catalogDiagnostics={state.catalogDiagnostics}
 					unclassifiedApps={derivations.unclassifiedApps}
 					categories={state.categories}

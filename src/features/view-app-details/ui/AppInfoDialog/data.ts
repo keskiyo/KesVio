@@ -5,6 +5,7 @@ import {
 	SOURCE_LABELS,
 	targetAvailabilityLabel,
 } from '../../../../entities/app'
+import { driveCategoryFor } from '../../../../entities/category'
 
 const FOLDER_IDENTITY = /^\{[0-9a-fA-F-]{36}\}\\(.+)$/
 
@@ -27,10 +28,17 @@ export function launchTypeLabel(app: AppInfo): string {
 }
 
 function shownAs(app: AppInfo): string {
+	if (driveCategoryFor(app)) return 'Main catalog — grouped by scan drive'
+	if (app.userPlacedArtifact) return 'Installers & Docs — placed here by you'
+	if (app.artifactKind === 'installer')
+		return 'Installers & Docs — detected installer'
+	if (app.artifactKind === 'documentation')
+		return 'Installers & Docs — detected documentation'
+	if (app.userPromoted) return 'Main catalog — shown in apps by you'
 	const where =
 		app.visibilityClass === 'auxiliary' ? 'Auxiliary tools' : 'Main catalog'
 	const reasons = visibilityExplanation(app)
-	return reasons ? `${where} — ${reasons}` : where
+	return `${where} — ${reasons || 'Classification reason unavailable'}`
 }
 
 function fileTargetCheck(app: AppInfo): string | null {
@@ -65,6 +73,8 @@ function visibilityExplanation(app: AppInfo): string | null {
 }
 
 function categoryExplanation(app: AppInfo): string | null {
+	if (driveCategoryFor(app))
+		return 'The scan drive determines this category. Manual category changes do not apply.'
 	if (app.categoryReasons?.includes('default=no-signal')) {
 		return 'Other — no category evidence'
 	}

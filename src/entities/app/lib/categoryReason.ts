@@ -9,6 +9,7 @@ const FIELD_LABELS: Record<string, string> = {
 }
 
 const STANDALONE_LABELS: Record<string, string> = {
+	'user=category': 'Category chosen by you',
 	'source=steam': 'Installed through Steam',
 	'rule=wsl-start-app': 'A WSL distribution',
 	'default=no-signal': 'No signal strong enough to classify',

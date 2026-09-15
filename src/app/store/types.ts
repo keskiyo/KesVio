@@ -1,22 +1,27 @@
 import type { StoreApi } from 'zustand/vanilla'
 import type { AppCategory, CategoryDefinition } from '../../entities/category'
 import type { Scenario, ScenarioList } from '../../entities/scenario'
+import type { ScenarioImportClient } from '../../entities/scenario'
 import type { LegacyCanonicalPreferences } from './preferences'
 import type { PreferenceTransferResult } from './preferences'
+import type { UndoEntry } from './undo'
 import type {
 	AppHydrationPatch,
 	AppInfo,
 	AppView,
 	CatalogArtifactKind,
-	CatalogChangeSummary,
 	CatalogDelta,
 	CatalogDensity,
 	CatalogDiagnostics,
 	CloseAppsResult,
+	SavedFilter,
+	SavedFilterCriteria,
 	ScanProgress,
 } from '../../entities/app'
 
 export interface AppState {
+	inspectScenarioImport: ScenarioImportClient['inspect']
+	importSelectedScenarios: ScenarioImportClient['apply']
 	apps: AppInfo[]
 	query: string
 	isLoading: boolean
@@ -24,7 +29,6 @@ export interface AppState {
 	scanProgress: ScanProgress | null
 	hasCache: boolean
 	catalogGeneration: number
-	catalogChange: CatalogChangeSummary | null
 	catalogDiagnostics: CatalogDiagnostics | null
 	error: string | null
 	activeView: AppView
@@ -46,11 +50,16 @@ export interface AppState {
 	scenarios: Scenario[]
 	favoriteScenarioIds: string[]
 	firstSeenAt: Record<string, number>
+	savedFilters: SavedFilter[]
+	activeSavedFilterId: string | null
 	legacyCanonicalPreferences: LegacyCanonicalPreferences
 	unknownPreferenceFields: Record<string, unknown>
 	preferencesPersisted: boolean
+	preferencesRevision: number
+	undoable: UndoEntry | null
 	categories: CategoryDefinition[]
 	launchingIds: string[]
+	undo(): { ok: true } | { ok: false; error: string }
 	markLaunching(id: string): void
 	clearLaunching(id: string): void
 	createCategory(
@@ -71,10 +80,11 @@ export interface AppState {
 	hydrateVisibleIcons(ids: string[]): Promise<void>
 	cancelScan(): Promise<void>
 	launch(app: AppInfo): Promise<void>
-	closeApps(ids: string[]): Promise<CloseAppsResult>
+	closeApps(ids: string[], allowForce?: boolean): Promise<CloseAppsResult>
 	createScenario(
 		name: string,
 	): { ok: true; id: string } | { ok: false; error: string }
+	setScenarioForceClose(id: string, forceClose: boolean): boolean
 	renameScenario(
 		id: string,
 		name: string,
@@ -107,12 +117,24 @@ export interface AppState {
 		artifact?: CatalogArtifactKind,
 	): void
 	toggleCategory(category: AppCategory): void
+	createSavedFilter(
+		name: string,
+		criteria: SavedFilterCriteria,
+	): { ok: true; id: string } | { ok: false; error: string }
+	updateSavedFilter(
+		id: string,
+		name: string,
+		criteria: SavedFilterCriteria,
+	): { ok: true } | { ok: false; error: string }
+	deleteSavedFilter(id: string): void
+	selectSavedFilter(id: string | null): void
 	applyDelta(delta: CatalogDelta): void
 	applyPatches(patches: AppHydrationPatch[]): void
-	clearCatalogChange(): void
 }
 
 export type SetAppState = StoreApi<AppState>['setState']
 export type GetAppState = StoreApi<AppState>['getState']
 
 export type PersistPreferences = () => void
+
+export type RunTransaction = (label: string, change: () => void) => void

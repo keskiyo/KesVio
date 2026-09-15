@@ -61,6 +61,7 @@ export interface AppInfo {
 	categoryReasons?: string[]
 	closeRisk?: string | null
 	scanFolder?: string | null
+	volumeId?: string | null
 }
 
 export interface AppDetails {
@@ -135,6 +136,7 @@ export interface CatalogDiagnostics {
 	updated: number
 	sources?: SourceHealth[]
 	targetAvailability?: TargetAvailabilityDiff
+	unreachableFolders?: number
 }
 
 export interface CatalogChangeSummary {
@@ -200,15 +202,12 @@ export interface AppsClient {
 	startBackgroundSync?(): Promise<void>
 	cancelScan(): Promise<void>
 	launchApp(app: Pick<AppInfo, 'id'>): Promise<void>
-	closeApps(ids: string[]): Promise<CloseAppsResult>
+	closeApps(ids: string[], allowForce?: boolean): Promise<CloseAppsResult>
 	getAppDetails(id: string): Promise<AppDetails>
 	openAppFolder(id: string): Promise<void>
 	onCatalogDelta?(handler: (delta: CatalogDelta) => void): Promise<() => void>
 	onCatalogPatches?(
 		handler: (patches: AppHydrationPatch[]) => void,
-	): Promise<() => void>
-	onCatalogChanged?(
-		handler: (summary: CatalogChangeSummary) => void,
 	): Promise<() => void>
 	onCatalogDiagnostics?(
 		handler: (diagnostics: CatalogDiagnostics) => void,

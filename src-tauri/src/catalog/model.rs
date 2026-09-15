@@ -116,6 +116,8 @@ pub(crate) struct AppInfo {
     pub close_risk: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub scan_folder: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub volume_id: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Eq, Serialize)]

@@ -120,7 +120,17 @@ describe('useScenarioRunner', () => {
 		})
 
 		expect(closeApps).toHaveBeenCalledOnce()
-		expect(closeApps).toHaveBeenCalledWith(['chat', 'mail', 'music'])
+		expect(closeApps).toHaveBeenCalledWith(['chat', 'mail', 'music'], true)
+	})
+
+	it('forwards graceful policy without authorizing force', async () => {
+		const { view, closeApps } = setup({ apps: [app('chat')] })
+		await act(async () => {
+			await view.result.current.run(
+				scenario({ closeIdentities: ['chat'], forceClose: false }),
+			)
+		})
+		expect(closeApps).toHaveBeenCalledWith(['chat'], false)
 	})
 
 	// Every error used to be swallowed: the progress bar reached the end and the user never learned

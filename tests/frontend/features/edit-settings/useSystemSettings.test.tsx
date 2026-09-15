@@ -24,16 +24,24 @@ const client: SystemClient = {
 		},
 		fixedDrives: ['C:\\'],
 		hideToTrayOnClose: true,
+		startupEntry: 'disabled',
 	}),
 	setScanSettings: vi.fn(),
 	setCloseBehavior: vi.fn().mockImplementation(async value => value),
+	setStartupEnabled: vi
+		.fn()
+		.mockImplementation(async enabled =>
+			enabled ? 'enabled' : 'disabled',
+		),
 	savePreferencesBackup: vi.fn(),
 	exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
+	previewDiagnosticsLog: vi
+		.fn()
+		.mockResolvedValue('<diagnostics redacted="true" />'),
 	pickFolder: vi.fn(),
 	openTelegram: vi.fn(),
 	openGithub: vi.fn(),
 	openAppsSettings: vi.fn(),
-	openStartupSettings: vi.fn(),
 }
 
 describe('useSystemSettings', () => {
@@ -100,6 +108,46 @@ describe('useSystemSettings', () => {
 		await act(() => result.current.saveScanSettings(scanSettings))
 
 		expect(result.current.error).toBeNull()
+	})
+
+	it('stores the startup state the backend answers, not the one requested', async () => {
+		const setStartupEnabled = vi.fn().mockResolvedValue('disabled')
+		const { result } = renderHook(() =>
+			useSystemSettings({ client: { ...client, setStartupEnabled } }),
+		)
+		await waitFor(() => expect(result.current.settings).not.toBeNull())
+
+		await act(() => result.current.setStartupEnabled(true))
+
+		expect(setStartupEnabled).toHaveBeenCalledWith(true)
+		expect(result.current.settings?.startupEntry).toBe('disabled')
+	})
+
+	it('reports a startup toggle failure under the settings area and keeps the old state', async () => {
+		const { result } = renderHook(() =>
+			useSystemSettings({
+				client: {
+					...client,
+					setStartupEnabled: vi
+						.fn()
+						.mockRejectedValue(
+							new AppClientError(
+								'STARTUP_ENTRY_UPDATE_FAILED',
+								'Could not change the startup setting. Try again.',
+							),
+						),
+				},
+			}),
+		)
+		await waitFor(() => expect(result.current.settings).not.toBeNull())
+
+		await act(() => result.current.setStartupEnabled(true))
+
+		expect(result.current.errorArea).toBe('settings')
+		expect(result.current.error).toBe(
+			'Could not change the startup setting. Try again.',
+		)
+		expect(result.current.settings?.startupEntry).toBe('disabled')
 	})
 
 	it('allows only one catalog maintenance operation at a time', async () => {

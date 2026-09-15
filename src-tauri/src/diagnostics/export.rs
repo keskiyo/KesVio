@@ -1,7 +1,12 @@
-use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+#[cfg(test)]
+use super::retention::unix_seconds;
+use super::retention::MAX_LOG_AGE;
+use std::path::Path;
 
-const MAX_EXPORTED_LINES: usize = 20_000;
+use super::log_collection::collect_lines;
+#[cfg(test)]
+use super::log_collection::MAX_EXPORTED_LINES;
+use super::redaction::Redactor;
 
 struct Entry<'a> {
     date: &'a str,
@@ -11,26 +16,41 @@ struct Entry<'a> {
     message: &'a str,
 }
 
-pub(crate) fn unix_seconds(now: SystemTime) -> u64 {
-    now.duration_since(SystemTime::UNIX_EPOCH)
-        .map(|elapsed| elapsed.as_secs())
-        .unwrap_or_default()
-}
-
 pub(crate) fn log_directory_as_xml(directory: &Path, generated_unix: u64) -> String {
-    let lines = collect_lines(directory);
+    let collected = collect_lines(directory, generated_unix);
+    let lines = collected.lines;
+    let mut redactor = Redactor::from_environment();
+    let sanitized = redactor.redact(&lines.join("\n"));
     let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     xml.push_str(&format!(
-        "<diagnostics application=\"KesVio\" version=\"{}\" generatedUnix=\"{generated_unix}\" entries=\"{}\" panics=\"{}\">\n",
+        "<diagnostics application=\"KesVio\" version=\"{}\" generatedUnix=\"{generated_unix}\" windowSeconds=\"{}\" redacted=\"true\" truncated=\"{}\" entries=\"{}\" panics=\"{}\">\n",
         env!("CARGO_PKG_VERSION"),
-        lines.len(),
+        MAX_LOG_AGE.as_secs(),
+        collected.truncated,
+        sanitized.lines().count(),
         recorded_panics(&lines)
     ));
-    for line in &lines {
+    for line in sanitized.lines() {
         xml.push_str(&render(line));
     }
     xml.push_str("</diagnostics>\n");
     xml
+}
+
+pub(crate) fn preview_xml(xml: &str) -> String {
+    const LIMIT: usize = 16 * 1024;
+    if xml.len() <= LIMIT {
+        return xml.to_owned();
+    }
+    let end = xml
+        .char_indices()
+        .take_while(|(index, _)| *index <= LIMIT)
+        .last()
+        .map_or(0, |(index, _)| index);
+    format!(
+        "{}\n[Preview truncated. Export contains the remaining entries.]",
+        xml.get(..end).unwrap_or_default()
+    )
 }
 
 fn recorded_panics(lines: &[String]) -> usize {
@@ -42,47 +62,6 @@ fn recorded_panics(lines: &[String]) -> usize {
             })
         })
         .count()
-}
-
-fn collect_lines(directory: &Path) -> Vec<String> {
-    let mut lines = Vec::new();
-    for path in log_files(directory) {
-        let Ok(contents) = std::fs::read_to_string(&path) else {
-            continue;
-        };
-        lines.extend(
-            contents
-                .lines()
-                .filter(|line| !line.trim().is_empty())
-                .map(str::to_owned),
-        );
-    }
-    if lines.len() > MAX_EXPORTED_LINES {
-        lines.drain(..lines.len() - MAX_EXPORTED_LINES);
-    }
-    lines
-}
-
-fn log_files(directory: &Path) -> Vec<PathBuf> {
-    let Ok(entries) = std::fs::read_dir(directory) else {
-        return Vec::new();
-    };
-    let mut files = entries
-        .flatten()
-        .filter_map(|entry| {
-            let path = entry.path();
-            let is_log = path
-                .extension()
-                .is_some_and(|extension| extension.eq_ignore_ascii_case("log"));
-            let modified = entry
-                .metadata()
-                .and_then(|metadata| metadata.modified())
-                .ok();
-            (is_log && path.is_file()).then_some((modified, path))
-        })
-        .collect::<Vec<_>>();
-    files.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(&right.1)));
-    files.into_iter().map(|(_, path)| path).collect()
 }
 
 fn render(line: &str) -> String {
@@ -268,5 +247,95 @@ mod tests {
             0
         );
         assert!(unix_seconds(SystemTime::now()) > 1_700_000_000);
+    }
+
+    // The old rule aged whole files by modification time, so a file the application kept
+    // writing to never expired and its two-hour-old lines shipped with the export.
+    #[test]
+    fn an_event_older_than_the_window_is_dropped_even_from_a_file_written_just_now() {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join("kesvio-10000-7.log"),
+            concat!(
+                "@10000 [d][t][INFO][app_lib] expired\n",
+                "@10001 [d][t][INFO][app_lib] boundary\n",
+                "@17201 [d][t][INFO][app_lib] current\n",
+            ),
+        )
+        .unwrap();
+
+        let xml = log_directory_as_xml(directory.path(), 17_201);
+
+        assert!(!xml.contains("expired"));
+        assert!(xml.contains(">boundary<"));
+        assert!(xml.contains(">current<"));
+        assert!(xml.contains("entries=\"2\""));
+        assert!(xml.contains("windowSeconds=\"7200\""));
+    }
+
+    #[test]
+    fn the_timestamp_prefix_is_stripped_and_a_malformed_one_is_kept_verbatim() {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join("kesvio-100000-7.log"),
+            concat!(
+                "@100000 [2026-09-13][14:00:00][INFO][app_lib] stamped\n",
+                "@later [2026-09-13][14:00:01][INFO][app_lib] unstamped\n",
+                "@100001\n",
+            ),
+        )
+        .unwrap();
+
+        let xml = log_directory_as_xml(directory.path(), 100_100);
+
+        assert!(xml.contains("<entry date=\"2026-09-13\" time=\"14:00:00\" level=\"INFO\" target=\"app_lib\">stamped</entry>"));
+        assert!(xml.contains("<line>@later [2026-09-13][14:00:01][INFO][app_lib] unstamped</line>"));
+        assert!(xml.contains("<line>@100001</line>"));
+        assert!(xml.contains("entries=\"3\""));
+    }
+
+    // Redaction runs before escaping, so a token never contains markup and the markup that
+    // survives around it is still escaped; one folder named on two lines keeps one token, which
+    // is what lets a reader correlate the lines without learning the folder.
+    #[test]
+    fn the_export_is_redacted_before_it_is_escaped_and_keeps_locations_correlated() {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join("kesvio.log"),
+            concat!(
+                "[d][t][INFO][app_lib] Portable root C:\\Users\\Ann\\Apps finished in 3ms\n",
+                "[d][t][WARN][app_lib] Portable root C:\\Users\\Ann\\Apps stopped <depth> & more\n",
+                "[d][t][INFO][app_lib] Scan step: \\\\nas\\share\\tool.exe thread=ThreadId(3)\n",
+            ),
+        )
+        .unwrap();
+
+        let xml = log_directory_as_xml(directory.path(), 0);
+
+        assert!(!xml.contains("Ann"));
+        assert!(!xml.contains("nas"));
+        assert!(xml.contains(">Portable root [path-1] finished in 3ms</entry>"));
+        assert!(xml.contains(">Portable root [path-1] stopped &lt;depth&gt; &amp; more</entry>"));
+        assert!(xml.contains(">Scan step: [path-2] thread=ThreadId(3)</entry>"));
+        assert!(xml.contains("redacted=\"true\""));
+    }
+
+    #[test]
+    fn segments_are_exported_in_time_order_regardless_of_how_they_were_written() {
+        let directory = tempfile::tempdir().unwrap();
+        std::fs::write(
+            directory.path().join("kesvio-100600-7.log"),
+            "@100600 [d][t][INFO][app_lib] second\n",
+        )
+        .unwrap();
+        std::fs::write(
+            directory.path().join("kesvio-100000-7.log"),
+            "@100000 [d][t][INFO][app_lib] first\n",
+        )
+        .unwrap();
+
+        let xml = log_directory_as_xml(directory.path(), 100_700);
+
+        assert!(xml.find(">first<").unwrap() < xml.find(">second<").unwrap());
     }
 }

@@ -41,6 +41,13 @@ pub(super) fn assemble(
     let target_availability = catalog::retain_present_targets(&mut apps, settings);
     steps.mark(ASSEMBLE, "sanitize and deduplicate");
     apps = catalog::sanitize_reported(apps);
+    if request != SyncRequest::Force {
+        steps.mark(ASSEMBLE, "learned metadata");
+        let carried = super::carry_over::carry_hydrated_metadata(&mut apps, &previous.apps);
+        if carried > 0 {
+            log::info!("Learned metadata carried over: records={carried}");
+        }
+    }
     steps.mark(ASSEMBLE, "console applications");
     catalog::demote_console_applications(&mut apps);
     steps.mark(ASSEMBLE, "category reasons");
@@ -70,6 +77,7 @@ pub(super) fn assemble(
         updated: delta.summary.updated,
         sources: health,
         target_availability,
+        unreachable_folders: scan.unreachable_folders,
     };
     log::info!(
         "Scan finished: mode={} {}ms apps={} added={} updated={} removed={} sources={:?}",
@@ -95,6 +103,7 @@ pub(super) fn assemble(
         last_successful_sync: Some(completed_at),
         diagnostics: Some(diagnostics),
         app_details,
+        volumes: scan.volumes.unwrap_or_else(|| previous.volumes.clone()),
     }
 }
 

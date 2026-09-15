@@ -1,10 +1,12 @@
 mod assemble;
+mod carry_over;
 mod commit;
 mod delta;
 mod document;
 mod health;
 mod hydration;
 mod portable;
+mod retry;
 mod scan;
 pub(crate) mod scan_control;
 mod scan_guard;
@@ -16,8 +18,9 @@ mod watch_scope;
 mod watcher;
 
 pub(crate) use delta::{compute_delta, CatalogDelta, CatalogDeltaDto};
-pub(crate) use document::{load_sanitized_cache, load_sanitized_document};
+pub(crate) use document::load_sanitized_document;
 pub(crate) use hydration::enqueue_hydration;
+pub(crate) use retry::{cancel_pending as cancel_pending_retry, RetryBudget, RetryGuard};
 pub(crate) use scan::{run_coordinated_scan, ScanCommit};
 pub(crate) use volumes::start_volume_watcher;
 pub(super) use watch_paths::{default_portable_exclusions, watcher_paths};
@@ -122,6 +125,7 @@ fn app(id: &str, name: &str) -> crate::catalog::AppInfo {
         category_reasons: Vec::new(),
         close_risk: None,
         scan_folder: None,
+        volume_id: None,
     }
 }
 

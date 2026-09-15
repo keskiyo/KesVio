@@ -15,6 +15,22 @@ vi.mock('@tauri-apps/api/event', () => ({
 }))
 
 describe('tauri app client browser fallback', () => {
+	it('sends force authorization only as an explicit boolean alongside catalog ids', async () => {
+		;(globalThis as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ =
+			{}
+		const { tauriAppsClient } =
+			await import('../../../../src/entities/app/api/appsClient')
+		await tauriAppsClient.closeApps(['editor'])
+		expect(invokeMock).toHaveBeenLastCalledWith('close_apps', {
+			ids: ['editor'],
+			allowForce: false,
+		})
+		await tauriAppsClient.closeApps(['editor'], true)
+		expect(invokeMock).toHaveBeenLastCalledWith('close_apps', {
+			ids: ['editor'],
+			allowForce: true,
+		})
+	})
 	beforeEach(() => {
 		vi.resetModules()
 		invokeMock.mockReset()

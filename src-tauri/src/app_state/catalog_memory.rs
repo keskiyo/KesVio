@@ -1,5 +1,6 @@
 use crate::app_state::{AppState, CloseTarget, LaunchTarget};
 use crate::catalog::cache::CachedAppDetails;
+use crate::catalog::volumes::TrackedVolume;
 use crate::catalog::{self, AppDetailsTarget, AppInfo};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
@@ -10,6 +11,20 @@ pub(crate) fn remember_catalog(state: &AppState, apps: &[AppInfo]) {
     remember_close_targets(state, apps);
     remember_app_details_targets(state, apps);
     retain_app_details_cache(state, apps);
+}
+
+pub(crate) fn remember_volumes(state: &AppState, volumes: &[TrackedVolume]) {
+    if let Ok(mut stored) = state.tracked_volumes.lock() {
+        *stored = volumes.to_vec();
+    }
+}
+
+pub(crate) fn tracked_volumes(state: &AppState) -> Vec<TrackedVolume> {
+    state
+        .tracked_volumes
+        .lock()
+        .map(|stored| stored.clone())
+        .unwrap_or_default()
 }
 
 fn remember_catalog_ids(state: &AppState, apps: &[AppInfo]) {
@@ -24,9 +39,26 @@ pub(crate) fn known_catalog_ids(state: &AppState, ids: Vec<String>) -> Vec<Strin
         return Vec::new();
     };
     let mut seen = HashSet::with_capacity(ids.len());
-    ids.into_iter()
-        .filter(|id| known.contains(id) && seen.insert(id.clone()))
-        .collect()
+    let mut unknown = Vec::new();
+    let accepted = ids
+        .into_iter()
+        .filter(|id| {
+            if !known.contains(id) {
+                if unknown.len() < 5 {
+                    unknown.push(id.clone());
+                }
+                return false;
+            }
+            seen.insert(id.clone())
+        })
+        .collect();
+    if !unknown.is_empty() {
+        log::warn!(
+            "Hydration request named ids the catalog does not hold: {}",
+            unknown.join(" | ")
+        );
+    }
+    accepted
 }
 
 fn remember_launch_targets(state: &AppState, apps: &[AppInfo]) {

@@ -281,6 +281,34 @@ describe('categorized app identity', () => {
 		).toEqual(['Notepad', 'Steam', 'Visual Studio Code'])
 	})
 
+	it('keeps manual category evidence across updated classifier rules', () => {
+		const source = app({
+			id: 'editor',
+			name: 'Editor',
+			category: 'other',
+			categoryReasons: ['default=no-signal'],
+		})
+		const before = selectCategorizedApps(
+			state([source], { editor: 'games' }),
+		)[0]
+		const after = selectCategorizedApps(
+			state(
+				[
+					{
+						...source,
+						category: 'development',
+						categoryReasons: ['name=editor'],
+					},
+				],
+				{ editor: 'games' },
+			),
+		)[0]
+		expect(before.categoryReasons).toEqual(['user=category'])
+		expect(after.category).toBe('games')
+		expect(after.categoryReasons).toEqual(['user=category'])
+		expect(source.categoryReasons).toEqual(['default=no-signal'])
+	})
+
 	it('leaves the source array alone', () => {
 		const source = [...catalog]
 		selectRecentApps(source, app => (app.id === 'notepad' ? 1 : 0), 3)

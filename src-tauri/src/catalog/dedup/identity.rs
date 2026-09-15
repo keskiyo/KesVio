@@ -68,6 +68,7 @@ fn canonical_target_id(target: &str, arguments: Option<&str>) -> String {
 }
 
 pub(in crate::catalog) fn preference_identity(app: &AppInfo) -> String {
+    let anchored = |path: String| anchored_to_volume(app, path);
     let raw = if let Some(app_id) = steam_app_id(app) {
         format!("steam:{}", app_id.to_lowercase())
     } else if app.launch_kind == LaunchKind::AppUserModelId {
@@ -79,23 +80,40 @@ pub(in crate::catalog) fn preference_identity(app: &AppInfo) -> String {
             .map(normalized_product_family)
             .filter(|value| !value.is_empty());
         let publisher = normalized_publisher(app.publisher.as_deref());
-        if let (Some(product), Some(root)) = (product, install_root(app)) {
+        if let (Some(product), Some(root)) = (product, install_root(app).map(anchored)) {
             if !publisher.is_empty() {
                 format!("product:{publisher}|{product}|{root}")
             } else if app.source_kind == SourceKind::Portable {
                 format!("portable:{product}|{root}")
-            } else if let Some(target) = preference_target(app) {
+            } else if let Some(target) = preference_target(app).map(anchored) {
                 format!("target:{target}")
             } else {
-                format!("path:{}", normalize_path(&app.path))
+                format!("path:{}", anchored(normalize_path(&app.path)))
             }
-        } else if let Some(target) = preference_target(app) {
+        } else if let Some(target) = preference_target(app).map(anchored) {
             format!("target:{target}")
         } else {
-            format!("path:{}", normalize_path(&app.path))
+            format!("path:{}", anchored(normalize_path(&app.path)))
         }
     };
     format!("identity:{:x}", Sha256::digest(raw.as_bytes()))
+}
+
+fn anchored_to_volume(app: &AppInfo, path: String) -> String {
+    let (Some(volume), Some(folder)) = (app.volume_id.as_deref(), app.scan_folder.as_deref())
+    else {
+        return path;
+    };
+    let Some(letter) = crate::catalog::volumes::folder_letter(folder) else {
+        return path;
+    };
+    let mut characters = path.chars();
+    match (characters.next(), characters.next()) {
+        (Some(first), Some(':')) if first.eq_ignore_ascii_case(&letter) => {
+            format!("volume:{volume}{}", characters.as_str())
+        }
+        _ => path,
+    }
 }
 
 pub(super) fn card_preference_identity(app: &AppInfo, product_identity: &str) -> String {

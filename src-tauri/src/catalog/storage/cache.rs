@@ -1,6 +1,7 @@
 use crate::catalog::incremental::FilesystemIndex;
 use crate::catalog::source::{SourceHealth, SourceSnapshot};
 use crate::catalog::target_availability::TargetAvailabilityDiff;
+use crate::catalog::volumes::TrackedVolume;
 use crate::catalog::{AppCategory, AppDetails, AppInfo, ArtifactKind};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -28,6 +29,8 @@ pub(crate) struct CatalogDiagnostics {
     pub sources: Vec<SourceHealth>,
     #[serde(default)]
     pub target_availability: TargetAvailabilityDiff,
+    #[serde(default)]
+    pub unreachable_folders: usize,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -53,6 +56,8 @@ pub(crate) struct CatalogCache {
     pub diagnostics: Option<CatalogDiagnostics>,
     #[serde(default)]
     pub app_details: BTreeMap<String, CachedAppDetails>,
+    #[serde(default)]
+    pub volumes: Vec<TrackedVolume>,
 }
 
 impl Default for CatalogCache {
@@ -66,6 +71,7 @@ impl Default for CatalogCache {
             last_successful_sync: None,
             diagnostics: None,
             app_details: BTreeMap::new(),
+            volumes: Vec::new(),
         }
     }
 }
@@ -367,6 +373,46 @@ mod tests {
     }
 
     #[test]
+    fn a_document_written_before_volumes_were_tracked_loads_with_none_and_round_trips_them() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&serde_json::json!({
+                "schemaVersion": 11,
+                "generation": 3,
+                "apps": [{
+                    "id": "editor",
+                    "name": "Editor",
+                    "path": r"F:\Tools\editor.exe",
+                    "iconBase64": null,
+                    "sourceKind": "portable",
+                    "scanFolder": r"F:\",
+                }],
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let mut document = read_document(dir.path()).unwrap();
+        assert!(document.volumes.is_empty());
+        assert_eq!(document.apps[0].volume_id, None);
+
+        document.volumes.push(TrackedVolume {
+            folder: r"F:\".into(),
+            serial: "1a2b3c4d".into(),
+            label: "STICK".into(),
+            filesystem: "FAT32".into(),
+            mounted_at: Some(r"G:\".into()),
+        });
+        document.apps[0].volume_id = Some("1a2b3c4d".into());
+        write_document(dir.path(), &document).unwrap();
+
+        let reloaded = read_document(dir.path()).unwrap();
+        assert_eq!(reloaded.volumes, document.volumes);
+        assert_eq!(reloaded.apps[0].volume_id.as_deref(), Some("1a2b3c4d"));
+    }
+
+    #[test]
     fn recovers_from_backup_after_interrupted_cache_replacement() {
         let dir = tempfile::tempdir().unwrap();
         let backup = CatalogCache {
@@ -482,6 +528,7 @@ mod tests {
             last_successful_sync: Some(10),
             diagnostics: None,
             app_details,
+            volumes: Vec::new(),
         };
         std::fs::write(
             dir.path().join(CACHE_FILE),
@@ -680,6 +727,7 @@ mod tests {
             category_reasons: Vec::new(),
             close_risk: None,
             scan_folder: None,
+            volume_id: None,
         };
         std::fs::write(
             dir.path().join(CACHE_FILE),
@@ -729,6 +777,7 @@ mod tests {
             category_reasons: Vec::new(),
             close_risk: None,
             scan_folder: None,
+            volume_id: None,
         };
         std::fs::write(
             dir.path().join(CACHE_FILE),
@@ -775,6 +824,7 @@ mod tests {
             category_reasons: Vec::new(),
             close_risk: None,
             scan_folder: None,
+            volume_id: None,
         };
         write_document(
             dir.path(),

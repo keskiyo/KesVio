@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react'
+import { isTopmostModal } from '../lib/modalLayering'
 
 const FOCUSABLE =
 	'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])'
@@ -16,7 +17,8 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>) {
 		const container = ref.current
 		if (!container) return
 		function onKeyDown(event: KeyboardEvent) {
-			if (event.key !== 'Tab' || !container) return
+			if (event.key !== 'Tab' || !container || !isTopmostModal(container))
+				return
 			const items = Array.from(
 				container.querySelectorAll<HTMLElement>(FOCUSABLE),
 			).filter(isReachable)

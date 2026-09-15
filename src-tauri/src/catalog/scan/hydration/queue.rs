@@ -23,22 +23,26 @@ impl HydrationQueue {
             self.queued.clear();
             self.running = false;
         }
+        let mut newest_first = VecDeque::new();
         for id in ids {
             if !self.queued.insert(id.clone()) {
                 if priority {
                     let was_background = self.background.iter().any(|queued| queued == &id);
                     self.background.retain(|queued| queued != &id);
                     if was_background && !self.foreground.iter().any(|queued| queued == &id) {
-                        self.foreground.push_back(id);
+                        newest_first.push_back(id);
                     }
                 }
                 continue;
             }
             if priority {
-                self.foreground.push_back(id);
+                newest_first.push_back(id);
             } else {
                 self.background.push_back(id);
             }
+        }
+        while let Some(id) = newest_first.pop_back() {
+            self.foreground.push_front(id);
         }
         if self.running || self.queued.is_empty() {
             false
@@ -93,6 +97,20 @@ mod tests {
         assert!(queue.enqueue(2, ["new".into()], true));
         assert_eq!(queue.pop(1), None);
         assert_eq!(queue.pop(2).as_deref(), Some("new"));
+    }
+
+    // The view the user just opened is the one waiting for its icons; the ids of the view they
+    // left must not be served first because they were asked for earlier.
+    #[test]
+    fn the_newest_visible_request_is_served_before_an_older_one() {
+        let mut queue = HydrationQueue::default();
+        assert!(queue.enqueue(1, ["a".into(), "b".into()], true));
+        assert!(!queue.enqueue(1, ["c".into(), "d".into()], true));
+
+        assert_eq!(queue.pop(1).as_deref(), Some("c"));
+        assert_eq!(queue.pop(1).as_deref(), Some("d"));
+        assert_eq!(queue.pop(1).as_deref(), Some("a"));
+        assert_eq!(queue.pop(1).as_deref(), Some("b"));
     }
 
     #[test]

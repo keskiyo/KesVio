@@ -1,8 +1,9 @@
 import type { StoreApi } from 'zustand/vanilla'
-import type { AppInfo, AppsClient } from '../entities/app'
+import type { AppInfo, AppsClient, SavedFilterCriteria } from '../entities/app'
 import type { CategoryDefinition } from '../entities/category'
 import type { Scenario } from '../entities/scenario'
 import type { StaleCopyInfo, SystemClient } from '../entities/system'
+import type { SaveFilterResult } from '../features/manage-filters'
 import type { useScenarioRunner } from '../features/run-scenario'
 import type { useUpdater } from '../features/update-app'
 import type { useCatalogView } from '../widgets/catalog-content'
@@ -44,6 +45,17 @@ export interface ScenarioLauncherControl {
 	onToggleFavorite(id: string): void
 }
 
+export interface SavedFilterEditorControl {
+	publishers: string[]
+	onCreate(name: string, criteria: SavedFilterCriteria): SaveFilterResult
+	onUpdate(
+		id: string,
+		name: string,
+		criteria: SavedFilterCriteria,
+	): SaveFilterResult
+	onDelete(id: string): void
+}
+
 export interface AppDialogsProps {
 	appsClient: Pick<AppsClient, 'getAppDetails' | 'openAppFolder'>
 	categories: CategoryDefinition[]
@@ -51,6 +63,7 @@ export interface AppDialogsProps {
 	paletteApps: AppInfo[]
 	paletteSuggestions: AppInfo[]
 	scenarioLauncher: ScenarioLauncherControl
+	savedFilterEditor: SavedFilterEditorControl
 	onError(kind: string, detail: string): void
 }
 
@@ -64,6 +77,8 @@ export interface AppViewsProps {
 	updater: ReturnType<typeof useUpdater>
 	systemClient: SystemClient
 	onFirstScan(): Promise<void>
+	onRefreshCatalog(): Promise<void>
+	onUndo(): void
 }
 
 export interface GlobalActivityBarProps {

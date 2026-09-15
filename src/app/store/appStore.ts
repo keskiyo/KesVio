@@ -10,13 +10,18 @@ import { createLaunchActions } from './actions/launchActions'
 import { createLifecycleActions } from './actions/lifecycleActions'
 import { createPersist } from './persist'
 import { createPreferenceTransferActions } from './actions/preferenceTransferActions'
+import { createSavedFilterActions } from './actions/savedFilterActions'
 import { createScenarioActions } from './actions/scenarioActions'
+import { createScenarioPolicyActions } from './actions/scenarioPolicyActions'
+import { createScenarioImportActions } from './actions/scenarioImportActions'
+import { createTransaction } from './transaction'
+import { createUndoActions } from './actions/undoActions'
 import { readPreferences } from './preferences'
-import type { AppPreferencesV19 } from './preferences'
+import type { AppPreferencesV22 } from './preferences'
 import type { AppsClient } from '../../entities/app'
 import type { AppState } from './types'
 
-function initialState(preferences: AppPreferencesV19) {
+function initialState(preferences: AppPreferencesV22) {
 	return {
 		apps: [],
 		query: '',
@@ -25,7 +30,6 @@ function initialState(preferences: AppPreferencesV19) {
 		scanProgress: null,
 		hasCache: false,
 		catalogGeneration: 0,
-		catalogChange: null,
 		catalogDiagnostics: null,
 		error: null,
 		activeView: 'all' as const,
@@ -47,9 +51,13 @@ function initialState(preferences: AppPreferencesV19) {
 		scenarios: preferences.scenarios,
 		favoriteScenarioIds: preferences.favoriteScenarioIds,
 		firstSeenAt: preferences.firstSeenAt,
+		savedFilters: preferences.savedFilters,
+		activeSavedFilterId: null,
 		legacyCanonicalPreferences: preferences.legacyCanonicalPreferences,
 		unknownPreferenceFields: preferences.unknownFields ?? {},
 		preferencesPersisted: true,
+		preferencesRevision: 0,
+		undoable: null,
 		categories: preferences.categories,
 		launchingIds: [],
 	}
@@ -67,6 +75,7 @@ export function createAppStore(
 			get,
 			storage,
 		})
+		const transact = createTransaction({ set, get, persist })
 		return {
 			...initialState(preferences),
 			...createLifecycleActions({ set, get, client }),
@@ -75,11 +84,33 @@ export function createAppStore(
 			...createIconActions({ get, client }),
 			...createLaunchActions({ set, get, client }),
 			...createAppearanceActions({ set, persist }),
-			...createAppMarkActions({ set, get, persist }),
-			...createAppPlacementActions({ set, persist }),
-			...createCategoryActions({ set, get, persist, idFactory }),
-			...createScenarioActions({ set, get, persist, idFactory }),
+			...createAppMarkActions({ set, get, persist, transact }),
+			...createAppPlacementActions({ set, get, transact }),
+			...createCategoryActions({
+				set,
+				get,
+				persist,
+				transact,
+				idFactory,
+			}),
+			...createScenarioActions({
+				set,
+				get,
+				persist,
+				transact,
+				idFactory,
+			}),
+			...createScenarioPolicyActions({ set, get, transact }),
+			...createScenarioImportActions({
+				set,
+				get,
+				transact,
+				storage,
+				idFactory,
+			}),
+			...createSavedFilterActions({ set, get, transact, idFactory }),
 			...createPreferenceTransferActions({ set, get, persist, storage }),
+			...createUndoActions({ set, get, persist }),
 		}
 	})
 }

@@ -184,6 +184,7 @@ mod tests {
             category_reasons: Vec::new(),
             close_risk: None,
             scan_folder: None,
+            volume_id: None,
         }
     }
 
@@ -1837,6 +1838,49 @@ mod tests {
         second.install_location = Some(r"E:\Archive\Tool".into());
 
         assert_ne!(preference_identity(&first), preference_identity(&second));
+    }
+
+    #[test]
+    fn preference_identity_follows_a_tracked_volume_across_drive_letters() {
+        let mut at_f = app("Tool", r"F:\Tools\Tool\Tool.exe");
+        at_f.source_kind = SourceKind::Portable;
+        at_f.product_name = Some("Tool".into());
+        at_f.install_location = Some(r"F:\Tools\Tool".into());
+        at_f.scan_folder = Some(r"F:\".into());
+        at_f.volume_id = Some("1a2b3c4d".into());
+        let mut at_g = at_f.clone();
+        at_g.path = r"G:\Tools\Tool\Tool.exe".into();
+        at_g.install_location = Some(r"G:\Tools\Tool".into());
+        at_g.scan_folder = Some(r"G:\".into());
+        let mut other_volume = at_g.clone();
+        other_volume.volume_id = Some("9f9f9f9f".into());
+        let mut untracked = at_f.clone();
+        untracked.volume_id = None;
+
+        assert_eq!(preference_identity(&at_f), preference_identity(&at_g));
+        assert_ne!(
+            preference_identity(&at_f),
+            preference_identity(&other_volume)
+        );
+        assert_ne!(preference_identity(&at_f), preference_identity(&untracked));
+    }
+
+    #[test]
+    fn a_target_on_another_letter_keeps_its_letter_in_the_identity() {
+        let mut shortcut = app("Editor", r"F:\Launchers\Editor.lnk");
+        shortcut.launch_kind = LaunchKind::Shortcut;
+        shortcut.resolved_path = Some(r"C:\Example\Editor.exe".into());
+        shortcut.scan_folder = Some(r"F:\".into());
+        shortcut.volume_id = Some("1a2b3c4d".into());
+        let mut plain = shortcut.clone();
+        plain.scan_folder = None;
+        plain.volume_id = None;
+        let mut moved = shortcut.clone();
+        moved.path = r"G:\Launchers\Editor.lnk".into();
+        moved.scan_folder = Some(r"G:\".into());
+
+        assert_eq!(preference_identity(&shortcut), preference_identity(&plain));
+        assert_eq!(preference_identity(&shortcut), preference_identity(&moved));
     }
 
     #[test]

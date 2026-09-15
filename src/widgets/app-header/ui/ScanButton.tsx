@@ -21,7 +21,11 @@ export function ScanButton({
 			className={`icon-follows-color relative grid size-11 shrink-0 place-items-center rounded-xl text-white focus-visible:outline-2 ${isRefreshing ? 'bg-red-500 hover:bg-red-400 focus-visible:outline-red-300' : 'utility-accent-button focus-visible:outline-violet-500'}`}
 		>
 			<SpotlightLayer size={70} />
-			{isRefreshing ? <X size={18} /> : <RefreshCw size={18} />}
+			{isRefreshing ? (
+				<X size={18} aria-hidden="true" />
+			) : (
+				<RefreshCw size={18} aria-hidden="true" />
+			)}
 		</button>
 	)
 }

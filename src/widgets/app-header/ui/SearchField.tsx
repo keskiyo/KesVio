@@ -26,6 +26,7 @@ export function SearchField({
 				<Search
 					className="pointer-events-none absolute left-4 text-slate-500 group-focus-within:text-violet-600"
 					size={18}
+					aria-hidden="true"
 				/>
 				<span className="sr-only">Search applications</span>
 				<input
@@ -60,7 +61,7 @@ export function SearchField({
 						}}
 						className="absolute right-2 grid size-8 place-items-center rounded-lg text-slate-500 hover:bg-violet-100/75 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-violet-500"
 					>
-						<X size={16} />
+						<X size={16} aria-hidden="true" />
 					</button>
 				)}
 			</label>

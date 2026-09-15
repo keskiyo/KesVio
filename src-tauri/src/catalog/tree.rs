@@ -129,7 +129,7 @@ fn publishers_by_directory(apps: &[AppInfo]) -> HashMap<String, HashSet<String>>
     directories
 }
 
-fn publisher_of(app: &AppInfo) -> Option<String> {
+pub(super) fn publisher_of(app: &AppInfo) -> Option<String> {
     app.publisher
         .as_deref()
         .map(str::trim)
@@ -137,7 +137,7 @@ fn publisher_of(app: &AppInfo) -> Option<String> {
         .map(str::to_lowercase)
 }
 
-fn referenced_executables(apps: &[AppInfo]) -> HashSet<String> {
+pub(super) fn referenced_executables(apps: &[AppInfo]) -> HashSet<String> {
     let mut referenced = HashSet::new();
     for app in apps {
         if let Some(target) = app.resolved_path.as_deref() {
@@ -165,7 +165,7 @@ fn names_its_own_folder(path: &str) -> bool {
         })
 }
 
-fn without_architecture_suffix(stem: &str) -> String {
+pub(super) fn without_architecture_suffix(stem: &str) -> String {
     let mut tokens = stem
         .split(|character: char| !character.is_alphanumeric())
         .filter(|token| !token.is_empty())
@@ -196,7 +196,7 @@ fn has_ancestor_from_the_same_publisher(
         .any(|publishers| publishers.contains(publisher))
 }
 
-fn executable_path(app: &AppInfo) -> Option<&str> {
+pub(super) fn executable_path(app: &AppInfo) -> Option<&str> {
     [app.resolved_path.as_deref(), Some(app.path.as_str())]
         .into_iter()
         .flatten()
@@ -248,6 +248,7 @@ mod tests {
             category_reasons: Vec::new(),
             close_risk: None,
             scan_folder: None,
+            volume_id: None,
         }
     }
 

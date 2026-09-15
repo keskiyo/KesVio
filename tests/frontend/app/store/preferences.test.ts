@@ -13,6 +13,38 @@ import { stableCustomCategoryAccent } from '../../../../src/entities/category/li
 import { CATEGORY_ORDER } from '../../../../src/entities/category'
 
 describe('preferences', () => {
+	it('upgrades v21 preserving legacy close behavior and roundtrips explicit graceful policy', () => {
+		const scenario = {
+			id: 'work',
+			name: 'Work',
+			launchIdentities: [],
+			closeIdentities: ['editor'],
+		}
+		const legacy = normalizePreferences({
+			version: 21,
+			scenarios: [scenario],
+			extra: 'kept',
+		})
+		expect(legacy.version).toBe(22)
+		expect(legacy.scenarios[0].forceClose ?? true).toBe(true)
+		expect(legacy.unknownFields?.extra).toBe('kept')
+		const graceful = normalizePreferences({
+			version: 22,
+			scenarios: [{ ...scenario, forceClose: false }],
+		})
+		expect(
+			parsePreferenceImport(serializePreferences(graceful)),
+		).toMatchObject({
+			ok: true,
+			preferences: { scenarios: [{ forceClose: false }] },
+		})
+		expect(
+			normalizePreferences({
+				version: 22,
+				scenarios: [{ ...scenario, forceClose: 'yes' }],
+			}).scenarios[0].forceClose,
+		).toBe(false)
+	})
 	it('accepts a normalized backup document and preserves unknown fields', () => {
 		expect(
 			parsePreferenceImport(
@@ -40,7 +72,7 @@ describe('preferences', () => {
 			ok: false,
 			error: 'The selected file is not a KesVio backup.',
 		})
-		expect(parsePreferenceImport(JSON.stringify({ version: 20 }))).toEqual({
+		expect(parsePreferenceImport(JSON.stringify({ version: 23 }))).toEqual({
 			ok: false,
 			error: 'This backup was created by a newer version of KesVio.',
 		})
@@ -109,7 +141,7 @@ describe('preferences', () => {
 
 	it('uses complete defaults', () => {
 		expect(DEFAULT_PREFERENCES).toMatchObject({
-			version: 19,
+			version: 22,
 			catalogDensity: 'compact',
 			favoriteScenarioIds: [],
 			categoryOrder: CATEGORY_ORDER,
@@ -160,7 +192,7 @@ describe('preferences', () => {
 		})
 
 		expect(migrated).toMatchObject({
-			version: 19,
+			version: 22,
 			favoriteAppIdentities: ['identity:codex'],
 		})
 		expect(migrated.categories).toContainEqual(
@@ -219,6 +251,35 @@ describe('preferences', () => {
 		expect(normalized.categoryOrder[0]).toBe('drive:f')
 	})
 
+	it('keeps a volume-keyed drive category and drops an id that is neither a letter nor a volume', () => {
+		const normalized = normalizePreferences({
+			version: 22,
+			categories: [
+				{
+					id: 'drive:1a2b3c4d',
+					label: 'Rescue tools',
+					builtIn: false,
+					accent: 'red',
+				},
+				{ id: 'drive:not-a-volume', label: 'Stray', builtIn: false },
+			],
+			categoryOrder: ['drive:1a2b3c4d', 'drive:not-a-volume'],
+		})
+
+		expect(normalized.categories).toContainEqual(
+			expect.objectContaining({
+				id: 'drive:1a2b3c4d',
+				label: 'Rescue tools',
+				accent: 'red',
+			}),
+		)
+		expect(normalized.categories.map(entry => entry.id)).not.toContain(
+			'drive:not-a-volume',
+		)
+		expect(normalized.categoryOrder).toContain('drive:1a2b3c4d')
+		expect(normalized.categoryOrder).not.toContain('drive:not-a-volume')
+	})
+
 	it('upgrades a v17 document to the current schema with the default density and no data loss', () => {
 		const upgraded = normalizePreferences({
 			version: 17,
@@ -228,7 +289,7 @@ describe('preferences', () => {
 		})
 
 		expect(upgraded).toMatchObject({
-			version: 19,
+			version: 22,
 			catalogDensity: 'compact',
 			favoriteAppIds: ['code'],
 			hiddenAppIds: ['installer'],
@@ -290,7 +351,7 @@ describe('preferences', () => {
 				collapsedCategories: ['other'],
 			}),
 		).toMatchObject({
-			version: 19,
+			version: 22,
 			favoriteAppIds: ['codex'],
 			collapsedCategories: ['other'],
 			categoryOverrides: {},
@@ -308,7 +369,7 @@ describe('preferences', () => {
 		})
 
 		expect(normalized).toMatchObject({
-			version: 19,
+			version: 22,
 			favoriteAppIds: ['code'],
 			unknownFields: {
 				experimentalLayout: { density: 'compact' },
@@ -342,7 +403,7 @@ describe('preferences', () => {
 		).toBe(true)
 
 		expect(JSON.parse(values.get(PREFERENCES_KEY) ?? '{}')).toMatchObject({
-			version: 19,
+			version: 22,
 			favoriteAppIds: ['code', 'editor'],
 			experimentalLayout: { density: 'compact' },
 		})
@@ -372,7 +433,7 @@ describe('preferences', () => {
 		})
 		// The id-keyed map is preserved (the store folds it into identities on the next catalog
 		// load); the new identity map defaults to empty so nothing is lost on upgrade.
-		expect(normalized.version).toBe(19)
+		expect(normalized.version).toBe(22)
 		expect(normalized.categoryOverrides).toEqual({ codex: 'ai' })
 		expect(normalized.categoryOverrideIdentities).toEqual({})
 	})
@@ -393,7 +454,7 @@ describe('preferences', () => {
 		})
 
 		expect(normalized).toMatchObject({
-			version: 19,
+			version: 22,
 			favoriteAppIds: ['cmd-shortcut'],
 			favoriteAppIdentities: [],
 			hiddenAppIds: ['cmd-shortcut'],
@@ -442,7 +503,7 @@ describe('preferences', () => {
 
 		// v8 could not carry the marks, so the upgrade must default them rather than invent any,
 		// and every field the older document did carry has to survive untouched.
-		expect(normalized.version).toBe(19)
+		expect(normalized.version).toBe(22)
 		expect(normalized.installerAppIds).toEqual([])
 		expect(normalized.installerAppIdentities).toEqual([])
 		expect(normalized.legacyCanonicalPreferences.installer).toEqual([])
@@ -478,7 +539,7 @@ describe('preferences', () => {
 
 		// v9 could not carry stamps, so a value under that key is not ours to trust; the store
 		// refills the map from the next catalog load.
-		expect(normalized.version).toBe(19)
+		expect(normalized.version).toBe(22)
 		expect(normalized.firstSeenAt).toEqual({})
 		expect(normalized.installerAppIdentities).toEqual(['preference:setup'])
 	})
@@ -508,7 +569,7 @@ describe('preferences', () => {
 		})
 
 		// v10 could not carry scenarios, so a value under that key is not ours to trust.
-		expect(normalized.version).toBe(19)
+		expect(normalized.version).toBe(22)
 		expect(normalized.scenarios).toEqual([])
 		expect(normalized.firstSeenAt).toEqual({
 			'preference:code': 1700000000000,
@@ -563,7 +624,7 @@ describe('preferences', () => {
 			],
 		})
 
-		expect(normalized.version).toBe(19)
+		expect(normalized.version).toBe(22)
 		expect(normalized.scenarios).toEqual([
 			{
 				id: 'work',
@@ -595,7 +656,7 @@ describe('preferences', () => {
 			favoriteScenarioIds: ['work'],
 		})
 
-		expect(normalized.version).toBe(19)
+		expect(normalized.version).toBe(22)
 		expect(normalized.favoriteScenarioIds).toEqual(['work'])
 		expect(normalized.scenarios[0]).toMatchObject({
 			launchIdentities: ['a'],
@@ -626,7 +687,7 @@ describe('preferences', () => {
 			scenarios: [{ id: 'work', name: 'Work', createdAt: 1700000000000 }],
 		})
 
-		expect(normalized.version).toBe(19)
+		expect(normalized.version).toBe(22)
 		expect(normalized.favoriteScenarioIds).toEqual([])
 		expect(normalized.scenarios).toHaveLength(1)
 	})
@@ -737,7 +798,7 @@ describe('preferences', () => {
 				collapsedCategories: ['games', 'invalid'],
 			}),
 		).toEqual({
-			version: 19,
+			version: 22,
 			catalogDensity: 'compact',
 			categories: DEFAULT_PREFERENCES.categories,
 			categoryOrder: [
@@ -763,6 +824,7 @@ describe('preferences', () => {
 			scenarios: [],
 			favoriteScenarioIds: [],
 			firstSeenAt: {},
+			savedFilters: [],
 			legacyCanonicalPreferences: {
 				favorite: [],
 				hidden: [],
@@ -783,7 +845,7 @@ describe('preferences', () => {
 			documentAppIdentities: ['identity:handbook'],
 		})
 
-		expect(normalized.version).toBe(19)
+		expect(normalized.version).toBe(22)
 		expect(normalized.installerAppIds).toEqual(['setup'])
 		expect(normalized.installerAppIdentities).toEqual(['identity:setup'])
 		expect(normalized.documentAppIds).toEqual([])
@@ -864,11 +926,11 @@ describe('preferences', () => {
 		).toEqual(['a'])
 	})
 
-	// A newer build may have written a version 20 document; this build (v19) must not overwrite it
+	// A newer build may have written a version 21 document; this build (v20) must not overwrite it
 	// with the older shape and strip the fields it does not know about.
 	it('does not overwrite a document written by a newer version', () => {
 		const future = JSON.stringify({
-			version: 20,
+			version: 23,
 			favoriteAppIds: ['keep'],
 			futureField: 'preserved',
 		})
@@ -920,7 +982,10 @@ describe('preferences', () => {
 	})
 
 	it('writes the versioned document and reports success', () => {
-		const storage = { setItem: vi.fn() } as unknown as Storage
+		const storage = {
+			getItem: vi.fn(() => null),
+			setItem: vi.fn(),
+		} as unknown as Storage
 		expect(writePreferences(storage, DEFAULT_PREFERENCES)).toBe(true)
 		expect(storage.setItem).toHaveBeenCalledWith(
 			PREFERENCES_KEY,

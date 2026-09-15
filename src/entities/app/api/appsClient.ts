@@ -2,7 +2,6 @@ import type {
 	AppDetails,
 	AppHydrationPatch,
 	AppsClient,
-	CatalogChangeSummary,
 	CatalogDelta,
 	CatalogDiagnostics,
 	CatalogScanResult,
@@ -53,7 +52,8 @@ export const tauriAppsClient: AppsClient = {
 	cancelScan: () =>
 		isTauriRuntime() ? invokeTauri<void>('cancel_scan') : Promise.resolve(),
 	launchApp: app => invokeIfTauri<void>('launch_app', { id: app.id }),
-	closeApps: ids => invokeIfTauri<CloseAppsResult>('close_apps', { ids }),
+	closeApps: (ids, allowForce = false) =>
+		invokeIfTauri<CloseAppsResult>('close_apps', { ids, allowForce }),
 	getAppDetails: id => invokeIfTauri<AppDetails>('get_app_details', { id }),
 	openAppFolder: id => invokeIfTauri<void>('open_app_folder', { id }),
 	async onCatalogDelta(handler) {
@@ -61,9 +61,6 @@ export const tauriAppsClient: AppsClient = {
 	},
 	async onCatalogPatches(handler) {
 		return listenIfTauri<AppHydrationPatch[]>('catalog://patches', handler)
-	},
-	async onCatalogChanged(handler) {
-		return listenIfTauri<CatalogChangeSummary>('catalog://changed', handler)
 	},
 	async onCatalogDiagnostics(handler) {
 		return listenIfTauri<CatalogDiagnostics>(

@@ -14,7 +14,6 @@ import { Header } from '../widgets/app-header'
 import { useAppFeedback } from './model/useAppFeedback'
 import { useActivityStatus } from './model/useActivityStatus'
 import { useAppDerivations } from './model/useAppDerivations'
-import { useCatalogChangeToast } from './model/useCatalogChangeToast'
 import { useCatalogDialogs } from './model/useCatalogDialogs'
 import { AppDialogs } from './layout/AppDialogs'
 import { AppViews } from './layout/AppViews'
@@ -23,6 +22,9 @@ import { useDrawer } from './model/useDrawer'
 import { useScenarioIntegration } from './model/useScenarioIntegration'
 import { useSearchAccess } from './model/useSearchAccess'
 import { useTrayCatalogScan } from './model/useTrayCatalogScan'
+import { useTrayFavorites } from './model/useTrayFavorites'
+import { useTraySearch } from './model/useTraySearch'
+import { useUndoFeedback } from './model/useUndoFeedback'
 
 import { useGlobalShortcuts } from './model/useGlobalShortcuts'
 import { useStaleCopy } from '../features/stale-copy'
@@ -34,8 +36,6 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	const state = useStore(store)
 	const {
 		activeView,
-		catalogChange,
-		clearCatalogChange,
 		error,
 		hydrateVisibleIcons,
 		initialize,
@@ -65,7 +65,9 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		onLaunch: state.launch,
 		onRefresh: state.refresh,
 		onFullScan: state.forceFullScan,
+		onUndo: state.undo,
 	})
+	useUndoFeedback({ undoable: state.undoable, onUndo: feedback.undo })
 	const dialogs = useCatalogDialogs({
 		systemClient,
 		onLaunch: feedback.launch,
@@ -88,11 +90,12 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		hydrateVisibleIcons,
 	})
 
+	const isCatalogView =
+		activeView !== 'settings' &&
+		activeView !== 'more' &&
+		activeView !== 'scenarios'
 	const search = useSearchAccess({
-		isCatalogView:
-			activeView !== 'settings' &&
-			activeView !== 'more' &&
-			activeView !== 'scenarios',
+		isCatalogView,
 		setQuery: state.setQuery,
 		selectView: navigation.selectView,
 	})
@@ -101,9 +104,8 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		onToggleScenarios: dialogs.scenarioLauncher.toggle,
 		onSearchFromShortcut: search.select,
 		onFocusSearch: search.focus,
+		onUndo: state.undoable ? feedback.undo : undefined,
 	})
-
-	useCatalogChangeToast({ catalogChange, clearCatalogChange, isRefreshing })
 
 	const scenarios = useScenarioIntegration({
 		state,
@@ -117,6 +119,19 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		busy: isLoading || isRefreshing,
 		onForceFullScan: state.forceFullScan,
 	})
+	useTrayFavorites({
+		systemClient,
+		apps: state.apps,
+		favoriteAppIds: state.favoriteAppIds,
+		onLaunch: feedback.launch,
+		selectView: navigation.selectView,
+	})
+	useTraySearch({
+		systemClient,
+		isCatalogView,
+		onSearch: search.select,
+		selectView: navigation.selectView,
+	})
 
 	const { auxiliaryCount, favoriteCount, navigationCounts } = counts
 	const appCount = counts.visibleCategorizedApps.length
@@ -128,11 +143,26 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		appCount,
 		favoriteCount,
 		favoriteScenarioCount: derivations.favoriteScenarios.length,
+		savedFilters: {
+			filters: state.savedFilters,
+			activeId: state.activeSavedFilterId,
+			onSelect: state.selectSavedFilter,
+			onCreate: dialogs.savedFilterEditor.create,
+			onDelete: state.deleteSavedFilter,
+		},
 		onSelectView: navigation.selectView,
 		onSelectCategory: navigation.selectCategory,
 		onReorderCategory: state.reorderCategory,
 		onCreateCategory: state.createCategory,
 	}
+	const activeFilter = catalog.activeFilter
+	const activeFilterChip = activeFilter
+		? {
+				name: activeFilter.name,
+				onEdit: () => dialogs.savedFilterEditor.edit(activeFilter),
+				onClear: () => state.selectSavedFilter(null),
+			}
+		: null
 
 	const activity = useActivityStatus({
 		apps: state.apps,
@@ -175,6 +205,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							query={state.query}
 							isRefreshing={state.isRefreshing}
 							scanProgress={state.scanProgress}
+							activeFilter={activeFilterChip}
 							onQueryChange={search.changeQuery}
 							onRefresh={feedback.refresh}
 							onCancelScan={state.cancelScan}
@@ -193,6 +224,8 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							updater={updater}
 							systemClient={systemClient}
 							onFirstScan={feedback.fullScan}
+							onRefreshCatalog={feedback.refresh}
+							onUndo={feedback.undo}
 						/>
 					</div>
 				</div>
@@ -213,6 +246,12 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 					paletteApps={primaryApps}
 					paletteSuggestions={catalog.paletteSuggestions}
 					scenarioLauncher={scenarios.launcher}
+					savedFilterEditor={{
+						publishers: derivations.publishers,
+						onCreate: state.createSavedFilter,
+						onUpdate: state.updateSavedFilter,
+						onDelete: state.deleteSavedFilter,
+					}}
 					onError={dialogs.reportFailure}
 				/>
 				<Toaster

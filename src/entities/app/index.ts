@@ -28,11 +28,9 @@ export type {
 export {
 	type AppPredicate,
 	type CatalogCounts,
-	type CategorizedAppsState,
 	createMarkLookup,
 	filterVisibleApps,
 	selectCatalogCounts,
-	selectCategorizedApps,
 	selectRecentApps,
 	selectUnclassifiedApps,
 	selectSearchScopeCounts,
@@ -84,5 +82,38 @@ export {
 	rankAppsByQueryAndCategory,
 	rankAppsByQueryTop,
 } from './lib/catalogSearch'
+export {
+	ADDED_WITHIN_CHOICES,
+	applySavedFilter,
+	AVAILABILITY_BUCKET_LABELS,
+	AVAILABILITY_BUCKETS,
+	availabilityBucket,
+	type AvailabilityBucket,
+	catalogPublishers,
+	EMPTY_CRITERIA,
+	isEmptyCriteria,
+	matchesSavedFilter,
+	savedFilterSources,
+	MAX_SAVED_FILTER_NAME_LENGTH,
+	MAX_SAVED_FILTERS,
+	normalizeCriteria,
+	normalizeSavedFilter,
+	SAVED_FILTER_SOURCES,
+	type SavedFilter,
+	type SavedFilterCriteria,
+} from './lib/savedFilters'
+export {
+	describeSourceHealth,
+	type SourceHealthSummary,
+	type SourceStatus,
+	type SourceStatusRow,
+	sourceLabel,
+	summarizeSourceHealth,
+} from './lib/sourceHealth'
 export { AppCard } from './ui/AppCard/AppCard'
 export { CardIcon } from './ui/AppCard/CardIcon'
+
+export {
+	type CategorizedAppsState,
+	selectCategorizedApps,
+} from './model/categorizedApps'

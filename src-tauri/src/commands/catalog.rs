@@ -1,11 +1,16 @@
 use super::run_blocking;
-use crate::app_state::{known_catalog_ids, remember_catalog, AppState};
-use crate::catalog::sync::SyncRequest;
-use crate::catalog::sync::{enqueue_hydration, load_sanitized_document, run_coordinated_scan};
+use crate::app_state::{known_catalog_ids, remember_catalog, remember_volumes, AppState};
+use crate::catalog::sync::{
+    cancel_pending_retry, enqueue_hydration, load_sanitized_document, run_coordinated_scan,
+    SyncRequest,
+};
 use crate::catalog::{self, cache, CatalogAppDto};
 use crate::error::AppError;
+use crate::lifecycle::{LifecycleState, STARTUP_SCAN_DELAY};
 use crate::paths;
 use serde::Serialize;
+use std::sync::Arc;
+use std::time::Instant;
 use tauri::Manager;
 
 #[derive(Serialize)]
@@ -59,8 +64,17 @@ pub(crate) async fn get_apps(app: tauri::AppHandle) -> Result<CatalogSnapshot, A
     let app_data_dir =
         paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let cache_dir = app_data_dir.clone();
+    let handle = app.clone();
     let cached = run_blocking("Catalog cache read", move || {
-        load_sanitized_document(&cache_dir)
+        let state = handle.state::<AppState>();
+        let _guard = state.lock_sync();
+        let cached = load_sanitized_document(&cache_dir);
+        if let Some(document) = &cached {
+            state.catalog_generation.observe(document.generation);
+            remember_catalog(state.inner(), &document.apps);
+            remember_volumes(state.inner(), &document.volumes);
+        }
+        cached
     })
     .await?;
     let has_cache = cached.is_some();
@@ -68,10 +82,6 @@ pub(crate) async fn get_apps(app: tauri::AppHandle) -> Result<CatalogSnapshot, A
     let generation = document.generation;
     let diagnostics = document.diagnostics.clone();
     let apps = document.apps;
-    {
-        let state = app.state::<AppState>();
-        remember_catalog(state.inner(), &apps);
-    }
     Ok(CatalogSnapshot {
         has_cache,
         apps: apps.iter().map(CatalogAppDto::from).collect(),
@@ -119,8 +129,12 @@ pub(crate) async fn reset_catalog_cache(
             paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
         {
             let state = app.state::<AppState>();
+            cancel_pending_retry(state.inner());
             state.scan_coordinator.cancel_all();
             let _guard = state.lock_sync();
+            if let Some(generation) = cache::stored_generation(&app_data_dir) {
+                state.catalog_generation.observe(generation);
+            }
             cache::reset(&app_data_dir)
                 .map_err(|error| AppError::ResetCatalogCache(error.to_string()))?;
             catalog::icon_cache::clear(&app_data_dir)
@@ -154,10 +168,12 @@ pub(crate) async fn hydrate_visible_icons(
     app: tauri::AppHandle,
     ids: Vec<String>,
 ) -> Result<(), AppError> {
+    let requested = ids.len();
     let ids = {
         let state = app.state::<AppState>();
         validate_hydration_ids(state.inner(), ids)?
     };
+    log::info!("Hydration requested: ids={requested} known={}", ids.len());
     if ids.is_empty() {
         return Ok(());
     }
@@ -191,6 +207,14 @@ pub(crate) fn start_background_sync(app: tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         let handle = app.clone();
         let _ = tauri::async_runtime::spawn_blocking(move || {
+            let lifecycle = Arc::clone(&handle.state::<Arc<LifecycleState>>());
+            let deferred_since = Instant::now();
+            if lifecycle.wait_out_quiet_start(STARTUP_SCAN_DELAY) {
+                log::info!(
+                    "Startup scan deferred by quiet start: waitedMs={}",
+                    deferred_since.elapsed().as_millis()
+                );
+            }
             run_coordinated_scan(&handle, SyncRequest::Startup, false)
         })
         .await;

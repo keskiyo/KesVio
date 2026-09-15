@@ -20,19 +20,27 @@ describe('SettingsPage', () => {
 		},
 		fixedDrives: ['C:\\'],
 		hideToTrayOnClose: true,
+		startupEntry: 'disabled',
 	}
 
 	const systemClient = (): SystemClient => ({
 		getSettings: vi.fn().mockResolvedValue(settings),
 		setScanSettings: vi.fn().mockImplementation(async value => value),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
+		setStartupEnabled: vi
+			.fn()
+			.mockImplementation(async enabled =>
+				enabled ? 'enabled' : 'disabled',
+			),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
+		previewDiagnosticsLog: vi
+			.fn()
+			.mockResolvedValue('<diagnostics redacted="true" />'),
 		pickFolder: vi.fn().mockResolvedValue(null),
 		openTelegram: vi.fn().mockResolvedValue(undefined),
 		openGithub: vi.fn().mockResolvedValue(undefined),
 		openAppsSettings: vi.fn().mockResolvedValue(undefined),
-		openStartupSettings: vi.fn().mockResolvedValue(undefined),
 	})
 
 	const updaterState = (
@@ -75,7 +83,7 @@ describe('SettingsPage', () => {
 		expect(client.openAppsSettings).toHaveBeenCalledTimes(1)
 	})
 
-	it('opens Windows startup management without a runtime startup switch', async () => {
+	it('switches startup on through the backend and shows what Windows answered', async () => {
 		const client = systemClient()
 		render(
 			<SettingsPage
@@ -87,14 +95,26 @@ describe('SettingsPage', () => {
 		)
 		await screen.findByText('Version 0.1.0')
 		expect(
-			screen.queryByRole('switch', {
-				name: 'Launch when Windows starts',
-			}),
+			screen.queryByRole('button', { name: 'Manage startup in Windows' }),
 		).not.toBeInTheDocument()
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Manage startup in Windows' }),
-		)
-		expect(client.openStartupSettings).toHaveBeenCalledOnce()
+		const toggle = screen.getByRole('switch', {
+			name: 'Launch KesVio when Windows starts',
+		})
+		expect(toggle).not.toBeChecked()
+
+		await userEvent.click(toggle)
+
+		expect(client.setStartupEnabled).toHaveBeenCalledWith(true)
+		expect(
+			await screen.findByRole('switch', {
+				name: 'Launch KesVio when Windows starts',
+			}),
+		).toBeChecked()
+		expect(
+			screen.getByText(
+				'KesVio starts hidden in the tray when you sign in.',
+			),
+		).toBeInTheDocument()
 	})
 
 	it('orders the compact General Settings sections by task', async () => {
@@ -173,7 +193,6 @@ describe('SettingsPage', () => {
 
 		for (const guarantee of [
 			'Fixed drives are walked only during Force full scan. An ordinary refresh reads Windows sources and the folders added below.',
-			'The log names the folders a scan walked, so read it before sharing it.',
 		]) {
 			expect(screen.getByText(guarantee)).toBeVisible()
 		}
@@ -377,16 +396,18 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Last scan diagnostics' }),
-		)
 
-		const row = screen.getByRole('row', { name: /start-apps/ })
-		expect(row).toHaveTextContent('Serving older data')
-		expect(row).toHaveTextContent('Did not answer')
+		// The status is on the page itself, not behind Advanced: a smaller catalog needs an
+		// explanation where the user looks first.
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'1 of 1 sources need attention: Start apps (Unavailable)',
+		)
+		const row = screen.getByRole('row', { name: /Start apps/ })
+		expect(row).toHaveTextContent('Unavailable')
+		expect(row).toHaveTextContent(
+			'Did not answer; showing the last successful result',
+		)
 		expect(row).toHaveTextContent('41')
-		expect(row).toHaveTextContent('8')
 	})
 
 	it('shows no source table when the cache predates source health', async () => {
@@ -416,6 +437,9 @@ describe('SettingsPage', () => {
 		)
 
 		expect(screen.queryByRole('table')).not.toBeInTheDocument()
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'No source has been scanned yet.',
+		)
 	})
 
 	// The number that would expose a wrong availability verdict on a machine no fixture models:
@@ -724,6 +748,7 @@ describe('SettingsPage', () => {
 				},
 				fixedDrives: ['C:\\', 'D:\\', 'E:\\'],
 				hideToTrayOnClose: true,
+				startupEntry: 'disabled',
 			}),
 			setScanSettings: vi
 				.fn()
@@ -731,11 +756,14 @@ describe('SettingsPage', () => {
 			setCloseBehavior: vi.fn().mockImplementation(async value => value),
 			savePreferencesBackup: vi.fn().mockResolvedValue(true),
 			exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
+			previewDiagnosticsLog: vi
+				.fn()
+				.mockResolvedValue('<diagnostics redacted="true" />'),
 			pickFolder: vi.fn().mockResolvedValue(String.raw`F:\Stick\Tools`),
 			openTelegram: vi.fn().mockResolvedValue(undefined),
 			openGithub: vi.fn().mockResolvedValue(undefined),
 			openAppsSettings: vi.fn().mockResolvedValue(undefined),
-			openStartupSettings: vi.fn().mockResolvedValue(undefined),
+			setStartupEnabled: vi.fn().mockResolvedValue('disabled'),
 		}
 		render(
 			<SettingsPage
@@ -793,11 +821,14 @@ describe('SettingsPage', () => {
 			setCloseBehavior: vi.fn().mockImplementation(async value => value),
 			savePreferencesBackup: vi.fn().mockResolvedValue(true),
 			exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
+			previewDiagnosticsLog: vi
+				.fn()
+				.mockResolvedValue('<diagnostics redacted="true" />'),
 			pickFolder: vi.fn().mockResolvedValue(String.raw`F:\Stick\Tools`),
 			openTelegram: vi.fn().mockResolvedValue(undefined),
 			openGithub: vi.fn().mockResolvedValue(undefined),
 			openAppsSettings: vi.fn().mockResolvedValue(undefined),
-			openStartupSettings: vi.fn().mockResolvedValue(undefined),
+			setStartupEnabled: vi.fn().mockResolvedValue('disabled'),
 		}
 		render(
 			<SettingsPage

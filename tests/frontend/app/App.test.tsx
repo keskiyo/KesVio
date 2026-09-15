@@ -5,7 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../../../src/app/App'
 import { PREFERENCES_KEY } from '../../../src/app/store/preferences'
 import { createAppStore } from '../../../src/app/store/appStore'
-import type { AppInfo, AppsClient } from '../../../src/entities/app'
+import type {
+	AppInfo,
+	AppsClient,
+	CatalogDelta,
+} from '../../../src/entities/app'
 import type { SystemClient } from '../../../src/entities/system'
 
 function app(
@@ -93,16 +97,20 @@ function renderApp(
 			},
 			fixedDrives: ['C:\\'],
 			hideToTrayOnClose: true,
+			startupEntry: 'disabled',
 		}),
 		setScanSettings: vi.fn().mockImplementation(async settings => settings),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
+		setStartupEnabled: vi.fn().mockResolvedValue('disabled'),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
+		previewDiagnosticsLog: vi
+			.fn()
+			.mockResolvedValue('<diagnostics redacted="true" />'),
 		pickFolder: vi.fn().mockResolvedValue(null),
 		openTelegram: vi.fn().mockResolvedValue(undefined),
 		openGithub: vi.fn().mockResolvedValue(undefined),
 		openAppsSettings: vi.fn().mockResolvedValue(undefined),
-		openStartupSettings: vi.fn().mockResolvedValue(undefined),
 		...systemOverrides,
 	}
 	const store = createAppStore(client, localStorage)
@@ -238,6 +246,44 @@ describe('App', () => {
 		await waitFor(() => expect(hydrateVisibleIcons).toHaveBeenCalledOnce())
 	})
 
+	it('hydrates the auxiliary tools when that view opens', async () => {
+		const hydrateVisibleIcons = vi.fn().mockResolvedValue(undefined)
+		const tool = app({
+			id: 'bun',
+			name: 'Bun',
+			path: 'C:\\Users\\Example\\.bun\\bin\\bun.exe',
+			category: 'development',
+			visibilityClass: 'auxiliary',
+		})
+		renderApp({
+			hydrateVisibleIcons,
+			getApps: vi
+				.fn()
+				.mockResolvedValue({ apps: [...apps, tool], hasCache: true }),
+		})
+		await screen.findByText('Steam')
+		await waitFor(() => expect(hydrateVisibleIcons).toHaveBeenCalled())
+		expect(hydrateVisibleIcons.mock.calls.flat(2)).not.toContain('bun')
+		hydrateVisibleIcons.mockClear()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Open navigation' }),
+		)
+		await userEvent.click(
+			within(
+				screen.getByRole('dialog', { name: 'App navigation' }),
+			).getByRole('button', { name: 'More' }),
+		)
+		await userEvent.click(
+			await screen.findByRole('button', { name: /^Auxiliary tools/ }),
+		)
+
+		await screen.findByText('Bun')
+		await waitFor(() =>
+			expect(hydrateVisibleIcons.mock.calls.flat(2)).toContain('bun'),
+		)
+	})
+
 	it('uses the dark Graphite Surface theme and Neon Glass app cards', async () => {
 		renderApp()
 		const launch = await screen.findByRole('button', {
@@ -354,6 +400,40 @@ describe('App', () => {
 
 		await waitFor(() => expect(client.refreshApps).toHaveBeenCalled())
 		await waitFor(() => expect(success).toHaveBeenCalledTimes(1))
+	})
+
+	it('applies a background catalog delta silently', async () => {
+		const success = vi.spyOn(toast, 'success').mockClear()
+		const info = vi.spyOn(toast, 'info').mockClear()
+		let deliver: ((delta: CatalogDelta) => void) | undefined
+		renderApp({
+			onCatalogDelta: vi.fn(async handler => {
+				deliver = handler
+				return () => undefined
+			}),
+		})
+		await screen.findByRole('heading', { name: 'Games' })
+		expect(deliver).toBeDefined()
+
+		act(() =>
+			deliver?.({
+				generation: 9,
+				upserted: [
+					app({
+						id: 'background',
+						name: 'Background Tool',
+						path: 'C:\\Background.exe',
+						category: 'development',
+					}),
+				],
+				removedIds: [],
+				summary: { added: 1, removed: 0, updated: 0 },
+			}),
+		)
+
+		expect(await screen.findByText('Background Tool')).toBeInTheDocument()
+		expect(success).not.toHaveBeenCalled()
+		expect(info).not.toHaveBeenCalled()
 	})
 
 	// The search field is part of the shell, so it accepted input on pages that never filter

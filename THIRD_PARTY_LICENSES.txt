@@ -1,4 +1,4 @@
-KesVio 0.5.1 - third-party licenses
+KesVio 0.5.2 - third-party licenses
 ===============================================================================
 
 KesVio is distributed under the MIT License; see LICENSE. It also distributes the
@@ -743,7 +743,7 @@ Rust normal and build dependencies, x86_64-pc-windows-msvc (301)
       License:  Apache-2.0 OR MIT
       Source:   https://github.com/rust-lang/rustc-hash
       Text:     #22, #4
-  rustls 0.23.41
+  rustls 0.23.45
       License:  Apache-2.0 OR ISC OR MIT
       Source:   https://github.com/rustls/rustls
       Text:     #23, #88, #89
@@ -755,7 +755,7 @@ Rust normal and build dependencies, x86_64-pc-windows-msvc (301)
       License:  MIT OR Apache-2.0
       Source:   https://github.com/rustls/rustls-platform-verifier
       Text:     #136, #137
-  rustls-webpki 0.103.13
+  rustls-webpki 0.103.15
       License:  ISC
       Source:   https://github.com/rustls/webpki
       Text:     #138
@@ -10925,7 +10925,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ===============================================================================
-[#138] LICENSE - rustls-webpki 0.103.13
+[#138] LICENSE - rustls-webpki 0.103.15
 ===============================================================================
 
 Except as otherwise noted, this project is licensed under the following

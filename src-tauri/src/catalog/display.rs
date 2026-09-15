@@ -32,6 +32,7 @@ pub(crate) struct CatalogAppDto {
     pub category_reasons: Vec<String>,
     pub close_risk: Option<String>,
     pub scan_folder: Option<String>,
+    pub volume_id: Option<String>,
 }
 
 impl From<&AppInfo> for CatalogAppDto {
@@ -62,6 +63,7 @@ impl From<&AppInfo> for CatalogAppDto {
             category_reasons: app.category_reasons.clone(),
             close_risk: app.close_risk.clone(),
             scan_folder: app.scan_folder.clone(),
+            volume_id: app.volume_id.clone(),
         }
     }
 }

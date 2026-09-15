@@ -4,6 +4,7 @@ import { createAppStore } from '../../../../src/app/store/appStore'
 import {
 	MAX_SCENARIO_ENTRIES,
 	MAX_SCENARIOS,
+	resolveScenarioApps,
 } from '../../../../src/entities/scenario'
 import type { AppInfo, AppsClient } from '../../../../src/entities/app'
 
@@ -41,6 +42,203 @@ let counter = 0
 const idFactory = () => `scenario-${(counter += 1)}`
 
 describe('scenario actions', () => {
+	it('reconciles imported identities but leaves ambiguous name matches unresolved', async () => {
+		const transport = client()
+		const apps = [
+			{
+				id: 'editor',
+				name: 'Editor',
+				preferenceIdentity: 'stable:editor',
+				canonicalIdentity: 'old:editor',
+				path: 'C:\\editor.exe',
+			},
+			{ id: 'one', name: 'Shared', path: 'C:\\one.exe' },
+			{ id: 'two', name: 'Shared', path: 'C:\\two.exe' },
+		].map(value => ({
+			category: 'other',
+			launchKind: 'executable',
+			sourceKind: 'portable',
+			iconBase64: null,
+			platformKind: null,
+			description: null,
+			version: null,
+			publisher: null,
+			installLocation: null,
+			canUninstall: false,
+			...value,
+		})) as AppInfo[]
+		transport.getApps = vi
+			.fn()
+			.mockResolvedValue({ apps, hasCache: true, generation: 1 })
+		const store = createAppStore(
+			transport,
+			memoryStorage().storage,
+			idFactory,
+		)
+		await store.getState().initialize()
+		const source = JSON.stringify({
+			version: 22,
+			scenarios: [
+				{
+					id: 'source',
+					name: 'Imported',
+					launchIdentities: ['old:editor', 'missing'],
+					launchAppSnapshots: {
+						missing: { name: 'Shared', iconBase64: null },
+					},
+				},
+			],
+		})
+		expect(
+			store
+				.getState()
+				.importSelectedScenarios(source, [
+					{ sourceId: 'source', replaceId: null },
+				]).ok,
+		).toBe(true)
+		expect(store.getState().scenarios[0].launchIdentities).toEqual([
+			'old:editor',
+			'missing',
+		])
+		const saved = store.getState().scenarios[0]
+		const resolved = resolveScenarioApps(
+			saved.launchIdentities,
+			store.getState().apps,
+			saved.launchAppSnapshots,
+		)
+		expect(resolved.apps.map(item => item.id)).toEqual(['editor'])
+		expect(resolved.unavailable).toHaveLength(1)
+	})
+	it('imports only selected scenarios without changing preferences or launching apps', () => {
+		const transport = client()
+		const { storage } = memoryStorage()
+		const store = createAppStore(transport, storage, idFactory)
+		store.getState().createScenario('Local')
+		store
+			.getState()
+			.toggleFavoriteScenario(store.getState().scenarios[0].id)
+		const before = store.getState()
+		const source = JSON.stringify({
+			version: 22,
+			favoriteAppIds: ['foreign'],
+			favoriteScenarioIds: ['source'],
+			scenarios: [
+				{
+					id: 'source',
+					name: 'Local',
+					closeIdentities: ['missing'],
+					forceClose: false,
+				},
+				{ id: 'skip', name: 'Skip' },
+			],
+		})
+		expect(
+			store
+				.getState()
+				.importSelectedScenarios(source, [
+					{ sourceId: 'source', replaceId: null },
+				]),
+		).toEqual({ ok: true })
+		expect(store.getState().scenarios.map(item => item.name)).toEqual([
+			'Local',
+			'Local (2)',
+		])
+		expect(store.getState().scenarios[1].closeIdentities).toEqual([
+			'missing',
+		])
+		expect(store.getState().scenarios[1].forceClose).toBe(false)
+		expect(store.getState().favoriteScenarioIds).toBe(
+			before.favoriteScenarioIds,
+		)
+		expect(store.getState().favoriteAppIds).toBe(before.favoriteAppIds)
+		expect(store.getState().categories).toBe(before.categories)
+		expect(transport.launchApp).not.toHaveBeenCalled()
+		expect(transport.closeApps).not.toHaveBeenCalled()
+		expect(createAppStore(client(), storage).getState().scenarios).toEqual(
+			store.getState().scenarios,
+		)
+		expect(store.getState().undo().ok).toBe(true)
+		expect(store.getState().scenarios).toEqual(before.scenarios)
+	})
+
+	it('keeps the previous scenarios and undo entry if selected import cannot be saved', () => {
+		const { storage } = memoryStorage()
+		const store = createAppStore(client(), storage, idFactory)
+		store.getState().createScenario('Local')
+		const before = store.getState()
+		storage.setItem = () => {
+			throw new Error('denied')
+		}
+		const source = JSON.stringify({
+			version: 22,
+			scenarios: [{ id: 'source', name: 'Imported' }],
+		})
+		expect(
+			store
+				.getState()
+				.importSelectedScenarios(source, [
+					{ sourceId: 'source', replaceId: before.scenarios[0].id },
+				]).ok,
+		).toBe(false)
+		expect(store.getState().scenarios).toBe(before.scenarios)
+		expect(store.getState().undoable).toBe(before.undoable)
+	})
+
+	it('rejects invalid, oversized and future backups and does not apply a cancelled selection', () => {
+		const { storage, values } = memoryStorage()
+		const store = createAppStore(client(), storage, idFactory)
+		for (const source of [
+			'{',
+			JSON.stringify({ version: 99 }),
+			' '.repeat(1_048_577),
+		])
+			expect(store.getState().inspectScenarioImport(source).ok).toBe(
+				false,
+			)
+		const source = JSON.stringify({
+			version: 22,
+			scenarios: [{ id: 'source', name: 'Imported' }],
+		})
+		expect(store.getState().inspectScenarioImport(source).ok).toBe(true)
+		expect(store.getState().scenarios).toEqual([])
+		expect(store.getState().importSelectedScenarios(source, []).ok).toBe(
+			false,
+		)
+		values.set(PREFERENCES_KEY, JSON.stringify({ version: 99 }))
+		expect(
+			store
+				.getState()
+				.importSelectedScenarios(source, [
+					{ sourceId: 'source', replaceId: null },
+				]).ok,
+		).toBe(false)
+	})
+	it('defaults new scenarios to graceful close and persists an undoable explicit force choice', () => {
+		const { storage } = memoryStorage()
+		const store = createAppStore(client(), storage, idFactory)
+		store.getState().createScenario('Work')
+		const item = store.getState().scenarios[0]
+		expect(item.forceClose).toBe(false)
+		expect(store.getState().setScenarioForceClose(item.id, true)).toBe(true)
+		expect(
+			createAppStore(client(), storage).getState().scenarios[0]
+				.forceClose,
+		).toBe(true)
+		expect(store.getState().undo().ok).toBe(true)
+		expect(store.getState().scenarios[0].forceClose).toBe(false)
+	})
+
+	it('restores close policy when persistence fails', () => {
+		const { storage } = memoryStorage()
+		const store = createAppStore(client(), storage, idFactory)
+		store.getState().createScenario('Work')
+		const id = store.getState().scenarios[0].id
+		storage.setItem = () => {
+			throw new Error('denied')
+		}
+		expect(store.getState().setScenarioForceClose(id, true)).toBe(false)
+		expect(store.getState().scenarios[0].forceClose).toBe(false)
+	})
 	it('creates, renames and deletes a scenario', () => {
 		const store = createAppStore(
 			client(),
@@ -415,6 +613,7 @@ describe('scenario actions', () => {
 		).toEqual([
 			{
 				id,
+				forceClose: false,
 				name: 'Gaming',
 				launchIdentities: [],
 				closeIdentities: ['app:chat'],

@@ -1,22 +1,45 @@
-KesVio is a fast, private application catalog and launcher for Windows 10 and 11. It gathers Start Menu shortcuts, installed software, Store apps, Steam games, and portable executables into one searchable catalog.
+KesVio is a local-first Windows app catalog for finding, organizing, and launching desktop, Microsoft Store, Steam, and portable apps.
 
 ## Highlights
 
-This is a bug-fix release. If your catalog ever came up empty, this is the one to install.
+This release brings back **Launch when Windows starts** as a switch inside KesVio, makes an autostart launch quiet, follows portable apps on a USB stick when its drive letter changes, and adds saved catalog filters, undo, tray favorites and search, a gentler scenario close policy, selective scenario import, and a redacted diagnostics export.
 
-- **Fixed: the catalog could stay empty and never recover.** On some computers a scan crashed part-way through reading an application's file details, and the catalog stayed at **0 apps** with _Could not refresh the application list_. It happened when an installed program's file details contained non-Latin characters, so Russian and other non-English systems were the ones affected.
-- **A crashed scan says so.** It now reports its own code instead of looking identical to a scan you cancelled yourself.
-- **Diagnostics are more useful when something does go wrong.** The exported log states up front whether the session crashed, and the scan log names the application it was processing rather than only the stage it was in.
+## Added
+
+- **Launch when Windows starts is a switch again.** It lives under **Settings → Startup & window**, is off after a fresh install, and shows the same state as **Windows Settings → Apps → Startup** — flip it in either place and the other follows. KesVio changes only the on/off state of the startup entry the installer registered; it never creates a startup entry of its own. If that entry is missing, the switch is disabled and the row says to reinstall.
+- **Quiet start at sign-in.** When Windows starts KesVio, it stays in the tray at below-normal priority and waits up to a minute before its first background scan, so it does not compete with everything else that is starting. Opening the window ends the quiet start immediately.
+- **Removable drives.** Add a drive root such as `F:\` under **Settings → Advanced → Application discovery** and its applications land in one **Disk F** category. The category follows the stick, not the letter: the same drive mounted as `G:` keeps its category, its name and its favorites, and a stick that is out simply hides its category until it returns.
+- **Saved catalog filters.** Up to 20 named filters by source, publisher, availability and "added within" sit above the categories in the navigation; the header chip shows which one is active and lets you edit or clear it.
+- **Undo the last change.** Hiding or restoring an app, moving it to a category, renaming a category and editing a scenario can be undone from the toast, with **Ctrl+Z**, or from the More page.
+- **Tray: search and favorites.** The tray menu gains **Search**, the first five **Favorite apps** with **Show all favorites…**, and keeps **Scenarios** and **Force scan**.
+- **Scenario close policy.** New scenarios close applications gracefully and leave a program that refuses open; the editor offers **force after five seconds** for scenarios that need it. Scenarios created earlier keep the behaviour they had.
+- **Selective scenario import.** **Scenarios → Import scenarios** reads a settings backup and lets you pick which scenarios to add as copies or to replace, without touching anything else in the backup.
+- **Catalog sources in Settings.** Each source — Installed programs, Start Menu, Start apps, Installer cache, Steam, Portable folders — reports **Up to date**, **Unavailable**, **Incomplete**, **Failed** or **Not scanned**, and **Refresh catalog** runs the ordinary refresh from there.
+- **Redacted diagnostics export.** **Export log as XML** replaces every path, URL, account and machine name and any credential-looking value with stable placeholders before the file is written; **Preview redacted log** shows exactly what would be exported.
+
+## Changed
+
+- **Background scans are quiet.** A watcher or startup scan updates the catalog in place without raising a notification; only a refresh you start reports back.
+- **One card per portable product.** Helpers that carry the product's own name and version — the thirty tools Git for Windows ships as _Git_, or the 32-bit, 64-bit and ARM builds of one program — collapse into the one entry you would launch.
+- **A scan that hits a temporary problem retries on its own.** A source that did not answer or a folder that could not be reached is retried after 5, 20 and 60 seconds, scoped to that source; nothing already in the catalog is dropped meanwhile.
+- **Reinstalling keeps your startup choice.** Running a newer installer over an existing copy no longer resets **Launch when Windows starts**; only a real uninstall removes the entry.
+- **Keyboard and screen readers.** In the sidebar **Enter** opens a category and **Space** picks it up for reordering; only the topmost dialog answers **Escape** or traps **Tab**; decorative icons are hidden from assistive technology, and focus and toggle states stay visible under Windows High Contrast.
+
+## Fixed
+
+- A refresh that finished after a background scan had already moved the catalog on could roll the catalog back to older data; every result now carries its generation and an older one is ignored.
 
 ## Install
 
-1. Download `KesVio_0.5.1_x64-setup.exe`.
+1. Download `KesVio_0.5.2_x64-setup.exe`.
 2. Run it. The installer needs no administrator rights and installs for the current user into `%LOCALAPPDATA%\KesVio`; you can pick another folder on the install page. Because it is not Authenticode-signed, SmartScreen may show **Windows protected your PC**; choose **More info → Run anyway**.
 3. If Microsoft Edge WebView2 is missing, the embedded bootstrapper downloads it from Microsoft and requires internet access.
 
-## Verifying this download
+Updating from 0.5.1 through **Settings → Check updates** keeps every preference: saved filters start empty, existing scenarios keep their close behaviour, and the catalog cache upgrades in place.
+
+## Verification
 
 The installer is not Authenticode-signed, so two things are published beside it instead:
 
-- `SHA256SUMS.txt` — compare it with `Get-FileHash KesVio_0.5.1_x64-setup.exe -Algorithm SHA256`.
-- A build provenance attestation tying these exact bytes to the workflow run and commit that produced them — `gh attestation verify KesVio_0.5.1_x64-setup.exe --repo keskiyo/KesVio`.
+- `SHA256SUMS.txt` — compare it with `Get-FileHash KesVio_0.5.2_x64-setup.exe -Algorithm SHA256`.
+- A build provenance attestation tying these exact bytes to the workflow run and commit that produced them — `gh attestation verify KesVio_0.5.2_x64-setup.exe --repo keskiyo/KesVio`.

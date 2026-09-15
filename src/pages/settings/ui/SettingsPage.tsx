@@ -3,7 +3,8 @@ import {
 	useSystemSettings,
 } from '../../../features/edit-settings'
 import { CatalogMaintenance } from './sections/CatalogMaintenance'
-import { DiagnosticsLogExport } from './sections/DiagnosticsLogExport'
+import { CatalogSources } from './sections/CatalogSources'
+import { DiagnosticsLogExport } from './sections/DiagnosticsLogExport/DiagnosticsLogExport'
 import { ScanDiagnostics } from './sections/ScanDiagnostics'
 import { AdvancedSettings } from './sections/AdvancedSettings'
 import { GeneralSettings } from './sections/GeneralSettings'
@@ -22,6 +23,8 @@ export function SettingsPage({
 	onRestorePreferencesBackup,
 	onForceFullScan,
 	onResetCatalogCache,
+	onRefreshCatalog,
+	isRefreshing = false,
 	catalogDiagnostics,
 	unclassifiedApps,
 	categories,
@@ -40,6 +43,7 @@ export function SettingsPage({
 		resetting,
 		saveScanSettings,
 		setCloseBehavior,
+		setStartupEnabled,
 		addPath,
 		removePath,
 		forceFullScan,
@@ -80,9 +84,17 @@ export function SettingsPage({
 				onOpenGithub={client.openGithub}
 				onOpenTelegram={client.openTelegram}
 				onOpenAppsSettings={client.openAppsSettings}
-				onOpenStartupSettings={client.openStartupSettings}
+				onSetStartupEnabled={setStartupEnabled}
 			/>
 			{areaError('settings')}
+			{catalogDiagnostics !== undefined && (
+				<CatalogSources
+					sources={catalogDiagnostics?.sources ?? []}
+					lastScanAt={catalogDiagnostics?.completedAt ?? null}
+					scanning={isRefreshing}
+					onRefresh={onRefreshCatalog}
+				/>
+			)}
 			<AdvancedSettings>
 				<SettingsDiscoveryControls
 					settings={settings}
@@ -119,6 +131,7 @@ export function SettingsPage({
 					)}
 					<DiagnosticsLogExport
 						onExport={client.exportDiagnosticsLog}
+						onPreview={client.previewDiagnosticsLog}
 					/>
 				</div>
 				{areaError('maintenance')}

@@ -1,15 +1,17 @@
+mod catalog_generation;
 mod catalog_memory;
 mod launch_waits;
 
 pub(crate) use catalog_memory::{
     app_details_target_for, cached_app_details_for, cached_details_for_catalog, known_catalog_ids,
-    remember_app_details, remember_catalog,
+    remember_app_details, remember_catalog, remember_volumes, tracked_volumes,
 };
 pub(crate) use launch_waits::LaunchWaitLimiter;
 
 use crate::catalog::cache::CachedAppDetails;
 use crate::catalog::scan_coordinator::ScanCoordinator;
-use crate::catalog::sync::ScanCommit;
+use crate::catalog::sync::{RetryBudget, RetryGuard, ScanCommit};
+use crate::catalog::volumes::TrackedVolume;
 use crate::catalog::{self, AppDetailsTarget, LaunchKind};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
@@ -30,6 +32,7 @@ pub(crate) struct LaunchTarget {
 
 #[derive(Default)]
 pub(crate) struct AppState {
+    pub(crate) catalog_generation: catalog_generation::CatalogGeneration,
     pub(crate) catalog_ids: Mutex<HashSet<String>>,
     pub(crate) launch_targets: Mutex<HashMap<String, LaunchTarget>>,
     pub(crate) close_targets: Mutex<HashMap<String, CloseTarget>>,
@@ -46,6 +49,9 @@ pub(crate) struct AppState {
     pub(crate) global_shortcut:
         Mutex<Option<crate::platform::windows::global_shortcut::ShortcutGuard>>,
     pub(crate) shortcut_status: Mutex<crate::platform::windows::global_shortcut::Status>,
+    pub(crate) tracked_volumes: Mutex<Vec<TrackedVolume>>,
+    pub(crate) retry_budget: Arc<Mutex<RetryBudget>>,
+    pub(crate) scan_retry: Mutex<Option<RetryGuard>>,
 }
 
 impl AppState {
@@ -88,6 +94,7 @@ pub(crate) fn cached_app(name: &str, path: &str) -> catalog::AppInfo {
         category_reasons: Vec::new(),
         close_risk: None,
         scan_folder: None,
+        volume_id: None,
     }
 }
 

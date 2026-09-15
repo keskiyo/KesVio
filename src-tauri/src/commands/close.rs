@@ -108,6 +108,7 @@ fn resolve_close_targets(state: &AppState, ids: Vec<String>) -> Result<CloseRequ
 pub(crate) async fn close_apps(
     app: tauri::AppHandle,
     ids: Vec<String>,
+    allow_force: Option<bool>,
 ) -> Result<CloseAppsResponse, AppError> {
     let request = {
         let state = app.state::<AppState>();
@@ -116,7 +117,7 @@ pub(crate) async fn close_apps(
     let targets = request.targets;
     let emitter = app.clone();
     let outcome = super::run_blocking("Application close", move || {
-        closer::close_processes(&targets, |stage| {
+        closer::close_processes(&targets, allow_force.unwrap_or(false), |stage| {
             let _ = emitter.emit("close://progress", CloseProgressPayload::from(stage));
         })
     })

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import {
 	type AppInfo,
 	appIdentity,
+	catalogPublishers,
 	selectRecentApps,
 	selectUnclassifiedApps,
 } from '../../entities/app'
@@ -48,5 +49,9 @@ export function useAppDerivations({
 		}))
 	}, [catalogApps, firstSeenAt])
 
-	return { unclassifiedApps, favoriteScenarios, recentApps }
+	const publishers = useMemo(
+		() => catalogPublishers(catalogApps),
+		[catalogApps],
+	)
+	return { unclassifiedApps, favoriteScenarios, recentApps, publishers }
 }

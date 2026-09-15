@@ -9,10 +9,11 @@ const MIN_FUZZY_LENGTH = 4
 
 interface SearchFields {
 	name: string
+	nameWords: string[]
 	product: string
 	publisher: string
 	secondary: string
-	aliases: string
+	aliases: string[]
 	words: string[]
 }
 
@@ -39,9 +40,10 @@ function fieldsFor(app: AppInfo): SearchFields {
 	const product = (app.productName ?? '').toLocaleLowerCase()
 	const fields = {
 		name,
+		nameWords: name.split(/[\s\-_.()[\]]+/),
 		product,
 		publisher: (app.publisher ?? '').toLocaleLowerCase(),
-		aliases: isGenuineWindowsTerminal(app) ? 'cmd' : '',
+		aliases: isGenuineWindowsTerminal(app) ? ['cmd'] : [],
 		secondary: [
 			app.path,
 			app.installLocation,
@@ -60,6 +62,7 @@ function fieldsFor(app: AppInfo): SearchFields {
 			.join(' ')
 			.toLocaleLowerCase(),
 		words: `${name} ${product}`
+			.toLocaleLowerCase()
 			.split(/[^\p{L}\p{N}]+/u)
 			.filter(word => word.length >= MIN_FUZZY_LENGTH),
 	}
@@ -70,11 +73,9 @@ function fieldsFor(app: AppInfo): SearchFields {
 function directScore(fields: SearchFields, token: string): number {
 	if (fields.name === token) return 100
 	if (fields.name.startsWith(token)) return 90
-	if (fields.aliases === token) return 80
-	if (
-		fields.name.split(/[\s\-_.()[\]]+/).some(word => word.startsWith(token))
-	)
-		return 70
+	if (fields.aliases.includes(token)) return 80
+	if (fields.aliases.some(alias => alias.startsWith(token))) return 75
+	if (fields.nameWords.some(word => word.startsWith(token))) return 70
 	if (fields.name.includes(token) || fields.product.includes(token)) return 50
 	if (fields.publisher.includes(token)) return 30
 	if (token.length >= 3 && fields.secondary.includes(token)) return 10

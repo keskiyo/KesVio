@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react'
+import { isTopmostModal } from '../lib/modalLayering'
 import { useBodyScrollLock } from './useBodyScrollLock'
 import { useFocusTrap } from './useFocusTrap'
 
@@ -38,10 +39,11 @@ export function useModalDialog({
 		if (!onDismiss || !dismissible) return
 		function onKeyDown(event: KeyboardEvent) {
 			if (event.key !== 'Escape') return
+			if (ref.current && !isTopmostModal(ref.current)) return
 			event.preventDefault()
 			onDismiss?.()
 		}
 		document.addEventListener('keydown', onKeyDown)
 		return () => document.removeEventListener('keydown', onKeyDown)
-	}, [dismissible, onDismiss])
+	}, [dismissible, onDismiss, ref])
 }

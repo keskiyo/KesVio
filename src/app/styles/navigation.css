@@ -134,7 +134,8 @@
 	.lucide-rotate-ccw,
 	.lucide-loader-circle,
 	.lucide-search,
-	.lucide-send {
+	.lucide-send,
+	.lucide-activity {
 		color: var(--category-cyan);
 	}
 
@@ -152,7 +153,8 @@
 	.lucide-grid2x2,
 	.lucide-layout-grid,
 	.lucide-corner-down-left,
-	.lucide-history {
+	.lucide-history,
+	.lucide-undo2 {
 		color: var(--category-blue);
 	}
 
@@ -162,6 +164,7 @@
 	.lucide-arrow-up-narrow-wide,
 	.lucide-settings,
 	.lucide-sliders-horizontal,
+	.lucide-filter,
 	.lucide-wrench,
 	.lucide-app-window,
 	.lucide-log-in,

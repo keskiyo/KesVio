@@ -1,5 +1,5 @@
 import type { RefObject } from 'react'
-import type { AppView } from '../../entities/app'
+import type { AppView, SavedFilter } from '../../entities/app'
 import type {
 	AppCategory,
 	CategoryDefinition,
@@ -9,6 +9,14 @@ import type {
 export type CreateCategoryResult =
 	{ ok: true; id: string } | { ok: false; error: string }
 
+export interface SavedFiltersNavigation {
+	filters: SavedFilter[]
+	activeId: string | null
+	onSelect(id: string | null): void
+	onCreate(): void
+	onDelete(id: string): void
+}
+
 export interface AppNavigationProps {
 	categoryOrder: AppCategory[]
 	categories: CategoryDefinition[]
@@ -17,6 +25,7 @@ export interface AppNavigationProps {
 	appCount: number
 	favoriteCount: number
 	favoriteScenarioCount?: number
+	savedFilters?: SavedFiltersNavigation
 	onSelectView(view: AppView): void
 	onSelectCategory(category: AppCategory): void
 	onCreateCategory(
@@ -34,6 +43,7 @@ export interface AppDrawerProps {
 	appCount: number
 	favoriteCount: number
 	favoriteScenarioCount?: number
+	savedFilters?: SavedFiltersNavigation
 	triggerRef: RefObject<HTMLButtonElement>
 	onGoHome(): void
 	onSelectView(view: AppView): void

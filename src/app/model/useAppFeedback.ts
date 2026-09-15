@@ -11,6 +11,7 @@ interface AppFeedbackOptions {
 	onLaunch(app: AppInfo): Promise<void>
 	onRefresh(): Promise<void>
 	onFullScan(): Promise<void>
+	onUndo(): { ok: true } | { ok: false; error: string }
 }
 
 async function reportScan(run: () => Promise<void>) {
@@ -31,6 +32,7 @@ export function useAppFeedback({
 	onLaunch,
 	onRefresh,
 	onFullScan,
+	onUndo,
 }: AppFeedbackOptions) {
 	const launch = useCallback(
 		async function launch(app: AppInfo) {
@@ -52,6 +54,12 @@ export function useAppFeedback({
 	const refresh = useCallback(() => reportScan(onRefresh), [onRefresh])
 	const fullScan = useCallback(() => reportScan(onFullScan), [onFullScan])
 
+	const undo = useCallback(() => {
+		const result = onUndo()
+		if (result.ok) toast.success('Undone')
+		else toast.error(result.error)
+	}, [onUndo])
+
 	const reportScenarioRun = useCallback((summary: ScenarioRunSummary) => {
 		const message = scenarioRunSummaryMessage(summary)
 		if (!message) return
@@ -64,5 +72,5 @@ export function useAppFeedback({
 		else toast.success(message)
 	}, [])
 
-	return { launch, refresh, fullScan, reportScenarioRun }
+	return { launch, refresh, fullScan, reportScenarioRun, undo }
 }

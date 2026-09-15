@@ -42,6 +42,7 @@ pub(crate) enum VisibilityReason {
     CommandEnvironment,
     ConsoleApplication,
     InsufficientLaunchEvidence,
+    ProductDuplicate,
     #[serde(other)]
     Unknown,
 }
@@ -272,6 +273,7 @@ mod tests {
             category_reasons: Vec::new(),
             close_risk: None,
             scan_folder: None,
+            volume_id: None,
         }
     }
 

@@ -46,3 +46,26 @@ input {
 button {
 	cursor: pointer;
 }
+
+@media (forced-colors: active) {
+	input:focus-visible,
+	textarea:focus-visible,
+	[role='combobox']:focus-visible {
+		outline: 2px solid Highlight;
+		outline-offset: 2px;
+	}
+
+	.settings-toggle-track,
+	[role='switch'] .utility-accent-button {
+		border: 1px solid ButtonText;
+	}
+
+	.settings-toggle-knob {
+		forced-color-adjust: none;
+		background: ButtonText;
+	}
+
+	[role='switch'][aria-checked='true'] .settings-toggle-knob {
+		background: Highlight;
+	}
+}

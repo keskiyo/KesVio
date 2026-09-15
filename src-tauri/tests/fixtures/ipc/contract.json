@@ -39,7 +39,8 @@
           "visibilityReasons": [
             "registered_product"
           ],
-          "visibilityScore": 0
+          "visibilityScore": 0,
+          "volumeId": "1a2b3c4d"
         }
       ],
       "generation": 7
@@ -85,7 +86,8 @@
           "visibilityReasons": [
             "registered_product"
           ],
-          "visibilityScore": 0
+          "visibilityScore": 0,
+          "volumeId": "1a2b3c4d"
         }
       ],
       "diagnostics": null,
@@ -109,9 +111,10 @@
         "error": "The shortcut has not been registered yet.",
         "label": "Win+Shift+Q"
       },
+      "startupEntry": "disabled",
       "version": "0.0.0-sample"
     },
-    "open_startup_settings": null,
+    "preview_diagnostics_log": "<diagnostics redacted=\"true\" />",
     "refresh_apps": {
       "apps": [
         {
@@ -143,7 +146,8 @@
           "visibilityReasons": [
             "registered_product"
           ],
-          "visibilityScore": 0
+          "visibilityScore": 0,
+          "volumeId": "1a2b3c4d"
         }
       ],
       "generation": 7
@@ -179,7 +183,8 @@
           "visibilityReasons": [
             "registered_product"
           ],
-          "visibilityScore": 0
+          "visibilityScore": 0,
+          "volumeId": "1a2b3c4d"
         }
       ],
       "generation": 7
@@ -193,13 +198,16 @@
       "excludedPaths": [],
       "includedPaths": []
     },
+    "set_startup_enabled": "disabled",
+    "set_tray_favorites": null,
     "set_tray_running": null,
     "set_tray_scan_state": null,
     "set_tray_scenarios": null,
     "stale_copy_status": {
       "installLocation": "C:\\Program Files\\KesVio",
       "installedVersion": "0.3.8"
-    }
+    },
+    "take_tray_search_intent": false
   },
   "error": {
     "code": "LAUNCH_UNAVAILABLE",
@@ -228,14 +236,10 @@
     "SCAN_CANCELLED",
     "SCAN_COALESCED",
     "SCAN_FAILED",
-    "SCAN_PATH_NOT_ABSOLUTE"
+    "SCAN_PATH_NOT_ABSOLUTE",
+    "STARTUP_ENTRY_UPDATE_FAILED"
   ],
   "events": {
-    "catalog://changed": {
-      "added": 1,
-      "removed": 0,
-      "updated": 0
-    },
     "catalog://delta": {
       "generation": 7,
       "removedIds": [],
@@ -274,7 +278,8 @@
           "visibilityReasons": [
             "registered_product"
           ],
-          "visibilityScore": 0
+          "visibilityScore": 0,
+          "volumeId": "1a2b3c4d"
         }
       ]
     },
@@ -291,6 +296,7 @@
         "keptByNewRule": 0
       },
       "totalApps": 0,
+      "unreachableFolders": 0,
       "updated": 0,
       "visibilityCounts": {}
     },
@@ -325,8 +331,13 @@
       "totalRoots": 3
     },
     "tray://force-full-scan": null,
+    "tray://launch-app": {
+      "id": "path:c:\\tools\\editor.exe"
+    },
     "tray://run-scenario": {
       "id": "custom:1"
-    }
+    },
+    "tray://search": null,
+    "tray://show-favorites": null
   }
 }

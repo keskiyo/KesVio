@@ -4,6 +4,7 @@ import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
+	RunTransaction,
 	SetAppState,
 } from '../types'
 
@@ -11,6 +12,11 @@ interface AppMarkOptions {
 	set: SetAppState
 	get: GetAppState
 	persist: PersistPreferences
+	transact: RunTransaction
+}
+
+function appName(state: AppState, id: string): string {
+	return state.apps.find(item => item.id === id)?.name ?? 'app'
 }
 
 type AppMarkActions = Pick<
@@ -26,6 +32,7 @@ export function createAppMarkActions({
 	set,
 	get,
 	persist,
+	transact,
 }: AppMarkOptions): AppMarkActions {
 	return {
 		toggleFavorite(id) {
@@ -54,34 +61,36 @@ export function createAppMarkActions({
 			persist()
 		},
 		hideApp(id) {
-			set(state => {
-				if (state.hiddenAppIds.includes(id)) return state
-				const app = state.apps.find(item => item.id === id)
-				const identity = app ? identityOf(app) : id
-				return {
-					hiddenAppIds: [...state.hiddenAppIds, id],
-					hiddenAppIdentities: addUnique(
-						state.hiddenAppIdentities,
-						identity,
-					),
-				}
-			})
-			persist()
+			transact(`Hid ${appName(get(), id)}`, () =>
+				set(state => {
+					if (state.hiddenAppIds.includes(id)) return state
+					const app = state.apps.find(item => item.id === id)
+					const identity = app ? identityOf(app) : id
+					return {
+						hiddenAppIds: [...state.hiddenAppIds, id],
+						hiddenAppIdentities: addUnique(
+							state.hiddenAppIdentities,
+							identity,
+						),
+					}
+				}),
+			)
 		},
 		restoreApp(id) {
-			set(state => {
-				const app = state.apps.find(item => item.id === id)
-				const identity = app ? identityOf(app) : id
-				return {
-					hiddenAppIds: state.hiddenAppIds.filter(
-						appId => appId !== id,
-					),
-					hiddenAppIdentities: state.hiddenAppIdentities.filter(
-						item => item !== identity,
-					),
-				}
-			})
-			persist()
+			transact(`Restored ${appName(get(), id)}`, () =>
+				set(state => {
+					const app = state.apps.find(item => item.id === id)
+					const identity = app ? identityOf(app) : id
+					return {
+						hiddenAppIds: state.hiddenAppIds.filter(
+							appId => appId !== id,
+						),
+						hiddenAppIdentities: state.hiddenAppIdentities.filter(
+							item => item !== identity,
+						),
+					}
+				}),
+			)
 		},
 		promoteAuxiliary(id) {
 			const app = get().apps.find(item => item.id === id)

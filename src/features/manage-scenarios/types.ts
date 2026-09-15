@@ -43,6 +43,7 @@ export interface UnavailableScenarioAppTileProps {
 }
 
 export interface ScenarioCardProps {
+	onSetForceClose?(id: string, forceClose: boolean): boolean
 	scenario: Scenario
 	apps: AppInfo[]
 	selectableApps: AppInfo[]

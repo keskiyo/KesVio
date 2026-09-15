@@ -1,22 +1,31 @@
 mod menu;
+mod model;
 mod scan;
+mod search;
 
-pub(crate) use scan::apply_state as set_scan_state;
 #[cfg(test)]
 pub(crate) use scan::FORCE_SCAN_EVENT;
+pub(crate) use search::take_intent as take_search_intent;
+#[cfg(test)]
+pub(crate) use search::SEARCH_EVENT;
 
-pub(crate) use menu::{TrayScenario, MAX_SCENARIO_ID_CHARS, MAX_TRAY_SCENARIOS};
+pub(crate) use model::{
+    TrayFavorite, TrayScenario, MAX_SCENARIO_ID_CHARS, MAX_TRAY_FAVORITES, MAX_TRAY_SCENARIOS,
+};
 
 use menu::{build_menu, sanitize_label, tray_action, TrayAction};
+use model::{TrayModel, TrayModelState};
 use serde::Serialize;
 use std::sync::Arc;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
 use super::{show_main_window, window_state, LifecycleState};
 
 const TRAY_ID: &str = "kesvio";
 const RUN_SCENARIO_EVENT: &str = "tray://run-scenario";
+pub(crate) const LAUNCH_APP_EVENT: &str = "tray://launch-app";
+pub(crate) const SHOW_FAVORITES_EVENT: &str = "tray://show-favorites";
 const TOOLTIP: &str = "KesVio";
 
 #[derive(Clone, Serialize)]
@@ -25,7 +34,13 @@ struct TrayScenarioRun {
     id: String,
 }
 
-pub(crate) fn apply_scenarios(app: &AppHandle, scenarios: Vec<TrayScenario>) {
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TrayAppLaunch {
+    id: String,
+}
+
+fn rebuild(app: &AppHandle, model: TrayModel) {
     let handle = app.clone();
     if let Err(error) = app.run_on_main_thread(move || {
         let Some(tray) = handle.tray_by_id(TRAY_ID) else {
@@ -38,7 +53,7 @@ pub(crate) fn apply_scenarios(app: &AppHandle, scenarios: Vec<TrayScenario>) {
                 return;
             }
         };
-        match build_menu(&handle, &scenarios, &scan_item) {
+        match build_menu(&handle, &model, &scan_item) {
             Ok(menu) => {
                 if let Err(error) = tray.set_menu(Some(menu)) {
                     log::error!("Could not update the tray menu: {error}");
@@ -51,6 +66,30 @@ pub(crate) fn apply_scenarios(app: &AppHandle, scenarios: Vec<TrayScenario>) {
     }) {
         log::error!("Could not reach the main thread for the tray menu: {error}");
     }
+}
+
+fn update_model(app: &AppHandle, change: impl FnOnce(&mut TrayModel)) {
+    let Some(model) = app.try_state::<TrayModelState>() else {
+        return;
+    };
+    if let Some(changed) = model.update(change) {
+        rebuild(app, changed);
+    }
+}
+
+pub(crate) fn apply_scenarios(app: &AppHandle, scenarios: Vec<TrayScenario>) {
+    update_model(app, |model| model.scenarios = scenarios);
+}
+
+pub(crate) fn apply_favorites(app: &AppHandle, favorites: Vec<TrayFavorite>, more: bool) {
+    update_model(app, |model| {
+        model.favorites = favorites;
+        model.more_favorites = more;
+    });
+}
+
+pub(crate) fn apply_scan_state(app: &AppHandle, busy: bool) {
+    scan::apply_state(app, busy);
 }
 
 pub(crate) fn apply_running(app: &AppHandle, label: Option<String>) {
@@ -69,9 +108,18 @@ pub(crate) fn apply_running(app: &AppHandle, label: Option<String>) {
     }
 }
 
+fn show_and_emit(app: &AppHandle, event: &str) {
+    show_main_window(app);
+    if let Err(error) = app.emit(event, ()) {
+        log::error!("Could not dispatch {event}: {error}");
+    }
+}
+
 pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::Result<()> {
+    app.manage(TrayModelState::default());
+    app.manage(search::TraySearchIntent::default());
     let scan_item = scan::create_item(app)?;
-    let menu = build_menu(app, &[], &scan_item)?;
+    let menu = build_menu(app, &TrayModel::default(), &scan_item)?;
     let icon = app.default_window_icon().cloned();
     let mut builder = TrayIconBuilder::with_id(TRAY_ID)
         .menu(&menu)
@@ -79,7 +127,9 @@ pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::
         .tooltip(TOOLTIP)
         .on_menu_event(move |app, event| match tray_action(event.id().as_ref()) {
             Some(TrayAction::Open) => show_main_window(app),
+            Some(TrayAction::Search) => search::request(app),
             Some(TrayAction::ForceFullScan) => scan::request(app),
+            Some(TrayAction::ShowFavorites) => show_and_emit(app, SHOW_FAVORITES_EVENT),
             Some(TrayAction::Quit) => {
                 window_state::persist(app, &state);
                 state.mark_quitting();
@@ -87,6 +137,9 @@ pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::
             }
             Some(TrayAction::RunScenario(id)) => {
                 let _ = app.emit(RUN_SCENARIO_EVENT, TrayScenarioRun { id });
+            }
+            Some(TrayAction::LaunchApp(id)) => {
+                let _ = app.emit(LAUNCH_APP_EVENT, TrayAppLaunch { id });
             }
             None => {}
         })
@@ -107,6 +160,7 @@ pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::
     }
     builder.build(app)?;
     scan::remember_item(app, scan_item);
+    log::info!("Tray icon created: id={TRAY_ID}");
     Ok(())
 }
 
@@ -114,6 +168,14 @@ pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::
 pub(crate) fn run_scenario_sample() -> serde_json::Value {
     serde_json::to_value(TrayScenarioRun {
         id: "custom:1".into(),
+    })
+    .expect("the tray payload serializes")
+}
+
+#[cfg(test)]
+pub(crate) fn launch_app_sample() -> serde_json::Value {
+    serde_json::to_value(TrayAppLaunch {
+        id: "path:c:\\tools\\editor.exe".into(),
     })
     .expect("the tray payload serializes")
 }

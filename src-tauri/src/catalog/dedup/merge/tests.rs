@@ -30,6 +30,7 @@ fn app(reasons: Vec<VisibilityReason>) -> AppInfo {
         category_reasons: Vec::new(),
         close_risk: None,
         scan_folder: None,
+        volume_id: None,
     }
 }
 

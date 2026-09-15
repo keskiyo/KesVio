@@ -16,7 +16,7 @@ interface RunnerOptions {
 	apps: AppInfo[]
 	scenarios: Scenario[]
 	launch(app: AppInfo): Promise<void>
-	closeApps(ids: string[]): Promise<CloseAppsResult>
+	closeApps(ids: string[], allowForce?: boolean): Promise<CloseAppsResult>
 	onCloseProgress?(
 		handler: (progress: CloseProgress) => void,
 	): Promise<() => void>
@@ -114,6 +114,7 @@ export function useScenarioRunner({
 					try {
 						const result = await closeApps(
 							toClose.apps.map(app => app.id),
+							scenario.forceClose ?? true,
 						)
 						summary.closed = result.closed
 						summary.notRunning = result.notRunning

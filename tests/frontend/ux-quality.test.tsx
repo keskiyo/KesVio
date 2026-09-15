@@ -84,16 +84,20 @@ function renderApp(
 			},
 			fixedDrives: ['C:\\'],
 			hideToTrayOnClose: true,
+			startupEntry: 'disabled',
 		}),
 		setScanSettings: vi.fn().mockImplementation(async s => s),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
+		setStartupEnabled: vi.fn().mockResolvedValue('disabled'),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
+		previewDiagnosticsLog: vi
+			.fn()
+			.mockResolvedValue('<diagnostics redacted="true" />'),
 		pickFolder: vi.fn().mockResolvedValue(null),
 		openTelegram: vi.fn().mockResolvedValue(undefined),
 		openGithub: vi.fn().mockResolvedValue(undefined),
 		openAppsSettings: vi.fn().mockResolvedValue(undefined),
-		openStartupSettings: vi.fn().mockResolvedValue(undefined),
 		...systemOverrides,
 	}
 	const store = createAppStore(client, localStorage)

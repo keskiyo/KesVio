@@ -1,45 +1,41 @@
 import { appIdentity } from '../../entities/app'
-import {
-	type AppCategory,
-	type CategoryDefinition,
-	driveCategoryFor,
-	stableCustomCategoryAccent,
-} from '../../entities/category'
-import type { AppInfo } from '../../entities/app'
+import type { AppCategory } from '../../entities/category'
+import type { AppInfo, CatalogDiagnostics } from '../../entities/app'
 import type { LegacyCanonicalPreferences } from './preferences'
 
 export const identityOf = appIdentity
 
-export interface DriveCategories {
-	categories: CategoryDefinition[]
-	categoryOrder: AppCategory[]
+export type CatalogGenerationOrder = 'stale' | 'same' | 'newer'
+
+export function catalogGenerationOrder(
+	incoming: number | null | undefined,
+	current: number,
+): CatalogGenerationOrder {
+	const generation = incoming ?? 0
+	if (generation < current) return 'stale'
+	return generation === current ? 'same' : 'newer'
 }
 
-export function reconcileDriveCategories(
-	current: DriveCategories,
-	apps: AppInfo[],
-): DriveCategories | null {
-	const known = new Set(current.categories.map(category => category.id))
-	const added: CategoryDefinition[] = []
-	for (const app of apps) {
-		const drive = driveCategoryFor(app.scanFolder)
-		if (!drive || known.has(drive.id)) continue
-		known.add(drive.id)
-		added.push({
-			id: drive.id,
-			label: drive.label,
-			builtIn: false,
-			accent: stableCustomCategoryAccent(drive.id),
-		})
-	}
-	if (added.length === 0) return null
-	return {
-		categories: [...current.categories, ...added],
-		categoryOrder: [
-			...added.map(category => category.id),
-			...current.categoryOrder,
-		],
-	}
+export function newerDiagnostics(
+	current: CatalogDiagnostics | null,
+	incoming: CatalogDiagnostics | null | undefined,
+): CatalogDiagnostics | null {
+	if (!incoming) return current
+	if (current && incoming.completedAt < current.completedAt) return current
+	return incoming
+}
+
+export function keepHeldRecords(
+	held: AppInfo[],
+	incoming: AppInfo[],
+	order: CatalogGenerationOrder,
+): AppInfo[] {
+	const previous = new Map(held.map(app => [app.id, app]))
+	return incoming.map(app =>
+		order === 'same'
+			? (previous.get(app.id) ?? app)
+			: mergeIcon(previous.get(app.id), app),
+	)
 }
 
 export interface CatalogMarks {

@@ -2,12 +2,13 @@ import {
 	normalizeDefinitions,
 	normalizeDensity,
 	normalizeOverrideMap,
+	normalizeSavedFilters,
 	normalizeTimestampMap,
 	uniqueStrings,
 } from './preferencesFields'
 import { normalizeScenarios } from './preferencesScenarios'
 import {
-	type AppPreferencesV19,
+	type AppPreferencesV22,
 	DEFAULT_PREFERENCES,
 	type LegacyCanonicalPreferences,
 } from './preferencesSchema'
@@ -33,6 +34,7 @@ const KNOWN_PREFERENCE_FIELDS = new Set([
 	'scenarios',
 	'favoriteScenarioIds',
 	'firstSeenAt',
+	'savedFilters',
 	'legacyCanonicalPreferences',
 ])
 
@@ -71,7 +73,7 @@ function readLegacy(
 	}
 }
 
-export function normalizePreferences(value: unknown): AppPreferencesV19 {
+export function normalizePreferences(value: unknown): AppPreferencesV22 {
 	if (!value || typeof value !== 'object')
 		return structuredClone(DEFAULT_PREFERENCES)
 	const raw = value as Record<string, unknown>
@@ -93,6 +95,7 @@ export function normalizePreferences(value: unknown): AppPreferencesV19 {
 	const hasDocumentMarks = version >= 16
 	const hasFirstSeen = version >= 10
 	const hasScenarios = version >= 11
+	const hasSavedFilters = version >= 20
 	const scenarios = hasScenarios ? normalizeScenarios(raw.scenarios) : []
 	const unknownFields = Object.fromEntries(
 		Object.entries(raw).filter(
@@ -100,7 +103,7 @@ export function normalizePreferences(value: unknown): AppPreferencesV19 {
 		),
 	)
 	return {
-		version: 19,
+		version: 22,
 		catalogDensity: normalizeDensity(raw.catalogDensity),
 		categories,
 		categoryOrder,
@@ -140,6 +143,9 @@ export function normalizePreferences(value: unknown): AppPreferencesV19 {
 			scenarios.some(scenario => scenario.id === id),
 		),
 		firstSeenAt: hasFirstSeen ? normalizeTimestampMap(raw.firstSeenAt) : {},
+		savedFilters: hasSavedFilters
+			? normalizeSavedFilters(raw.savedFilters)
+			: [],
 		legacyCanonicalPreferences: readLegacy(
 			raw,
 			hasDurableIdentities,

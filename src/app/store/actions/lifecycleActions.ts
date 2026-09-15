@@ -1,4 +1,5 @@
 import type { AppsClient } from '../../../entities/app'
+import { newerDiagnostics } from '../reconciliation'
 import type { AppState, GetAppState, SetAppState } from '../types'
 
 interface LifecycleOptions {
@@ -30,6 +31,15 @@ export function createLifecycleActions({
 			if (!initializationPromise) {
 				initializationPromise = (async () => {
 					const disposers: Array<() => void> = []
+					const disposeAll = () => {
+						disposers.splice(0).forEach(dispose => {
+							try {
+								dispose()
+							} catch (ignored) {
+								void ignored
+							}
+						})
+					}
 					const subscribe = async <T>(
 						registration:
 							| ((
@@ -47,13 +57,15 @@ export function createLifecycleActions({
 							client.onCatalogPatches,
 							get().applyPatches,
 						)
-						await subscribe(client.onCatalogChanged, summary =>
-							set({ catalogChange: summary }),
-						)
 						await subscribe(
 							client.onCatalogDiagnostics,
 							diagnostics =>
-								set({ catalogDiagnostics: diagnostics }),
+								set(state => ({
+									catalogDiagnostics: newerDiagnostics(
+										state.catalogDiagnostics,
+										diagnostics,
+									),
+								})),
 						)
 						disposers.push(
 							await client.onScanProgress(scanProgress =>
@@ -63,31 +75,27 @@ export function createLifecycleActions({
 						await subscribe(client.onLaunchStatus, status =>
 							get().clearLaunching(status.id),
 						)
+						await get().load()
+						if (get().hasCache) await client.startBackgroundSync?.()
 					} catch (error) {
-						disposers.splice(0).forEach(dispose => {
-							try {
-								dispose()
-							} catch (ignored) {
-								void ignored
-							}
-						})
-						initializationUsers = Math.max(
-							0,
-							initializationUsers - 1,
-						)
+						disposeAll()
+						initializationUsers = 0
 						initializationDispose = null
 						initializationPromise = null
 						set({ isLoading: false })
 						throw error
 					}
-					await get().load()
-					if (get().hasCache) await client.startBackgroundSync?.()
-					initializationDispose = () =>
-						disposers.splice(0).forEach(dispose => dispose())
+					initializationDispose = disposeAll
 					return releaseInitialization
 				})()
 			}
-			return initializationPromise
+			const release = await initializationPromise
+			let released = false
+			return () => {
+				if (released) return
+				released = true
+				release()
+			}
 		},
 	}
 }

@@ -1,4 +1,3 @@
-import { deduplicateVisibleApps } from '../lib/appDeduplication'
 import { appIdentity } from '../lib/appIdentity'
 import {
 	INSTALLERS_DOCS_CATEGORY,
@@ -6,7 +5,6 @@ import {
 } from '../lib/catalogArtifacts'
 import { filterAppsByQuery } from '../lib/catalogSearch'
 import type { AppInfo, AppView } from './app.types'
-import { type AppCategory, driveCategoryFor } from '../../category'
 
 export type AppPredicate = (app: AppInfo) => boolean
 
@@ -170,76 +168,4 @@ export function selectCatalogCounts(
 		classifiedPrimaryCount: categorized.length - classifiedAuxiliaryCount,
 		classifiedAuxiliaryCount,
 	}
-}
-
-export interface CategorizedAppsState {
-	apps: AppInfo[]
-	categoryOverrides: Record<string, AppCategory>
-	categoryOverrideIdentities: Record<string, AppCategory>
-	promotedAppIds: string[]
-	promotedAppIdentities: string[]
-	installerAppIds: string[]
-	installerAppIdentities: string[]
-	documentAppIds: string[]
-	documentAppIdentities: string[]
-}
-
-export function selectCategorizedApps(state: CategorizedAppsState): AppInfo[] {
-	const promotedIds = new Set(state.promotedAppIds)
-	const promotedIdentities = new Set(state.promotedAppIdentities)
-	const installerIds = new Set(state.installerAppIds)
-	const installerIdentities = new Set(state.installerAppIdentities)
-	const documentIds = new Set(state.documentAppIds)
-	const documentIdentities = new Set(state.documentAppIdentities)
-	return deduplicateVisibleApps(
-		state.apps.map(app => {
-			const drive = driveCategoryFor(app.scanFolder)
-			if (drive)
-				return {
-					...app,
-					artifactKind: 'application' as const,
-					category: drive.id,
-					visibilityClass: 'primary' as const,
-				}
-			if (isCatalogArtifact(app)) {
-				return app.category === INSTALLERS_DOCS_CATEGORY
-					? app
-					: { ...app, category: INSTALLERS_DOCS_CATEGORY }
-			}
-			const placedAs =
-				installerIds.has(app.id) ||
-				installerIdentities.has(appIdentity(app))
-					? ('installer' as const)
-					: documentIds.has(app.id) ||
-						  documentIdentities.has(appIdentity(app))
-						? ('documentation' as const)
-						: null
-			if (placedAs)
-				return {
-					...app,
-					artifactKind: placedAs,
-					category: INSTALLERS_DOCS_CATEGORY,
-					userPlacedArtifact: true,
-				}
-			const category =
-				state.categoryOverrideIdentities[appIdentity(app)] ??
-				state.categoryOverrides[app.id] ??
-				app.category
-			const safeCategory =
-				category === INSTALLERS_DOCS_CATEGORY ? app.category : category
-			const promote =
-				app.visibilityClass === 'auxiliary' &&
-				(promotedIds.has(app.id) ||
-					promotedIdentities.has(appIdentity(app)))
-			if (safeCategory === app.category && !promote) return app
-			const categorized = { ...app, category: safeCategory }
-			return promote
-				? {
-						...categorized,
-						visibilityClass: 'primary' as const,
-						userPromoted: true,
-					}
-				: categorized
-		}),
-	)
 }

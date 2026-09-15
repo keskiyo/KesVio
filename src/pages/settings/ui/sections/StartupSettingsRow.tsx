@@ -1,28 +1,40 @@
 import { LogIn } from 'lucide-react'
-import { ACTION_BUTTON_PRIMARY } from '../../data'
-import { SettingsRow } from '../components/SettingsRow'
+import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
+import { SettingsToggle } from '../components/SettingsToggle'
+import type { StartupSettingsRowProps } from '../../types'
+import type { StartupEntryState } from '../../../../entities/system'
 
-interface StartupSettingsRowProps {
-	onOpenStartupSettings(): Promise<void>
+const DESCRIPTIONS: Record<StartupEntryState, string> = {
+	enabled: 'KesVio starts hidden in the tray when you sign in.',
+	disabled: 'KesVio starts only when you open it.',
+	missing:
+		'The Windows startup entry is missing. Reinstall KesVio to restore it.',
 }
 
 export function StartupSettingsRow({
-	onOpenStartupSettings,
+	startupEntry,
+	saving,
+	onSetStartupEnabled,
 }: StartupSettingsRowProps) {
+	const enabled = startupEntry === 'enabled'
+	const locked = startupEntry === null || startupEntry === 'missing' || saving
 	return (
-		<SettingsRow
-			icon={LogIn}
-			title="Launch when Windows starts"
-			description="Listed in Windows, switched off."
-		>
-			<button
-				type="button"
-				aria-label="Manage startup in Windows"
-				onClick={() => void onOpenStartupSettings()}
-				className={ACTION_BUTTON_PRIMARY}
-			>
-				Manage
-			</button>
-		</SettingsRow>
+		<div className="flex flex-wrap items-center gap-4 border-b border-slate-200 p-5">
+			<SettingsSectionHeader
+				icon={LogIn}
+				title="Launch when Windows starts"
+				description={
+					startupEntry
+						? DESCRIPTIONS[startupEntry]
+						: 'Checking Windows…'
+				}
+			/>
+			<SettingsToggle
+				label="Launch KesVio when Windows starts"
+				checked={enabled}
+				disabled={locked}
+				onToggle={() => void onSetStartupEnabled(!enabled)}
+			/>
+		</div>
 	)
 }

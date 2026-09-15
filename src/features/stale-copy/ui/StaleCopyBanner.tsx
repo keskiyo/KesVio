@@ -48,7 +48,7 @@ export function StaleCopyBanner({
 				disabled={opening}
 				className="grid size-7 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-(--surface-raised) hover:text-slate-200 focus-visible:outline-2 focus-visible:outline-amber-300 disabled:opacity-40"
 			>
-				<X size={15} />
+				<X size={15} aria-hidden="true" />
 			</button>
 		</div>
 	)

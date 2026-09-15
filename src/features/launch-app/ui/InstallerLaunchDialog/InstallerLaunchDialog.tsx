@@ -51,7 +51,7 @@ export function InstallerLaunchDialog({
 						onClick={onCancel}
 						className="grid size-8 place-items-center rounded-lg text-(--text-muted) hover:bg-(--utility-accent) focus-visible:outline-2 focus-visible:outline-(--accent-strong) disabled:cursor-not-allowed"
 					>
-						<X size={16} />
+						<X size={16} aria-hidden="true" />
 					</button>
 				</header>
 				<dl className="mt-5 grid grid-cols-[7rem_minmax(0,1fr)] gap-3 rounded-xl border border-(--border-neutral) bg-(--surface-inset) p-4 text-sm">

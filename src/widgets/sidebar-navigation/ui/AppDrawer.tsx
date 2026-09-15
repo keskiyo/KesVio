@@ -43,7 +43,7 @@ export function AppDrawer(props: AppDrawerProps) {
 						onClick={props.onClose}
 						className="grid size-10 place-items-center rounded-xl text-slate-500 hover:bg-violet-100/75 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-violet-500"
 					>
-						<X size={19} />
+						<X size={19} aria-hidden="true" />
 					</button>
 				</div>
 				<AppNavigation
@@ -54,6 +54,7 @@ export function AppDrawer(props: AppDrawerProps) {
 					appCount={props.appCount}
 					favoriteCount={props.favoriteCount}
 					favoriteScenarioCount={props.favoriteScenarioCount}
+					savedFilters={props.savedFilters}
 					onSelectView={props.onSelectView}
 					onSelectCategory={props.onSelectCategory}
 					onReorderCategory={props.onReorderCategory}

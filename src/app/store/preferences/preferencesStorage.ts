@@ -1,13 +1,14 @@
 import { normalizePreferences } from './preferencesNormalize'
+import { parseStoredPreferences } from './preferencesDocument'
 import {
-	type AppPreferencesV19,
+	type AppPreferencesV22,
 	CURRENT_PREFERENCES_VERSION,
 	PREFERENCES_BACKUP_KEY,
 	PREFERENCES_KEY,
 	type PreferenceImportResult,
 } from './preferencesSchema'
 
-export function serializePreferences(preferences: AppPreferencesV19): string {
+export function serializePreferences(preferences: AppPreferencesV22): string {
 	const { unknownFields = {}, ...knownFields } = preferences
 	return JSON.stringify({ ...unknownFields, ...knownFields })
 }
@@ -58,7 +59,7 @@ export function readPreferenceBackup(storage: Storage): PreferenceImportResult {
 	}
 }
 
-export function readPreferences(storage: Storage): AppPreferencesV19 {
+export function readPreferences(storage: Storage): AppPreferencesV22 {
 	return (
 		readSlot(storage, PREFERENCES_KEY) ??
 		readSlot(storage, PREFERENCES_BACKUP_KEY) ??
@@ -66,10 +67,11 @@ export function readPreferences(storage: Storage): AppPreferencesV19 {
 	)
 }
 
-function readSlot(storage: Storage, key: string): AppPreferencesV19 | null {
+function readSlot(storage: Storage, key: string): AppPreferencesV22 | null {
 	try {
 		const value = storage.getItem(key)
-		return value ? normalizePreferences(JSON.parse(value)) : null
+		const document = value ? parseStoredPreferences(value) : null
+		return document ? normalizePreferences(document) : null
 	} catch {
 		return null
 	}
@@ -77,13 +79,17 @@ function readSlot(storage: Storage, key: string): AppPreferencesV19 | null {
 
 export function writePreferences(
 	storage: Storage,
-	preferences: AppPreferencesV19,
+	preferences: AppPreferencesV22,
 ): boolean {
-	if (hasNewerStoredPreferences(storage)) {
-		return true
-	}
-	rotateBackup(storage)
 	try {
+		const current = storage.getItem(PREFERENCES_KEY)
+		const document = current ? parseStoredPreferences(current) : null
+		if (
+			typeof document?.version === 'number' &&
+			document.version > CURRENT_PREFERENCES_VERSION
+		)
+			return true
+		if (current && document) rotateBackup(storage, current)
 		storage.setItem(PREFERENCES_KEY, serializePreferences(preferences))
 		return true
 	} catch {
@@ -104,10 +110,9 @@ export function hasNewerStoredPreferences(storage: Storage): boolean {
 	}
 }
 
-function rotateBackup(storage: Storage): void {
+function rotateBackup(storage: Storage, current: string): void {
 	try {
-		const current = storage.getItem(PREFERENCES_KEY)
-		if (current) storage.setItem(PREFERENCES_BACKUP_KEY, current)
+		storage.setItem(PREFERENCES_BACKUP_KEY, current)
 	} catch (ignored) {
 		void ignored
 	}

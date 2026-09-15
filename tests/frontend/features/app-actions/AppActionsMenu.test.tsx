@@ -51,7 +51,7 @@ const threeCategories: CategoryDefinition[] = [
 function renderMovableMenu(
 	anchorRef = createRef<HTMLButtonElement>(),
 	categories = threeCategories,
-	placement: { isUserPromoted?: boolean } = {},
+	placement: { isUserPromoted?: boolean; app?: AppInfo } = {},
 ) {
 	const onClose = vi.fn()
 	const onMove = vi.fn()
@@ -173,6 +173,22 @@ describe('AppActionsMenu artifacts', () => {
 })
 
 describe('AppActionsMenu category cascade', () => {
+	it('explains drive grouping and does not offer an ignored category move', () => {
+		renderMovableMenu(undefined, undefined, {
+			app: { ...visualStudioCode, scanFolder: 'F:\\' },
+		})
+		expect(
+			screen.queryByRole('menuitem', { name: 'Move to category' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByText(
+				'Grouped by scan drive. Category changes are unavailable.',
+			),
+		).toBeVisible()
+		expect(
+			screen.getByRole('menuitem', { name: 'Hide from catalog' }),
+		).toBeEnabled()
+	})
 	it('uses a right arrow and separator before the remaining actions', () => {
 		renderMovableMenu()
 

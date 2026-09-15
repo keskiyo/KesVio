@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { DiagnosticsLogExport } from '../../../../src/pages/settings/ui/sections/DiagnosticsLogExport'
+import { DiagnosticsLogExport } from '../../../../src/pages/settings/ui/sections/DiagnosticsLogExport/DiagnosticsLogExport'
 
 describe('DiagnosticsLogExport', () => {
 	it('reports a saved log and re-enables the button', async () => {
@@ -23,16 +23,29 @@ describe('DiagnosticsLogExport', () => {
 		)
 	})
 
-	// The export is meant to be sent to someone, and a scan log names the folders it walked. The
-	// caution has to be on the control, not only in the documentation nobody opens first.
-	it('warns that the log names scanned folders before it is shared', () => {
-		render(<DiagnosticsLogExport onExport={vi.fn()} />)
+	// A scrollable block of text is only reachable by keyboard when it takes focus, and a screen
+	// reader only announces its name when it is a landmark, not a bare `<pre>`.
+	it('exposes the preview as a named, focusable region', async () => {
+		render(
+			<DiagnosticsLogExport
+				onExport={vi.fn()}
+				onPreview={vi
+					.fn()
+					.mockResolvedValue('<diagnostics redacted="true" />')}
+			/>,
+		)
 
-		expect(
-			screen.getByText(
-				'The log names the folders a scan walked, so read it before sharing it.',
-			),
-		).toBeVisible()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Preview redacted log' }),
+		)
+
+		const preview = await screen.findByRole('region', {
+			name: 'Redacted diagnostics preview',
+		})
+		expect(preview).toHaveTextContent('<diagnostics redacted="true" />')
+		await userEvent.tab()
+		await userEvent.tab()
+		expect(preview).toHaveFocus()
 	})
 
 	it('says nothing when the save dialog is dismissed', async () => {

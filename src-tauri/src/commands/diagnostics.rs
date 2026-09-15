@@ -8,6 +8,23 @@ use super::run_blocking;
 const MAX_KIND_LENGTH: usize = 120;
 const MAX_DETAIL_LENGTH: usize = 2000;
 
+fn export_xml(directory: &std::path::Path) -> String {
+    log::logger().flush();
+    let now = std::time::SystemTime::now();
+    diagnostics::prune_expired_logs(directory, now, diagnostics::MAX_LOG_AGE);
+    diagnostics::log_directory_as_xml(directory, diagnostics::unix_seconds(now))
+}
+
+#[tauri::command]
+pub(crate) async fn preview_diagnostics_log(app: tauri::AppHandle) -> Result<String, AppError> {
+    let directory =
+        paths::log_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
+    run_blocking("Diagnostics preview", move || {
+        diagnostics::preview_xml(&export_xml(&directory))
+    })
+    .await
+}
+
 fn sanitize(value: &str, limit: usize) -> String {
     value
         .chars()
@@ -47,15 +64,8 @@ pub(crate) async fn export_diagnostics_log(app: tauri::AppHandle) -> Result<bool
         .map_err(|error| AppError::ExportDiagnostics(error.to_string()))?;
     run_blocking("Diagnostics log export", move || {
         log::info!("Diagnostics export starting");
-        log::logger().flush();
-        let now = std::time::SystemTime::now();
-        diagnostics::prune_expired_logs(&directory, now, diagnostics::MAX_LOG_AGE);
-        let generated = diagnostics::unix_seconds(now);
-        std::fs::write(
-            path,
-            diagnostics::log_directory_as_xml(&directory, generated),
-        )
-        .map_err(|error| AppError::ExportDiagnostics(error.to_string()))
+        std::fs::write(path, export_xml(&directory))
+            .map_err(|error| AppError::ExportDiagnostics(error.to_string()))
     })
     .await??;
     Ok(true)

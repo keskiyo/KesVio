@@ -78,6 +78,12 @@ export function useSystemSettings({
 		}))
 	}
 
+	async function setStartupEnabled(enabled: boolean) {
+		await persist('settings', async () => ({
+			startupEntry: await client.setStartupEnabled(enabled),
+		}))
+	}
+
 	function addPath(kind: PathKind, value: string) {
 		const trimmed = value.trim()
 		if (!settings || !trimmed) return
@@ -108,6 +114,7 @@ export function useSystemSettings({
 		saving,
 		saveScanSettings,
 		setCloseBehavior,
+		setStartupEnabled,
 		addPath,
 		removePath,
 		...maintenance,

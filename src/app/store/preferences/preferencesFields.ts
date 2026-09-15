@@ -2,6 +2,9 @@ import {
 	CATALOG_DENSITIES,
 	type CatalogDensity,
 	DEFAULT_CATALOG_DENSITY,
+	MAX_SAVED_FILTERS,
+	normalizeSavedFilter,
+	type SavedFilter,
 } from '../../../entities/app'
 import {
 	type AppCategory,
@@ -89,6 +92,20 @@ export function normalizeDefinitions(
 		labels.add(label.toLocaleLowerCase())
 	}
 	return categories
+}
+
+export function normalizeSavedFilters(value: unknown): SavedFilter[] {
+	if (!Array.isArray(value)) return []
+	const seen = new Set<string>()
+	const filters: SavedFilter[] = []
+	for (const item of value) {
+		const filter = normalizeSavedFilter(item)
+		if (!filter || seen.has(filter.id)) continue
+		seen.add(filter.id)
+		filters.push(filter)
+		if (filters.length === MAX_SAVED_FILTERS) break
+	}
+	return filters
 }
 
 export function normalizeTimestampMap(value: unknown): Record<string, number> {

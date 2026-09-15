@@ -75,6 +75,147 @@ describe('AppNavigation', () => {
 		expect(onSelectCategory).toHaveBeenCalledWith('games')
 	})
 
+	// dnd-kit's keyboard sensor treats Enter and Space alike as "pick up", which swallowed the
+	// button's own click: a keyboard user could grab a category but never open it. Enter now
+	// opens; Space is the only key that picks the row up, and Escape puts it back.
+	it('opens a category with Enter and reserves Space for picking it up to reorder', async () => {
+		const onSelectCategory = vi.fn()
+		render(
+			<AppNavigation
+				categoryOrder={['games', 'ai']}
+				categories={categories}
+				counts={
+					new Map<AppCategory, number>([
+						['games', 2],
+						['ai', 1],
+					])
+				}
+				activeView="all"
+				appCount={3}
+				favoriteCount={0}
+				onSelectView={vi.fn()}
+				onSelectCategory={onSelectCategory}
+				onCreateCategory={() => ({ ok: true, id: 'custom' })}
+				onReorderCategory={vi.fn()}
+			/>,
+		)
+		const games = screen.getByRole('button', { name: 'Games' })
+		games.focus()
+
+		await userEvent.keyboard('{Enter}')
+		expect(onSelectCategory).toHaveBeenCalledTimes(1)
+		expect(games).not.toHaveAttribute('aria-pressed', 'true')
+
+		await userEvent.keyboard(' ')
+		expect(onSelectCategory).toHaveBeenCalledTimes(1)
+		expect(games).toHaveAttribute('aria-pressed', 'true')
+
+		await userEvent.keyboard('{Escape}')
+		expect(games).not.toHaveAttribute('aria-pressed', 'true')
+		expect(onSelectCategory).toHaveBeenCalledTimes(1)
+	})
+
+	// Saved filters are few and are what the user reaches for; categories can run past the fold,
+	// so the filters sit above them instead of after the last category.
+	it('lists saved filters before the categories', () => {
+		render(
+			<AppNavigation
+				categoryOrder={['games', 'ai', 'other']}
+				categories={categories}
+				counts={new Map<AppCategory, number>([['games', 1]])}
+				activeView="all"
+				appCount={1}
+				favoriteCount={0}
+				savedFilters={{
+					filters: [
+						{
+							id: 'filter:work',
+							name: 'Work',
+							criteria: {
+								sources: [],
+								publishers: [],
+								availability: [],
+								addedWithinDays: null,
+							},
+						},
+					],
+					activeId: null,
+					onSelect: vi.fn(),
+					onCreate: vi.fn(),
+					onDelete: vi.fn(),
+				}}
+				onSelectView={vi.fn()}
+				onSelectCategory={vi.fn()}
+				onCreateCategory={() => ({ ok: true, id: 'custom' })}
+				onReorderCategory={vi.fn()}
+			/>,
+		)
+
+		const work = screen.getByRole('button', { name: 'Work' })
+		const games = screen.getByRole('button', { name: 'Games' })
+		const settings = screen.getByRole('button', { name: 'Settings' })
+		expect(
+			settings.compareDocumentPosition(work) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
+		expect(
+			work.compareDocumentPosition(games) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
+	})
+
+	it('deletes a saved filter from its row without selecting it', async () => {
+		const onSelect = vi.fn()
+		const onDelete = vi.fn()
+		render(
+			<AppNavigation
+				categoryOrder={[]}
+				categories={categories}
+				counts={new Map()}
+				activeView="all"
+				appCount={1}
+				favoriteCount={0}
+				savedFilters={{
+					filters: [
+						{
+							id: 'filter:work',
+							name: 'Work',
+							criteria: {
+								sources: [],
+								publishers: [],
+								availability: [],
+								addedWithinDays: null,
+							},
+						},
+					],
+					activeId: 'filter:work',
+					onSelect,
+					onCreate: vi.fn(),
+					onDelete,
+				}}
+				onSelectView={vi.fn()}
+				onSelectCategory={vi.fn()}
+				onCreateCategory={() => ({ ok: true, id: 'custom' })}
+				onReorderCategory={vi.fn()}
+			/>,
+		)
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Delete Work filter' }),
+		)
+		expect(
+			screen.getByRole('alertdialog', { name: 'Delete Work filter' }),
+		).toBeInTheDocument()
+		expect(onDelete).not.toHaveBeenCalled()
+		expect(onSelect).not.toHaveBeenCalled()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Delete filter' }),
+		)
+		expect(onDelete).toHaveBeenCalledWith('filter:work')
+		expect(onSelect).not.toHaveBeenCalled()
+	})
+
 	it('replaces the utility rows with a More entry above Settings', async () => {
 		const onSelectView = vi.fn()
 		render(

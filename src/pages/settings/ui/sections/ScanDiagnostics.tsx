@@ -2,7 +2,6 @@ import { ChevronDown, Wrench } from 'lucide-react'
 import { useState } from 'react'
 import { CollapsiblePanel } from '../../../../shared/ui/CollapsiblePanel'
 import type { ScanDiagnosticsProps } from '../../types'
-import { SourceHealthTable } from './SourceHealthTable'
 import { TargetAvailabilityPanel } from './TargetAvailabilityPanel'
 
 export function ScanDiagnostics({ diagnostics }: ScanDiagnosticsProps) {
@@ -54,7 +53,6 @@ export function ScanDiagnostics({ diagnostics }: ScanDiagnosticsProps) {
 								.join(' · ')}
 						</p>
 					)}
-					<SourceHealthTable sources={diagnostics.sources ?? []} />
 					<TargetAvailabilityPanel
 						diff={diagnostics.targetAvailability}
 					/>

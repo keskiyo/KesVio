@@ -1,5 +1,5 @@
-use crate::catalog::scan_settings::ScanSettings;
 use crate::catalog::sync::SyncRequest;
+use crate::catalog::volumes::ResolvedFolder;
 use crate::catalog::AppInfo;
 use std::path::{Component, Path, PathBuf, Prefix};
 
@@ -7,10 +7,12 @@ use std::path::{Component, Path, PathBuf, Prefix};
 pub(super) struct PortableRoots {
     pub(super) scanned: Vec<PathBuf>,
     pub(super) retained: Vec<PathBuf>,
+    pub(super) unreachable: usize,
 }
 
 pub(super) fn roots_for(
-    settings: &ScanSettings,
+    folders: &[ResolvedFolder],
+    auto_scan_fixed_drives: bool,
     request: SyncRequest,
     fixed_roots: Vec<PathBuf>,
     previous_snapshot: Option<&[AppInfo]>,
@@ -20,17 +22,22 @@ pub(super) fn roots_for(
     let mut scanned = Vec::new();
     let mut retained = Vec::new();
     let mut unmounted = Vec::new();
-    for folder in &settings.included_paths {
-        let path = PathBuf::from(folder);
+    let mut unreachable = 0;
+    for folder in folders {
+        let path = PathBuf::from(&folder.path);
         if is_directory(&path) {
             scanned.push(path);
-        } else if let Some(root) = drive_root(folder).filter(|root| !is_directory(root)) {
+            if !folder.configured.eq_ignore_ascii_case(&folder.path) {
+                unmounted.extend(drive_root(&folder.configured).filter(|root| !is_directory(root)));
+            }
+        } else if let Some(root) = drive_root(&folder.path).filter(|root| !is_directory(root)) {
             unmounted.push(root);
         } else {
+            unreachable += 1;
             retained.push(path);
         }
     }
-    if settings.auto_scan_fixed_drives {
+    if auto_scan_fixed_drives {
         let mut previous_roots = previous_apps
             .iter()
             .filter_map(|app| drive_root(&app.path))
@@ -49,21 +56,29 @@ pub(super) fn roots_for(
     }
     minimize_roots(&mut scanned);
     minimize_roots(&mut retained);
-    PortableRoots { scanned, retained }
+    PortableRoots {
+        scanned,
+        retained,
+        unreachable,
+    }
 }
 
-pub(super) fn scan_folder_of(path: &str, included_paths: &[String]) -> Option<String> {
+pub(super) fn scan_folder_of<'a>(
+    path: &str,
+    folders: &'a [ResolvedFolder],
+) -> Option<&'a ResolvedFolder> {
     let path = path.trim().to_lowercase();
-    included_paths
+    folders
         .iter()
-        .filter(|folder| crate::catalog::path_is_within(&path, &folder.trim().to_lowercase()))
-        .max_by_key(|folder| folder.trim().len())
-        .map(|folder| folder.trim().to_owned())
+        .filter(|folder| crate::catalog::path_is_within(&path, &folder.path.trim().to_lowercase()))
+        .max_by_key(|folder| folder.path.trim().len())
 }
 
-pub(super) fn stamp_scan_folders(apps: &mut [AppInfo], included_paths: &[String]) {
+pub(super) fn stamp_scan_folders(apps: &mut [AppInfo], folders: &[ResolvedFolder]) {
     for app in apps {
-        app.scan_folder = scan_folder_of(&app.path, included_paths);
+        let folder = scan_folder_of(&app.path, folders);
+        app.scan_folder = folder.map(|folder| folder.path.trim().to_owned());
+        app.volume_id = folder.and_then(|folder| folder.volume.clone());
     }
 }
 

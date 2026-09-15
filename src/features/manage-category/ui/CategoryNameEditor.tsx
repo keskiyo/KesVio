@@ -34,7 +34,7 @@ export function CategoryNameEditor({
 					onClick={save}
 					className="grid size-9 place-items-center rounded-lg text-violet-700 hover:bg-violet-100"
 				>
-					<Check size={16} />
+					<Check size={16} aria-hidden="true" />
 				</button>
 				<button
 					type="button"
@@ -42,7 +42,7 @@ export function CategoryNameEditor({
 					onClick={onCancel}
 					className="-mr-2 grid size-9 place-items-center rounded-lg text-slate-500 hover:bg-violet-100/75"
 				>
-					<X size={16} />
+					<X size={16} aria-hidden="true" />
 				</button>
 			</div>
 			{error && (

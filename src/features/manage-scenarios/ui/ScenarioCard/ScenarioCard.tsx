@@ -6,6 +6,7 @@ import type { ScenarioCardProps } from '../../types'
 import { ConfirmDialog } from '../../../../shared/ui/ConfirmDialog'
 import { AppPickerDialog } from '../AppPickerDialog/AppPickerDialog'
 import { ScenarioCloseWarning } from '../ScenarioCloseWarning'
+import { ScenarioClosePolicy } from '../ScenarioClosePolicy'
 import { ScenarioListRow } from '../ScenarioListRow'
 import { ScenarioCardHeader } from './ScenarioCardHeader'
 
@@ -20,6 +21,7 @@ export function ScenarioCard({
 	isFavorite,
 	onToggleFavorite,
 	onRename,
+	onSetForceClose,
 	onDelete,
 	onAddApp,
 	onRemoveApp,
@@ -81,6 +83,13 @@ export function ScenarioCard({
 					onRemoveApp(scenario.id, list, identity)
 				}
 			/>
+			{onSetForceClose && (
+				<ScenarioClosePolicy
+					scenario={scenario}
+					disabled={running || isScenarioRunning}
+					onChange={onSetForceClose}
+				/>
+			)}
 			{picker.confirming && (
 				<ScenarioCloseWarning
 					appName={picker.confirming.name}

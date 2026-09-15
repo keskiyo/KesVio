@@ -170,6 +170,13 @@ jobs:
               shell: pwsh
               run: powershell -NoProfile -File scripts/test-run-release-soak.ps1
 
+            # The native smoke harness launches a real build on a developer machine; the contract
+            # tested here — its own workspace, its own process, nothing under the user's profile —
+            # is what makes that run safe, so it is checked before the harness can drift.
+            - name: Test native smoke harness
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/test-run-native-smoke.ps1
+
             - name: Test updater signature verification
               shell: pwsh
               run: powershell -NoProfile -File scripts/test-verify-updater-signature.ps1

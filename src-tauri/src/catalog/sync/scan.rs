@@ -35,11 +35,11 @@ fn synchronize_catalog_once(
     );
     if let Some(diagnostics) = &outcome.diagnostics {
         let _ = app.emit("catalog://diagnostics", diagnostics);
+        super::retry::after_scan(app, job.request, diagnostics);
     }
     let summary = &outcome.delta.summary;
     if summary.added + summary.removed + summary.updated > 0 {
         let _ = app.emit("catalog://delta", CatalogDeltaDto::from(&outcome.delta));
-        let _ = app.emit("catalog://changed", summary);
     }
     Ok(ScanCommit {
         apps: outcome.apps,

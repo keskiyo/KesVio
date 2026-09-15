@@ -64,9 +64,9 @@ export function createLaunchActions({
 				throw error
 			}
 		},
-		async closeApps(ids) {
+		async closeApps(ids, allowForce = false) {
 			set({ error: null })
-			return client.closeApps(ids)
+			return client.closeApps(ids, allowForce)
 		},
 	}
 }

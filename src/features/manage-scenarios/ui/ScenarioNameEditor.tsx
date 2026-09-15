@@ -35,7 +35,7 @@ export function ScenarioNameEditor({
 					onClick={save}
 					className="grid size-9 place-items-center rounded-lg hover:bg-(--surface-raised)"
 				>
-					<Check size={16} />
+					<Check size={16} aria-hidden="true" />
 				</button>
 				<button
 					type="button"
@@ -43,7 +43,7 @@ export function ScenarioNameEditor({
 					onClick={onCancel}
 					className="grid size-9 place-items-center rounded-lg hover:bg-(--surface-raised)"
 				>
-					<X size={16} />
+					<X size={16} aria-hidden="true" />
 				</button>
 			</div>
 			{error && (

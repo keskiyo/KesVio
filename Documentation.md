@@ -134,16 +134,18 @@ and bounded interface-failure reporting. Commands return
 safe messages. Internal paths, commands, registry values and upstream errors
 never reach the webview.
 
-`open_startup_settings` opens the Windows Startup apps page without exposing a
-shell or arbitrary URI to IPC. No IPC command creates, changes or removes
-startup registration.
+`set_startup_enabled` takes one boolean and answers with the startup state
+Windows now holds (`enabled`, `disabled` or `missing`), which
+`get_system_settings` also reports as `startupEntry`. It flips only the
+`StartupApproved` value of the shortcut the installer registered; no IPC command
+creates or removes startup registration, and a missing shortcut is answered with
+`STARTUP_ENTRY_UPDATE_FAILED` rather than repaired.
 
 Scenario close actions accept catalog IDs only. The trusted catalog classifies
 close targets; only `Safe` targets may be added or executed. Critical Windows
 processes and session components are counted as blocked rather than terminated.
 
-A close asks every matching window to shut down, waits five seconds, then ends
-whatever stayed open; unsaved work in those processes is lost. The wait is
+A close asks every matching window to shut down and waits five seconds. Remaining processes are terminated only when `allowForce` is explicitly true; otherwise they remain open and count as failed closures. The wait is
 reported to the interface as coarse stages over `close://progress` — asking,
 a per-second countdown, then terminating — so the pause reads as deliberate
 rather than as a hang. A scenario run ends in a single summary notice counting
@@ -170,18 +172,48 @@ then fills remaining slots with the newest unrun favorites. It never includes
 nonfavorites; stale favorite ids are ignored. Removing the last favorite sends
 an empty list and the native menu hides the scenarios submenu.
 
+The whole menu is rebuilt from one model. `lifecycle/tray/model.rs` holds the
+scenarios and the favorite apps with a "more" flag behind `TrayModelState`;
+every `set_tray_*` command updates one field and the menu is rebuilt only when
+the model actually changed, so a list that reads the same never touches the
+native menu. The layout is **Open KesVio**, **Search**, **Favorite apps** (only
+when there are any), **Scenarios** (only when there are any), a separator,
+**Force scan**, a separator and **Quit**. The menu deliberately carries no scan
+status line and no pause: the catalog's state lives in Settings (Catalog
+sources), and background scans are not pausable. Menu ids are static or carry a
+checked id (`favorite:<id>`, `scenario:<id>`); a label never decides an action.
+
+**Search** shows the window and emits `tray://search`. The click can land before
+the window has a listener, so the backend also raises a one-shot intent that the
+window takes with `take_tray_search_intent` when its listener registers and
+clears again after handling the event; one click is one focus request whichever
+path delivers it. `useTraySearch` focuses and selects the existing search field,
+switches to the catalog only when another screen is open, and never changes the
+query.
+
+**Favorite apps** lists the first five favorites in their stored order as
+`{ id, label }` through `set_tray_favorites`, pushed by `useTrayFavorites` only
+when that list changes, with `more` adding **Show all favorites…** when the
+user has more than five. The command caps the list, drops a blank or over-long
+id and sanitizes labels the way scenario labels are sanitized; identical labels
+get a position suffix so two rows stay tied to their own targets. A click emits
+`tray://launch-app` with the id alone; the window resolves it against the
+catalog it holds and launches through the ordinary path with its feedback, and
+an id that has left the catalog is refused with a notice. **Show all
+favorites…** shows the window and opens the Favorites view (`tray://show-favorites`).
+Favorite scenarios stay in their own submenu.
+
 The tray's **Force scan** opens the main window and emits
 `tray://force-full-scan` with a null payload. `useTrayCatalogScan` calls the same
 store action used by catalog maintenance, so it preserves scan settings,
 exclusions, cancellation, catalog reconciliation and diagnostics. Safe completion,
 cancellation and failure messages appear in the window. The menu item is disabled
 until the frontend listener is registered and while startup or scanning is busy;
-`set_tray_scan_state` accepts only that boolean state. Pending requests are guarded
-against duplicate clicks, and listener cleanup disables the item. Its native
-handle belongs to app-managed `TrayScanState`. Rebuilding the scenario submenu
-creates a fresh native item from the stored enabled state and **Scanning…** label,
-so it retains no references to destroyed parent menus. Status IPC writes are
-serialized across scan, lifecycle and busy updates to preserve their order.
+the hook reports that with `set_tray_scan_state { busy }`, the only state the
+tray keeps about scanning. Pending requests are guarded against duplicate
+clicks, and listener cleanup disables the item. Its native handle belongs to
+app-managed `TrayScanState`; every rebuild creates a fresh native item from the
+stored enabled state, so it retains no references to destroyed parent menus.
 
 No command removes software. The catalog reports whether Windows has a registered
 uninstaller for an entry, and **Uninstall** opens
@@ -264,7 +296,7 @@ Three stores contain user data:
 | Store         | Owner                          | Rules                                                                                                                                |
 | ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Catalog cache | `catalog/storage/cache.rs`     | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                |
-| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 19) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
+| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 22) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
 | Window state  | `lifecycle/window_state.rs`    | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                           |
 
 Window state is presentation-only and deliberately disposable: a missing,
@@ -361,13 +393,32 @@ from configuration and copying a live browser profile on first run. Preference
 export and import remain the supported way to carry that store between machines.
 
 The diagnostics log is a fourth store and is not user data. `diagnostics/` owns
-it: `tauri-plugin-log` writes `kesvio.log` to the resolved log folder at `Info`,
-rotates at four megabytes, and keeps eight dated archives. `prune_expired_logs`
-deletes `*.log` files whose modification time is more than two hours before the
-current Windows system clock. Future-dated files are not expired. Pruning runs
-at startup, after each committed scan, and before XML export. This is a file-age
-policy: entries in an actively written file can be older than two hours, and
-locked files that cannot be removed are left intact. There is no idle timer.
+it. `tauri-plugin-log` still formats every record at `Info` with the local
+date and time, but the file target is the application's own sink: each line is
+written as `@<unixSeconds> [date][time][LEVEL][target] message` into a
+ten-minute segment file named `kesvio-<segmentStartUnix>-<pid>.log`, with a
+`-<n>` suffix once a segment passes four megabytes and a line bounded at eight
+kilobytes. The log folder is known before the first record when the store beside
+the executable resolves it; otherwise the sink keeps the last 256 lines in
+memory until `setup` attaches the per-user log folder and flushes them first.
+
+The retention promise is an exact two-hour window measured on the events, not
+on the files. The XML export drops every line whose recorded time is more than
+two hours before the export time and reports the window as `windowSeconds` in
+its header, so a file the application keeps writing to cannot smuggle old
+events into a report. On disk, `prune_expired_logs` removes a segment once its
+last possible event is two hours old — a delay of at most one segment plus the
+worker interval behind the window — and applies the old modification-time rule
+to files from earlier builds (`kesvio.log`, `kesvio_*.log`) until they age out;
+a thirty-two megabyte cap on the folder removes the oldest segments first. It
+runs at startup, every sixty seconds on a retention thread owned as managed
+state, after each committed scan and before an export. A file that cannot be
+removed — open by another process — is counted, reported once by the worker
+when the count changes, and retried on the next pass; physical removal of a
+locked file is not promised. A segment dated in the future is kept while it is
+less than two hours ahead of the clock and removed beyond that, so a clock moved
+back cannot pin files forever. A line whose prefix does not parse is exported as
+a bare `<line>` and lives as long as its segment.
 
 Detailed scan steps are enabled by default, including normal launches and
 autostart. The former `--verbose-scan` flag is no longer needed. Source outcomes,
@@ -458,11 +509,48 @@ line cap bound the retained diagnostic history; particularly busy scans can
 rotate earlier records out before the two-hour age limit. Losing the directory
 costs only diagnostic history.
 
+The export is redacted before it is escaped, and there is no raw mode.
+`diagnostics/log_collection.rs` bounds what is read first — at most 512 files,
+4 MiB per file and 16 MiB in all, 20 000 lines and 4 MiB of selected text,
+lines over the writer's 8 KiB bound skipped — and reports `truncated="true"`
+on the document element when any bound cut. `diagnostics/redaction.rs` then
+walks the selected text once with tokens that are stable within one export:
+every absolute Windows path, UNC path and `file:`/`http(s):` URL becomes
+`[path-n]` or `[url-n]` — the same value, whatever letter case Windows used,
+keeps the same number, so the lines that name one folder stay correlated
+without naming it; the current `USERNAME`, `COMPUTERNAME` and `USERDOMAIN` are
+replaced as whole words by `[identity-n]`; and a `password`, `token`,
+`authorization` (with its `Bearer`/`Basic` credential), `user` or `machine`
+key's value, quoted or not, even across a line break inside quotes, becomes
+`[private-n]`. A quoted path ends only at its own quote, so an apostrophe or a
+semicolon inside a folder name cannot leak the tail; a bare path keeps going
+over a space until the next word is a log key, a connective the logger writes
+after a location (`finished`, `stopped`, `thread`, …) or the path already ended
+in a file name, so `D:\разный хлам\Git finished in 3ms` reads
+`[path-1] finished in 3ms`. Source, generation, error code, duration,
+timestamps and thread ids survive untouched. This is bounded best-effort
+redaction of known shapes, not a proof against arbitrary prose: a folder whose
+name ends in a dotted token, a personal name that is not the account name, or
+a secret logged without a recognised key would pass through, which is why the
+Settings copy still says to read the file before sharing it, and why nothing
+personal belongs in a log line in the first place. **Preview redacted log**
+(`preview_diagnostics_log`) renders the same document and returns at most the
+first 16 KiB with a note that the export holds the rest; the interface shows it
+in a scrollable block, discards a result that arrives after a newer request or
+after the section unmounted, and never writes anything — the native save dialog
+of the export remains the only owner of a path on disk.
+
 Preferences preserve unknown root fields, which is also how a field this version
 stopped reading survives: scenario run history is no longer collected or parsed,
 and the records an earlier version wrote are carried through the document
 untouched rather than dropped. Invalid primary data falls back to a
-one-step backup. A document written by a newer preference schema is never
+one-step backup. Stored documents are validated before normalization and backup
+rotation: scalar values, arrays, empty objects and invalid version envelopes do
+not hide a valid backup. Unversioned legacy documents with recognized preference
+fields remain readable. Only a valid primary rotates into the backup, so recovery
+followed by a failed primary write keeps the recovered copy intact. A primary
+read failure prevents writing over data whose version cannot be checked.
+A document written by a newer preference schema is never
 overwritten. Import and local-backup restore reject unsupported/newer documents
 and also refuse replacement when the installed app is older than the current
 local schema. Export contains preference-backed data only: never the catalog
@@ -470,6 +558,12 @@ cache, executable paths, catalog icons, or scan folders. Each Scenario also
 retains a bounded 32 KiB name/icon snapshot per app identity so unavailable
 entries remain identifiable and removable; it is presentation data, never a
 launch target.
+
+Catalog initialization owns its subscriptions through background startup. A
+failure at either registration or background startup releases every listener and
+clears the shared initialization attempt so Retry can reconnect. Each consumer
+receives an idempotent release function; releasing one twice cannot tear down a
+newer initialization. One failing unlisten does not prevent remaining cleanup.
 
 A scenario keeps one `lastRunAt` stamp, overwritten on every run. That is
 ordering data, not the run history this version removed: no per-run record, no
@@ -481,6 +575,33 @@ Import applies preferences in memory before attempting to persist them. If the
 write fails, `preferencesPersisted` becomes false and the shell displays the
 unsaved-changes banner. The import action still returns success, so the settings
 panel can show **Settings imported.** while those changes remain unsaved.
+
+The last user change to preferences can be undone. Hiding or restoring an app,
+moving it to a category, renaming a category and every change to a scenario's
+definition (create, rename, delete, add or remove an app) run through
+`app/store/transaction.ts`: the transaction snapshots the persisted preference
+fields, applies the change, and keeps the inverse of what actually changed as
+one `UndoEntry` — per list the ids to put back and to take out, per override
+map the previous value of each touched key, per category and scenario the
+previous record or its absence — together with the preference revision it
+produced. Nothing else is copied, and a change that changed nothing records no
+entry. `undo()` reverses that patch against the _current_ state, so a scan
+delta that reconciled ids or added marks in between is not rolled back; the
+catalog generation, the discovered apps and background state are never
+touched, and a hidden app that a scan has since removed simply leaves the
+hidden lists. A later user transaction replaces the entry; importing or
+restoring preferences clears it; favorites, run stamps, collapsing categories,
+reordering and density are ordinary persists that neither create nor consume
+an entry. A restored category name that another category has taken meanwhile
+is refused with a safe message and the entry is kept; an entry whose revision
+no longer matches is dropped rather than applied. The undo persists like any
+transaction, so a failed write leaves the undone state in memory, sets
+`preferencesPersisted` to false and answers with a message that says so. The
+interface offers it three ways: the toast every transaction raises
+(`useUndoFeedback`, one per revision) carries an **Undo** action, **Ctrl+Z**
+undoes while focus is outside a text field and only while something can be
+undone (a text field keeps its own undo), and the More page shows the last
+change with an **Undo** button until the next change replaces it.
 
 A scenario's launch and close lists keep one row of tiles on screen and hold the
 rest behind a count and a control that opens them. Which tiles fit is read from
@@ -561,7 +682,11 @@ This mirrors the equivalent preference rule above.
 
 Cache schema 11 adds the optional `scanFolder` origin to catalog records. Schema
 10 loads with that value absent and upgrades in memory; older supported schemas
-continue through the same cumulative migration path.
+continue through the same cumulative migration path. Within schema 11 two
+further additive fields default when absent: `volumeId` on a record and the
+document-level `volumes` list of tracked volumes (see _Removable volumes_
+below); a document written before them loads with the record field `None` and
+the list empty.
 
 The document a load hands back carries no icons, because hydration owns them and
 fills them in afterwards. PNG files in the content-addressed icon cache are the
@@ -593,6 +718,35 @@ packaged applications, Steam libraries, explicitly configured portable folders,
 optional fixed-drive discovery, and watcher-triggered refreshes. Each source
 reports health independently; failed or stale sources retain their last valid
 snapshot where safe.
+
+That health reaches the user as the **Catalog sources** section of Settings,
+which is visible without opening Advanced. `entities/app/lib/sourceHealth.ts`
+turns each `SourceHealth` record of the last diagnostics into a row with a
+human source name (Installed programs, Start Menu, Start apps, Installer cache,
+Steam, Portable folders) and one of: **Up to date**, **Unavailable** (the
+source did not answer; the last successful result is still shown),
+**Incomplete** (the stage stopped early — timed out, entry limit or cancelled),
+**Failed** (never succeeded, nothing to show), **Not scanned**, or
+**Scanning…** while a scan runs. An empty successful answer is **Up to date**
+with zero applications, because unavailability and emptiness are different
+facts. The section's summary line names the sources that need attention, the
+detail table opens on its own when any does, and **Refresh catalog** runs the
+ordinary refresh through the store — the same coordinator path as the header
+button. It is not a per-source retry: a scoped retry would need a backend
+allowlist and a scoped coordinator request, and the button is named for what it
+does. The store keeps the newest diagnostics by `completedAt`, so a late event
+from an earlier scan cannot make a recovered source read as failed again. The
+section lays out like every other Settings card: the icon centred on its text,
+**Source details** as a full-width disclosure with the chevron at the right,
+and the action row at the bottom — the button fills the width on a narrow
+window and sits at the right edge otherwise. There is no per-scan change
+report: a **Changes from last scan** section was built and withdrawn at the
+user's request, and the toast that used to follow every background scan
+(`catalog://changed`, "N applications added") was removed on 15 September 2026
+because watcher and startup scans made it spam the notification area. A
+background scan now updates the grid silently through `catalog://delta`; the
+diagnostics counts remain the only account of what it changed. A manual refresh
+still reports once through its own result.
 
 Normal startup is cache-first. Background validation and incremental scans keep
 the UI usable while source work runs. Startup, watchers and ordinary refreshes
@@ -643,7 +797,81 @@ touch a configured scan folder runs an ordinary refresh through the scan
 coordinator — not a forced walk of the fixed drives — so a pulled stick's
 applications disappear within the delta of that scan and a returned stick's
 come back; an arrival also restarts the change watcher so the folder is watched
-again. Letters that touch no scan folder change nothing.
+again. A letter that touches no configured folder still refreshes when it holds
+a tracked volume (an arrival, identified through `GetVolumeInformationW` at
+event time) or when a tracked volume was last mounted there (a removal);
+anything else changes nothing.
+
+#### Recovery after a transient failure
+
+A scan that commits with a source that did not answer (`provider_failed`), a
+stage that timed out (`timed_out`) or a configured folder that could not be
+reached (`unreachableFolders` in the diagnostics: a folder that is missing on
+a mounted drive or a UNC share that does not answer, both retained rather
+than dropped) schedules one bounded retry through `catalog/sync/retry.rs`: the
+first 5 seconds later, then 20, then 60, and after those three attempts only a
+manual refresh or a returning volume runs another scan. A retry is a
+`SyncRequest::Watch` scoped to the failed sources (start-menu, registry-backed
+sources, portable, or every source for Steam), so it never walks the fixed
+drives, and it coalesces through the coordinator like any other request. A
+scan that commits with no transient failure resets the budget; a cancelled
+stage and a hit entry bound are not transient and do not retry; cancelling the
+scan or resetting the catalog cancels the pending retry. The pending attempt
+lives in `AppState.scan_retry` as a guard whose drop stops the timer at once,
+and a superseded attempt (a reset, a cancel, a newer schedule) never fires.
+Retained records stay exactly as the source retention policy leaves them; an
+unreachable share does not delete anything.
+
+#### Removable volumes
+
+A scan folder's drive letter is where the medium is mounted today, not what it
+is. `platform/windows/volumes.rs` reads the volume serial, label and filesystem
+of a root through `GetVolumeInformationW` and enumerates the mounted local
+letters (fixed and removable; never CD-ROM, network or unreadable ones).
+`catalog/volumes.rs` keeps one `TrackedVolume { folder, serial, label,
+filesystem, mountedAt }` per configured folder with a drive letter, persisted
+in the catalog cache and mirrored in `AppState` for the watcher, and resolves
+every configured folder before the portable walk:
+
+- the configured letter is mounted → the folder is scanned where it is and its
+  records carry the key (`serial` as eight hex digits) of whatever volume is
+  there now; a folder with no entry learns that volume; a folder whose entry
+  names another serial (a reformat, or a different stick that took the letter)
+  keeps its entry, logs a warning, and lets the new volume start its own
+  records and category — trust is never moved automatically, and removing and
+  re-adding the folder in Settings is the manual re-map;
+- the configured letter is not mounted but the tracked serial is mounted at
+  exactly one other letter → the folder follows it (`F:\Apps` scans as
+  `G:\Apps`), the stale letter's records drop as an unmounted root, and
+  `scanFolder` names the place the record actually is;
+- the same serial at two letters (a clone) is an ambiguity: no remap, a warning
+  naming both letters, the folder counts as unmounted;
+- a UNC or relative folder is never a volume, and a letter whose identity
+  cannot be read is scanned without one.
+
+The volume key leaves the letter out of the preference identity: for a record
+that carries `volumeId`, every path the identity hashes that starts with the
+record's scan-folder letter is anchored to `volume:<key>` instead, so the same
+stick at `F:` and at `G:` yields one identity while a shortcut on the stick
+that points at `C:\` keeps its letter. Canonical ids stay letter-based on
+purpose: the first scan after the update sees the same ids with new
+identities, and the frontend carries favorites, hidden marks, overrides and
+first-seen stamps over by id (`app/store/identityRekey.ts`);
+when the letter changes later, ids change and identities stay, which the
+identity-keyed reconciliation already handled. The golden corpora carry no
+volume, so their recorded identities are unchanged.
+
+On the frontend a drive category is keyed `drive:<key>` when the record has a
+volume and `drive:<letter>` otherwise, labelled `Disk <LETTER>` from the current
+letter. `app/store/driveCategories.ts` creates a missing definition, migrates a
+legacy `drive:<letter>` definition to the volume key in place (name, accent and
+order position kept) the first time a record with a volume arrives for that
+letter, and updates a label that still reads `Disk <X>` to the current letter
+after a remap while leaving a renamed category alone. Not done by design: no
+manual mapping dialog (a reformatted stick is a new category; remove and re-add
+the folder to follow it), Settings still lists the configured path (the
+resolved letter is in the log and in `scanFolder`), and the directory index is
+keyed by path, so a remapped stick is walked once at its new letter.
 
 The Windows change watcher combines registry and directory notifications after
 eight quiet seconds and dispatches at most one background scan every thirty
@@ -671,6 +899,20 @@ stale result may overwrite a newer generation. The rule holds in both
 directions, so a scan hands its records and the generation that produced them
 back as one value: the interface adopts that generation with the records, and
 hydration patches from the same generation cannot be mistaken for stale work.
+
+Generations are monotonic for the life of the process. `AppState` keeps the
+highest generation it has observed — the cached document `get_apps` loads, the
+previous document at each commit, and the stored generation a cache reset reads
+before deleting the file — and every commit numbers its document one past the
+larger of that and the document on disk, so a reset cannot hand out a number the
+interface has already seen. The interface applies one predicate to everything
+that carries a generation: an older snapshot, scan result or delta is ignored, a
+snapshot or scan result of the same generation keeps the records already held
+so hydration patches survive it, a newer one replaces the catalog, and a
+hydration patch applies only to the generation currently shown. A refresh that
+answers after a delta already moved the catalog on therefore changes nothing,
+and `isRefreshing` stays set until the last of several overlapping scan calls
+has finished rather than falling when the first one returns.
 
 Scanning starts no interpreter. Start Apps and packaged applications are read
 through the shell itself: `platform/windows/apps_folder.rs` enumerates
@@ -702,6 +944,12 @@ rest, so a transliterated hit never displaces an exact one. Transliteration is
 letter-for-letter and does not resolve loanwords whose spelling diverges. The
 scenario launcher expands its query the same way and over the same helpers, so
 finding a scenario costs no more layout awareness than finding an application.
+
+User-defined search aliases (preferences schema v20 `searchAliases`, the
+**Search aliases** card action) were withdrawn on 2026-09-15 at the user's
+request. A stored `searchAliases` map is kept as unknown data by the
+preferences normalizer and ignored; the schema version was not bumped because
+the document shape only lost an optional field.
 
 Search stays inside the active view, and a query that also matches records
 outside it reports those counts with a direct link to the owning view, rather
@@ -745,7 +993,8 @@ next forced scan.
 
 A scan folder that is a whole drive becomes a category. Add `F:\` under
 **Additional scan folder**, scan, and every application found on that drive
-lands in **Disk F** — a user category with the deterministic id `drive:f`, placed
+lands in **Disk F** — a user category with the deterministic id `drive:<volume key>`
+(`drive:f` while the volume's identity is unknown), placed
 at the top of the sidebar the way a category the user creates is, so it can be
 renamed, reordered, collapsed and deleted like any other, and it comes back on
 the next scan while the folder is still configured. The backend states
@@ -758,14 +1007,16 @@ the classifier made of an executable found on it — an installer, a document, a
 auxiliary tool, a card with an older "Move to" override — the selector places
 it in the drive category as a primary application, so a stick reads as the
 whole of what is on it and nothing from it turns up in Installers & Docs or
-Tools. Identity stays path-based, so the same stick mounted under another letter
-is another category with new ids; that is the price of not tracking volumes,
-and it is visible in the name. A stick that is out loses its records on the
-refresh the volume watcher runs when the letter goes away, and a drive category
-with nothing in it is hidden from the sidebar and the grid — unlike a category
-the user created, which stays visible while empty so applications can be moved
-into it — while its definition survives, so a renamed **Disk F** returns under
-its own name when the stick is plugged back in and scanned.
+Tools. The category and the preference identities follow the volume, not the
+letter (see _Removable volumes_ above): the same stick mounted under another
+letter keeps its category, its name and its favorites, and a
+category still called by its default name is relabelled to the new letter. A
+stick that is out loses its records on the refresh the volume watcher runs when
+the letter goes away. Reconciliation removes an absent drive category whose
+name still has the generated **Disk X** form, including its order, collapsed and
+override references, so temporary volumes do not accumulate in preferences. A
+drive category the user renamed survives while empty and returns under its own
+name when the stick is plugged back in and scanned.
 
 One more rule reads the Start Menu as evidence about a folder. A shortcut whose
 target sits in a folder named after the shortcut's own product — RivaTuner's
@@ -777,6 +1028,28 @@ publisher-based nested rule could not see them, and they are siblings rather tha
 descendants. A shared folder that names no product — a downloads folder holding
 one shortcut target beside unrelated programs — anchors nothing, and a companion
 in a subfolder of its own is left to the nested rule and to its own name.
+
+The last rule keeps one row per portable product. Git for Windows stamps thirty
+helpers with the product name **Git**, CrystalDiskInfo ships a 32-bit, a 64-bit
+and an ARM build of one program, and each of them used to be its own card or
+tool. `catalog/product_duplicates.rs` groups the portable executables that share
+a display name, a publisher and a version — applications only; installers with
+one product name can be two different downloads, a record without a version is
+no evidence of sameness, and one without a publisher joins a group only with
+builds in its own folder whose stems differ from its own by nothing but the
+architecture marker (`EncoderServer.exe` beside `EncoderServer64.exe`) — and
+keeps one of them: a
+target some shortcut or App Paths registration points at is never dropped, then
+a primary record beats an auxiliary one, an executable named after the product
+(`git.exe`, with any architecture marker in the stem set aside) beats a helper,
+one whose file description is the product name beats one that describes a
+component (`HDSentinel.exe` over `hdsctrl.exe`), the 64-bit build beats an
+untagged, a 32-bit and an ARM one in that order, and a shallower or shorter
+name settles the rest. The others are rejected with the `product_duplicate`
+reason and never reach the catalog, so they also stop counting as Tools. The
+rule runs after deduplication on purpose: dedup fills a record's missing version
+or publisher from its siblings, and a group decided before that would not be the
+group a second sanitize sees. Two versions of one product stay two rows.
 
 Before the first scan the catalog shows what will be scanned, that nothing runs
 automatically at startup, and that the data stays on the device, with the scan
@@ -1087,18 +1360,46 @@ would have to reintroduce it deliberately.
   `$SMSTARTUP\KesVio.lnk` and, in the same guarded block, writes a
   `StartupApproved\StartupFolder` payload whose first byte is `0x03` — the value
   Explorer itself writes for a disabled entry. The result is a row under
-  **Settings → Apps → Startup** that the user can switch on. The Settings page
-  has no application-owned switch; **Manage** only opens that Windows page.
-- Once the user flips that switch, Explorer owns the value. Both installer hooks
-  are guarded on `$UpdateMode <> 1`, so an update neither recreates the shortcut
-  nor resets the choice; only a normal uninstall removes the shortcut and its
-  approval value.
-- The running executable still has no startup-registration API of any kind.
+  **Settings → Apps → Startup** that the user can switch on. Both installer hooks
+  are guarded on `$UpdateMode <> 1`, so an update through the updater neither
+  recreates the shortcut nor resets the choice. A `setup.exe` run by hand over
+  an existing copy is not an update: there the install hook writes the disabled
+  payload only when no `KesVio.lnk` value exists yet (NSIS has no `ReadRegBin`,
+  so it enumerates the key's value names), and the uninstall hook keeps the
+  shortcut and the value when the installer itself runs the uninstaller — that
+  run carries `_?=<dir>`, which a user-started uninstall from Apps & features
+  never does. So a fresh install lands switched off, a reinstall or manual
+  upgrade keeps the choice, and only a real uninstall removes the entry.
+  Uninstallers shipped with 0.5.1 and earlier still delete it on the "uninstall
+  first" path, after which the new installer registers the entry disabled again.
+- **Launch when Windows starts** on the Settings page flips that same value and
+  nothing else: `platform/windows/registry/startup_approval.rs` writes the
+  twelve-byte payload with `0x02` (on) or `0x03` (off) under
+  `HKCU\…\Explorer\StartupApproved\StartupFolder\KesVio.lnk`, and reads the state
+  back from Windows every time `get_system_settings` runs — an absent value or an
+  even first byte is on, an odd one is off. Windows Settings, Task Manager and
+  KesVio therefore always agree. The shortcut itself is never created, moved or
+  deleted by the program: when `Startup\KesVio.lnk` is missing (another user on a
+  per-machine install, or a hand-deleted file) the switch is disabled and the row
+  says to reinstall. No window opens.
+- A launch from that shortcut (`--autostart`, tray ready) is a **quiet start**:
+  the process lowers itself to `BELOW_NORMAL_PRIORITY_CLASS` before the window is
+  prepared, and `start_background_sync` waits up to 60 seconds on a `Condvar`
+  gate (`lifecycle/quiet_start.rs`) before the startup scan; the cached catalog,
+  the tray and the global shortcut are live immediately. The first
+  `show_main_window` — tray click, Win+Shift+Q or a second launch — ends the quiet
+  start: priority returns to normal and the gate releases the scan at once.
+  Watcher and volume scans are never deferred.
+- The running executable still has no startup-registration API.
   `scripts/verify-platform-boundaries.ps1` fails the build if `CurrentVersion\Run`,
-  `FOLDERID_Startup`, `shell:startup` or `SMSTARTUP` appears anywhere in Rust.
-  Registration is the installer's job precisely because a running unsigned binary
-  writing its own persistence is what Kaspersky scored as
-  `PDM:Trojan.Win32.Generic`.
+  `FOLDERID_Startup`, `shell:startup`, `SMSTARTUP` or `StartupApproved` appears
+  in any Rust file other than `startup_approval.rs` (and `FOLDERID_Startup` in
+  `known_folders.rs` for its read-only lookup), and fails again if
+  `startup_approval.rs` itself names `IShellLink`, the Run key, a file write, a
+  file copy or removal, `Command::new` or `ShellExecute`. What Kaspersky scored as
+  `PDM:Trojan.Win32.Generic` was a running unsigned binary writing its own
+  persistence; flipping the approval bit of an entry the installer declared is
+  the one write the program keeps.
 - The main window is created hidden and painted with the canvas colour, and it
   is shown only after saved geometry has been applied. A window created visible
   first flashed white and then jumped to its restored position; there is nothing
@@ -1214,16 +1515,18 @@ would have to reintroduce it deliberately.
   previously installed binary when the name changes, so an update from a build
   that shipped `app.exe` leaves nothing behind.
 - Kaspersky's proactive defence module scored the `HKCU` Run value that the
-  former **Launch when Windows starts** toggle wrote, and returned
+  0.3.8 **Launch when Windows starts** toggle wrote, and returned
   `PDM:Trojan.Win32.Generic` for an unsigned binary with no reputation. The Run
-  value is gone and the executable has no startup-registration API at all;
-  `scripts/verify-platform-boundaries.ps1` forbids Run values, Startup-folder
-  APIs and shell indirection throughout the backend. The installer still creates
-  a Startup shortcut, because that is ordinary installer behaviour and is what
-  makes the entry appear in Windows' own Startup apps page — but it registers it
-  disabled, so nothing runs at logon until the user says so. What was scored was
-  a _running_ program writing its own persistence, not an installer declaring an
-  entry the user controls.
+  value is gone; `scripts/verify-platform-boundaries.ps1` forbids Run values,
+  Startup-folder APIs and shell indirection throughout the backend. The
+  installer creates a Startup shortcut, because that is ordinary installer
+  behaviour and is what makes the entry appear in Windows' own Startup apps
+  page, and registers it disabled. The one startup write the program still
+  performs is today's **Launch when Windows starts** switch, which changes the
+  `StartupApproved` byte of that installer-owned shortcut — the value Explorer
+  writes — and never the shortcut, the Run key or a task. What was scored was a
+  _running_ program creating its own persistence, not a program toggling an
+  entry the installer declared and the user controls.
 - The critical and session process tables that protect Windows from a close
   scenario are stored as digests of the process names. A release binary
   therefore does not carry `lsass.exe`, `csrss.exe` or `winlogon.exe` as
@@ -1251,15 +1554,17 @@ file or a named test.
 | `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry                                  | Target resolved from a catalog id held in trusted state, never from the webview.                                                                                                                 |
 | `CreateToolhelp32Snapshot`, `OpenProcess`, `TerminateProcess`    | The explicit close action of a scenario                                  | `WM_CLOSE` first; terminate only on refusal; batch capped; protected processes and this process excluded.                                                                                        |
 | Remove installed software                                        | Never                                                                    | There is no such capability. No code path starts a removal; the card menu opens the Windows page instead.                                                                                        |
-| Write one `HKCU` value (`Software\keskiyo\KesVio`)               | Startup, only when the install directory changed                         | Read before write; the running program writes nothing else in the registry, ever.                                                                                                                |
+| Write one `HKCU` value (`Software\keskiyo\KesVio`)               | Startup, only when the install directory changed                         | Read before write. Together with the row below, the only registry writes the running program performs.                                                                                           |
 | Register a disabled Startup entry                                | The installer, on a fresh install only                                   | Shortcut plus a `StartupApproved` value marked disabled. Never on update; the running program cannot.                                                                                            |
+| Flip the Startup entry on or off                                 | The **Launch when Windows starts** switch                                | One `REG_BINARY` under `HKCU\…\Explorer\StartupApproved\StartupFolder`; refused when the shortcut is absent; never the shortcut, `Run`, a task or a service.                                     |
 | Write files                                                      | Catalog cache, scan settings, window state, logs                         | Only under the resolved data root. Atomic replace; identical values are not rewritten.                                                                                                           |
 | Network                                                          | The update check, and a download the user starts                         | GitHub release endpoint only. Checks time out after 30 seconds; downloads after 15 minutes. Automatic checks are throttled to one per four hours, and back off to a day after repeated failures. |
 
 There is no telemetry, no account and no background upload. The one persistence
 entry is the Startup shortcut the installer registers **disabled**, which exists
-so Windows can offer the choice; the running program can neither create it nor
-change it, and **Manage** only opens the Windows page where the user decides.
+so Windows can offer the choice; the running program cannot create it, and the
+Settings switch changes only its on/off approval value — the same value Windows
+Settings changes.
 
 KesVio also cannot remove software. There is no uninstall surface at all: no
 command, no `Management_Deployment` WinRT feature, no stored record of removals,
@@ -1349,7 +1654,42 @@ cargo test --manifest-path src-tauri/Cargo.toml
 - MSRV: compile at the `rust-version` declared in `src-tauri/Cargo.toml`;
 - contracts: frontend/platform boundaries, release-script tests, dependency
   audit gates and the third-party license gate, including updater-signature
-  fixtures.
+  fixtures, and the safety contract of the native smoke harness.
+
+`scripts/run-native-smoke.ps1` is the native smoke run for a built executable
+(`npm run tauri build` → `src-tauri/target/release/KesVio.exe`, or a
+`cargo build --release --features tauri/custom-protocol` binary; a plain
+`cargo build` binary is a dev-mode build that expects the Vite dev server). It
+copies the executable into `%TEMP%\kesvio-smoke\<stamp>\App`, pre-creates
+`KesVioData\data` and `KesVioData\logs` beside it so the portable data root is
+adopted and nothing under the user's profile is written, seeds an empty
+catalog so the interface requests the ordinary startup scan, points the scan
+settings at a fixture folder of copied System32 executables, and then proves
+state from the log and the cache: the data folder beside the executable, the
+tray icon, the volume watcher, a published generation with fixture records and
+a `portable` snapshot, a visible `KesVio` window that `WM_CLOSE` hides while
+the process lives, a second launch that exits and is forwarded to the first
+(`Second instance forwarded to this process`), a warm restart that reuses the
+cache (`previous generation=N`) with a stable scan, and unchanged per-user
+and installed stores (the WebView2 profile under `EBWebView` excepted).
+Evidence is written to `.1localDocuments/native-smoke-<stamp>.json`. It stops
+only the process it started, after checking its path lies in the workspace,
+and deletes only that workspace; `scripts/test-run-native-smoke.ps1` holds it
+to that. The installer, the signed update and tray clicks remain manual
+(`docs/superpowers/native-smoke.md`).
+
+`scripts/measure-performance.ps1` is the performance baseline protocol: it
+records the commit, machine, OS, WebView2, node and rustc versions, runs the
+ignored `catalog::golden::timings::stage_timings` (p50/p95 over 11 samples of
+the cached-startup pipeline stages on the pinned 2000-record corpus, printed
+as one `KESVIO_PERF` JSON line, release profile by default) and
+`vitest bench --run tests/perf` (search ranking on a seeded 2000-record
+catalog), and writes `.1localDocuments/perf/perf-<stamp>.json`. Bench files
+under `tests/perf/` are never part of `npm test` and assert no threshold; a
+regression is judged by comparing artifacts of the same profile and machine.
+The log line `Frontend ready: N ms after the window was prepared` is the
+clock for the native cached-startup measurement
+(`docs/superpowers/performance-budgets.md`).
 
 `THIRD_PARTY_LICENSES.txt` is the license text that ships with the installer,
 distinct from `THIRD_PARTY_NOTICES.md`, which is the human-readable inventory.
@@ -1398,21 +1738,146 @@ source is MIT-licensed; third-party notices are recorded in
 
 ## 17. Troubleshooting
 
-| Problem                        | First action                                                                                                    |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Catalog empty                  | Use **Scan for apps**; the first complete scan is explicit.                                                     |
-| Duplicate or stale entries     | Refresh; then use **Settings → Advanced → Catalog maintenance → Reset catalog cache**.                          |
-| Missing application            | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive. |
-| Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                  |
-| Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                     |
-| Uninstall unavailable          | Windows has no registered uninstaller for the entry, so there is nothing to open.                               |
-| Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.           |
-| A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.              |
-| Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                     |
-| Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                                  |
-| SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                      |
-| Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.             |
-| A scan never finishes          | Open `KesVioData\logs\kesvio.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.    |
-| A stall must be traced further | Start the application with `--verbose-scan`; every scanned item is logged until the run is over.                |
-| Closing the window hides it    | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                |
-| Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.    |
+| Problem                        | First action                                                                                                                                              |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog empty                  | Use **Scan for apps**; the first complete scan is explicit.                                                                                               |
+| Duplicate or stale entries     | Refresh; then use **Settings → Advanced → Catalog maintenance → Reset catalog cache**.                                                                    |
+| Missing application            | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive.                                           |
+| Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                                                            |
+| Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                                                               |
+| Uninstall unavailable          | Windows has no registered uninstaller for the entry, so there is nothing to open.                                                                         |
+| Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.                                                     |
+| A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.                                                        |
+| Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                                                               |
+| Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                                                                            |
+| SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                                                                |
+| Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.                                                       |
+| A scan never finishes          | Open the newest `KesVioData\logs\kesvio-<start>-<pid>.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.                     |
+| A stall must be traced further | Detailed scan steps are always logged; use **Settings → Advanced → Diagnostics log → Export log as XML** and read the `Scan step` lines around the stall. |
+| Closing the window hides it    | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                                                          |
+| Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.                                              |
+
+### Saved catalog filters
+
+Preferences schema 21 adds `savedFilters`; existing documents upgrade with an empty
+list and retain unknown data. Up to 20 named filters store
+source, publisher, target availability and added-within criteria, never catalog
+IDs or executable expressions. Fields combine with AND; values within a field
+combine with OR. Empty criteria preserve the existing view scope. Search remains
+an additional condition; hidden apps and artifacts follow the selected view.
+
+A source is where a record was discovered, with one deliberate widening: the
+`steam` source also matches a record whose derived `platformKind` is `steam`,
+so the Steam client (a Start Menu shortcut) lands in the same filter as the
+games of its library; the editor labels the choice `Steam (client and library
+games)` and explains what a source is. Saved filters sit above the categories
+in the navigation, so they stay reachable when the category list runs past the
+fold.
+
+The navigation opens saved filters; the header chip edits or clears the active
+filter. Create, edit and delete are undoable. A failed storage write restores the
+previous filter state; failed saves leave the editor open. The active selection
+is session-only. Filters recompute from live catalog records without scanning.
+Date filters use a one-minute clock only on an active catalog screen, with timer
+cleanup on navigation and unmount. Unknown or future first-seen dates do not
+match a date window. Unknown source and availability values from backups are
+ignored by normalization.
+
+### Effective classification and drive placement
+
+App info distinguishes detected installers/documentation, user artifact placement,
+user promotion and drive-root grouping. Missing visibility evidence is explicitly
+reported as unavailable. Manual category overrides that change the detected
+category expose `user=category` in the derived display reasons; raw catalog
+records and persisted formats are unchanged. An override equal to the detected
+category preserves the original record identity and detector reasons.
+
+The `categorizedApps.ts` entity model owns effective category derivation;
+`catalogSelectors.ts` owns visibility, counts and recent/search selections.
+Drive-root grouping has priority over manual category and artifact marks.
+The action menu explains this constraint and omits category moves for those
+records. `moveApp` independently rejects those moves before creating a preference
+transaction, covering drag/drop and other callers. Hide remains available.
+
+### Scenario close policy
+
+Preferences schema 22 adds optional scenario `forceClose`. New scenarios store
+false. Older scenarios with no field retain their previous force-after-five-seconds
+behavior; the editor visibly checks the force option and warns about unsaved work.
+Malformed present values normalize to false. Explicit values survive import,
+export and restart. Policy changes are undoable and restore the prior state when
+storage fails. Editing is disabled while a scenario is running.
+
+The runner maps `forceClose ?? true` to `close_apps`' optional `allowForce` boolean;
+the client and backend default a missing IPC argument to false. Catalog-id
+resolution, protected-target checks and batch limits are unchanged. Graceful mode
+never reaches the termination stage or termination implementation; after the wait
+it enumerates matching processes and reports closed, idle or failed targets.
+Force mode retains the existing process identity checks and bounded termination
+rechecks. Progress events retain their payload; waiting text applies to either
+policy. There is no new cancellation API, results screen or execution preview.
+
+Manual verification still required in an isolated Windows profile: accepting and
+refusing WM_CLOSE, unsaved-document prompts, both policy settings, forced close,
+protected target refusal and restart of migrated scenarios. Automated fixture
+checks do not prove native application cooperation or cancellation support.
+
+### Selective scenario import
+
+The Scenarios page offers Import scenarios. The import-scenarios feature reads a
+local JSON backup, limits it to 1 MiB and ignores stale reads after another file
+or unmount. It uses the root store's existing preference parser; the store checks
+UTF-8 size and version again before applying. No IPC or schema change is involved.
+The initial selection is empty. Selected entries default to new copies with unique
+IDs and case-insensitive name suffixes. Replacing an existing scenario requires
+selecting that target explicitly and preserves its local ID/name and favorite
+membership. Duplicate sources/targets, missing targets, capacity overflow and ID
+allocation failure reject the entire selection.
+
+Only imported scenario definitions are reconciled using the existing catalog
+identity/alias/unique-name rules. Ambiguous names remain unresolved. Unrelated
+preferences and favorite flags from the backup are never applied. Imported run
+history is cleared, and the close policy is preserved and displayed in the picker.
+One undoable preference transaction applies the result. A failed storage write
+restores previous scenarios and undo state; the modal keeps its selection for
+retry. Cancel does not import anything. Import never launches or closes apps.
+
+Existing full-settings import remains a separate operation. File-picker behavior,
+keyboard focus restoration and scaling still require native WebView verification;
+automated tests cover selection, error states and asynchronous read ownership.
+
+### Keyboard, screen reader and forced colors
+
+The interface is English only and has no i18n layer. Copy that the tray shows
+and the documentation names is pinned by a test (`the_tray_copy_is_pinned`:
+`Open KesVio`, `Search`, `Favorite apps`, `Show all favorites…`, `Scenarios`,
+`Force scan`, `Scanning…`, `Quit`); the frontend equivalents (`Refresh catalog`,
+`Force full scan`, `Scan for apps`, `Quick launch`, `New
+filter`, `Last change` / `Undo`, `Preview redacted log`, `Export log as XML`)
+are pinned by the tests of the screens that render them.
+
+Modal layering: every dialog, the navigation drawer included, is
+`role="dialog" aria-modal="true"` and runs through `useModalDialog` (initial
+focus, focus trap, Escape, focus restoration, scroll lock). Only the **topmost**
+modal — the last `aria-modal` element in document order, which is the last one
+opened because dialogs portal to `body` — traps Tab or answers Escape
+(`shared/lib/modalLayering.ts`), so a filter editor opened over the drawer keeps
+Shift+Tab inside itself and one Escape closes only the editor, returning focus
+to the drawer's **New filter** button. In the sidebar, **Enter** opens a
+category and **Space** picks it up for keyboard reordering (arrow keys move,
+Space or Enter drops, Escape cancels); dnd-kit's default, where Enter also
+picked the row up, left keyboard users unable to open a category. Decorative
+lucide icons carry `aria-hidden="true"`; a source-tree test refuses an icon
+rendered without `aria-hidden`, `aria-label` or a role. The redacted
+diagnostics preview is a named, focusable `region` so it can be scrolled from
+the keyboard and announced by name.
+
+Forced colors (Windows High Contrast): focus rings are outlines, which the
+platform repaints in its own colours; text inputs that set `outline-none`
+receive an explicit `Highlight` outline under `forced-colors: active`, and the
+toggle switch draws its track border and knob in `ButtonText`/`Highlight` so
+its state remains visible without colour. Reduced motion is honoured through
+`motion.css`. None of this is a WCAG conformance claim: unit tests prove roles,
+names, focus order and keyboard paths in jsdom; Narrator, forced colours,
+100/150/200 % scaling, the minimum window and long names are checked by hand
+following the matrix in `docs/superpowers/english-copy-and-accessibility.md`.

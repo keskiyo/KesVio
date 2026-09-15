@@ -1,5 +1,5 @@
+use crate::catalog;
 use crate::catalog::cache::{self, CatalogCache};
-use crate::catalog::{self, AppInfo};
 use std::path::Path;
 
 pub(crate) fn load_sanitized_document(app_data_dir: &Path) -> Option<CatalogCache> {
@@ -21,7 +21,8 @@ fn newer_generation_on_disk(app_data_dir: &Path, generation: u64) -> bool {
     cache::stored_generation(app_data_dir).is_some_and(|current| current > generation)
 }
 
-pub(crate) fn load_sanitized_cache(app_data_dir: &Path) -> Option<Vec<AppInfo>> {
+#[cfg(test)]
+fn load_sanitized_cache(app_data_dir: &Path) -> Option<Vec<crate::catalog::AppInfo>> {
     load_sanitized_document(app_data_dir).map(|document| document.apps)
 }
 

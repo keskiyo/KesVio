@@ -5,6 +5,8 @@ use tauri::{AppHandle, Emitter, Manager, Wry};
 
 pub(crate) const FORCE_SCAN_EVENT: &str = "tray://force-full-scan";
 pub(super) const FORCE_SCAN_ID: &str = "force-full-scan";
+pub(super) const FORCE_SCAN_LABEL: &str = "Force scan";
+pub(super) const SCANNING_LABEL: &str = "Scanning…";
 
 #[derive(Default)]
 struct TrayScanState {
@@ -38,11 +40,11 @@ fn update(item: &MenuItem<Wry>, busy: bool) -> tauri::Result<()> {
     item.set_text(label(busy))
 }
 
-fn label(busy: bool) -> &'static str {
+pub(super) fn label(busy: bool) -> &'static str {
     if busy {
-        "Scanning…"
+        SCANNING_LABEL
     } else {
-        "Force scan"
+        FORCE_SCAN_LABEL
     }
 }
 

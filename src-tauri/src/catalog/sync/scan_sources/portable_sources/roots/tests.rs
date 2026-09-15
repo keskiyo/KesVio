@@ -6,6 +6,25 @@ fn previous(path: &str) -> Vec<AppInfo> {
     vec![app]
 }
 
+fn folders(paths: &[&str]) -> Vec<ResolvedFolder> {
+    paths
+        .iter()
+        .map(|path| ResolvedFolder {
+            configured: (*path).to_owned(),
+            path: (*path).to_owned(),
+            volume: None,
+        })
+        .collect()
+}
+
+fn followed(configured: &str, path: &str, volume: &str) -> ResolvedFolder {
+    ResolvedFolder {
+        configured: configured.to_owned(),
+        path: path.to_owned(),
+        volume: Some(volume.to_owned()),
+    }
+}
+
 const EVERY_REQUEST: [SyncRequest; 4] = [
     SyncRequest::Startup,
     SyncRequest::Watch(crate::catalog::sync::WatchScope::PORTABLE),
@@ -15,29 +34,62 @@ const EVERY_REQUEST: [SyncRequest; 4] = [
 
 #[test]
 fn a_missing_folder_on_a_mounted_drive_remains_in_scope_in_every_scan_mode() {
-    let settings = ScanSettings {
-        auto_scan_fixed_drives: false,
-        included_paths: vec![r"Q:\Portable".into()],
-        ..ScanSettings::default()
-    };
     for request in EVERY_REQUEST {
-        let roots = roots_for(&settings, request, Vec::new(), Some(&[]), |path| {
-            path == Path::new(r"Q:\")
-        });
+        let roots = roots_for(
+            &folders(&[r"Q:\Portable"]),
+            false,
+            request,
+            Vec::new(),
+            Some(&[]),
+            |path| path == Path::new(r"Q:\"),
+        );
         assert!(roots.scanned.is_empty());
         assert_eq!(roots.retained, vec![PathBuf::from(r"Q:\Portable")]);
     }
 }
 
+// An unreachable folder on a mounted drive or share is what the bounded retry follows up on;
+// an unmounted drive is not, because its return is announced by the volume watcher instead.
+#[test]
+fn only_a_retained_folder_counts_as_unreachable() {
+    let roots = roots_for(
+        &folders(&[
+            r"Q:\Portable",
+            r"\\server\share\apps",
+            r"F:\Apps",
+            r"C:\Tools",
+        ]),
+        false,
+        SyncRequest::Refresh,
+        Vec::new(),
+        Some(&[]),
+        |path| {
+            path == Path::new(r"Q:\") || path == Path::new(r"C:\") || path == Path::new(r"C:\Tools")
+        },
+    );
+
+    assert_eq!(roots.unreachable, 2);
+    assert_eq!(roots.scanned, vec![PathBuf::from(r"C:\Tools")]);
+    assert_eq!(
+        roots.retained,
+        vec![
+            PathBuf::from(r"\\server\share\apps"),
+            PathBuf::from(r"Q:\Portable")
+        ]
+    );
+}
+
 #[test]
 fn a_scan_folder_on_an_unmounted_drive_is_dropped_in_every_scan_mode() {
-    let settings = ScanSettings {
-        auto_scan_fixed_drives: false,
-        included_paths: vec![r"F:\".into(), r"F:\Apps".into()],
-        ..ScanSettings::default()
-    };
     for request in EVERY_REQUEST {
-        let roots = roots_for(&settings, request, Vec::new(), Some(&[]), |_| false);
+        let roots = roots_for(
+            &folders(&[r"F:\", r"F:\Apps"]),
+            false,
+            request,
+            Vec::new(),
+            Some(&[]),
+            |_| false,
+        );
         assert!(roots.scanned.is_empty(), "{request:?}");
         assert!(roots.retained.is_empty(), "{request:?}");
     }
@@ -45,14 +97,11 @@ fn a_scan_folder_on_an_unmounted_drive_is_dropped_in_every_scan_mode() {
 
 #[test]
 fn an_unmounted_scan_drive_is_not_retained_through_its_previous_records() {
-    let settings = ScanSettings {
-        included_paths: vec![r"f:\".into()],
-        ..ScanSettings::default()
-    };
     let mut apps = previous(r"F:\Tools\Editor.exe");
     apps.extend(previous(r"Q:\Portable\Viewer.exe"));
     let roots = roots_for(
-        &settings,
+        &folders(&[r"f:\"]),
+        true,
         SyncRequest::Startup,
         vec![PathBuf::from(r"C:\")],
         Some(&apps),
@@ -67,12 +116,9 @@ fn an_unmounted_scan_drive_is_not_retained_through_its_previous_records() {
 
 #[test]
 fn a_returned_scan_drive_is_walked_again() {
-    let settings = ScanSettings {
-        included_paths: vec![r"F:\".into()],
-        ..ScanSettings::default()
-    };
     let roots = roots_for(
-        &settings,
+        &folders(&[r"F:\"]),
+        true,
         SyncRequest::Refresh,
         vec![PathBuf::from(r"C:\")],
         Some(&[]),
@@ -83,13 +129,25 @@ fn a_returned_scan_drive_is_walked_again() {
 }
 
 #[test]
-fn removing_explicit_scope_does_not_retain_an_offline_drive_when_auto_scan_is_disabled() {
-    let settings = ScanSettings {
-        auto_scan_fixed_drives: false,
-        ..ScanSettings::default()
-    };
+fn a_folder_followed_to_another_letter_is_walked_there_and_its_old_letter_is_dropped() {
+    let apps = previous(r"F:\Tools\Editor.exe");
     let roots = roots_for(
-        &settings,
+        &[followed(r"F:\", r"G:\", "1a2b3c4d")],
+        true,
+        SyncRequest::Refresh,
+        vec![PathBuf::from(r"C:\")],
+        Some(&apps),
+        |path| path == Path::new(r"G:\") || path == Path::new(r"C:\"),
+    );
+    assert_eq!(roots.scanned, vec![PathBuf::from(r"G:\")]);
+    assert_eq!(roots.retained, vec![PathBuf::from(r"C:\")]);
+}
+
+#[test]
+fn removing_explicit_scope_does_not_retain_an_offline_drive_when_auto_scan_is_disabled() {
+    let roots = roots_for(
+        &[],
+        false,
         SyncRequest::Startup,
         Vec::new(),
         Some(&previous(r"Q:\Portable\Editor.exe")),
@@ -102,7 +160,8 @@ fn removing_explicit_scope_does_not_retain_an_offline_drive_when_auto_scan_is_di
 #[test]
 fn a_reachable_non_fixed_drive_is_not_retained_after_removing_its_explicit_scope() {
     let roots = roots_for(
-        &ScanSettings::default(),
+        &[],
+        true,
         SyncRequest::Startup,
         vec![PathBuf::from(r"C:\")],
         Some(&previous(r"Q:\Portable\Editor.exe")),
@@ -113,10 +172,10 @@ fn a_reachable_non_fixed_drive_is_not_retained_after_removing_its_explicit_scope
 
 #[test]
 fn force_scans_live_drives_and_preserves_offline_records_until_the_drive_returns() {
-    let settings = ScanSettings::default();
     let apps = previous(r"Q:\Portable\Editor.exe");
     let offline = roots_for(
-        &settings,
+        &[],
+        true,
         SyncRequest::Force,
         vec![PathBuf::from(r"C:\")],
         Some(&apps),
@@ -125,7 +184,8 @@ fn force_scans_live_drives_and_preserves_offline_records_until_the_drive_returns
     assert_eq!(offline.scanned, vec![PathBuf::from(r"C:\")]);
     assert_eq!(offline.retained, vec![PathBuf::from(r"Q:\")]);
     let online = roots_for(
-        &settings,
+        &[],
+        true,
         SyncRequest::Force,
         vec![PathBuf::from(r"C:\"), PathBuf::from(r"Q:\")],
         Some(&apps),
@@ -139,13 +199,7 @@ fn force_scans_live_drives_and_preserves_offline_records_until_the_drive_returns
 fn a_catalog_without_a_portable_snapshot_walks_the_fixed_drives_on_its_first_routine_scan() {
     let fixed = vec![PathBuf::from(r"C:\"), PathBuf::from(r"D:\")];
     for request in [SyncRequest::Startup, SyncRequest::Refresh] {
-        let roots = roots_for(
-            &ScanSettings::default(),
-            request,
-            fixed.clone(),
-            None,
-            |_| true,
-        );
+        let roots = roots_for(&[], true, request, fixed.clone(), None, |_| true);
         assert_eq!(
             roots.scanned, fixed,
             "{request:?} must walk the drives once"
@@ -158,13 +212,7 @@ fn a_catalog_without_a_portable_snapshot_walks_the_fixed_drives_on_its_first_rou
 fn an_existing_portable_snapshot_keeps_routine_scans_off_the_fixed_drives() {
     let fixed = vec![PathBuf::from(r"C:\")];
     for request in [SyncRequest::Startup, SyncRequest::Refresh] {
-        let roots = roots_for(
-            &ScanSettings::default(),
-            request,
-            fixed.clone(),
-            Some(&[]),
-            |_| true,
-        );
+        let roots = roots_for(&[], true, request, fixed.clone(), Some(&[]), |_| true);
         assert!(
             roots.scanned.is_empty(),
             "{request:?} must stay incremental"
@@ -176,7 +224,8 @@ fn an_existing_portable_snapshot_keeps_routine_scans_off_the_fixed_drives() {
 #[test]
 fn a_watch_event_never_walks_the_fixed_drives_even_without_a_snapshot() {
     let roots = roots_for(
-        &ScanSettings::default(),
+        &[],
+        true,
         SyncRequest::Watch(crate::catalog::sync::WatchScope::PORTABLE),
         vec![PathBuf::from(r"C:\")],
         None,
@@ -190,7 +239,8 @@ fn a_watch_event_never_walks_the_fixed_drives_even_without_a_snapshot() {
 fn previous_network_and_relative_paths_do_not_create_automatic_drive_scope() {
     for path in [r"\\server\share\Editor.exe", r"Q:Editor.exe", "Editor.exe"] {
         let roots = roots_for(
-            &ScanSettings::default(),
+            &[],
+            true,
             SyncRequest::Startup,
             Vec::new(),
             Some(&previous(path)),
@@ -207,7 +257,8 @@ fn cached_drive_availability_is_checked_once_per_drive_not_per_application() {
     let mut apps = previous(r"Q:\Portable\Editor.exe");
     apps.extend(previous(r"q:\Other\Viewer.exe"));
     let roots = roots_for(
-        &ScanSettings::default(),
+        &[],
+        true,
         SyncRequest::Startup,
         Vec::new(),
         Some(&apps),
@@ -222,41 +273,37 @@ fn cached_drive_availability_is_checked_once_per_drive_not_per_application() {
 
 #[test]
 fn a_record_names_the_deepest_added_folder_that_contains_it() {
-    let included = vec![
-        r"F:\".to_string(),
-        r"D:\".to_string(),
-        r"D:\Apps".to_string(),
-    ];
+    let included = folders(&[r"F:\", r"D:\", r"D:\Apps"]);
 
     assert_eq!(
-        scan_folder_of(r"F:\Tools\rufus.exe", &included).as_deref(),
+        scan_folder_of(r"F:\Tools\rufus.exe", &included).map(|folder| folder.path.as_str()),
         Some(r"F:\")
     );
     assert_eq!(
-        scan_folder_of(r"D:\Apps\HxD\HxD.exe", &included).as_deref(),
+        scan_folder_of(r"D:\Apps\HxD\HxD.exe", &included).map(|folder| folder.path.as_str()),
         Some(r"D:\Apps")
     );
     assert_eq!(
-        scan_folder_of(r"D:\Games\Brotato\Brotato.exe", &included).as_deref(),
+        scan_folder_of(r"D:\Games\Brotato\Brotato.exe", &included)
+            .map(|folder| folder.path.as_str()),
         Some(r"D:\")
     );
-    assert_eq!(scan_folder_of(r"E:\Portable\aida64.exe", &included), None);
+    assert!(scan_folder_of(r"E:\Portable\aida64.exe", &included).is_none());
 }
 
 #[test]
 fn an_added_folder_matches_regardless_of_case_and_trailing_separator() {
     assert_eq!(
-        scan_folder_of(r"f:\tools\rufus.exe", &[r"F:\ ".to_string()]).as_deref(),
+        scan_folder_of(r"f:\tools\rufus.exe", &folders(&[r"F:\ "]))
+            .map(|folder| folder.path.trim()),
         Some(r"F:\")
     );
     assert_eq!(
-        scan_folder_of(r"D:\Apps\HxD\HxD.exe", &[r"d:\apps\".to_string()]).as_deref(),
+        scan_folder_of(r"D:\Apps\HxD\HxD.exe", &folders(&[r"d:\apps\"]))
+            .map(|folder| folder.path.as_str()),
         Some(r"d:\apps\")
     );
-    assert_eq!(
-        scan_folder_of(r"D:\Applications\x.exe", &[r"D:\Apps".to_string()]),
-        None
-    );
+    assert!(scan_folder_of(r"D:\Applications\x.exe", &folders(&[r"D:\Apps"])).is_none());
 }
 
 #[test]
@@ -264,8 +311,20 @@ fn stamping_covers_scanned_and_retained_records_alike() {
     let mut apps = previous(r"F:\Tools\Editor.exe");
     apps.extend(previous(r"C:\Portable\Viewer.exe"));
 
-    stamp_scan_folders(&mut apps, &[r"F:\".to_string()]);
+    stamp_scan_folders(&mut apps, &folders(&[r"F:\"]));
 
     assert_eq!(apps[0].scan_folder.as_deref(), Some(r"F:\"));
+    assert_eq!(apps[0].volume_id, None);
     assert_eq!(apps[1].scan_folder, None);
+    assert_eq!(apps[1].volume_id, None);
+}
+
+#[test]
+fn a_record_under_a_followed_folder_is_stamped_with_the_place_it_is_and_its_volume() {
+    let mut apps = previous(r"G:\Tools\Editor.exe");
+
+    stamp_scan_folders(&mut apps, &[followed(r"F:\", r"G:\", "1a2b3c4d")]);
+
+    assert_eq!(apps[0].scan_folder.as_deref(), Some(r"G:\"));
+    assert_eq!(apps[0].volume_id.as_deref(), Some("1a2b3c4d"));
 }

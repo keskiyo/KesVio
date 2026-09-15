@@ -1,4 +1,5 @@
 import { ListChecks, Plus } from 'lucide-react'
+import { ImportScenarios } from '../../../../features/import-scenarios'
 import { useRef, useState } from 'react'
 import {
 	ScenarioCard,
@@ -22,7 +23,9 @@ export function ScenariosPage({
 	favoriteScenarioIds,
 	onBack,
 	onCreate,
+	importClient,
 	onRename,
+	onSetForceClose,
 	onDelete,
 	onAddApp,
 	onRemoveApp,
@@ -68,6 +71,15 @@ export function ScenariosPage({
 				}
 			/>
 			<div className="mx-auto max-w-3xl min-[1900px]:max-w-7xl">
+				{importClient && (
+					<div className="mb-4 flex justify-end">
+						<ImportScenarios
+							client={importClient}
+							existing={scenarios}
+							disabled={isScenarioRunning}
+						/>
+					</div>
+				)}
 				{scenarios.length > 0 && (
 					<ScenariosToolbar
 						query={filters.query}
@@ -104,6 +116,7 @@ export function ScenariosPage({
 								)}
 								onToggleFavorite={onToggleFavorite}
 								onRename={onRename}
+								onSetForceClose={onSetForceClose}
 								onDelete={onDelete}
 								onAddApp={onAddApp}
 								onRemoveApp={onRemoveApp}

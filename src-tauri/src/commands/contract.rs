@@ -35,6 +35,7 @@ fn sample_app() -> AppInfo {
     app.category_reasons = vec!["executable_product_match".into()];
     app.close_risk = Some("safe".into());
     app.scan_folder = Some(r"D:\Apps".into());
+    app.volume_id = Some("1a2b3c4d".into());
     app
 }
 
@@ -59,13 +60,16 @@ fn commands(app: &AppInfo) -> Value {
         "get_system_settings": wire(super::settings::settings_sample()),
         "set_scan_settings": wire(crate::catalog::scan_settings::ScanSettings::default()),
         "set_close_behavior": wire(true),
-        "open_startup_settings": wire(()),
+        "set_startup_enabled": wire(crate::platform::windows::startup_approval::StartupEntry::Disabled),
         "stale_copy_status": wire(super::links::stale_copy_sample()),
         "save_preferences_backup": wire(true),
         "export_diagnostics_log": wire(true),
+        "preview_diagnostics_log": wire(String::from("<diagnostics redacted=\"true\" />")),
         "set_tray_scenarios": wire(()),
+        "set_tray_favorites": wire(()),
         "set_tray_running": wire(()),
         "set_tray_scan_state": wire(()),
+        "take_tray_search_intent": wire(false),
     })
 }
 
@@ -73,7 +77,6 @@ fn events(app: &AppInfo) -> Value {
     let delta = compute_delta(7, &[], std::slice::from_ref(app));
     json!({
         "catalog://delta": wire(CatalogDeltaDto::from(&delta)),
-        "catalog://changed": wire(&delta.summary),
         "catalog://patches": wire(vec![AppHydrationPatch {
             id: "editor".into(),
             generation: 7,
@@ -97,6 +100,9 @@ fn events(app: &AppInfo) -> Value {
         "launch://status": wire(super::launch::status_sample()),
         "close://progress": super::close::progress_sample(),
         "tray://run-scenario": crate::lifecycle::tray_run_scenario_sample(),
+        crate::lifecycle::LAUNCH_APP_EVENT: crate::lifecycle::tray_launch_app_sample(),
+        crate::lifecycle::SEARCH_EVENT: wire(()),
+        crate::lifecycle::SHOW_FAVORITES_EVENT: wire(()),
         crate::lifecycle::FORCE_SCAN_EVENT: wire(()),
     })
 }

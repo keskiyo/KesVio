@@ -25,7 +25,11 @@ export function ScenarioAppStack({ apps, extra }: ScenarioAppStackProps) {
 							draggable={false}
 						/>
 					) : (
-						<AppWindow size={12} className="text-(--text-muted)" />
+						<AppWindow
+							size={12}
+							className="text-(--text-muted)"
+							aria-hidden="true"
+						/>
 					)}
 				</span>
 			))}

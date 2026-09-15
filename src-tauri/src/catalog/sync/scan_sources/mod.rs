@@ -14,6 +14,7 @@ use crate::catalog::sync::health::SourceOutcome;
 use crate::catalog::sync::scan_control::ScanControl;
 use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::sync::SyncRequest;
+use crate::catalog::volumes::TrackedVolume;
 use crate::catalog::{self, ScanProgress};
 use selection::ScanSelection;
 
@@ -22,6 +23,8 @@ pub(super) struct SourceScan {
     pub outcomes: Vec<SourceOutcome>,
     pub registry_metadata: Option<Vec<RegistryMetadata>>,
     pub filesystem_index: Option<FilesystemIndex>,
+    pub volumes: Option<Vec<TrackedVolume>>,
+    pub unreachable_folders: usize,
 }
 
 pub(super) fn scan_all(
@@ -99,9 +102,13 @@ pub(super) fn scan_all(
         push_snapshot(&mut updates, "steam", steam.apps);
     }
     let mut filesystem_index = None;
+    let mut volumes = None;
+    let mut unreachable_folders = 0;
     if let Some(portable) = portable {
         outcomes.push(portable.outcome);
         filesystem_index = portable.filesystem_index;
+        volumes = portable.volumes;
+        unreachable_folders = portable.unreachable_folders;
         push_snapshot(&mut updates, "portable", portable.apps);
     }
     push_snapshot(&mut updates, catalog::source::REGISTRY_SOURCE, registry);
@@ -113,6 +120,8 @@ pub(super) fn scan_all(
         outcomes,
         registry_metadata,
         filesystem_index,
+        volumes,
+        unreachable_folders,
     }
 }
 

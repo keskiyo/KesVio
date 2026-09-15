@@ -25,6 +25,7 @@ pub(crate) fn enqueue_hydration(
         let hydration_dir = app_data_dir.clone();
         let worker_app = app.clone();
         let hydrated = tauri::async_runtime::spawn_blocking(move || {
+            let started_at = std::time::Instant::now();
             let state = worker_app.state::<AppState>();
             let Some(document) = cache::read_hydration_document(&hydration_dir) else {
                 return Vec::new();
@@ -76,6 +77,16 @@ pub(crate) fn enqueue_hydration(
                 let _ = worker_app.emit("catalog://patches", &batch);
             }
             catalog::icon_cache::sweep_superseded(&hydration_dir, &written_icons);
+            log::info!(
+                "Hydration finished: generation={generation} patches={} icons={} written={} elapsedMs={}",
+                patches.len(),
+                patches
+                    .iter()
+                    .filter(|patch| patch.icon_base64.is_some())
+                    .count(),
+                written_icons.len(),
+                started_at.elapsed().as_millis()
+            );
             patches
         })
         .await;

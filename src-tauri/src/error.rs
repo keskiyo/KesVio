@@ -22,6 +22,7 @@ pub(crate) enum AppError {
     ScanFailed,
     SaveScanSettings(String),
     SaveWindowSettings(String),
+    UpdateStartupEntry(String),
     SavePreferencesBackup(String),
     ExportDiagnostics(String),
     ResetCatalogCache(String),
@@ -56,6 +57,7 @@ impl AppError {
             Self::ScanFailed => "SCAN_FAILED",
             Self::SaveScanSettings(_) => "SAVE_SCAN_SETTINGS_FAILED",
             Self::SaveWindowSettings(_) => "SAVE_WINDOW_SETTINGS_FAILED",
+            Self::UpdateStartupEntry(_) => "STARTUP_ENTRY_UPDATE_FAILED",
             Self::SavePreferencesBackup(_) => "SAVE_PREFERENCES_BACKUP_FAILED",
             Self::ExportDiagnostics(_) => "EXPORT_DIAGNOSTICS_FAILED",
             Self::ResetCatalogCache(_) => "RESET_CATALOG_CACHE_FAILED",
@@ -87,6 +89,7 @@ impl AppError {
             Self::ScanFailed => "The application scan stopped unexpectedly. Try again.",
             Self::SaveScanSettings(_source) => "Could not save scan settings. Try again.",
             Self::SaveWindowSettings(_source) => "Could not save the window setting. Try again.",
+            Self::UpdateStartupEntry(_source) => "Could not change the startup setting. Try again.",
             Self::SavePreferencesBackup(_source) => "Could not save settings. Try again.",
             Self::ExportDiagnostics(_source) => "Could not save the diagnostics log. Try again.",
             Self::ResetCatalogCache(_source) => "Could not reset the catalog cache. Try again.",
@@ -122,6 +125,7 @@ pub(crate) fn every_variant() -> Vec<AppError> {
         AppError::ScanFailed,
         AppError::SaveScanSettings(String::new()),
         AppError::SaveWindowSettings(String::new()),
+        AppError::UpdateStartupEntry(String::new()),
         AppError::SavePreferencesBackup(String::new()),
         AppError::ExportDiagnostics(String::new()),
         AppError::ResetCatalogCache(String::new()),
@@ -237,6 +241,7 @@ mod tests {
                 "SCAN_COALESCED",
                 "SCAN_FAILED",
                 "SCAN_PATH_NOT_ABSOLUTE",
+                "STARTUP_ENTRY_UPDATE_FAILED",
             ]
         );
     }

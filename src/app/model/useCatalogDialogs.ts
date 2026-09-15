@@ -2,8 +2,10 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { useInstallerLaunch } from '../../features/launch-app'
 import { useAppInfoDialog } from '../../features/view-app-details'
-import type { AppInfo } from '../../entities/app'
+import type { AppInfo, SavedFilter } from '../../entities/app'
 import type { SystemClient } from '../../entities/system'
+
+type SavedFilterEditorState = { filter: SavedFilter | null } | null
 
 interface DialogOptions {
 	systemClient: Pick<SystemClient, 'logClientError'>
@@ -13,6 +15,8 @@ interface DialogOptions {
 export function useCatalogDialogs({ systemClient, onLaunch }: DialogOptions) {
 	const [paletteOpen, setPaletteOpen] = useState(false)
 	const [scenariosOpen, setScenariosOpen] = useState(false)
+	const [filterEditor, setFilterEditor] =
+		useState<SavedFilterEditorState>(null)
 	const appInfo = useAppInfoDialog()
 	const installerLaunch = useInstallerLaunch(onLaunch)
 
@@ -39,6 +43,15 @@ export function useCatalogDialogs({ systemClient, onLaunch }: DialogOptions) {
 			toggle: useCallback(() => setScenariosOpen(value => !value), []),
 			show: useCallback(() => setScenariosOpen(true), []),
 			close: useCallback(() => setScenariosOpen(false), []),
+		},
+		savedFilterEditor: {
+			state: filterEditor,
+			create: useCallback(() => setFilterEditor({ filter: null }), []),
+			edit: useCallback(
+				(filter: SavedFilter) => setFilterEditor({ filter }),
+				[],
+			),
+			close: useCallback(() => setFilterEditor(null), []),
 		},
 		reportFailure,
 	}

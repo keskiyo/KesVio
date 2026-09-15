@@ -3,6 +3,7 @@ import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
+	RunTransaction,
 	SetAppState,
 } from '../types'
 
@@ -10,6 +11,7 @@ interface CategoryActionOptions {
 	set: SetAppState
 	get: GetAppState
 	persist: PersistPreferences
+	transact: RunTransaction
 	idFactory: () => string
 }
 
@@ -38,6 +40,7 @@ export function createCategoryActions({
 	set,
 	get,
 	persist,
+	transact,
 	idFactory,
 }: CategoryActionOptions): CategoryActions {
 	return {
@@ -71,14 +74,15 @@ export function createCategoryActions({
 				return { ok: false, error: 'Category name already exists' }
 			if (!get().categories.some(category => category.id === id))
 				return { ok: false, error: 'Category not found' }
-			set(state => ({
-				categories: state.categories.map(category =>
-					category.id === id
-						? { ...category, label: value }
-						: category,
-				),
-			}))
-			persist()
+			transact(`Renamed category to ${value}`, () =>
+				set(state => ({
+					categories: state.categories.map(category =>
+						category.id === id
+							? { ...category, label: value }
+							: category,
+					),
+				})),
+			)
 			return { ok: true }
 		},
 		deleteCategory(id) {

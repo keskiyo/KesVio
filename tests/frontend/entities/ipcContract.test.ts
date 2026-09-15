@@ -16,6 +16,7 @@ import type {
 import type {
 	ScanSettings,
 	StaleCopyInfo,
+	StartupEntryState,
 	SystemSettings,
 } from '../../../src/entities/system'
 
@@ -84,6 +85,7 @@ const appInfo: Required<AppInfo> = {
 	categoryReasons: [],
 	closeRisk: null,
 	scanFolder: null,
+	volumeId: null,
 }
 
 const scanSettings: Required<ScanSettings> = {
@@ -174,6 +176,7 @@ describe('IPC wire contract', () => {
 				scanSettings,
 				fixedDrives: [],
 				hideToTrayOnClose: false,
+				startupEntry: 'disabled',
 			}
 			const settings = contract.commands
 				.get_system_settings as SystemSettings
@@ -184,6 +187,23 @@ describe('IPC wire contract', () => {
 				scanSettings,
 				'ScanSettings',
 			)
+		})
+
+		it('answers the startup switch with the state Windows now holds', () => {
+			const states: StartupEntryState[] = [
+				'enabled',
+				'disabled',
+				'missing',
+			]
+			expect(states).toContain(contract.commands.set_startup_enabled)
+			expect(states).toContain(
+				(contract.commands.get_system_settings as SystemSettings)
+					.startupEntry,
+			)
+			expect(contract.commands).not.toHaveProperty(
+				'open_startup_settings',
+			)
+			expect(contract.errorCodes).toContain('STARTUP_ENTRY_UPDATE_FAILED')
 		})
 
 		it('describes the stale installed copy', () => {
@@ -231,17 +251,15 @@ describe('IPC wire contract', () => {
 			expectWireShape(delta.upserted[0], appInfo, 'AppInfo')
 		})
 
-		it('describes the change summary', () => {
+		it('describes the change summary inside the delta and nowhere else', () => {
 			const declared: Required<CatalogChangeSummary> = {
 				added: 0,
 				removed: 0,
 				updated: 0,
 			}
-			expectWireShape(
-				contract.events['catalog://changed'],
-				declared,
-				'CatalogChangeSummary',
-			)
+			const delta = contract.events['catalog://delta'] as CatalogDelta
+			expectWireShape(delta.summary, declared, 'CatalogChangeSummary')
+			expect(contract.events).not.toHaveProperty('catalog://changed')
 		})
 
 		it('describes a hydration patch', () => {
@@ -308,6 +326,21 @@ describe('IPC wire contract', () => {
 				{ id: '' },
 				'TrayScenarioRun',
 			)
+		})
+
+		// A favorite is launched by catalog id; the label on the menu row never becomes the
+		// action, and the other tray intents carry nothing at all.
+		it('describes a tray launch as the id alone and the other tray intents as empty', () => {
+			expectWireShape(
+				contract.events['tray://launch-app'],
+				{ id: '' },
+				'TrayAppLaunch',
+			)
+			expect(contract.events['tray://search']).toBeNull()
+			expect(contract.events['tray://show-favorites']).toBeNull()
+			expect(contract.events).not.toHaveProperty('tray://catalog-status')
+			expect(contract.commands.set_tray_favorites).toBeNull()
+			expect(contract.commands.take_tray_search_intent).toBe(false)
 		})
 	})
 

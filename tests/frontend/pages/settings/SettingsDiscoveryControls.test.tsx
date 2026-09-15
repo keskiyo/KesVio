@@ -14,6 +14,7 @@ const settings: SystemSettings = {
 	},
 	fixedDrives: ['C:\\'],
 	hideToTrayOnClose: true,
+	startupEntry: 'disabled',
 }
 
 describe('SettingsDiscoveryControls', () => {

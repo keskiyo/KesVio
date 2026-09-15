@@ -2,7 +2,7 @@ use crate::platform::windows::com::CoTaskString;
 use std::path::PathBuf;
 use windows::core::GUID;
 use windows::Win32::UI::Shell::{
-    FOLDERID_Desktop, FOLDERID_Downloads, SHGetKnownFolderPath, KF_FLAG_DEFAULT,
+    FOLDERID_Desktop, FOLDERID_Downloads, FOLDERID_Startup, SHGetKnownFolderPath, KF_FLAG_DEFAULT,
 };
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -18,6 +18,10 @@ pub(crate) fn user_folders() -> UserFolders {
         desktop: known_folder(&FOLDERID_Desktop),
         temp: std::env::var_os("TEMP").map(PathBuf::from),
     }
+}
+
+pub(crate) fn startup() -> Option<PathBuf> {
+    known_folder(&FOLDERID_Startup)
 }
 
 fn known_folder(id: &GUID) -> Option<PathBuf> {

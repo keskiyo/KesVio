@@ -30,9 +30,9 @@ export function CategoryHeader({
 					className="mr-1.5 grid size-5 shrink-0 place-items-center"
 				>
 					{collapsed ? (
-						<ChevronRight size={15} />
+						<ChevronRight size={15} aria-hidden="true" />
 					) : (
-						<ChevronDown size={15} />
+						<ChevronDown size={15} aria-hidden="true" />
 					)}
 				</span>
 				<h2
@@ -52,7 +52,7 @@ export function CategoryHeader({
 				onClick={onEdit}
 				className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-(--border-neutral) bg-(--surface-panel) px-3 text-xs font-medium text-(--text-primary) transition-[background-color,border-color] duration-200 hover:border-(--accent) hover:bg-(--surface-raised) focus-visible:z-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
 			>
-				<Pencil size={15} />
+				<Pencil size={15} aria-hidden="true" />
 				<span>Edit</span>
 			</button>
 		</div>

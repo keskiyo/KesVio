@@ -166,7 +166,7 @@ describe('app store', () => {
 			importedField: 'kept',
 		})
 		expect(JSON.parse(store.getState().exportPreferences())).toMatchObject({
-			version: 19,
+			version: 22,
 			favoriteAppIds: ['code'],
 			hiddenAppIds: ['chrome'],
 			importedField: 'kept',
@@ -266,7 +266,7 @@ describe('app store', () => {
 
 	it('refuses import and restore when local preferences use a newer schema', () => {
 		const future = JSON.stringify({
-			version: 20,
+			version: 23,
 			favoriteAppIds: ['keep'],
 		})
 		const values = new Map<string, string>([
@@ -344,6 +344,33 @@ describe('app store', () => {
 	// A stick added as a scan folder becomes a category the moment its first record arrives, and
 	// the category is a real user category — persisted, placed first like any category the user
 	// creates, renameable — rather than a row the grid would drop for naming an id it does not know.
+	it('does not persist ineffective category or artifact moves for a drive-root app', async () => {
+		const stick = app({
+			id: 'stick',
+			name: 'Tool',
+			path: 'F:\\tool.exe',
+			category: 'utilities',
+			scanFolder: 'F:\\',
+		})
+		const store = createAppStore(
+			client({
+				getApps: vi.fn().mockResolvedValue({
+					apps: [stick],
+					hasCache: true,
+					generation: 1,
+				}),
+			}),
+			memoryStorage(),
+		)
+		await store.getState().initialize()
+		store.getState().moveApp('stick', 'games')
+		store.getState().moveApp('stick', 'installers_docs')
+		expect(store.getState().categoryOverrides).toEqual({})
+		expect(store.getState().categoryOverrideIdentities).toEqual({})
+		expect(store.getState().installerAppIds).toEqual([])
+		expect(store.getState().undoable).toBeNull()
+	})
+
 	it('creates a persisted drive category for records found under an added drive root', async () => {
 		const stick = app({
 			id: 'rufus',
@@ -411,6 +438,143 @@ describe('app store', () => {
 		expect(
 			store.getState().categoryOrder.filter(entry => entry === 'drive:f'),
 		).toHaveLength(1)
+	})
+
+	// The update that starts tracking volumes changes every stick record's identity while its
+	// id stays put; the marks, the first-seen stamp and the renamed category all
+	// have to come along, or the user loses them the first time they scan.
+	it('carries marks, first-seen and the renamed drive category over the volume migration', async () => {
+		const letterKeyed = app({
+			id: 'rufus',
+			name: 'Rufus',
+			path: 'F:\\Tools\\rufus.exe',
+			category: 'utilities',
+			sourceKind: 'portable',
+			scanFolder: 'F:\\',
+			preferenceIdentity: 'identity:letter',
+		})
+		const volumeKeyed = {
+			...letterKeyed,
+			volumeId: '1a2b3c4d',
+			preferenceIdentity: 'identity:volume',
+		}
+		const refreshApps = vi
+			.fn()
+			.mockResolvedValueOnce({ apps: [letterKeyed], generation: 1 })
+			.mockResolvedValueOnce({ apps: [volumeKeyed], generation: 2 })
+		const store = createAppStore(client({ refreshApps }), memoryStorage())
+		await store.getState().refresh()
+		store.getState().toggleFavorite('rufus')
+		store.getState().renameCategory('drive:f', 'Strelec')
+		const firstSeen = store.getState().firstSeenAt['identity:letter']
+
+		await store.getState().refresh()
+
+		const state = store.getState()
+		expect(state.favoriteAppIds).toEqual(['rufus'])
+		expect(state.favoriteAppIdentities).toContain('identity:volume')
+		expect(state.firstSeenAt['identity:volume']).toBe(firstSeen)
+		expect(
+			state.categories.filter(entry => entry.id.startsWith('drive:')),
+		).toEqual([
+			expect.objectContaining({ id: 'drive:1a2b3c4d', label: 'Strelec' }),
+		])
+		expect(state.categoryOrder).toContain('drive:1a2b3c4d')
+		expect(state.categoryOrder).not.toContain('drive:f')
+	})
+
+	it('keeps the favorite and the category when the stick comes back at another letter', async () => {
+		const atF = app({
+			id: 'target:f:\\tools\\rufus.exe',
+			name: 'Rufus',
+			path: 'F:\\Tools\\rufus.exe',
+			category: 'utilities',
+			sourceKind: 'portable',
+			scanFolder: 'F:\\',
+			volumeId: '1a2b3c4d',
+			preferenceIdentity: 'identity:volume',
+		})
+		const atG = {
+			...atF,
+			id: 'target:g:\\tools\\rufus.exe',
+			path: 'G:\\Tools\\rufus.exe',
+			scanFolder: 'G:\\',
+		}
+		const refreshApps = vi
+			.fn()
+			.mockResolvedValueOnce({ apps: [atF], generation: 1 })
+			.mockResolvedValueOnce({ apps: [atG], generation: 2 })
+		const store = createAppStore(client({ refreshApps }), memoryStorage())
+		await store.getState().refresh()
+		store.getState().toggleFavorite(atF.id)
+
+		await store.getState().refresh()
+
+		const state = store.getState()
+		expect(state.favoriteAppIds).toEqual([atG.id])
+		expect(
+			state.categories.filter(entry => entry.id.startsWith('drive:')),
+		).toEqual([
+			expect.objectContaining({ id: 'drive:1a2b3c4d', label: 'Disk G' }),
+		])
+		expect(selectVisibleApps(state).map(entry => entry.category)).toEqual([
+			'drive:1a2b3c4d',
+		])
+	})
+
+	it('prunes an absent generated drive without overwriting reconciled category marks', async () => {
+		const before = app({
+			id: 'target:old',
+			name: 'Toolbox',
+			path: 'C:\\Toolbox.exe',
+			category: 'other',
+			preferenceIdentity: 'identity:toolbox',
+		})
+		const after = { ...before, id: 'target:new' }
+		const removedDrive = app({
+			id: 'rufus',
+			name: 'Rufus',
+			path: 'F:\\Tools\\rufus.exe',
+			category: 'utilities',
+			sourceKind: 'portable',
+			scanFolder: 'F:\\',
+			volumeId: '1a2b3c4d',
+		})
+		const store = createAppStore(
+			client({
+				refreshApps: vi
+					.fn()
+					.mockResolvedValue({ apps: [after], generation: 2 }),
+			}),
+			memoryStorage(),
+		)
+		store.setState(state => ({
+			apps: [before, removedDrive],
+			categories: [
+				...state.categories,
+				{
+					id: 'drive:1a2b3c4d',
+					label: 'Disk F',
+					builtIn: false,
+				},
+			],
+			categoryOrder: ['drive:1a2b3c4d', ...state.categoryOrder],
+			categoryOverrides: { 'target:old': 'utilities' },
+			categoryOverrideIdentities: {
+				'identity:toolbox': 'utilities',
+			},
+		}))
+
+		await store.getState().refresh()
+
+		expect(store.getState().categoryOverrides).toEqual({
+			'target:new': 'utilities',
+		})
+		expect(
+			store
+				.getState()
+				.categories.some(category => category.id === 'drive:1a2b3c4d'),
+		).toBe(false)
 	})
 
 	it('persists a manual installer mark and reloads it', () => {
@@ -976,12 +1140,61 @@ describe('app store', () => {
 		dispose()
 	})
 
+	// A source that has recovered must not read as failed again because the event from the
+	// earlier, failed scan arrived after the one from the scan that fixed it.
+	it('keeps the newest source health when diagnostics arrive out of order', async () => {
+		const published: ((diagnostics: CatalogDiagnostics) => void)[] = []
+		const api = client({
+			onCatalogDiagnostics: vi.fn(async handler => {
+				published.push(handler)
+				return () => undefined
+			}),
+		})
+		const store = createAppStore(api)
+		const dispose = await store.getState().initialize()
+		const report = (
+			completedAt: number,
+			state: 'fresh' | 'stale',
+		): CatalogDiagnostics => ({
+			completedAt,
+			durationMs: 40,
+			mode: 'refresh',
+			totalApps: 7,
+			sourceCounts: { registry: 7 },
+			added: 0,
+			removed: 0,
+			updated: 0,
+			sources: [
+				{
+					key: 'start-menu',
+					state,
+					lastAttemptAt: completedAt,
+					lastSuccessAt: state === 'fresh' ? completedAt : 1,
+					consecutiveFailures: state === 'fresh' ? 0 : 1,
+					lastDurationMs: 5,
+					lastError: state === 'fresh' ? null : 'provider_failed',
+					recordCount: 7,
+				},
+			],
+		})
+
+		published[0]?.(report(10, 'stale'))
+		published[0]?.(report(20, 'fresh'))
+		published[0]?.(report(15, 'stale'))
+
+		expect(store.getState().catalogDiagnostics?.completedAt).toBe(20)
+		expect(store.getState().catalogDiagnostics?.sources?.[0]?.state).toBe(
+			'fresh',
+		)
+		dispose()
+	})
+
 	it('reuses an in-flight initialization so dev StrictMode does not start two scans', async () => {
 		const api = client({
 			startBackgroundSync: vi.fn().mockResolvedValue(undefined),
 			onCatalogDelta: vi.fn().mockResolvedValue(() => undefined),
 			onCatalogPatches: vi.fn().mockResolvedValue(() => undefined),
-			onCatalogChanged: vi.fn().mockResolvedValue(() => undefined),
+			onCatalogDiagnostics: vi.fn().mockResolvedValue(() => undefined),
 		})
 		const store = createAppStore(api)
 
@@ -998,6 +1211,61 @@ describe('app store', () => {
 		secondDispose()
 	})
 
+	it('cleans failed background startup and retries shared initialization', async () => {
+		const disposeListener = vi.fn()
+		const api = client({
+			onScanProgress: vi.fn().mockResolvedValue(disposeListener),
+			startBackgroundSync: vi
+				.fn()
+				.mockRejectedValueOnce(new Error('background failed'))
+				.mockResolvedValue(undefined),
+		})
+		const store = createAppStore(api)
+		const results = await Promise.allSettled([
+			store.getState().initialize(),
+			store.getState().initialize(),
+		])
+		expect(results.map(result => result.status)).toEqual([
+			'rejected',
+			'rejected',
+		])
+		expect(disposeListener).toHaveBeenCalledOnce()
+		const dispose = await store.getState().initialize()
+		expect(api.startBackgroundSync).toHaveBeenCalledTimes(2)
+		dispose()
+		dispose()
+		expect(disposeListener).toHaveBeenCalledTimes(2)
+	})
+
+	it('does not let a released owner dispose a newer initialization', async () => {
+		const stop = vi.fn()
+		const store = createAppStore(
+			client({ onScanProgress: vi.fn().mockResolvedValue(stop) }),
+		)
+		const first = await store.getState().initialize()
+		first()
+		const second = await store.getState().initialize()
+		first()
+		expect(stop).toHaveBeenCalledOnce()
+		second()
+		expect(stop).toHaveBeenCalledTimes(2)
+	})
+
+	it('detaches remaining listeners when one teardown throws', async () => {
+		const stop = vi.fn()
+		const store = createAppStore(
+			client({
+				onCatalogDelta: vi.fn().mockResolvedValue(() => {
+					throw new Error('dispose failed')
+				}),
+				onScanProgress: vi.fn().mockResolvedValue(stop),
+			}),
+		)
+		const dispose = await store.getState().initialize()
+		expect(() => dispose()).not.toThrow()
+		expect(stop).toHaveBeenCalledOnce()
+	})
+
 	// Registration used to be a bare sequence of awaits: a rejection partway through left every
 	// earlier listener attached with nothing owning its teardown, and the rejected promise was
 	// cached, so the app could never recover from a transient bridge failure.
@@ -1007,7 +1275,7 @@ describe('app store', () => {
 		const api = client({
 			onCatalogDelta: vi.fn().mockResolvedValue(disposeDelta),
 			onCatalogPatches: vi.fn().mockResolvedValue(disposePatches),
-			onCatalogChanged: vi
+			onCatalogDiagnostics: vi
 				.fn()
 				.mockRejectedValue(new Error('bridge unavailable')),
 		})
@@ -1027,7 +1295,7 @@ describe('app store', () => {
 		const api = client({
 			onCatalogDelta: vi.fn().mockResolvedValue(disposers[0]),
 			onCatalogPatches: vi.fn().mockResolvedValue(disposers[1]),
-			onCatalogChanged: vi.fn().mockResolvedValue(disposers[2]),
+			onCatalogDiagnostics: vi.fn().mockResolvedValue(disposers[2]),
 			onScanProgress: vi.fn().mockResolvedValue(disposers[3]),
 			onLaunchStatus: vi
 				.fn()
@@ -1065,14 +1333,14 @@ describe('app store', () => {
 	})
 
 	it('retries initialization after a failed subscription instead of caching the rejection', async () => {
-		const onCatalogChanged = vi
+		const onCatalogDiagnostics = vi
 			.fn()
 			.mockRejectedValueOnce(new Error('bridge unavailable'))
 			.mockResolvedValue(() => undefined)
 		const api = client({
 			onCatalogDelta: vi.fn().mockResolvedValue(() => undefined),
 			onCatalogPatches: vi.fn().mockResolvedValue(() => undefined),
-			onCatalogChanged,
+			onCatalogDiagnostics,
 		})
 		const store = createAppStore(api)
 
@@ -1081,7 +1349,7 @@ describe('app store', () => {
 		)
 		const dispose = await store.getState().initialize()
 
-		expect(onCatalogChanged).toHaveBeenCalledTimes(2)
+		expect(onCatalogDiagnostics).toHaveBeenCalledTimes(2)
 		expect(api.getApps).toHaveBeenCalledOnce()
 		expect(store.getState().apps).toHaveLength(apps.length)
 		dispose()

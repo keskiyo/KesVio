@@ -50,6 +50,173 @@ function client(overrides: Partial<AppsClient> = {}): AppsClient {
 }
 
 describe('incremental app store updates', () => {
+	it.each(['refresh', 'forceFullScan', 'resetCatalogCache'] as const)(
+		'keeps a newer delta after a delayed %s response',
+		async action => {
+			let resolve!: (value: {
+				apps: AppInfo[]
+				generation: number
+			}) => void
+			const pendingScan = () =>
+				new Promise<{ apps: AppInfo[]; generation: number }>(done => {
+					resolve = done
+				})
+			const store = createAppStore(
+				client({
+					refreshApps: pendingScan,
+					forceFullScan: pendingScan,
+					resetCatalogCache: pendingScan,
+				}),
+			)
+			await store.getState().load()
+			const pending = store.getState()[action]()
+			store.getState().applyDelta({
+				generation: 4,
+				removedIds: [],
+				summary: { added: 0, removed: 0, updated: 0 },
+				upserted: [{ ...code, id: 'new' }],
+			})
+			resolve({ apps: [code], generation: 3 })
+			await pending
+			expect(store.getState().catalogGeneration).toBe(4)
+			expect(store.getState().apps.map(app => app.id)).toEqual([
+				'code',
+				'new',
+			])
+		},
+	)
+
+	it('keeps newer catalog data after a delayed initial load', async () => {
+		let resolve!: (value: {
+			apps: AppInfo[]
+			generation: number
+			hasCache: boolean
+		}) => void
+		const store = createAppStore(
+			client({
+				getApps: () =>
+					new Promise(done => {
+						resolve = done
+					}),
+			}),
+		)
+		const pending = store.getState().load()
+		store.getState().applyDelta({
+			generation: 4,
+			removedIds: [],
+			summary: { added: 0, removed: 0, updated: 0 },
+			upserted: [code],
+		})
+		resolve({ apps: [], generation: 2, hasCache: false })
+		await pending
+		expect(store.getState().catalogGeneration).toBe(4)
+		expect(store.getState().apps).toEqual([code])
+	})
+
+	it('preserves same-generation hydration when a scan response follows its delta', async () => {
+		let resolve!: (value: { apps: AppInfo[]; generation: number }) => void
+		const store = createAppStore(
+			client({
+				refreshApps: () =>
+					new Promise(done => {
+						resolve = done
+					}),
+			}),
+		)
+		await store.getState().load()
+		const pending = store.getState().refresh()
+		store.getState().applyDelta({
+			generation: 3,
+			removedIds: [],
+			summary: { added: 0, removed: 0, updated: 0 },
+			upserted: [code],
+		})
+		store
+			.getState()
+			.applyPatches([
+				{ id: 'code', generation: 3, publisher: 'Hydrated' },
+			])
+		resolve({ apps: [code], generation: 3 })
+		await pending
+		expect(store.getState().apps[0].publisher).toBe('Hydrated')
+	})
+	it('applies a duplicate delta as a no-op', async () => {
+		const store = createAppStore(client())
+		await store.getState().load()
+		const delta = {
+			generation: 3,
+			removedIds: [],
+			summary: { added: 0, removed: 0, updated: 0 },
+			upserted: [{ ...code, id: 'new' }],
+		}
+
+		store.getState().applyDelta(delta)
+		const once = store.getState().apps
+		store.getState().applyDelta(delta)
+
+		expect(store.getState().catalogGeneration).toBe(3)
+		expect(store.getState().apps.map(app => app.id)).toEqual([
+			'code',
+			'new',
+		])
+		expect(store.getState().apps).toEqual(once)
+	})
+
+	it('ignores a patch for a generation the catalog has left behind', async () => {
+		const store = createAppStore(client())
+		await store.getState().load()
+		store.getState().applyDelta({
+			generation: 3,
+			removedIds: [],
+			summary: { added: 0, removed: 0, updated: 0 },
+			upserted: [code],
+		})
+
+		store.getState().applyPatches([
+			{ id: 'code', generation: 2, publisher: 'Stale' },
+			{ id: 'code', generation: 4, publisher: 'Future' },
+		])
+
+		expect(store.getState().apps[0].publisher).toBeNull()
+	})
+
+	it('stays busy until every overlapping scan has finished', async () => {
+		let finishRefresh!: (value: {
+			apps: AppInfo[]
+			generation: number
+		}) => void
+		let finishForce!: (value: {
+			apps: AppInfo[]
+			generation: number
+		}) => void
+		const store = createAppStore(
+			client({
+				refreshApps: () =>
+					new Promise(done => {
+						finishRefresh = done
+					}),
+				forceFullScan: () =>
+					new Promise(done => {
+						finishForce = done
+					}),
+			}),
+		)
+		await store.getState().load()
+
+		const refresh = store.getState().refresh()
+		const force = store.getState().forceFullScan()
+		expect(store.getState().isRefreshing).toBe(true)
+
+		finishRefresh({ apps: [code], generation: 3 })
+		await refresh
+		expect(store.getState().isRefreshing).toBe(true)
+
+		finishForce({ apps: [code], generation: 4 })
+		await force
+		expect(store.getState().isRefreshing).toBe(false)
+		expect(store.getState().catalogGeneration).toBe(4)
+	})
+
 	it('merges hydration patches without replacing catalog state', async () => {
 		const store = createAppStore(client())
 		await store.getState().load()

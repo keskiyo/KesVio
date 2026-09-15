@@ -1,124 +1,106 @@
 <p align="center">
-  <img src="public/app-icon.png" width="88" height="88" alt="KesVio logo">
+  <img src="public/app-icon.png" width="96" height="96" alt="KesVio">
 </p>
 
 <h1 align="center">KesVio</h1>
 
-<p align="center">A local catalog for the Windows software you already use.</p>
-
 <p align="center">
-  KesVio finds Start Menu shortcuts, installed desktop programs, Microsoft Store apps, Steam games and portable executables.<br>
-  It brings them together in one searchable catalog and merges duplicate entries into a single application card.
+  <strong>All your Windows apps. One local catalog.</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/keskiyo/KesVio/releases/tag/v0.5.1"><img src="https://img.shields.io/badge/version-0.5.1-7C3AED?style=flat-square" alt="Version"></a>
-  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square" alt="Windows">
-  <img src="https://img.shields.io/badge/architecture-x64-334155?style=flat-square" alt="Architecture">
-  <img src="https://img.shields.io/badge/Tauri-2-24C8DB?style=flat-square&amp;logo=tauri&amp;logoColor=white" alt="Tauri">
-  <img src="https://img.shields.io/badge/catalog-local--first-16A34A?style=flat-square" alt="Local first">
+  Find, organize, and launch desktop, Microsoft Store, Steam, and portable apps —<br>
+  locally, with no account or telemetry.
 </p>
 
-<h2 align="center"><a href="https://github.com/keskiyo/KesVio/releases/latest">⬇ Download KesVio</a></h2>
+<p align="center">
+  <a href="https://github.com/keskiyo/KesVio/releases/latest"><strong>Download for Windows</strong></a>
+  ·
+  <a href="Documentation.md">Documentation</a>
+  ·
+  <a href="https://github.com/keskiyo/KesVio/releases">Releases</a>
+  ·
+  <a href="PRIVACY.md">Privacy</a>
+</p>
 
-<p align="center">Windows 10/11 · x64 · Local-first</p>
+<p align="center">
+  <a href="https://github.com/keskiyo/KesVio/releases/latest"><img src="https://img.shields.io/github/v/release/keskiyo/KesVio?style=flat-square&amp;label=release" alt="Latest release"></a>
+  <a href="https://github.com/keskiyo/KesVio/actions/workflows/verify.yml"><img src="https://github.com/keskiyo/KesVio/actions/workflows/verify.yml/badge.svg?branch=master" alt="CI Verify"></a>
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?style=flat-square" alt="Windows 10 and 11">
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/keskiyo/KesVio?style=flat-square" alt="MIT License"></a>
+</p>
 
-![KesVio catalog with sidebar categories, search and application cards](.github/images/catalog.png)
+![KesVio catalog showing Windows applications grouped into sidebar categories](.github/images/catalog.png)
 
-Screenshots show the current interface.
+## Why KesVio?
 
-## One catalog for Windows software
+**One catalog**<br>
+Bring Start Menu shortcuts, installed desktop programs, Microsoft Store apps, Steam games, and portable executables together. Duplicate discoveries merge into one application card. Portable apps on a tracked drive keep their category and favorites when its drive letter changes.
 
-Windows keeps applications in several places. KesVio combines:
+**Automatic organization**<br>
+Categorize unfamiliar software using Windows registrations, file metadata, and Start Menu structure instead of a hard-coded product list.
 
-- Start Menu shortcuts
-- installed desktop programs
-- Microsoft Store apps
-- Steam games
-- portable executables in folders you choose
+**Search beyond app names**<br>
+Find software by name, publisher, description, path, or category. Search tolerates typos, transliteration, and Russian/Latin keyboard-layout mismatches.
 
-When the same application is discovered from more than one source, it appears once rather than as a collection of duplicates.
+**Launch workflows, not only apps**<br>
+Use Favorites, saved catalog filters, and Scenarios to keep useful applications together and launch or close groups when needed.
 
-Add a drive root such as `F:\` under **Advanced → Scan folders** to keep applications found there in one exclusive **Disk F** category. The category follows the Windows drive letter, hides while the drive is disconnected, and returns after Windows reports the drive again.
+**Local-first by design**<br>
+No account, telemetry, application-inventory uploads, or cloud catalog.
 
-## From discovery to launch
-
-1. **Discover** Windows software, Steam games and selected portable-app folders.
-2. **Organize** the catalog with categories, Favorites, Auxiliary tools and Scenarios.
-3. **Launch** applications through their native Windows, Steam or executable path.
-
-## Built for everyday use
-
-### Search the catalog
-
-Find applications by name, publisher, description or path, including typo-tolerant search.
-Typing a name in Russian letters finds the Latin one, naming a category returns everything
-filed under it, and when a match sits in another section the results say so and link
-straight to it.
-
-### Sort software it has never seen
-
-Categories do not rely on a list of known products. KesVio reads the file types and
-protocols an application registered with Windows, the purpose the vendor wrote into the file
-description, and the Start Menu group the shortcut lives in — so an unfamiliar player, editor or
-mail client still lands where it belongs.
-
-### Launch through the right system path
-
-Steam games open through Steam, packaged apps through Windows and executables directly.
-
-### Save useful setups
-
-Favorites, categories and Scenarios let you keep common applications and launch-and-close setups close at hand.
-
-## A look around
+## Product tour
 
 ### Favorites and Scenarios
 
 ![Favorites page with starred applications and saved scenarios](.github/images/favorites.png)
 
-Star applications for quick access, or run a Scenario that opens one group of applications and closes another.
+Star applications for quick access. Scenarios let you start one group of applications and close another as a reusable setup; open the launcher with `Ctrl+Shift+K` or keep favorite scenarios in the tray. Selected scenarios can also be imported from a KesVio backup without applying its other settings.
 
-### Scenario details
+> [!WARNING]
+> New Scenarios request a graceful close by default. If you enable **Force close after 5 seconds**, save your work first because unsaved changes may be lost.
 
-![Scenarios page with per-scenario launch and close lists](.github/images/scenarios.png)
+### Application information
 
-Choose which apps to launch or close and follow the Scenario's progress. Missing apps stay visible as **Unavailable**.
+![Application information dialog showing local installation, status, and detection details](.github/images/app-info.png)
 
-Press **Ctrl+Shift+K** anywhere to open the Scenario launcher: search by scenario name or by the apps inside one, filter to favorites, recently run or scenarios that need attention, and run the one you land on with Enter. The tray menu offers up to five favorite scenarios, with recently run favorites first, so you can start one without opening the window. Removing a favorite also removes it from the tray; ordinary scenarios never fill the remaining slots.
-
-Use **Force scan** in the tray to rebuild discovery, including fixed drives when enabled. It opens the window for progress and cancellation and stays disabled while scanning.
-
-**Save your work first:** apps that do not close within five seconds are forcibly stopped, which can discard unsaved work.
-
-### More catalog views
-
-![More page with Auxiliary tools, Scenarios, Hidden and Installers and Docs](.github/images/more.png)
-
-Auxiliary tools, hidden applications, installers and documentation stay available without crowding the main catalog.
-
-### Application details
-
-![Application information dialog with installation, status and detection details](.github/images/app-info.png)
-
-Inspect local file details, architecture, signature status and installation state for an application card.
+Inspect local file details, architecture, signature status, installation state, and the evidence KesVio used to classify an application.
 
 ### Settings and maintenance
 
-![KesVio settings with catalog density, startup and tray behaviour](.github/images/settings.png)
+![KesVio settings showing personalization, Windows integration, and update controls](.github/images/settings.png)
 
-General settings group appearance, startup, Windows integration and updates in one panel. Catalog cards use **Compact** by default. KesVio is listed under **Windows Settings → Apps → Startup** already switched off, so starting with Windows is a switch you turn on there; **Manage** opens that page. Scanning, backups and unclassified apps stay under **Advanced**.
+Control catalog density, application discovery, startup and tray behavior, updates, backups, diagnostics, and catalog maintenance from one place.
 
-Backups contain preferences only. If **Your changes are not being saved** appears, keep your export: imported settings may be lost after restart even when import reports success.
+<details>
+<summary>More screenshots</summary>
+
+### Scenario editor
+
+![Scenario editor with application launch and close lists](.github/images/scenarios.png)
+
+Choose which applications a Scenario launches or closes and whether closing may be forced.
+
+### Additional catalog views
+
+![KesVio More page with Auxiliary tools, Scenarios, Hidden, and Installers and Docs](.github/images/more.png)
+
+Auxiliary tools, hidden applications, installers, and documentation remain available without crowding the main catalog.
+
+</details>
+
+For discovery rules, filters, removable drives, Undo, Scenario behavior, imports, and troubleshooting, read the [Technical Documentation](Documentation.md).
 
 ## Install
 
-1. Download [**`KesVio_0.5.1_x64-setup.exe`**](https://github.com/keskiyo/KesVio/releases/latest).
-2. Run the installer. It needs no administrator rights and installs for the current user into `%LOCALAPPDATA%\KesVio`; you can pick another folder on the install page.
-3. Start KesVio and choose **Scan for apps**.
+Download the latest Windows x64 installer from [**Releases**](https://github.com/keskiyo/KesVio/releases/latest).
+
+1. Run the setup executable. It needs no administrator rights and installs for the current user.
+2. Choose the installation location if needed.
+3. Open KesVio and select **Scan for apps**.
 
 > [!WARNING]
-> Released installers are not Authenticode-signed yet, so SmartScreen may show **Windows protected your PC**. Choose **More info → Run anyway** and download only from this repository's Releases. See [Code signing policy](#code-signing-policy).
+> KesVio releases are not Authenticode-signed yet, so Windows SmartScreen may show **Windows protected your PC**. Download installers only from this repository.
 
 | Requirement  | Value                                                           |
 | ------------ | --------------------------------------------------------------- |
@@ -128,49 +110,44 @@ Backups contain preferences only. If **Your changes are not being saved** appear
 | Internet     | Update checks and downloads; WebView2 installation when missing |
 | Account      | Not required                                                    |
 
-## Privacy
+## Privacy & security
 
-KesVio is local-first. It has no telemetry, cloud account, application-inventory uploads or online metadata enrichment; catalog data remains on your machine. The updater contacts this repository's Releases to check for updates and download an installer when you choose to update. These requests do not include your catalog. If WebView2 is missing, the installer also needs internet access to download the runtime from Microsoft.
+KesVio is local-first:
 
-KesVio also cannot remove software. It shows you which entries Windows has a registered uninstaller for and opens the Windows page for you; the removal itself is Windows' job. There is no code in the application that starts one.
+- no account required;
+- no telemetry;
+- no application-inventory uploads;
+- no online metadata enrichment.
 
-What is stored, where, and what leaves the machine is listed in [Privacy Policy](PRIVACY.md). For implementation and security details, see [Technical Documentation](Documentation.md#13-privacy-and-security). KesVio is available under the [MIT License](LICENSE); the licenses of the packages it distributes are in [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt), which is also installed alongside the application.
+Your catalog remains on your computer. Network access is used for update checks, downloads, and WebView2 installation when required. KesVio does not remove software itself; when Windows has a registered uninstaller, KesVio opens the Windows Apps settings page.
+
+[Privacy Policy](PRIVACY.md) · [Security Policy](SECURITY.md) · [Technical security model](Documentation.md#13-privacy-and-security)
+
+### Release verification
+
+KesVio installers are currently not Authenticode-signed. Each release instead includes:
+
+- a SHA-256 checksum;
+- a Tauri updater signature;
+- GitHub build provenance.
+
+See [Verifying a downloaded installer](Documentation.md#verifying-a-downloaded-installer) for the manual verification commands. These checks verify release integrity but do not suppress SmartScreen.
 
 ## Development
 
-Prerequisites: the Node.js version in [`.node-version`](.node-version), the Rust MSVC toolchain pinned in [`rust-toolchain.toml`](rust-toolchain.toml), Microsoft C++ Build Tools, Windows SDK and the [Tauri Windows prerequisites](https://v2.tauri.app/start/prerequisites/).
+Prerequisites: the Node.js version in [`.node-version`](.node-version), the Rust MSVC toolchain pinned in [`rust-toolchain.toml`](rust-toolchain.toml), Microsoft C++ Build Tools, Windows SDK, and the [Tauri Windows prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```powershell
 npm install
 npm run tauri dev
 ```
 
-See [Technical Documentation](Documentation.md#16-verification-and-releases) for verification and release commands.
+See [Verification and releases](Documentation.md#16-verification-and-releases) for repository checks and release architecture.
 
 ## Contributing
 
-Bug reports and pull requests are welcome. Read [Contributing](CONTRIBUTING.md) for setup, the checks a change has to pass, and how contributions are licensed, and [Technical Documentation](Documentation.md) before changing code or workflows.
+Bug reports and pull requests are welcome. Read [Contributing](CONTRIBUTING.md) for setup, required checks, and licensing, and review the [Technical Documentation](Documentation.md) before changing code or workflows.
 
-## Code signing policy
+## Project links
 
-Released installers are not Authenticode-signed. There is no code signing certificate behind this project, so SmartScreen warns on first run and every release starts at zero reputation.
-
-What is verified instead: each release is built from this repository by the GitHub Actions workflow in `.github/workflows/release.yml`, on GitHub-hosted runners, and every installer is published with a detached Tauri updater signature (`.sig`), a `SHA256SUMS.txt`, and a GitHub build provenance attestation. The in-app updater verifies the `.sig` against the public key in `tauri.conf.json` before it installs anything, so an installer altered after publication is rejected as an update. None of this is Authenticode and none of it suppresses SmartScreen: download only from this repository's Releases.
-
-You can check a download yourself, without trusting me:
-
-```bash
-gh attestation verify KesVio_0.5.1_x64-setup.exe --repo keskiyo/KesVio
-```
-
-That asks GitHub whether this exact file was produced by this repository's release workflow, and names the commit it was built from.
-
-```powershell
-(Get-FileHash -Algorithm SHA256 .\KesVio_0.5.1_x64-setup.exe).Hash.ToLower()
-```
-
-Compare the result with the line in `SHA256SUMS.txt` on the same release page.
-
-## Links
-
-[Documentation](Documentation.md) · [Privacy](PRIVACY.md) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Releases](https://github.com/keskiyo/KesVio/releases) · [Telegram: @keskiyo](https://t.me/keskiyo)
+[Documentation](Documentation.md) · [Privacy](PRIVACY.md) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [Releases](https://github.com/keskiyo/KesVio/releases) · [License](LICENSE) · [Third-party licenses](THIRD_PARTY_LICENSES.txt) · [Telegram: @keskiyo](https://t.me/keskiyo)

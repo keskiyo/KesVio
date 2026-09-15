@@ -15,6 +15,7 @@ use tauri::Manager;
 
 use app_state::AppState;
 use lifecycle::window_state;
+use platform::windows::process_priority;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -24,12 +25,15 @@ pub fn run() {
     let tray_lifecycle = Arc::clone(&lifecycle);
     let setup_lifecycle = Arc::clone(&lifecycle);
     let locations = paths::Locations::beside_executable();
-    let mut builder = tauri::Builder::default().plugin(diagnostics::plugin(locations.logs()));
+    let (log_plugin, log_sink) = diagnostics::plugin(locations.logs());
+    let mut builder = tauri::Builder::default().plugin(log_plugin);
     #[cfg(desktop)]
     {
         builder = builder
             .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
-                if lifecycle::should_show_on_second_instance(args) {
+                let shown = lifecycle::should_show_on_second_instance(args);
+                log::info!("Second instance forwarded to this process: shown={shown}");
+                if shown {
                     lifecycle::show_main_window(app);
                 }
             }))
@@ -66,17 +70,26 @@ pub fn run() {
             paths::adopt_previous_documents(app.handle());
             paths::remove_retired_documents(app.handle());
             if let Ok(log_dir) = paths::log_dir(app.handle()) {
-                let removed = diagnostics::prune_expired_logs(
+                log_sink.attach(&log_dir);
+                let pruned = diagnostics::prune_expired_logs(
                     &log_dir,
                     std::time::SystemTime::now(),
                     diagnostics::MAX_LOG_AGE,
                 );
                 log::info!(
-                    "KesVio {} starting on {}: log retention {} hours, {removed} expired files removed",
+                    "KesVio {} starting on {}: log retention {} hours, {} expired files removed, {} could not be removed",
                     app.package_info().version,
                     std::env::consts::OS,
-                    diagnostics::MAX_LOG_AGE.as_secs() / (60 * 60)
+                    diagnostics::MAX_LOG_AGE.as_secs() / (60 * 60),
+                    pruned.removed,
+                    pruned.failed
                 );
+                match diagnostics::RetentionWorker::start(log_dir) {
+                    Some(worker) => {
+                        app.manage(worker);
+                    }
+                    None => log::warn!("Log retention worker could not start"),
+                }
             }
             if let Ok(data_dir) = paths::data_dir(app.handle()) {
                 log::info!("Data folder: {}", data_dir.display());
@@ -89,11 +102,14 @@ pub fn run() {
                     false
                 }
             };
-            lifecycle::prepare_main_window(
-                app,
-                &setup_lifecycle,
-                lifecycle::should_hide_on_autostart(starts_hidden_from_autostart, tray_ready),
-            );
+            let stay_hidden =
+                lifecycle::should_hide_on_autostart(starts_hidden_from_autostart, tray_ready);
+            if stay_hidden {
+                setup_lifecycle.begin_quiet_start();
+                process_priority::set_own_priority(process_priority::OwnPriority::BelowNormal);
+                log::info!("Quiet start: hidden autostart, startup scan deferred");
+            }
+            lifecycle::prepare_main_window(app, &setup_lifecycle, stay_hidden);
             lifecycle::start_background_initialization(app.handle().clone());
             Ok(())
         })
@@ -113,19 +129,22 @@ pub fn run() {
             commands::settings::get_system_settings,
             commands::settings::set_scan_settings,
             commands::settings::set_close_behavior,
+            commands::settings::set_startup_enabled,
             commands::settings::save_preferences_backup,
             commands::links::open_telegram,
             commands::links::open_github,
             commands::links::open_apps_settings,
-            commands::links::open_startup_settings,
             commands::links::open_release,
             commands::links::stale_copy_status,
             commands::links::open_installed_copy,
             commands::diagnostics::log_client_error,
             commands::diagnostics::export_diagnostics_log,
+            commands::diagnostics::preview_diagnostics_log,
             commands::tray::set_tray_scenarios,
+            commands::tray::set_tray_favorites,
             commands::tray::set_tray_running,
-            commands::tray::set_tray_scan_state
+            commands::tray::set_tray_scan_state,
+            commands::tray::take_tray_search_intent
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -31,7 +31,7 @@ export function NavItem({
 			className={`${navigationItemClass(active)}${className ? ` ${className}` : ''}`}
 		>
 			<SpotlightLayer size={90} />
-			<Icon className="shrink-0" size={17} />{' '}
+			<Icon className="shrink-0" size={17} aria-hidden="true" />{' '}
 			<span className="min-w-0 truncate">{label}</span>
 			{(count !== undefined || secondaryCount !== undefined) && (
 				<span className="ml-auto shrink-0 rounded-md border border-(--border-neutral) bg-(--surface-inset) px-1.5 py-0.5 text-xs text-(--text-muted)">

@@ -6,7 +6,10 @@ import type {
 } from '../../../../entities/category'
 import type { useNavigationCategoryDrag } from '../../model/useNavigationCategoryDrag'
 
-export type { AppNavigationProps } from '../../types'
+export type {
+	AppNavigationProps,
+	SavedFiltersNavigation as SavedFilterListProps,
+} from '../../types'
 
 export interface SortableCategoryListProps {
 	categories: AppCategory[]

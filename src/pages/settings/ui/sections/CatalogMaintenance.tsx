@@ -9,6 +9,7 @@ import {
 	ACTION_ROW,
 	CANCEL_BUTTON,
 	CONFIRM_BUTTON,
+	SETTINGS_ACTION_FOOTER,
 } from '../../data'
 import type { CatalogMaintenanceProps } from '../../types'
 
@@ -44,7 +45,7 @@ export function CatalogMaintenance({
 					description="Rebuild the application catalog."
 				/>
 			</div>
-			<div className={`mt-auto pt-4 ${ACTION_ROW}`}>
+			<div className={SETTINGS_ACTION_FOOTER}>
 				<button
 					ref={forceTriggerRef}
 					type="button"

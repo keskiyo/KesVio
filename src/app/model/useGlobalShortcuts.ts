@@ -5,6 +5,7 @@ interface GlobalShortcuts {
 	onToggleScenarios: () => void
 	onSearchFromShortcut: () => void
 	onFocusSearch: () => void
+	onUndo?: () => void
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -20,11 +21,24 @@ export function useGlobalShortcuts({
 	onToggleScenarios,
 	onSearchFromShortcut,
 	onFocusSearch,
+	onUndo,
 }: GlobalShortcuts) {
 	useEffect(() => {
 		function onKeyDown(event: KeyboardEvent) {
 			const typing = isTypingTarget(event.target)
 			const commandOrControl = event.ctrlKey || event.metaKey
+			const isUndoShortcut =
+				commandOrControl &&
+				!event.shiftKey &&
+				!event.altKey &&
+				(event.code === 'KeyZ' || event.key.toLowerCase() === 'z')
+			if (isUndoShortcut) {
+				if (typing || !onUndo) return
+				event.preventDefault()
+				event.stopPropagation()
+				onUndo()
+				return
+			}
 			const pressedK =
 				event.code === 'KeyK' || event.key.toLowerCase() === 'k'
 			const isScenarioShortcut =
@@ -75,5 +89,6 @@ export function useGlobalShortcuts({
 		onToggleScenarios,
 		onSearchFromShortcut,
 		onFocusSearch,
+		onUndo,
 	])
 }

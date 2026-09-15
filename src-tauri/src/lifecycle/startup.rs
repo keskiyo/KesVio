@@ -1,6 +1,6 @@
-use crate::app_state::{remember_catalog, AppState};
+use crate::app_state::{remember_catalog, remember_volumes, AppState};
 use crate::catalog;
-use crate::catalog::sync::{load_sanitized_cache, restart_change_watcher, start_volume_watcher};
+use crate::catalog::sync::{load_sanitized_document, restart_change_watcher, start_volume_watcher};
 use crate::paths;
 use crate::platform::windows::{global_shortcut, install_registry};
 use tauri::{AppHandle, Manager};
@@ -34,9 +34,10 @@ fn load_cached_catalog(app: &AppHandle) {
     let Ok(app_data_dir) = paths::data_dir(app) else {
         return;
     };
-    if let Some(apps) = load_sanitized_cache(&app_data_dir) {
+    if let Some(document) = load_sanitized_document(&app_data_dir) {
         let state = app.state::<AppState>();
-        remember_catalog(state.inner(), &apps);
+        remember_catalog(state.inner(), &document.apps);
+        remember_volumes(state.inner(), &document.volumes);
     }
     let settings = catalog::scan_settings::read(&app_data_dir);
     restart_change_watcher(app.clone(), &settings);

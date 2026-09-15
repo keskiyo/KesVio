@@ -15,7 +15,7 @@ export function TitleBar() {
 					onClick={controls.minimize}
 					className="grid h-9 w-11 place-items-center text-slate-400 transition-colors hover:bg-slate-700/70 hover:text-white"
 				>
-					<Minus size={15} />
+					<Minus size={15} aria-hidden="true" />
 				</button>
 				<button
 					type="button"
@@ -24,9 +24,9 @@ export function TitleBar() {
 					className="grid h-9 w-11 place-items-center text-slate-400 transition-colors hover:bg-slate-700/70 hover:text-white"
 				>
 					{controls.maximized ? (
-						<Copy size={12} />
+						<Copy size={12} aria-hidden="true" />
 					) : (
-						<Square size={11} />
+						<Square size={11} aria-hidden="true" />
 					)}
 				</button>
 				<button
@@ -35,7 +35,7 @@ export function TitleBar() {
 					onClick={controls.close}
 					className="grid h-9 w-11 place-items-center text-slate-500 transition-colors hover:bg-red-500/65 hover:text-white"
 				>
-					<X size={16} />
+					<X size={16} aria-hidden="true" />
 				</button>
 			</div>
 		</div>

@@ -1,12 +1,8 @@
-import {
-	SOURCE_ERROR_LABELS,
-	SOURCE_STATE_LABELS,
-	timestampFormatter,
-} from '../../data'
+import { timestampFormatter } from '../../data'
 import type { SourceHealthTableProps } from '../../types'
 
-export function SourceHealthTable({ sources }: SourceHealthTableProps) {
-	if (sources.length === 0) return null
+export function SourceHealthTable({ rows }: SourceHealthTableProps) {
+	if (rows.length === 0) return null
 	return (
 		<div className="mt-4 overflow-x-auto">
 			<table className="w-full min-w-104 text-left text-xs">
@@ -26,39 +22,37 @@ export function SourceHealthTable({ sources }: SourceHealthTableProps) {
 							Last success
 						</th>
 						<th scope="col" className="py-1 font-medium">
-							Failures
+							Details
 						</th>
 					</tr>
 				</thead>
 				<tbody>
-					{sources.map(source => (
+					{rows.map(row => (
 						<tr
-							key={source.key}
+							key={row.key}
 							className="border-t border-slate-200/70"
+							data-attention={row.needsAttention || undefined}
 						>
 							<th scope="row" className="py-1.5 pr-3 font-normal">
-								{source.key}
+								{row.label}
 							</th>
-							<td className="py-1.5 pr-3">
-								{SOURCE_STATE_LABELS[source.state]}
-								{source.lastError
-									? ` · ${SOURCE_ERROR_LABELS[source.lastError]}`
-									: ''}
+							<td
+								className={`py-1.5 pr-3 ${row.needsAttention ? 'font-medium text-amber-800' : ''}`}
+							>
+								{row.statusLabel}
 							</td>
 							<td className="py-1.5 pr-3 tabular-nums">
-								{source.recordCount}
+								{row.recordCount}
 							</td>
 							<td className="py-1.5 pr-3">
-								{source.lastSuccessAt
+								{row.lastSuccessAt
 									? timestampFormatter.format(
-											new Date(
-												source.lastSuccessAt * 1000,
-											),
+											new Date(row.lastSuccessAt * 1000),
 										)
 									: 'Never'}
 							</td>
-							<td className="py-1.5 tabular-nums">
-								{source.consecutiveFailures}
+							<td className="py-1.5 text-slate-600">
+								{row.reason ?? '—'}
 							</td>
 						</tr>
 					))}

@@ -1,6 +1,12 @@
 import type { RefObject } from 'react'
 import type { ScanProgress } from '../../entities/app'
 
+export interface ActiveFilterChip {
+	name: string
+	onEdit(): void
+	onClear(): void
+}
+
 export interface HeaderProps {
 	primaryAppCount: number
 	auxiliaryToolCount: number
@@ -8,6 +14,7 @@ export interface HeaderProps {
 	query: string
 	isRefreshing: boolean
 	scanProgress: ScanProgress | null
+	activeFilter?: ActiveFilterChip | null
 	menuButtonRef: RefObject<HTMLButtonElement>
 	searchInputRef?: RefObject<HTMLInputElement>
 	onOpenNavigation(): void
@@ -15,6 +22,10 @@ export interface HeaderProps {
 	onRefresh(): Promise<void>
 	onCancelScan(): Promise<void>
 	showMenu: boolean
+}
+
+export interface FilterChipProps {
+	filter: ActiveFilterChip
 }
 
 export interface SearchFieldProps {

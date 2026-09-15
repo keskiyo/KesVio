@@ -14,6 +14,11 @@ export const CANCEL_BUTTON = `${CONFIRM_BUTTON} border border-slate-300/80 bg-wh
 
 export const ACTION_ROW = 'grid gap-2 sm:flex sm:flex-wrap sm:justify-end'
 
+export const SETTINGS_ACTION_FOOTER = `mt-4 border-t border-(--border-neutral) pt-4 ${ACTION_ROW}`
+
+export const SETTINGS_SOURCE_ACTIONS =
+	'mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center'
+
 export const timestampFormatter = new Intl.DateTimeFormat(undefined, {
 	dateStyle: 'medium',
 	timeStyle: 'short',

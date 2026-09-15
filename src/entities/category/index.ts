@@ -20,6 +20,8 @@ export {
 	DRIVE_CATEGORY_PREFIX,
 	type DriveCategory,
 	driveCategoryFor,
+	type DriveLocation,
+	isDefaultDriveLabel,
 	isDriveCategory,
 	isDriveCategoryId,
 	staysVisibleWhenEmpty,

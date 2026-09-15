@@ -1,11 +1,11 @@
 use super::run_blocking;
 use crate::app_state::AppState;
 use crate::catalog;
-use crate::catalog::sync::restart_change_watcher;
+use crate::catalog::sync::{cancel_pending_retry, restart_change_watcher};
 use crate::error::AppError;
 use crate::lifecycle::{window_state, LifecycleState};
 use crate::paths;
-use crate::platform::windows::{drives, global_shortcut};
+use crate::platform::windows::{drives, global_shortcut, startup_approval};
 use serde::Serialize;
 use std::path::Path;
 use std::sync::Arc;
@@ -32,6 +32,7 @@ pub(crate) struct SystemSettings {
     scan_settings: catalog::scan_settings::ScanSettings,
     fixed_drives: Vec<String>,
     hide_to_tray_on_close: bool,
+    startup_entry: startup_approval::StartupEntry,
 }
 
 #[cfg(test)]
@@ -42,7 +43,15 @@ pub(super) fn settings_sample() -> SystemSettings {
         scan_settings: catalog::scan_settings::ScanSettings::default(),
         fixed_drives: vec![r"C:\".into()],
         hide_to_tray_on_close: true,
+        startup_entry: startup_approval::StartupEntry::Disabled,
     }
+}
+
+fn product_name(app: &tauri::AppHandle) -> Result<String, AppError> {
+    app.config()
+        .product_name
+        .clone()
+        .ok_or(AppError::ProductNameMissing)
 }
 
 fn normalize_scan_settings(
@@ -81,12 +90,15 @@ fn normalize_scan_settings(
 pub(crate) async fn get_system_settings(app: tauri::AppHandle) -> Result<SystemSettings, AppError> {
     let app_data_dir =
         paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
-    let (scan_settings, fixed_drives) = run_blocking("System settings read", move || {
-        let scan_settings = catalog::scan_settings::read(&app_data_dir);
-        let fixed_drives = drives::fixed_drive_roots();
-        (scan_settings, fixed_drives)
-    })
-    .await?;
+    let product = product_name(&app)?;
+    let (scan_settings, fixed_drives, startup_entry) =
+        run_blocking("System settings read", move || {
+            let scan_settings = catalog::scan_settings::read(&app_data_dir);
+            let fixed_drives = drives::fixed_drive_roots();
+            let startup_entry = startup_approval::read(&product);
+            (scan_settings, fixed_drives, startup_entry)
+        })
+        .await?;
     let shortcut = app
         .state::<AppState>()
         .shortcut_status
@@ -102,7 +114,21 @@ pub(crate) async fn get_system_settings(app: tauri::AppHandle) -> Result<SystemS
             .map(|path| path.to_string_lossy().into_owned())
             .collect(),
         hide_to_tray_on_close: app.state::<Arc<LifecycleState>>().hides_to_tray(),
+        startup_entry,
     })
+}
+
+#[tauri::command]
+pub(crate) async fn set_startup_enabled(
+    app: tauri::AppHandle,
+    enabled: bool,
+) -> Result<startup_approval::StartupEntry, AppError> {
+    let product = product_name(&app)?;
+    run_blocking("Startup entry update", move || {
+        startup_approval::write(&product, enabled)
+    })
+    .await?
+    .map_err(AppError::UpdateStartupEntry)
 }
 
 #[tauri::command]
@@ -148,6 +174,7 @@ pub(crate) async fn set_scan_settings(
 
 #[tauri::command]
 pub(crate) fn cancel_scan(state: tauri::State<'_, AppState>) {
+    cancel_pending_retry(state.inner());
     state.scan_coordinator.cancel_all();
 }
 

@@ -1,8 +1,11 @@
 import { toAppClientError } from '../../../shared/api/tauri/errors'
 import { reconcileScenarios } from '../../../entities/scenario'
+import { reconcileDriveCategories } from '../driveCategories'
+import { identityRekeys, rekeyRecord } from '../identityRekey'
 import {
-	mergeIcon,
-	reconcileDriveCategories,
+	catalogGenerationOrder,
+	keepHeldRecords,
+	newerDiagnostics,
 	reconcileFirstSeen,
 	reconcileMarks,
 } from '../reconciliation'
@@ -43,29 +46,71 @@ export function createCatalogActions({
 	client,
 	persist,
 }: CatalogActionOptions): CatalogActions {
-	function commitScan(scan: CatalogScanResult) {
-		const previousFirstSeen = get().firstSeenAt
-		const previous = new Map(get().apps.map(app => [app.id, app]))
-		const apps = scan.apps.map(app => mergeIcon(previous.get(app.id), app))
+	let scansInFlight = 0
+
+	function beginScan() {
+		scansInFlight += 1
+		set({ isRefreshing: true, error: null })
+	}
+
+	function endScan() {
+		scansInFlight = Math.max(0, scansInFlight - 1)
+		if (scansInFlight === 0)
+			set({ isRefreshing: false, scanProgress: null })
+	}
+
+	async function runScan(scan: () => Promise<CatalogScanResult>) {
+		beginScan()
+		try {
+			commitScan(await scan())
+		} finally {
+			endScan()
+		}
+	}
+
+	function adoptCatalog(apps: AppState['apps']) {
+		const state = get()
+		const rekeys = identityRekeys(state.apps, apps)
+		const previousFirstSeen = rekeyRecord(state.firstSeenAt, rekeys)
 		const firstSeenAt = reconcileFirstSeen(
 			apps,
 			previousFirstSeen,
 			Date.now(),
 		)
-		const marks = reconcileMarks(get(), apps)
-		const scenarios = reconcileScenarios(get().scenarios, apps)
-		const drives = reconcileDriveCategories(get(), apps)
-		set({
+		const marks = reconcileMarks(state, apps)
+		const scenarios = reconcileScenarios(state.scenarios, apps)
+		const drives = reconcileDriveCategories(
+			marks ? { ...state, ...marks } : state,
 			apps,
+		)
+		return {
+			patch: {
+				apps,
+				firstSeenAt,
+				...marks,
+				...(scenarios ? { scenarios } : {}),
+				...(drives ?? {}),
+			},
+			changed:
+				firstSeenAt !== state.firstSeenAt ||
+				Boolean(marks || scenarios || drives),
+		}
+	}
+
+	function commitScan(scan: CatalogScanResult) {
+		const order = catalogGenerationOrder(
+			scan.generation,
+			get().catalogGeneration,
+		)
+		if (order === 'stale') return
+		const apps = keepHeldRecords(get().apps, scan.apps, order)
+		const adopted = adoptCatalog(apps)
+		set({
+			...adopted.patch,
 			hasCache: true,
 			catalogGeneration: scan.generation,
-			firstSeenAt,
-			...marks,
-			...(scenarios ? { scenarios } : {}),
-			...(drives ?? {}),
 		})
-		if (firstSeenAt !== previousFirstSeen || marks || scenarios || drives)
-			persist()
+		if (adopted.changed) persist()
 	}
 
 	return {
@@ -73,23 +118,24 @@ export function createCatalogActions({
 			set({ isLoading: true, error: null })
 			try {
 				const snapshot = await client.getApps()
-				const scenarios = reconcileScenarios(
-					get().scenarios,
-					snapshot.apps,
+				const order = catalogGenerationOrder(
+					snapshot.generation,
+					get().catalogGeneration,
 				)
+				if (order === 'stale') return
+				const apps =
+					order === 'same'
+						? keepHeldRecords(get().apps, snapshot.apps, order)
+						: snapshot.apps
+				const adopted = adoptCatalog(apps)
 				set({
-					apps: snapshot.apps,
-					firstSeenAt: reconcileFirstSeen(
-						snapshot.apps,
-						get().firstSeenAt,
-						Date.now(),
-					),
+					...adopted.patch,
 					hasCache: snapshot.hasCache,
 					catalogGeneration: snapshot.generation ?? 0,
-					catalogDiagnostics: snapshot.diagnostics ?? null,
-					...reconcileMarks(get(), snapshot.apps),
-					...(scenarios ? { scenarios } : {}),
-					...(reconcileDriveCategories(get(), snapshot.apps) ?? {}),
+					catalogDiagnostics: newerDiagnostics(
+						get().catalogDiagnostics,
+						snapshot.diagnostics,
+					),
 				})
 				persist()
 			} catch (error) {
@@ -98,37 +144,20 @@ export function createCatalogActions({
 				set({ isLoading: false })
 			}
 		},
-		async refresh() {
-			set({ isRefreshing: true, error: null })
-			try {
-				commitScan(await client.refreshApps())
-			} finally {
-				set({ isRefreshing: false, scanProgress: null })
-			}
-		},
-		async forceFullScan() {
-			set({ isRefreshing: true, error: null })
-			try {
-				commitScan(
-					client.forceFullScan
-						? await client.forceFullScan()
-						: await client.refreshApps(),
-				)
-			} finally {
-				set({ isRefreshing: false, scanProgress: null })
-			}
-		},
+		refresh: () => runScan(() => client.refreshApps()),
+		forceFullScan: () =>
+			runScan(() =>
+				client.forceFullScan
+					? client.forceFullScan()
+					: client.refreshApps(),
+			),
 		async resetCatalogCache() {
-			if (!client.resetCatalogCache) {
+			const reset = client.resetCatalogCache
+			if (!reset) {
 				await get().forceFullScan()
 				return
 			}
-			set({ isRefreshing: true, error: null })
-			try {
-				commitScan(await client.resetCatalogCache())
-			} finally {
-				set({ isRefreshing: false, scanProgress: null })
-			}
+			await runScan(() => reset())
 		},
 		async cancelScan() {
 			await client.cancelScan()

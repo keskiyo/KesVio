@@ -14,6 +14,7 @@ import type {
 	AppState,
 	GetAppState,
 	PersistPreferences,
+	RunTransaction,
 	SetAppState,
 } from '../types'
 
@@ -21,6 +22,7 @@ interface ScenarioActionOptions {
 	set: SetAppState
 	get: GetAppState
 	persist: PersistPreferences
+	transact: RunTransaction
 	idFactory: () => string
 }
 
@@ -67,9 +69,10 @@ export function createScenarioActions({
 	set,
 	get,
 	persist,
+	transact,
 	idFactory,
 }: ScenarioActionOptions): ScenarioActions {
-	function updateScenario(
+	function changeScenario(
 		id: string,
 		change: (scenario: Scenario) => Scenario,
 	) {
@@ -78,7 +81,13 @@ export function createScenarioActions({
 				scenario.id === id ? change(scenario) : scenario,
 			),
 		}))
-		persist()
+	}
+
+	function scenarioName(id: string): string {
+		return (
+			get().scenarios.find(scenario => scenario.id === id)?.name ??
+			'scenario'
+		)
 	}
 
 	return {
@@ -90,22 +99,24 @@ export function createScenarioActions({
 			if (get().scenarios.length >= MAX_SCENARIOS)
 				return { ok: false, error: 'Too many scenarios' }
 			const id = idFactory()
-			set(state => ({
-				scenarios: [
-					...state.scenarios,
-					{
-						id,
-						name: value,
-						launchIdentities: [],
-						closeIdentities: [],
-						launchAppSnapshots: {},
-						closeAppSnapshots: {},
-						createdAt: Date.now(),
-						lastRunAt: null,
-					},
-				],
-			}))
-			persist()
+			transact(`Created scenario ${value}`, () =>
+				set(state => ({
+					scenarios: [
+						...state.scenarios,
+						{
+							id,
+							name: value,
+							forceClose: false,
+							launchIdentities: [],
+							closeIdentities: [],
+							launchAppSnapshots: {},
+							closeAppSnapshots: {},
+							createdAt: Date.now(),
+							lastRunAt: null,
+						},
+					],
+				})),
+			)
 			return { ok: true, id }
 		},
 		renameScenario(id, name) {
@@ -115,26 +126,30 @@ export function createScenarioActions({
 				return { ok: false, error: 'Scenario name already exists' }
 			if (!get().scenarios.some(scenario => scenario.id === id))
 				return { ok: false, error: 'Scenario not found' }
-			updateScenario(id, scenario => ({ ...scenario, name: value }))
+			transact(`Renamed scenario to ${value}`, () =>
+				changeScenario(id, scenario => ({ ...scenario, name: value })),
+			)
 			return { ok: true }
 		},
 		deleteScenario(id) {
-			set(state => ({
-				scenarios: state.scenarios.filter(
-					scenario => scenario.id !== id,
-				),
-				favoriteScenarioIds: state.favoriteScenarioIds.filter(
-					entry => entry !== id,
-				),
-			}))
-			persist()
+			transact(`Deleted scenario ${scenarioName(id)}`, () =>
+				set(state => ({
+					scenarios: state.scenarios.filter(
+						scenario => scenario.id !== id,
+					),
+					favoriteScenarioIds: state.favoriteScenarioIds.filter(
+						entry => entry !== id,
+					),
+				})),
+			)
 		},
 		markScenarioRun(id) {
 			if (!get().scenarios.some(scenario => scenario.id === id)) return
-			updateScenario(id, scenario => ({
+			changeScenario(id, scenario => ({
 				...scenario,
 				lastRunAt: Date.now(),
 			}))
+			persist()
 		},
 		toggleFavoriteScenario(id) {
 			if (!get().scenarios.some(scenario => scenario.id === id)) return
@@ -170,32 +185,36 @@ export function createScenarioActions({
 				if (app && isCloseBlocked(app))
 					return { ok: false, error: closeBlockedMessage(app) }
 			}
-			updateScenario(id, entry => ({
-				...entry,
-				[key]: [...entry[key], identity],
-				...(app
-					? {
-							[snapshotsKey]: {
-								...(entry[snapshotsKey] ?? {}),
-								[identity]: scenarioAppSnapshot(app),
-							},
-						}
-					: {}),
-			}))
+			transact(`Added ${app?.name ?? 'app'} to ${scenario.name}`, () =>
+				changeScenario(id, entry => ({
+					...entry,
+					[key]: [...entry[key], identity],
+					...(app
+						? {
+								[snapshotsKey]: {
+									...(entry[snapshotsKey] ?? {}),
+									[identity]: scenarioAppSnapshot(app),
+								},
+							}
+						: {}),
+				})),
+			)
 			return { ok: true }
 		},
 		removeScenarioApp(id, list, identity) {
 			const key = listKey(list)
 			const snapshotsKey = snapshotKey(list)
-			updateScenario(id, scenario => ({
-				...scenario,
-				[key]: scenario[key].filter(entry => entry !== identity),
-				[snapshotsKey]: Object.fromEntries(
-					Object.entries(scenario[snapshotsKey] ?? {}).filter(
-						([entry]) => entry !== identity,
+			transact(`Removed an app from ${scenarioName(id)}`, () =>
+				changeScenario(id, scenario => ({
+					...scenario,
+					[key]: scenario[key].filter(entry => entry !== identity),
+					[snapshotsKey]: Object.fromEntries(
+						Object.entries(scenario[snapshotsKey] ?? {}).filter(
+							([entry]) => entry !== identity,
+						),
 					),
-				),
-			}))
+				})),
+			)
 		},
 	}
 }

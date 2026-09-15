@@ -19,6 +19,20 @@
 ; would switch itself off on every update. Guarding both leaves an update from touching either the
 ; shortcut or the user's on/off choice.
 ;
+; A setup.exe run by hand over an existing installation is not an update (`$UpdateMode` is 0), and
+; the Settings switch has meanwhile been writing the same approval value. The install hook
+; therefore writes the disabled payload only when no `KesVio.lnk` value exists yet, which is what
+; makes a fresh install and a reinstall differ: the first one lands switched off, the second keeps
+; the user's choice. NSIS has no ReadRegBin, so presence is established by enumerating the key's
+; value names. The shortcut itself is always (re)created; its target is the same executable.
+;
+; The reinstall page's default choice runs the old uninstaller first, and the installer hands it
+; `_?=<dir>` so it runs in place — a parameter a user-started uninstall from Apps & features never
+; carries. The uninstall hook keeps the shortcut and the approval value when that parameter is
+; present, so a manual upgrade through that path also preserves the choice from this version on.
+; Uninstallers shipped before this rule still delete both, and the install hook then registers
+; the entry disabled again.
+;
 ; The legacy Run value is deleted on every install, including updates. Tauri's own uninstall
 ; section already deletes it, but skips that when updating, so the upgrade path needs this.
 ;
@@ -37,20 +51,57 @@
 !define KESVIO_STARTUP_APPROVED \
   "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder"
 
+; The product name is defined by the generated installer after this file is included, so the
+; value name arrives on the stack instead of through `${PRODUCTNAME}`, which a Function body
+; would read as a literal at include time.
+Var KesVioStartupApprovalExists
+
+Function KesVioReadStartupApproval
+  Exch $2
+  Push $0
+  Push $1
+  StrCpy $KesVioStartupApprovalExists 0
+  StrCpy $0 0
+  kesvio_approval_next:
+    ClearErrors
+    EnumRegValue $1 HKCU "${KESVIO_STARTUP_APPROVED}" $0
+    ${If} ${Errors}
+      Goto kesvio_approval_done
+    ${EndIf}
+    ${If} $1 == $2
+      StrCpy $KesVioStartupApprovalExists 1
+      Goto kesvio_approval_done
+    ${EndIf}
+    IntOp $0 $0 + 1
+    Goto kesvio_approval_next
+  kesvio_approval_done:
+  Pop $1
+  Pop $0
+  Pop $2
+FunctionEnd
+
 !macro NSIS_HOOK_POSTINSTALL
   SetShellVarContext current
   DeleteRegValue HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${PRODUCTNAME}"
   ${If} $UpdateMode <> 1
     CreateShortcut "$SMSTARTUP\${PRODUCTNAME}.lnk" "$INSTDIR\${MAINBINARYNAME}.exe" "--autostart"
-    WriteRegBin HKCU "${KESVIO_STARTUP_APPROVED}" "${PRODUCTNAME}.lnk" "030000000000000000000000"
+    Push "${PRODUCTNAME}.lnk"
+    Call KesVioReadStartupApproval
+    ${If} $KesVioStartupApprovalExists = 0
+      WriteRegBin HKCU "${KESVIO_STARTUP_APPROVED}" "${PRODUCTNAME}.lnk" "030000000000000000000000"
+    ${EndIf}
   ${EndIf}
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL
   ${If} $UpdateMode <> 1
     SetShellVarContext current
-    Delete "$SMSTARTUP\${PRODUCTNAME}.lnk"
-    DeleteRegValue HKCU "${KESVIO_STARTUP_APPROVED}" "${PRODUCTNAME}.lnk"
+    ClearErrors
+    ${GetOptions} $CMDLINE "_?=" $R9
+    ${If} ${Errors}
+      Delete "$SMSTARTUP\${PRODUCTNAME}.lnk"
+      DeleteRegValue HKCU "${KESVIO_STARTUP_APPROVED}" "${PRODUCTNAME}.lnk"
+    ${EndIf}
     DeleteRegKey HKCU "Software\${MANUFACTURER}\${PRODUCTNAME}"
     DeleteRegKey /ifempty HKCU "Software\${MANUFACTURER}"
     ${If} $INSTDIR != ""

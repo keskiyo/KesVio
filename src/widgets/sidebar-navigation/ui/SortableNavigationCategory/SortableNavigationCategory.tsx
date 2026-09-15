@@ -40,7 +40,7 @@ export function SortableNavigationCategory({
 		<button
 			type="button"
 			aria-label={label}
-			title="Click to open, drag to reorder"
+			title="Click or press Enter to open, drag or press Space to reorder"
 			onClick={() => onSelect(category)}
 			onPointerMove={spotlight.onPointerMove}
 			onPointerEnter={spotlight.onPointerEnter}

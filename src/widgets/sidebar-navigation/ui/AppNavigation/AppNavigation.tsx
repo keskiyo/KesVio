@@ -13,7 +13,9 @@ import {
 	staysVisibleWhenEmpty,
 } from '../../../../entities/category'
 import { CategoryNameEditor } from '../../../../features/manage-category'
+import { CATEGORY_REORDER_KEYS } from './data'
 import { NavItem } from './NavItem'
+import { SavedFilterList } from './SavedFilterList'
 import { SortableCategoryList } from './SortableCategoryList'
 import type { AppNavigationProps } from './types'
 import { useNavigationCategoryDrag } from '../../model/useNavigationCategoryDrag'
@@ -25,6 +27,7 @@ export function AppNavigation(props: AppNavigationProps) {
 		useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
 		useSensor(KeyboardSensor, {
 			coordinateGetter: sortableKeyboardCoordinates,
+			keyboardCodes: CATEGORY_REORDER_KEYS,
 		}),
 	)
 	const visibleCategories = props.categoryOrder.filter(category => {
@@ -84,7 +87,10 @@ export function AppNavigation(props: AppNavigationProps) {
 				/>
 			</div>
 			<div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-				<div className="mt-4 mb-2 flex items-center justify-between px-1">
+				{props.savedFilters && (
+					<SavedFilterList {...props.savedFilters} />
+				)}
+				<div className="mt-5 mb-2 flex items-center justify-between px-1">
 					<p className="text-[.68rem] font-semibold tracking-[.16em] text-(--text-subtle) uppercase">
 						Categories
 					</p>
@@ -94,7 +100,7 @@ export function AppNavigation(props: AppNavigationProps) {
 						onClick={() => setAdding(true)}
 						className="grid size-7 place-items-center rounded-lg border border-(--border-neutral) bg-(--surface-raised) text-(--text-muted) transition-colors hover:bg-(--utility-accent) hover:text-(--text-primary) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
 					>
-						<Plus size={16} />
+						<Plus size={16} aria-hidden="true" />
 					</button>
 				</div>
 				{adding && (
