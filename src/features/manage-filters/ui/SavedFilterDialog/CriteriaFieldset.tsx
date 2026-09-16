@@ -23,8 +23,8 @@ export function CriteriaFieldset({
 	onChange,
 }: CriteriaFieldsetProps) {
 	return (
-		<div className="grid gap-4">
-			<fieldset className="grid gap-1.5">
+		<div className="grid min-w-0 content-start gap-4">
+			<fieldset className="grid min-w-0 gap-1.5">
 				<legend className={FIELD_LABEL_CLASS}>Source</legend>
 				<div className="grid grid-cols-1 gap-x-3 gap-y-1 min-[460px]:grid-cols-2">
 					{SOURCE_CHOICES.map(choice => (
@@ -82,7 +82,7 @@ export function CriteriaFieldset({
 					))}
 				</div>
 			</FilterDisclosure>
-			<fieldset className="grid gap-1.5">
+			<fieldset className="grid min-w-0 gap-1.5">
 				<legend className={FIELD_LABEL_CLASS}>
 					Added to the catalog
 				</legend>

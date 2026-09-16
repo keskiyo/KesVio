@@ -74,9 +74,6 @@ mod tests {
         assert!(!destination.join("apps-cache.json").exists());
     }
 
-    // The uninstall feature is gone, and its history recorded which programs the user removed from
-    // their PC. Leaving that file behind would keep the record the feature's removal was meant to
-    // end, so the folder is swept once per start.
     #[test]
     fn a_retired_history_is_removed_and_nothing_else_is_touched() {
         let directory = tempfile::tempdir().unwrap();

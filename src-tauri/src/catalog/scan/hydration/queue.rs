@@ -99,8 +99,6 @@ mod tests {
         assert_eq!(queue.pop(2).as_deref(), Some("new"));
     }
 
-    // The view the user just opened is the one waiting for its icons; the ids of the view they
-    // left must not be served first because they were asked for earlier.
     #[test]
     fn the_newest_visible_request_is_served_before_an_older_one() {
         let mut queue = HydrationQueue::default();

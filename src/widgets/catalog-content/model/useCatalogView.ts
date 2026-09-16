@@ -6,6 +6,7 @@ import {
 	createMarkLookup,
 	filterVisibleApps,
 	isCatalogArtifact,
+	joinHydrationIds,
 	rankAppsByQueryAndCategory,
 	type SavedFilter,
 	selectCatalogCounts,
@@ -171,7 +172,7 @@ export function useCatalogView(state: CatalogViewState) {
 		return filteredApps
 	}, [filteredApps, morePreview, scenarioApps, state.activeView])
 	const visibleHydrationIds = useMemo(
-		() => [...new Set(hydrationApps.map(app => app.id))].join('|'),
+		() => joinHydrationIds(hydrationApps.map(app => app.id)),
 		[hydrationApps],
 	)
 

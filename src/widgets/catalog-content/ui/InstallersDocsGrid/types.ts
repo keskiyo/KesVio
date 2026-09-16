@@ -7,11 +7,9 @@ import type {
 export interface InstallersDocsGridProps {
 	apps: AppInfo[]
 	hasQuery: boolean
-	favoriteAppIds: string[]
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
 	onBack(): void
-	onToggleFavorite(id: string): void
 	onLaunch(app: AppInfo): Promise<void>
 	onMoveApp(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void

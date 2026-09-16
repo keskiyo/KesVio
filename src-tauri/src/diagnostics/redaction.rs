@@ -200,8 +200,6 @@ mod tests {
         assert!(output.ends_with("\nnext"));
     }
 
-    // The same folder is named on many lines of one export; one token per distinct value keeps
-    // those lines correlated, and the case Windows happened to use does not split the token.
     #[test]
     fn a_repeated_location_keeps_one_token_across_lines_and_letter_case() {
         let mut redactor = Redactor::new(vec![]);

@@ -1,7 +1,6 @@
 import type { StoreApi } from 'zustand/vanilla'
 import type { AppCategory, CategoryDefinition } from '../../entities/category'
 import type { Scenario, ScenarioList } from '../../entities/scenario'
-import type { ScenarioImportClient } from '../../entities/scenario'
 import type { LegacyCanonicalPreferences } from './preferences'
 import type { PreferenceTransferResult } from './preferences'
 import type { UndoEntry } from './undo'
@@ -20,8 +19,6 @@ import type {
 } from '../../entities/app'
 
 export interface AppState {
-	inspectScenarioImport: ScenarioImportClient['inspect']
-	importSelectedScenarios: ScenarioImportClient['apply']
 	apps: AppInfo[]
 	query: string
 	isLoading: boolean

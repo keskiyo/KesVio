@@ -88,6 +88,34 @@ describe('CatalogSources', () => {
 		expect(portable).toHaveTextContent('0')
 	})
 
+	it('exposes every source fact in a compact list for narrow settings', () => {
+		render(
+			<CatalogSources
+				sources={[
+					health({
+						key: 'steam',
+						state: 'failed_without_snapshot',
+						lastError: 'provider_failed',
+						lastSuccessAt: null,
+						recordCount: 0,
+					}),
+				]}
+				lastScanAt={1_700_000_100}
+				scanning={false}
+			/>,
+		)
+
+		const compactList = screen.getByRole('list', {
+			name: 'Application source health for narrow windows',
+		})
+		const steam = within(compactList).getByRole('listitem')
+		expect(steam).toHaveTextContent('Steam')
+		expect(steam).toHaveTextContent('Failed')
+		expect(steam).toHaveTextContent('Apps0')
+		expect(steam).toHaveTextContent('Last successNever')
+		expect(steam).toHaveTextContent('DetailsDid not answer')
+	})
+
 	it('runs the ordinary refresh and reads as refreshing while a scan runs', async () => {
 		const onRefresh = vi.fn().mockResolvedValue(undefined)
 		const { rerender } = render(

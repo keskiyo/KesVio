@@ -165,7 +165,7 @@ describe('catalog density presets', () => {
 			'src/entities/app/ui/AppCard/CardIcon.tsx',
 			'src/entities/app/ui/AppCard/CardLabel.tsx',
 			'src/widgets/catalog-content/ui/AppGrid/Skeleton.tsx',
-			'src/widgets/catalog-content/ui/AuxiliaryToolRow/AuxiliaryToolRow.tsx',
+			'src/widgets/catalog-content/ui/AppRow/AppRow.tsx',
 		].map(file => readFileSync(file, 'utf8'))
 
 		for (const source of sources) {

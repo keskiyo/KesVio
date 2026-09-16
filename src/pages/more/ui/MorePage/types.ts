@@ -41,11 +41,6 @@ export interface MoreAreaPreview {
 	scenarios: ScenarioSummary[]
 }
 
-export interface LastChangeControl {
-	label: string
-	onUndo(): void
-}
-
 export interface MorePageProps {
 	auxiliaryCount: number
 	hiddenCount: number
@@ -54,12 +49,7 @@ export interface MorePageProps {
 	recentApps?: MorePreviewItem[]
 	preview: MoreAreaPreview
 	scenarioRun: ScenarioRunControl
-	lastChange?: LastChangeControl
 	onSelectView(view: AppView): void
-}
-
-export interface MoreLastChangeProps {
-	lastChange: LastChangeControl
 }
 
 export interface MoreCardProps {

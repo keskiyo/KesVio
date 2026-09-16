@@ -211,9 +211,6 @@ mod tests {
         }
     }
 
-    // A launched program used to inherit this process's working directory, so anything it wrote
-    // relative to it landed in the catalog's own folder: Rufus dropped its `rufus.com` console
-    // companion into `src-tauri` instead of its own directory.
     #[test]
     fn an_executable_starts_in_its_own_directory() {
         assert_eq!(

@@ -55,7 +55,7 @@ No account, telemetry, application-inventory uploads, or cloud catalog.
 
 ![Favorites page with starred applications and saved scenarios](.github/images/favorites.png)
 
-Star applications for quick access. Scenarios let you start one group of applications and close another as a reusable setup; open the launcher with `Ctrl+Shift+K` or keep favorite scenarios in the tray. Selected scenarios can also be imported from a KesVio backup without applying its other settings.
+Star applications for quick access. Scenarios let you start one group of applications and close another as a reusable setup; open the launcher with `Ctrl+Shift+K` or keep favorite scenarios in the tray.
 
 > [!WARNING]
 > New Scenarios request a graceful close by default. If you enable **Force close after 5 seconds**, save your work first because unsaved changes may be lost.

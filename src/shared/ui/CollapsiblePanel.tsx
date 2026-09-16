@@ -54,7 +54,7 @@ export function CollapsiblePanel({
 			className={`grid transition-[grid-template-rows,opacity] duration-(--motion-medium) ease-(--motion-ease-out) motion-reduce:transition-none ${visible ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
 		>
 			<div
-				className={`overflow-hidden transition-transform duration-(--motion-medium) ease-(--motion-ease-out) motion-reduce:transition-none ${visible ? 'translate-y-0' : '-translate-y-2'}${className ? ` ${className}` : ''}`}
+				className={`min-h-0 overflow-clip transition-transform duration-(--motion-medium) ease-(--motion-ease-out) motion-reduce:transition-none ${visible ? 'translate-y-0' : '-translate-y-2'}${className ? ` ${className}` : ''}`}
 			>
 				{children}
 			</div>

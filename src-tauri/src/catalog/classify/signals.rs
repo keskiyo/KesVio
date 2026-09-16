@@ -196,8 +196,6 @@ mod tests {
     use super::*;
     use crate::app_state::cached_app;
 
-    // Windows reports a localized resource stub as the original file name, and taking the last
-    // extension off `MSPAINT.EXE.MUI` leaves `mspaint.exe`, which matches no executable rule.
     #[test]
     fn a_localized_resource_stub_still_names_its_executable() {
         assert_eq!(exe_stem("MSPAINT.EXE.MUI"), "mspaint");
@@ -236,8 +234,6 @@ mod tests {
         assert_eq!(exe_stem("🚀.exe.MUI"), "🚀");
     }
 
-    // An InstallShield shortcut reports the packaging toolkit as publisher, product and
-    // description, so scoring it would file every such product under whatever the toolkit says.
     #[test]
     fn packaging_toolkit_metadata_is_not_product_evidence() {
         let mut app = cached_app("ABBYY FineReader PDF 15", r"C:\Menu\FineReader.lnk");

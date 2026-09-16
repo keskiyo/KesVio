@@ -51,6 +51,7 @@ export {
 	targetAvailabilityLabel,
 } from './lib/appMetadata'
 export { categoryReasonsLabel } from './lib/categoryReason'
+export { joinHydrationIds, splitHydrationIds } from './lib/hydrationIds'
 export {
 	closeBlockedMessage,
 	closeRiskBadge,

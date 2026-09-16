@@ -1,7 +1,7 @@
 import { Wrench } from 'lucide-react'
 import { sortFavoritesFirst } from '../../../entities/app'
 import type { AuxiliaryGridProps } from '../types'
-import { AuxiliaryToolRow } from './AuxiliaryToolRow/AuxiliaryToolRow'
+import { AppRow } from './AppRow/AppRow'
 import { CatalogViewHeader } from './CatalogViewHeader'
 
 export function AuxiliaryGrid(props: AuxiliaryGridProps) {
@@ -20,11 +20,12 @@ export function AuxiliaryGrid(props: AuxiliaryGridProps) {
 				{apps.length ? (
 					<div className="grid min-w-0 grid-cols-1 gap-2.5 min-[769px]:grid-cols-2 min-[1601px]:grid-cols-3">
 						{apps.map(app => (
-							<AuxiliaryToolRow
+							<AppRow
 								key={app.id}
 								app={app}
 								categories={props.categories}
 								categoryOrder={props.categoryOrder}
+								isHidden
 								onLaunch={props.onLaunch}
 								onMove={props.onMoveApp}
 								onInfo={props.onInfo}

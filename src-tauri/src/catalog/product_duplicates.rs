@@ -236,8 +236,6 @@ mod tests {
             .collect()
     }
 
-    // Git for Windows stamps every helper with the product name, so the walk records thirty
-    // rows called Git; the executable named after the product is the one row worth keeping.
     #[test]
     fn helpers_sharing_the_product_name_collapse_to_the_executable_named_after_it() {
         let mut apps = vec![
@@ -259,9 +257,6 @@ mod tests {
         assert!(apps[1].visibility_reasons.is_empty());
     }
 
-    // The rule runs after deduplication on purpose: dedup fills a record's missing version or
-    // publisher from its siblings, so a group decided before it would not be the group a second
-    // sanitize sees, and the catalog would keep changing under its own rules.
     #[test]
     fn the_sanitized_catalog_keeps_one_row_per_portable_product_and_stays_put() {
         let apps = vec![
@@ -328,8 +323,6 @@ mod tests {
         );
     }
 
-    // Without a publisher a shared name proves nothing on its own, but two builds side by
-    // side whose stems differ only by the architecture marker are one program twice.
     #[test]
     fn unpublished_architecture_siblings_in_one_folder_collapse_but_strangers_do_not() {
         let mut apps = vec![
@@ -379,8 +372,6 @@ mod tests {
         assert_eq!(kept(&apps), vec![r"E:\Apps\hdsentinel\HDSentinel.exe"]);
     }
 
-    // A shortcut points at one build on purpose; the catalog keeps that one even when another
-    // variant would rank higher on its own, and a second referenced build stays as well.
     #[test]
     fn a_referenced_executable_is_never_rejected() {
         let mut shortcut = member("CrystalDiskMark", r"C:\Menu\CrystalDiskMark.lnk");
@@ -435,9 +426,6 @@ mod tests {
         assert_eq!(kept(&apps), vec![r"C:\VS\Installer\vs_installershell.exe"]);
     }
 
-    // Two versions are two products the user may want side by side, a name without a
-    // publisher or a version is no evidence of sameness, and installers are files rather than
-    // product trees: two setups with one product name can be two different downloads.
     #[test]
     fn different_versions_publishers_installers_and_unversioned_names_are_kept() {
         let mut old = member("Rufus", r"E:\Tools\rufus-3.11p.exe");

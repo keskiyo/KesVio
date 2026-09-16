@@ -4,14 +4,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { InstallersDocsGrid } from '../../../../src/widgets/catalog-content/ui/InstallersDocsGrid/InstallersDocsGrid'
 import type { AppInfo } from '../../../../src/entities/app'
 
-vi.mock(
-	'../../../../src/widgets/catalog-content/ui/CatalogAppCard/CatalogAppCard',
-	() => ({
-		CatalogAppCard: ({ app }: { app: AppInfo }) => (
-			<article>{app.name}</article>
-		),
-	}),
-)
+vi.mock('../../../../src/widgets/catalog-content/ui/AppRow/AppRow', () => ({
+	AppRow: ({ app }: { app: AppInfo }) => <article>{app.name}</article>,
+}))
 
 function app(id: string, artifactKind: 'installer' | 'documentation'): AppInfo {
 	return {
@@ -41,9 +36,7 @@ const callbacks = {
 			builtIn: true,
 		},
 	],
-	favoriteAppIds: [],
 	onBack: vi.fn(),
-	onToggleFavorite: vi.fn(),
 	onLaunch: vi.fn().mockResolvedValue(undefined),
 	onMoveApp: vi.fn(),
 	onInfo: vi.fn(),

@@ -597,17 +597,23 @@ is refused with a safe message and the entry is kept; an entry whose revision
 no longer matches is dropped rather than applied. The undo persists like any
 transaction, so a failed write leaves the undone state in memory, sets
 `preferencesPersisted` to false and answers with a message that says so. The
-interface offers it three ways: the toast every transaction raises
-(`useUndoFeedback`, one per revision) carries an **Undo** action, **Ctrl+Z**
-undoes while focus is outside a text field and only while something can be
-undone (a text field keeps its own undo), and the More page shows the last
-change with an **Undo** button until the next change replaces it.
+interface offers it one way: **Ctrl+Z** undoes while focus is outside a text
+field and only while something can be undone (a text field keeps its own undo),
+and answers with one **Undone** notice. A transaction itself raises no
+notification: the per-change toast with an **Undo** action and the **Last
+change** card on the More page were removed on 16 September 2026 at the user's
+request, because adding or removing scenario entries produced a toast for every
+click.
 
 A scenario's launch and close lists keep one row of tiles on screen and hold the
 rest behind a count and a control that opens them. Which tiles fit is read from
 where the browser actually placed them rather than calculated from widths, so
 the count follows the window as it is resized and the row never wraps to a
-second line while collapsed. Every tile stays in the list and stays laid out
+second line while collapsed. The list itself never changes size — it always
+fills its container — so `useTileRowLimit` observes every tile as well (a tile
+taking its styles, an icon arriving, an entry added all move the break) and
+keeps a measurement only when it says something new, so the observer cannot
+drive a render loop. Every tile stays in the list and stays laid out
 whatever is hidden — a reading taken from a list that had already been shortened
 would only confirm the shorter list and take another tile away on each pass —
 and the ones past the first row are clipped by height and removed from the focus
@@ -730,7 +736,7 @@ source did not answer; the last successful result is still shown),
 **Scanning…** while a scan runs. An empty successful answer is **Up to date**
 with zero applications, because unavailability and emptiness are different
 facts. The section's summary line names the sources that need attention, the
-detail table opens on its own when any does, and **Refresh catalog** runs the
+details open on their own when any does, and **Refresh catalog** runs the
 ordinary refresh through the store — the same coordinator path as the header
 button. It is not a per-source retry: a scoped retry would need a backend
 allowlist and a scoped coordinator request, and the button is named for what it
@@ -739,7 +745,9 @@ from an earlier scan cannot make a recovered source read as failed again. The
 section lays out like every other Settings card: the icon centred on its text,
 **Source details** as a full-width disclosure with the chevron at the right,
 and the action row at the bottom — the button fills the width on a narrow
-window and sits at the right edge otherwise. There is no per-scan change
+window and sits at the right edge otherwise. Source health is a labelled list
+at the minimum window width and becomes a five-column table when the Settings
+surface is wide enough. There is no per-scan change
 report: a **Changes from last scan** section was built and withdrawn at the
 user's request, and the toast that used to follow every background scan
 (`catalog://changed`, "N applications added") was removed on 15 September 2026
@@ -1822,29 +1830,13 @@ refusing WM_CLOSE, unsaved-document prompts, both policy settings, forced close,
 protected target refusal and restart of migrated scenarios. Automated fixture
 checks do not prove native application cooperation or cancellation support.
 
-### Selective scenario import
+### Scenario import
 
-The Scenarios page offers Import scenarios. The import-scenarios feature reads a
-local JSON backup, limits it to 1 MiB and ignores stale reads after another file
-or unmount. It uses the root store's existing preference parser; the store checks
-UTF-8 size and version again before applying. No IPC or schema change is involved.
-The initial selection is empty. Selected entries default to new copies with unique
-IDs and case-insensitive name suffixes. Replacing an existing scenario requires
-selecting that target explicitly and preserves its local ID/name and favorite
-membership. Duplicate sources/targets, missing targets, capacity overflow and ID
-allocation failure reject the entire selection.
-
-Only imported scenario definitions are reconciled using the existing catalog
-identity/alias/unique-name rules. Ambiguous names remain unresolved. Unrelated
-preferences and favorite flags from the backup are never applied. Imported run
-history is cleared, and the close policy is preserved and displayed in the picker.
-One undoable preference transaction applies the result. A failed storage write
-restores previous scenarios and undo state; the modal keeps its selection for
-retry. Cancel does not import anything. Import never launches or closes apps.
-
-Existing full-settings import remains a separate operation. File-picker behavior,
-keyboard focus restoration and scaling still require native WebView verification;
-automated tests cover selection, error states and asynchronous read ownership.
+Scenarios travel only with the full settings backup (**Settings → Advanced →
+Backup & restore**). A
+selective **Import scenarios** picker on the Scenarios page was built and
+withdrawn on 16 September 2026 at the user's request before it shipped; nothing
+of it remains in the tree.
 
 ### Keyboard, screen reader and forced colors
 
@@ -1853,7 +1845,7 @@ and the documentation names is pinned by a test (`the_tray_copy_is_pinned`:
 `Open KesVio`, `Search`, `Favorite apps`, `Show all favorites…`, `Scenarios`,
 `Force scan`, `Scanning…`, `Quit`); the frontend equivalents (`Refresh catalog`,
 `Force full scan`, `Scan for apps`, `Quick launch`, `New
-filter`, `Last change` / `Undo`, `Preview redacted log`, `Export log as XML`)
+filter`, `Preview redacted log`, `Export log as XML`)
 are pinned by the tests of the screens that render them.
 
 Modal layering: every dialog, the navigation drawer included, is

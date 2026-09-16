@@ -78,7 +78,6 @@ export interface AppViewsProps {
 	systemClient: SystemClient
 	onFirstScan(): Promise<void>
 	onRefreshCatalog(): Promise<void>
-	onUndo(): void
 }
 
 export interface GlobalActivityBarProps {

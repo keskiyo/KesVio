@@ -40,18 +40,6 @@ function same(left: RowMetrics, right: RowMetrics): boolean {
 	)
 }
 
-/**
- * Reports the row a wrapping list actually produced rather than one calculated from widths.
- *
- * The list itself never changes size — it always fills its container — so watching it alone misses
- * everything that decides where the row breaks: the tiles taking their styles, an icon arriving,
- * an entry being added. Every tile is observed as well, and a measurement stays only when it says
- * something new, so the observer cannot drive a render loop.
- *
- * Every item stays in the list and stays laid out, whatever the caller then hides: a reading taken
- * from a list that had already been shortened would only ever confirm the shorter list, and each
- * pass would take another item away.
- */
 export function useTileRowLimit(count: number) {
 	const [metrics, setMetrics] = useState(UNMEASURED)
 	const nodeRef = useRef<HTMLElement | null>(null)

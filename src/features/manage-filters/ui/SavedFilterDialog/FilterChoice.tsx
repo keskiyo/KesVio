@@ -19,7 +19,7 @@ export function FilterChoice({
 	onChange,
 }: FilterChoiceProps) {
 	return (
-		<label className="group flex min-h-7 cursor-pointer items-center gap-2 rounded-lg px-1.5 text-sm text-(--text-primary) transition-colors hover:bg-(--surface-raised) motion-reduce:transition-none">
+		<label className="group relative flex min-h-7 min-w-0 cursor-pointer items-center gap-2 rounded-lg px-1.5 text-sm text-(--text-primary) transition-colors hover:bg-(--surface-raised) motion-reduce:transition-none">
 			<input
 				type={type}
 				name={name}

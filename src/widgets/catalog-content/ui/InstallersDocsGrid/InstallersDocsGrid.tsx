@@ -26,7 +26,7 @@ export function InstallersDocsGrid({
 				back={{ label: 'Back to More', onBack }}
 			/>
 			{apps.length ? (
-				<div className="space-y-7">
+				<div className="mx-auto max-w-3xl space-y-7 min-[1900px]:max-w-[80rem]">
 					{installers.length > 0 && (
 						<ArtifactSection
 							title="Installers"

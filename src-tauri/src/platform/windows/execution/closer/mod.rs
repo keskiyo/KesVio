@@ -91,8 +91,6 @@ mod tests {
         assert_eq!(close_processes(&[], false, |_| {}), CloseOutcome::default());
     }
 
-    // Nothing is running, so nothing is asked, waited for or terminated: a scenario that closes
-    // idle applications must not show the user a five second countdown over no work.
     #[test]
     fn an_idle_target_reports_no_stages() {
         let stages = Cell::new(0);

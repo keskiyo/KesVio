@@ -138,9 +138,6 @@ mod tests {
         assert_eq!(entry.message, "Scan started");
     }
 
-    // Setting a timezone strategy replaces the plugin's own formatter, and the replacement writes
-    // the level before the target while the default writes it after. Archived files keep whichever
-    // order the build that wrote them used, so both have to read back the same way.
     #[test]
     fn either_field_order_the_plugin_has_written_reads_back_the_same() {
         let level_last =
@@ -249,8 +246,6 @@ mod tests {
         assert!(unix_seconds(SystemTime::now()) > 1_700_000_000);
     }
 
-    // The old rule aged whole files by modification time, so a file the application kept
-    // writing to never expired and its two-hour-old lines shipped with the export.
     #[test]
     fn an_event_older_than_the_window_is_dropped_even_from_a_file_written_just_now() {
         let directory = tempfile::tempdir().unwrap();
@@ -294,9 +289,6 @@ mod tests {
         assert!(xml.contains("entries=\"3\""));
     }
 
-    // Redaction runs before escaping, so a token never contains markup and the markup that
-    // survives around it is still escaped; one folder named on two lines keeps one token, which
-    // is what lets a reader correlate the lines without learning the folder.
     #[test]
     fn the_export_is_redacted_before_it_is_escaped_and_keeps_locations_correlated() {
         let directory = tempfile::tempdir().unwrap();

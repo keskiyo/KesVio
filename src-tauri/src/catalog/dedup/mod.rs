@@ -192,9 +192,6 @@ mod tests {
         deduplicate(apps, |_app| AppCategory::Other, NameScript::Latin)
     }
 
-    // Visual Studio Code's Start Menu record adopted an install location eight levels inside its
-    // own `node_modules.asar.unpacked` tree. That path carries the per-update folder, so every
-    // update produced a new preference identity and silently orphaned scenarios and marks.
     #[test]
     fn an_install_location_that_does_not_hold_the_launch_target_is_refused() {
         let mut shortcut = app(

@@ -1,7 +1,6 @@
 import { WandSparkles } from 'lucide-react'
 import { buildMoreDestinations } from './data'
 import { MoreCard } from './MoreCard'
-import { MoreLastChange } from './MoreLastChange'
 import { MorePreviewRow } from './MorePreviewRow'
 import type { MorePageProps } from './types'
 
@@ -13,7 +12,6 @@ export function MorePage({
 	recentApps = [],
 	preview,
 	scenarioRun,
-	lastChange,
 	onSelectView,
 }: MorePageProps) {
 	const destinations = buildMoreDestinations({
@@ -47,7 +45,6 @@ export function MorePage({
 					</p>
 				</div>
 			</header>
-			{lastChange && <MoreLastChange lastChange={lastChange} />}
 			<div className="grid gap-3 lg:grid-cols-2">
 				{destinations.map(destination => (
 					<MoreCard

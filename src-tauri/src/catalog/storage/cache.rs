@@ -293,8 +293,6 @@ mod tests {
         assert_eq!(read_document(dir.path()), None);
     }
 
-    // A downgrade must degrade to a rescan, never destroy the document a newer build wrote. The
-    // preference store already refuses this; the catalog cache used to overwrite it silently.
     #[test]
     fn refuses_to_overwrite_a_cache_written_by_a_newer_schema() {
         let dir = tempfile::tempdir().unwrap();
@@ -1012,9 +1010,6 @@ mod tests {
         assert!(migrated.app_details.is_empty());
     }
 
-    // v9 stored an `uninstall` command beside `canUninstall`. The command is gone; the flag is the
-    // evidence that an entry is a registered product and is worth 35 visibility points, so the
-    // migration has to carry it over untouched and simply ignore the field it no longer reads.
     #[test]
     fn migrates_v9_by_dropping_the_uninstall_command_and_keeping_the_flag() {
         let dir = tempfile::tempdir().unwrap();
@@ -1051,8 +1046,6 @@ mod tests {
         assert!(!rewritten.contains("unins000"));
     }
 
-    // A reset that names the files it knows leaves behind the ones an earlier build wrote. One such
-    // sibling was still occupying eight megabytes on a real machine long after nothing read it.
     #[test]
     fn reset_removes_cache_files_without_touching_preferences() {
         let dir = tempfile::tempdir().unwrap();

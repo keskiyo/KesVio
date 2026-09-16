@@ -79,7 +79,8 @@ describe('CollapsiblePanel', () => {
 		fireEvent.click(screen.getByRole('button', { name: 'Toggle details' }))
 		const content = screen.getByText('Details').parentElement
 
-		expect(content).toHaveClass('pt-5', 'overflow-hidden')
+		expect(content).toHaveClass('pt-5', 'overflow-clip', 'min-h-0')
+		expect(content).not.toHaveClass('overflow-hidden')
 		expect(content).toHaveClass('transition-transform')
 		expect(content?.parentElement).not.toHaveClass('pt-5')
 	})

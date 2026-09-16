@@ -4,20 +4,30 @@ import { EllipsisVertical } from 'lucide-react'
 import { memo, useCallback, useRef, useState } from 'react'
 import { useIsLaunching } from '../../../../features/launch-app'
 import { AppActionsMenu } from '../../../../features/app-actions'
-import { CardIcon } from '../../../../entities/app'
-import type { AuxiliaryToolRowProps } from './types'
+import {
+	CardIcon,
+	isCatalogArtifact,
+	middleEllipsis,
+} from '../../../../entities/app'
+import type { AppRowProps } from './types'
 
-function AuxiliaryToolRowComponent({
+const LOCATION_MAX_CHARS = 64
+
+function ignoreHide() {}
+
+function AppRowComponent({
 	app,
 	categories,
 	categoryOrder,
+	isHidden,
 	onLaunch,
 	onMove,
 	onInfo,
 	onManageInWindows,
+	onHide = ignoreHide,
 	onRestore,
 	onDemote,
-}: AuxiliaryToolRowProps) {
+}: AppRowProps) {
 	const [menuOpen, setMenuOpen] = useState(false)
 	const launching = useIsLaunching(app.id)
 	const manageRef = useRef<HTMLButtonElement | null>(null)
@@ -32,6 +42,7 @@ function AuxiliaryToolRowComponent({
 	const metadata = [app.publisher?.trim(), app.version?.trim()]
 		.filter(Boolean)
 		.join(' · ')
+	const location = isCatalogArtifact(app) ? app.path.trim() : ''
 
 	return (
 		<article
@@ -54,7 +65,7 @@ function AuxiliaryToolRowComponent({
 			>
 				<CardIcon iconBase64={app.iconBase64} launching={launching} />
 				<span className="min-w-0">
-					<span className="block truncate text-sm font-semibold text-slate-800">
+					<span className="line-clamp-2 block text-sm font-semibold break-words text-slate-800">
 						{app.name}
 					</span>
 					{metadata && (
@@ -63,6 +74,14 @@ function AuxiliaryToolRowComponent({
 							title={metadata}
 						>
 							{metadata}
+						</span>
+					)}
+					{location && (
+						<span
+							className="mt-0.5 block truncate font-mono text-[11px] text-slate-500"
+							title={location}
+						>
+							{middleEllipsis(location, LOCATION_MAX_CHARS)}
 						</span>
 					)}
 				</span>
@@ -95,8 +114,9 @@ function AuxiliaryToolRowComponent({
 					onMove={onMove}
 					onInfo={onInfo}
 					onManageInWindows={onManageInWindows}
-					isHidden
-					onHide={() => undefined}
+					isHidden={isHidden}
+					isUserPromoted={app.userPromoted}
+					onHide={onHide}
 					onRestore={onRestore}
 					onDemote={onDemote}
 					anchorRef={manageRef}
@@ -106,4 +126,4 @@ function AuxiliaryToolRowComponent({
 	)
 }
 
-export const AuxiliaryToolRow = memo(AuxiliaryToolRowComponent)
+export const AppRow = memo(AppRowComponent)

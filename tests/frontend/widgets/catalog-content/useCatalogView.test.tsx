@@ -1,7 +1,11 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { useCatalogView } from '../../../../src/widgets/catalog-content/model/useCatalogView'
-import type { AppInfo, AppView } from '../../../../src/entities/app'
+import {
+	splitHydrationIds,
+	type AppInfo,
+	type AppView,
+} from '../../../../src/entities/app'
 import { DEFAULT_CATEGORIES } from '../../../../src/entities/category'
 import type { Scenario } from '../../../../src/entities/scenario'
 
@@ -85,9 +89,9 @@ describe('useCatalogView', () => {
 			)
 			const { result } = view({ apps })
 
-			expect(result.current.visibleHydrationIds.split('|')).toEqual(
-				apps.map(item => item.id),
-			)
+			expect(
+				splitHydrationIds(result.current.visibleHydrationIds),
+			).toEqual(apps.map(item => item.id))
 		})
 
 		// Scenario rows show each app by its icon, and that page renders no catalog grid — without
@@ -106,7 +110,7 @@ describe('useCatalogView', () => {
 			})
 
 			expect(
-				result.current.visibleHydrationIds.split('|').sort(),
+				splitHydrationIds(result.current.visibleHydrationIds).sort(),
 			).toEqual(['Chat', 'Editor'])
 		})
 
@@ -124,7 +128,9 @@ describe('useCatalogView', () => {
 				],
 			})
 
-			expect(result.current.visibleHydrationIds).toBe('Editor')
+			expect(
+				splitHydrationIds(result.current.visibleHydrationIds),
+			).toEqual(['Editor'])
 		})
 
 		// More previews apps in its cards and reaches the scenario apps through the run dialog.
@@ -138,7 +144,7 @@ describe('useCatalogView', () => {
 			})
 
 			expect(
-				result.current.visibleHydrationIds.split('|').sort(),
+				splitHydrationIds(result.current.visibleHydrationIds).sort(),
 			).toEqual(['Editor', 'Setup'])
 		})
 
@@ -151,7 +157,9 @@ describe('useCatalogView', () => {
 				],
 			})
 
-			expect(result.current.visibleHydrationIds).toBe('')
+			expect(
+				splitHydrationIds(result.current.visibleHydrationIds),
+			).toEqual([])
 		})
 	})
 

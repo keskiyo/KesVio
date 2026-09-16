@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { toast } from 'sonner'
+import { splitHydrationIds } from '../../entities/app'
 import { toAppClientError } from '../../shared/api/tauri/errors'
 
 interface BootstrapInput {
@@ -48,7 +49,7 @@ export function useCatalogBootstrap({
 
 	useEffect(() => {
 		if (isLoading) return
-		const ids = visibleHydrationIds.split('|').filter(Boolean)
+		const ids = splitHydrationIds(visibleHydrationIds)
 		if (ids.length) void hydrateVisibleIcons(ids)
 	}, [catalogGeneration, hydrateVisibleIcons, isLoading, visibleHydrationIds])
 }

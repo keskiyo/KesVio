@@ -52,9 +52,6 @@ mod tests {
         app
     }
 
-    // Hydration reads version resources once; a routine scan rebuilds the record from the source
-    // snapshot, which never held them, so without this every scan reported the record as updated
-    // and every hydration read the file again.
     #[test]
     fn a_rescanned_record_keeps_what_hydration_learned() {
         let mut fresh = cached_app("Tool", r"C:\Tools\tool.exe");

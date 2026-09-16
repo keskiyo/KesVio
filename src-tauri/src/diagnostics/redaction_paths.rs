@@ -131,9 +131,6 @@ mod tests {
         );
     }
 
-    // A folder name may hold a space, so a bare path keeps going over one until the next word
-    // is a log key, a connective the logger writes after a location, or the path already ended
-    // in a file name; a folder that ends in a dotted token is the known cost of that rule.
     #[test]
     fn an_unquoted_value_stops_before_punctuation_the_next_key_or_a_log_word() {
         assert_eq!(

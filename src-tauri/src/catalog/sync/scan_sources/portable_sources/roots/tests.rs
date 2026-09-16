@@ -48,8 +48,6 @@ fn a_missing_folder_on_a_mounted_drive_remains_in_scope_in_every_scan_mode() {
     }
 }
 
-// An unreachable folder on a mounted drive or share is what the bounded retry follows up on;
-// an unmounted drive is not, because its return is announced by the volume watcher instead.
 #[test]
 fn only_a_retained_folder_counts_as_unreachable() {
     let roots = roots_for(

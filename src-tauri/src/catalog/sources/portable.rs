@@ -259,9 +259,6 @@ mod tests {
         ));
     }
 
-    // Electron unpacks native helpers beside the asar archive. Visual Studio Code kept
-    // `node_modules.asar.unpacked` out of the exact-name list, so the walker descended into it and
-    // catalogued ripgrep, conpty and the Copilot helpers as installed applications.
     #[test]
     fn skips_directories_unpacked_from_an_electron_archive() {
         for path in [

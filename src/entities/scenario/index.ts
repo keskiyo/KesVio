@@ -13,13 +13,6 @@ export {
 	resolveScenarioApps,
 } from './lib/scenarioApps'
 export { reconcileScenarios } from './lib/scenarioReconciliation'
-export { mergeScenarioImport } from './lib/scenarioImport'
-export {
-	MAX_SCENARIO_BACKUP_BYTES,
-	type ScenarioImportChoice,
-	type ScenarioImportPreview,
-	type ScenarioImportClient,
-} from './model/scenarioImport.types'
 export {
 	MAX_SCENARIO_SNAPSHOT_ICON_BYTES,
 	normalizeScenarioAppSnapshot,

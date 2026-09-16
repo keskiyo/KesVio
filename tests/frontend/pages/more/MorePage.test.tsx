@@ -75,36 +75,6 @@ describe('MorePage', () => {
 		expect(screen.getByText('Secondary catalog views.')).toBeInTheDocument()
 	})
 
-	// The toast that offered the undo is gone in seconds; the More page keeps the last change
-	// reachable until the next change replaces it, and shows nothing when there is none.
-	it('offers the last change for undo and hides the card without one', async () => {
-		const onUndo = vi.fn()
-		const { unmount } = render(
-			<MorePage
-				auxiliaryCount={0}
-				hiddenCount={0}
-				installersDocsCount={0}
-				scenarioCount={0}
-				preview={emptyPreview}
-				scenarioRun={runControl()}
-				lastChange={{ label: 'Hid Google Chrome', onUndo }}
-				onSelectView={vi.fn()}
-			/>,
-		)
-		const card = screen.getByRole('region', { name: 'Last change' })
-		expect(card).toHaveTextContent('Hid Google Chrome')
-		await userEvent.click(
-			within(card).getByRole('button', { name: 'Undo' }),
-		)
-		expect(onUndo).toHaveBeenCalledOnce()
-		unmount()
-
-		renderPage()
-		expect(
-			screen.queryByRole('region', { name: 'Last change' }),
-		).not.toBeInTheDocument()
-	})
-
 	it('shows the More symbol in the page header', () => {
 		renderPage()
 

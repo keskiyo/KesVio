@@ -63,20 +63,7 @@ export function PublisherCriteria({
 					</button>
 				)}
 			</div>
-			{criteria.publishers.length > 0 && (
-				<div className="mt-2 flex justify-end">
-					<button
-						type="button"
-						onClick={() =>
-							onChange({ ...criteria, publishers: [] })
-						}
-						className="rounded-lg px-2 py-1 text-xs font-medium text-(--accent-strong) hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-(--accent-strong)"
-					>
-						Clear publishers
-					</button>
-				</div>
-			)}
-			<div className="mt-2 grid max-h-40 gap-1 overflow-y-auto rounded-lg border border-(--border-neutral) bg-(--surface-panel) p-2">
+			<div className="mt-2 grid h-52 min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-1 overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg border border-(--border-neutral) bg-(--surface-panel) p-2">
 				{visiblePublishers.length === 0 ? (
 					<p className="px-1.5 py-2 text-sm text-(--text-muted)">
 						{knownPublishers.length === 0
@@ -117,6 +104,19 @@ export function PublisherCriteria({
 							</FilterChoice>
 						)
 					})
+				)}
+			</div>
+			<div className="mt-1 flex min-h-8 items-center justify-end">
+				{criteria.publishers.length > 0 && (
+					<button
+						type="button"
+						onClick={() =>
+							onChange({ ...criteria, publishers: [] })
+						}
+						className="rounded-lg px-2 py-1 text-xs font-medium text-(--accent-strong) hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-(--accent-strong)"
+					>
+						Clear publishers
+					</button>
 				)}
 			</div>
 		</FilterDisclosure>

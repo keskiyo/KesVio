@@ -24,7 +24,6 @@ import { useSearchAccess } from './model/useSearchAccess'
 import { useTrayCatalogScan } from './model/useTrayCatalogScan'
 import { useTrayFavorites } from './model/useTrayFavorites'
 import { useTraySearch } from './model/useTraySearch'
-import { useUndoFeedback } from './model/useUndoFeedback'
 
 import { useGlobalShortcuts } from './model/useGlobalShortcuts'
 import { useStaleCopy } from '../features/stale-copy'
@@ -67,7 +66,6 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		onFullScan: state.forceFullScan,
 		onUndo: state.undo,
 	})
-	useUndoFeedback({ undoable: state.undoable, onUndo: feedback.undo })
 	const dialogs = useCatalogDialogs({
 		systemClient,
 		onLaunch: feedback.launch,
@@ -225,7 +223,6 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							systemClient={systemClient}
 							onFirstScan={feedback.fullScan}
 							onRefreshCatalog={feedback.refresh}
-							onUndo={feedback.undo}
 						/>
 					</div>
 				</div>

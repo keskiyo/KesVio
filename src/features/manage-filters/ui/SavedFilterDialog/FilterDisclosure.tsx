@@ -19,7 +19,7 @@ export function FilterDisclosure({
 		selectedCount === 0 ? 'No selection' : `${selectedCount} selected`
 
 	return (
-		<fieldset className="rounded-xl border border-(--border-neutral) bg-(--surface-inset)/45">
+		<fieldset className="min-w-0 rounded-xl border border-(--border-neutral) bg-(--surface-inset)/45">
 			<legend className="sr-only">{title}</legend>
 			<button
 				type="button"

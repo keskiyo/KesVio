@@ -82,7 +82,7 @@ export function SavedFilterDialog({
 						save()
 					}}
 				>
-					<div className="grid min-h-0 flex-1 gap-4 overflow-y-auto pr-1 pb-2">
+					<div className="grid min-h-0 min-w-0 flex-1 content-start gap-4 overflow-x-hidden overflow-y-auto pr-1 pb-2">
 						<label className="grid gap-1.5">
 							<span className={FIELD_LABEL_CLASS}>Name</span>
 							<span

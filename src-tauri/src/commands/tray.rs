@@ -117,8 +117,6 @@ mod tests {
         assert_eq!(accepted(entries), vec![entry("custom:1")]);
     }
 
-    // A favorite is launched by catalog id on the backend, so a blank or oversized id never
-    // becomes a menu row, and no more rows reach the menu than the submenu shows.
     #[test]
     fn favorites_are_capped_and_drop_blank_or_oversized_ids() {
         let entries = [

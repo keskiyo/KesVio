@@ -13,7 +13,6 @@ import { createPreferenceTransferActions } from './actions/preferenceTransferAct
 import { createSavedFilterActions } from './actions/savedFilterActions'
 import { createScenarioActions } from './actions/scenarioActions'
 import { createScenarioPolicyActions } from './actions/scenarioPolicyActions'
-import { createScenarioImportActions } from './actions/scenarioImportActions'
 import { createTransaction } from './transaction'
 import { createUndoActions } from './actions/undoActions'
 import { readPreferences } from './preferences'
@@ -101,13 +100,6 @@ export function createAppStore(
 				idFactory,
 			}),
 			...createScenarioPolicyActions({ set, get, transact }),
-			...createScenarioImportActions({
-				set,
-				get,
-				transact,
-				storage,
-				idFactory,
-			}),
 			...createSavedFilterActions({ set, get, transact, idFactory }),
 			...createPreferenceTransferActions({ set, get, persist, storage }),
 			...createUndoActions({ set, get, persist }),

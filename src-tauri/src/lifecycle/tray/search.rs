@@ -37,8 +37,6 @@ pub(crate) fn take_intent(app: &AppHandle) -> bool {
 mod tests {
     use super::*;
 
-    // The click can land before the interface has a listener, so the intent waits until the
-    // interface asks for it — and is handed over exactly once.
     #[test]
     fn a_raised_intent_is_taken_once() {
         let intent = TraySearchIntent::default();

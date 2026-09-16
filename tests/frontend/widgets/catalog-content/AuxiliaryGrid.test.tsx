@@ -8,16 +8,13 @@ import type {
 	CategoryDefinition,
 } from '../../../../src/entities/category'
 
-vi.mock(
-	'../../../../src/widgets/catalog-content/ui/AuxiliaryToolRow/AuxiliaryToolRow',
-	() => ({
-		AuxiliaryToolRow: ({ app }: { app: AppInfo }) => (
-			<button type="button" aria-label={`Launch ${app.name}`}>
-				{app.name}
-			</button>
-		),
-	}),
-)
+vi.mock('../../../../src/widgets/catalog-content/ui/AppRow/AppRow', () => ({
+	AppRow: ({ app }: { app: AppInfo }) => (
+		<button type="button" aria-label={`Launch ${app.name}`}>
+			{app.name}
+		</button>
+	),
+}))
 
 const development: CategoryDefinition = {
 	id: 'development',

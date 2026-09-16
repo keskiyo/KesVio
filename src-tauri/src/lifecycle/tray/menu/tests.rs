@@ -42,8 +42,6 @@ fn favorite(label: &str) -> TrayFavorite {
     }
 }
 
-// Two favorites with the same display name would be two identical rows with different
-// targets; a position suffix keeps each row tied to what it launches.
 #[test]
 fn identical_favorite_names_stay_distinguishable() {
     let labels = favorite_labels(&[favorite("Editor"), favorite("Editor"), favorite("Tool")]);
@@ -87,22 +85,17 @@ fn entry(label: &str, favorite: bool) -> TrayScenario {
     }
 }
 
-// A filled and a hollow star are a matched pair of the same width, so every name in the
-// submenu starts at one column instead of the starred ones sitting two glyphs to the right.
 #[test]
 fn a_marked_menu_starts_every_name_at_one_column() {
     assert_eq!(menu_label(&entry("Gaming", true), true), "★ Gaming");
     assert_eq!(menu_label(&entry("Work", false), true), "☆ Work");
 }
 
-// With nothing starred the column would carry no information and every row would wear a
-// hollow star for it.
 #[test]
 fn an_unmarked_menu_shows_the_names_alone() {
     assert_eq!(menu_label(&entry("Gaming", false), false), "Gaming");
 }
 
-// The mark is what the row is recognised by, so truncation must never be what removes it.
 #[test]
 fn a_starred_long_name_keeps_the_mark_and_loses_the_tail() {
     let label = menu_label(&entry(&"a".repeat(MAX_LABEL_CHARS * 2), true), true);
@@ -120,8 +113,6 @@ fn a_scenario_that_omits_the_favorite_flag_is_read_as_unstarred() {
     assert_eq!(menu_label(&parsed, false), "Gaming");
 }
 
-// The tray copy is the one the user learned and the one the documentation names; a change here is
-// a deliberate edit of this test, never a side effect of a refactor.
 #[test]
 fn the_tray_copy_is_pinned() {
     assert_eq!(OPEN_LABEL, "Open KesVio");

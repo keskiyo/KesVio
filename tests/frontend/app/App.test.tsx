@@ -246,6 +246,37 @@ describe('App', () => {
 		await waitFor(() => expect(hydrateVisibleIcons).toHaveBeenCalledOnce())
 	})
 
+	// A registry id is `registry:<publisher>|<name>|<path>`. The ids travelled to the hydration
+	// request joined and split on '|', so every registry-source record was asked for as three
+	// fragments the backend did not know, and those cards never received an icon.
+	it('asks for a registry id with pipes as one id', async () => {
+		const hydrateVisibleIcons = vi.fn().mockResolvedValue(undefined)
+		const registryId = 'registry:oven|bun|c:\\users\\example\\.bun'
+		renderApp({
+			hydrateVisibleIcons,
+			getApps: vi.fn().mockResolvedValue({
+				apps: [
+					...apps,
+					app({
+						id: registryId,
+						name: 'Bun',
+						path: 'C:\\Users\\example\\.bun\\bun.exe',
+						category: 'development',
+						sourceKind: 'registry',
+					}),
+				],
+				hasCache: true,
+			}),
+		})
+		await screen.findByText('Bun')
+
+		await waitFor(() => expect(hydrateVisibleIcons).toHaveBeenCalledOnce())
+		const requested = hydrateVisibleIcons.mock.calls[0]?.[0] as string[]
+		expect(requested).toContain(registryId)
+		expect(requested).not.toContain('bun')
+		expect(requested).not.toContain('registry:oven')
+	})
+
 	it('hydrates the auxiliary tools when that view opens', async () => {
 		const hydrateVisibleIcons = vi.fn().mockResolvedValue(undefined)
 		const tool = app({

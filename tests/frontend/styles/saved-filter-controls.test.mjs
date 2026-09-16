@@ -17,6 +17,9 @@ const actions = read(
 const publisher = read(
 	'src/features/manage-filters/ui/SavedFilterDialog/PublisherCriteria.tsx',
 )
+const disclosure = read(
+	'src/features/manage-filters/ui/SavedFilterDialog/FilterDisclosure.tsx',
+)
 
 describe('saved filter controls', () => {
 	it('reuses the main search surface and shared destructive action', () => {
@@ -42,5 +45,38 @@ describe('saved filter controls', () => {
 		expect(publisher).toContain('role="searchbox"')
 		expect(publisher).toContain('text-xs')
 		expect(publisher).not.toContain('type="search"')
+	})
+
+	it('keeps expanded publisher controls content-sized and single-axis scrollable', () => {
+		expect(dialog).toContain('content-start')
+		expect(criteria).toContain('content-start')
+		expect(disclosure).toContain('min-w-0')
+		expect(choice).toContain('min-w-0')
+		expect(publisher).toContain('overflow-x-hidden')
+		expect(publisher).toContain('overscroll-contain')
+		expect(publisher).toContain('grid-cols-[minmax(0,1fr)]')
+		expect(choice).toContain('relative')
+	})
+
+	// The clear action used to sit between the search field and the list, so the first selection
+	// pushed the list down under the pointer; it now sits below the list in a row whose height is
+	// reserved whether or not the action is shown, and the list itself has a fixed height.
+	it('keeps the publisher list fixed-height with the clear action below it', () => {
+		expect(publisher).toContain('h-52')
+		expect(publisher).not.toContain('max-h-40')
+		expect(publisher.indexOf('Clear publishers')).toBeGreaterThan(
+			publisher.indexOf('visiblePublishers.map'),
+		)
+		expect(publisher).toContain('min-h-8')
+	})
+
+	// Focusing a checkbox while the disclosure was still expanding scrolled the panel's
+	// overflow-hidden wrapper and left the search field hidden above the list; `overflow: clip`
+	// is not a scroll container, so focus cannot move it.
+	it('keeps the disclosure wrapper unscrollable so focus cannot hide the search field', () => {
+		const panel = read('src/shared/ui/CollapsiblePanel.tsx')
+		expect(panel).toContain('overflow-clip')
+		expect(panel).not.toContain('overflow-hidden')
+		expect(panel).toContain('min-h-0')
 	})
 })

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { App } from '../../src/app/App'
@@ -180,7 +180,7 @@ describe('accessibility audit — audit-cycle flows', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('names the undo control in the More page card and on the toast', async () => {
+	it('undoes a hidden app from the keyboard without raising a toast', async () => {
 		renderApp()
 		await userEvent.click(
 			await screen.findByRole('button', { name: 'Manage Steam' }),
@@ -188,26 +188,19 @@ describe('accessibility audit — audit-cycle flows', () => {
 		await userEvent.click(
 			await screen.findByRole('menuitem', { name: 'Hide from catalog' }),
 		)
+		await waitFor(() =>
+			expect(
+				screen.queryByRole('button', { name: 'Launch Steam' }),
+			).not.toBeInTheDocument(),
+		)
+		expect(
+			screen.queryByRole('button', { name: 'Undo' }),
+		).not.toBeInTheDocument()
 
-		const toastUndo = await screen.findByRole('button', { name: 'Undo' })
-		expect(toastUndo.closest('[role="status"], [aria-live]')).not.toBeNull()
-
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Open navigation' }),
-		)
-		await userEvent.click(
-			within(
-				screen.getByRole('dialog', { name: 'App navigation' }),
-			).getByRole('button', { name: 'More' }),
-		)
-		const card = await screen.findByRole('region', { name: 'Last change' })
-		expect(card).toHaveTextContent('Hid Steam')
-		await userEvent.click(
-			within(card).getByRole('button', { name: 'Undo' }),
-		)
+		await userEvent.keyboard('{Control>}z{/Control}')
 
 		expect(
-			screen.queryByRole('region', { name: 'Last change' }),
-		).not.toBeInTheDocument()
+			await screen.findByRole('button', { name: 'Launch Steam' }),
+		).toBeInTheDocument()
 	})
 })
