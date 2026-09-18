@@ -2,7 +2,7 @@ import { ChevronDown, ClipboardCopy, HelpCircle } from 'lucide-react'
 import { useState } from 'react'
 import { CollapsiblePanel } from '../../../../../shared/ui/CollapsiblePanel'
 import { copyToClipboard } from '../../../../../shared/lib/clipboard'
-import { ACTION_BUTTON_PRIMARY } from '../../../data'
+import { ACTION_BUTTON_PRIMARY } from '../../../../../shared/ui/buttonVariants'
 import { buildDiagnosticsReport } from './data'
 import { UnclassifiedRow } from './UnclassifiedRow'
 import type { UnclassifiedAppsProps } from './types'
@@ -28,7 +28,7 @@ export function UnclassifiedApps({
 	}
 
 	return (
-		<div className="settings-surface rounded-2xl border border-white/85 bg-white/58 p-5">
+		<div className="settings-surface mt-5 rounded-2xl border border-white/85 bg-white/58 p-5">
 			<button
 				type="button"
 				aria-expanded={expanded}

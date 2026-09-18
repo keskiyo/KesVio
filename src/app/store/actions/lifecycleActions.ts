@@ -1,5 +1,5 @@
 import type { AppsClient } from '../../../entities/app'
-import { newerDiagnostics } from '../reconciliation'
+import { newerDiagnostics } from '../catalogGeneration'
 import type { AppState, GetAppState, SetAppState } from '../types'
 
 interface LifecycleOptions {

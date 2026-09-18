@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const stylesheet = readStylesheet()
-const app = readFileSync('src/app/App.tsx', 'utf8')
+const app = readFileSync('src/app/layout/AppToaster.tsx', 'utf8')
 
 function rule(selector) {
 	const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`)

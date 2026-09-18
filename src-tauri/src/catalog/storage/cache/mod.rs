@@ -1,0 +1,983 @@
+use crate::catalog::incremental::FilesystemIndex;
+use crate::catalog::source::{SourceHealth, SourceSnapshot};
+use crate::catalog::target_availability::TargetAvailabilityDiff;
+use crate::catalog::volumes::TrackedVolume;
+use crate::catalog::{AppDetails, AppInfo};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::fs;
+use std::io::{self, Write};
+use std::path::Path;
+
+mod migrations;
+
+use migrations::parse_document;
+
+const CACHE_FILE: &str = "apps-cache.json";
+pub(crate) const CACHE_SCHEMA_VERSION: u32 = 11;
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CatalogDiagnostics {
+    pub completed_at: u64,
+    pub duration_ms: u64,
+    pub mode: String,
+    pub total_apps: usize,
+    pub source_counts: BTreeMap<String, usize>,
+    #[serde(default)]
+    pub visibility_counts: BTreeMap<String, usize>,
+    pub added: usize,
+    pub removed: usize,
+    pub updated: usize,
+    #[serde(default)]
+    pub sources: Vec<SourceHealth>,
+    #[serde(default)]
+    pub target_availability: TargetAvailabilityDiff,
+    #[serde(default)]
+    pub unreachable_folders: usize,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CachedAppDetails {
+    pub fingerprint: String,
+    pub details: AppDetails,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CatalogCache {
+    pub schema_version: u32,
+    pub generation: u64,
+    pub apps: Vec<AppInfo>,
+    #[serde(default)]
+    pub sources: Vec<SourceSnapshot>,
+    #[serde(default)]
+    pub filesystem_index: FilesystemIndex,
+    #[serde(default)]
+    pub last_successful_sync: Option<u64>,
+    #[serde(default)]
+    pub diagnostics: Option<CatalogDiagnostics>,
+    #[serde(default)]
+    pub app_details: BTreeMap<String, CachedAppDetails>,
+    #[serde(default)]
+    pub volumes: Vec<TrackedVolume>,
+}
+
+impl Default for CatalogCache {
+    fn default() -> Self {
+        Self {
+            schema_version: CACHE_SCHEMA_VERSION,
+            generation: 0,
+            apps: Vec::new(),
+            sources: Vec::new(),
+            filesystem_index: FilesystemIndex::default(),
+            last_successful_sync: None,
+            diagnostics: None,
+            app_details: BTreeMap::new(),
+            volumes: Vec::new(),
+        }
+    }
+}
+
+pub(crate) fn read_document(app_data_dir: &Path) -> Option<CatalogCache> {
+    read_document_with_promotions(app_data_dir, true)
+}
+
+pub(crate) fn read_hydration_document(app_data_dir: &Path) -> Option<CatalogCache> {
+    read_document_with_promotions(app_data_dir, false)
+}
+
+fn read_document_with_promotions(
+    app_data_dir: &Path,
+    promote_current_schema: bool,
+) -> Option<CatalogCache> {
+    let primary = app_data_dir.join(CACHE_FILE);
+    let backup = app_data_dir.join("apps-cache.json.bak");
+    if let Some(document) = fs::read(&primary)
+        .ok()
+        .and_then(|bytes| parse_document(&bytes, promote_current_schema))
+    {
+        return Some(document);
+    }
+    match fs::read(backup)
+        .ok()
+        .and_then(|bytes| parse_document(&bytes, promote_current_schema))
+    {
+        Some(document) => {
+            log::warn!(
+                "Catalog cache fell back to its backup: generation {} with {} applications",
+                document.generation,
+                document.apps.len()
+            );
+            Some(document)
+        }
+        None => {
+            log::warn!("Catalog cache unavailable: starting from an empty catalog");
+            None
+        }
+    }
+}
+
+fn stored_field(app_data_dir: &Path, field: &str) -> Option<u64> {
+    let bytes = fs::read(app_data_dir.join(CACHE_FILE)).ok()?;
+    serde_json::from_slice::<serde_json::Value>(&bytes)
+        .ok()?
+        .get(field)?
+        .as_u64()
+}
+
+fn stored_schema_version(app_data_dir: &Path) -> Option<u32> {
+    stored_field(app_data_dir, "schemaVersion").and_then(|version| u32::try_from(version).ok())
+}
+
+pub(crate) fn stored_generation(app_data_dir: &Path) -> Option<u64> {
+    stored_field(app_data_dir, "generation")
+}
+
+pub(crate) fn has_newer_schema(app_data_dir: &Path) -> bool {
+    stored_schema_version(app_data_dir).is_some_and(|version| version > CACHE_SCHEMA_VERSION)
+}
+
+pub(crate) fn write_document(app_data_dir: &Path, document: &CatalogCache) -> io::Result<()> {
+    if has_newer_schema(app_data_dir) {
+        return Ok(());
+    }
+    fs::create_dir_all(app_data_dir)?;
+    let cache = app_data_dir.join(CACHE_FILE);
+    let temporary = app_data_dir.join("apps-cache.json.tmp");
+    let backup = app_data_dir.join("apps-cache.json.bak");
+    let bytes = serde_json::to_vec(document).map_err(io::Error::other)?;
+    {
+        let mut file = fs::File::create(&temporary)?;
+        file.write_all(&bytes)?;
+        file.sync_all()?;
+    }
+    if cache.exists() {
+        if backup.exists() {
+            fs::remove_file(&backup)?;
+        }
+        fs::rename(&cache, &backup)?;
+    }
+    if let Err(error) = fs::rename(&temporary, &cache) {
+        if backup.exists() {
+            let _ = fs::rename(&backup, &cache);
+        }
+        return Err(error);
+    }
+    Ok(())
+}
+
+pub(crate) fn reset(app_data_dir: &Path) -> io::Result<()> {
+    let Ok(entries) = fs::read_dir(app_data_dir) else {
+        return Ok(());
+    };
+    for entry in entries.flatten() {
+        if !entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            continue;
+        }
+        if entry.file_name().to_string_lossy().starts_with(CACHE_FILE) {
+            fs::remove_file(entry.path())?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::app_state::cached_app;
+    use crate::catalog::incremental::DirectoryRecord;
+    use crate::catalog::source::{SourceKey, SourceSnapshot};
+    use crate::catalog::{AppCategory, AppInfo, ArtifactKind, LaunchKind, SourceKind};
+
+    #[test]
+    fn ignores_corrupt_cache() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("apps-cache.json"), "not json").unwrap();
+        assert_eq!(read_document(dir.path()), None);
+    }
+
+    #[test]
+    fn refuses_to_overwrite_a_cache_written_by_a_newer_schema() {
+        let dir = tempfile::tempdir().unwrap();
+        let newer = serde_json::json!({
+            "schemaVersion": CACHE_SCHEMA_VERSION + 1,
+            "generation": 42,
+            "apps": [],
+        });
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&newer).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(read_document(dir.path()), None);
+        write_document(dir.path(), &CatalogCache::default()).unwrap();
+
+        let on_disk: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(dir.path().join(CACHE_FILE)).unwrap()).unwrap();
+        assert_eq!(on_disk["schemaVersion"], CACHE_SCHEMA_VERSION + 1);
+        assert_eq!(on_disk["generation"], 42);
+        assert!(!dir.path().join("apps-cache.json.bak").exists());
+    }
+
+    #[test]
+    fn writes_normally_when_the_stored_schema_is_current_or_older() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&serde_json::json!({
+                "schemaVersion": CACHE_SCHEMA_VERSION - 1,
+                "generation": 1,
+                "apps": [],
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        write_document(
+            dir.path(),
+            &CatalogCache {
+                generation: 7,
+                ..CatalogCache::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(read_document(dir.path()).unwrap().generation, 7);
+    }
+
+    #[test]
+    fn a_document_written_before_scan_folders_loads_without_one() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&serde_json::json!({
+                "schemaVersion": 10,
+                "generation": 3,
+                "apps": [{
+                    "id": "editor",
+                    "name": "Editor",
+                    "path": r"F:\Tools\editor.exe",
+                    "iconBase64": null,
+                    "sourceKind": "portable",
+                }],
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let document = read_document(dir.path()).unwrap();
+
+        assert_eq!(document.schema_version, 11);
+        assert_eq!(document.apps.len(), 1);
+        assert_eq!(document.apps[0].scan_folder, None);
+    }
+
+    #[test]
+    fn a_document_written_before_volumes_were_tracked_loads_with_none_and_round_trips_them() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&serde_json::json!({
+                "schemaVersion": 11,
+                "generation": 3,
+                "apps": [{
+                    "id": "editor",
+                    "name": "Editor",
+                    "path": r"F:\Tools\editor.exe",
+                    "iconBase64": null,
+                    "sourceKind": "portable",
+                    "scanFolder": r"F:\",
+                }],
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let mut document = read_document(dir.path()).unwrap();
+        assert!(document.volumes.is_empty());
+        assert_eq!(document.apps[0].volume_id, None);
+
+        document.volumes.push(TrackedVolume {
+            folder: r"F:\".into(),
+            serial: "1a2b3c4d".into(),
+            label: "STICK".into(),
+            filesystem: "FAT32".into(),
+            mounted_at: Some(r"G:\".into()),
+        });
+        document.apps[0].volume_id = Some("1a2b3c4d".into());
+        write_document(dir.path(), &document).unwrap();
+
+        let reloaded = read_document(dir.path()).unwrap();
+        assert_eq!(reloaded.volumes, document.volumes);
+        assert_eq!(reloaded.apps[0].volume_id.as_deref(), Some("1a2b3c4d"));
+    }
+
+    #[test]
+    fn recovers_from_backup_after_interrupted_cache_replacement() {
+        let dir = tempfile::tempdir().unwrap();
+        let backup = CatalogCache {
+            generation: 9,
+            ..CatalogCache::default()
+        };
+        std::fs::write(
+            dir.path().join("apps-cache.json.bak"),
+            serde_json::to_vec(&backup).unwrap(),
+        )
+        .unwrap();
+
+        let recovered = read_document(dir.path()).unwrap();
+
+        assert_eq!(recovered.generation, 9);
+    }
+
+    #[test]
+    fn recovers_from_backup_when_primary_cache_is_corrupt() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(CACHE_FILE), "{broken").unwrap();
+        let backup = CatalogCache {
+            generation: 11,
+            ..CatalogCache::default()
+        };
+        std::fs::write(
+            dir.path().join("apps-cache.json.bak"),
+            serde_json::to_vec(&backup).unwrap(),
+        )
+        .unwrap();
+
+        assert_eq!(read_document(dir.path()).unwrap().generation, 11);
+    }
+
+    #[test]
+    fn retains_the_previous_valid_cache_as_a_backup_after_replacement() {
+        let dir = tempfile::tempdir().unwrap();
+        write_document(
+            dir.path(),
+            &CatalogCache {
+                generation: 1,
+                ..CatalogCache::default()
+            },
+        )
+        .unwrap();
+        write_document(
+            dir.path(),
+            &CatalogCache {
+                generation: 2,
+                ..CatalogCache::default()
+            },
+        )
+        .unwrap();
+
+        let backup = fs::read(dir.path().join("apps-cache.json.bak")).unwrap();
+
+        assert_eq!(read_document(dir.path()).unwrap().generation, 2);
+        assert_eq!(parse_document(&backup, true).unwrap().generation, 1);
+    }
+
+    #[test]
+    fn migrates_v8_for_artifact_discovery_without_losing_user_data() {
+        let dir = tempfile::tempdir().unwrap();
+        let ordinary = cached_app("Editor", r"C:\Editor.exe");
+        let mut docs = cached_app("Application Verifier Help", r"C:\Menu\Verifier Help.lnk");
+        docs.launch_kind = LaunchKind::Shortcut;
+        docs.source_kind = SourceKind::StartMenu;
+        docs.canonical_identity = Some("docs:verifier".into());
+        docs.preference_identity = Some("preference:verifier".into());
+        let mut filesystem_index = FilesystemIndex::default();
+        filesystem_index.directories.insert(
+            r"D:\Apps".into(),
+            DirectoryRecord {
+                modified_nanos: 1,
+                executables: Default::default(),
+                child_directories: Vec::new(),
+                apps: vec![ordinary.clone()],
+            },
+        );
+        let mut app_details = BTreeMap::new();
+        app_details.insert(
+            docs.id.clone(),
+            CachedAppDetails {
+                fingerprint: "stable".into(),
+                details: AppDetails::default(),
+            },
+        );
+        let document = CatalogCache {
+            schema_version: 8,
+            generation: 17,
+            apps: vec![ordinary, docs.clone()],
+            sources: vec![
+                SourceSnapshot {
+                    key: SourceKey("start-menu".into()),
+                    fingerprint: None,
+                    health: None,
+                    apps: vec![docs],
+                },
+                SourceSnapshot {
+                    key: SourceKey("portable".into()),
+                    fingerprint: None,
+                    health: None,
+                    apps: Vec::new(),
+                },
+                SourceSnapshot {
+                    key: SourceKey("installer-cache".into()),
+                    fingerprint: None,
+                    health: None,
+                    apps: Vec::new(),
+                },
+            ],
+            filesystem_index,
+            last_successful_sync: Some(10),
+            diagnostics: None,
+            app_details,
+            volumes: Vec::new(),
+        };
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = read_document(dir.path()).unwrap();
+
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
+        let docs = migrated
+            .apps
+            .iter()
+            .find(|app| app.name == "Application Verifier Help")
+            .unwrap();
+        assert_eq!(docs.artifact_kind, ArtifactKind::Documentation);
+        assert_eq!(docs.category, AppCategory::InstallersDocs);
+        assert_eq!(docs.canonical_identity.as_deref(), Some("docs:verifier"));
+        assert_eq!(
+            docs.preference_identity.as_deref(),
+            Some("preference:verifier")
+        );
+        assert!(migrated.filesystem_index.directories.is_empty());
+        assert!(migrated.sources.iter().all(|snapshot| {
+            !matches!(snapshot.key.0.as_str(), "portable" | "installer-cache")
+        }));
+        assert_eq!(migrated.app_details.len(), 1);
+    }
+
+    #[test]
+    fn current_schema_promotes_new_structural_artifact_rules_without_rescan() {
+        let dir = tempfile::tempdir().unwrap();
+        let amd = cached_app(
+            "AMD Software Compatibility Tool",
+            r"C:\Program Files\AMD\CIM\BIN64\AMDSoftwareCompatibilityTool.exe",
+        );
+        let mut docs = cached_app(
+            "Tools for Desktop Apps",
+            r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Windows Kits\Windows Software Development Kit\Tools for Desktop Apps.lnk",
+        );
+        docs.launch_kind = LaunchKind::Shortcut;
+        docs.source_kind = SourceKind::StartMenu;
+        docs.resolved_path = Some(
+            r"C:\Program Files (x86)\Windows Kits\10\Shortcuts\DesktopDevCenterToolsDocumentation.url"
+                .into(),
+        );
+        let mut existing_installer = cached_app("Yandex setup", r"E:\Apps\Yandex 32bit.exe");
+        existing_installer.artifact_kind = ArtifactKind::Installer;
+        existing_installer.category = AppCategory::Other;
+        let mut filesystem_index = FilesystemIndex::default();
+        filesystem_index.directories.insert(
+            r"D:\Apps".into(),
+            DirectoryRecord {
+                modified_nanos: 1,
+                executables: Default::default(),
+                child_directories: Vec::new(),
+                apps: vec![amd.clone()],
+            },
+        );
+        let document = CatalogCache {
+            schema_version: CACHE_SCHEMA_VERSION,
+            apps: vec![amd.clone(), docs.clone(), existing_installer],
+            sources: vec![SourceSnapshot {
+                key: SourceKey("start-menu".into()),
+                fingerprint: None,
+                health: None,
+                apps: vec![amd, docs],
+            }],
+            filesystem_index,
+            ..CatalogCache::default()
+        };
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let loaded = read_document(dir.path()).unwrap();
+
+        assert_eq!(loaded.apps[0].artifact_kind, ArtifactKind::Installer);
+        assert_eq!(loaded.apps[0].category, AppCategory::InstallersDocs);
+        assert_eq!(loaded.apps[1].artifact_kind, ArtifactKind::Documentation);
+        assert_eq!(loaded.apps[1].category, AppCategory::InstallersDocs);
+        assert_eq!(loaded.apps[2].artifact_kind, ArtifactKind::Installer);
+        assert_eq!(loaded.apps[2].category, AppCategory::InstallersDocs);
+        assert_eq!(
+            loaded.sources[0].apps[0].artifact_kind,
+            ArtifactKind::Installer
+        );
+        assert_eq!(
+            loaded.sources[0].apps[1].artifact_kind,
+            ArtifactKind::Documentation
+        );
+        assert_eq!(loaded.filesystem_index.directories.len(), 1);
+        assert_eq!(
+            loaded.filesystem_index.directories[r"D:\Apps"].apps[0].artifact_kind,
+            ArtifactKind::Installer
+        );
+    }
+
+    #[test]
+    fn hydration_read_keeps_the_already_published_artifact_classification() {
+        let dir = tempfile::tempdir().unwrap();
+        let amd = cached_app(
+            "AMD Software Compatibility Tool",
+            r"C:\Program Files\AMD\CIM\BIN64\AMDSoftwareCompatibilityTool.exe",
+        );
+        write_document(
+            dir.path(),
+            &CatalogCache {
+                apps: vec![amd],
+                ..CatalogCache::default()
+            },
+        )
+        .unwrap();
+
+        let loaded = read_hydration_document(dir.path()).unwrap();
+
+        assert_eq!(loaded.apps[0].artifact_kind, ArtifactKind::Application);
+    }
+
+    #[test]
+    fn current_schema_promotes_url_backed_start_app_documentation() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut website = cached_app("Node.js website", "https://nodejs.org/");
+        website.source_kind = SourceKind::StartApps;
+        website.launch_kind = LaunchKind::AppUserModelId;
+        website.resolved_path = Some("https://nodejs.org/".into());
+        let mut filesystem_index = FilesystemIndex::default();
+        filesystem_index.directories.insert(
+            r"D:\Apps".into(),
+            DirectoryRecord {
+                modified_nanos: 1,
+                executables: Default::default(),
+                child_directories: Vec::new(),
+                apps: vec![cached_app("Editor", r"D:\Apps\Editor.exe")],
+            },
+        );
+        let document = CatalogCache {
+            schema_version: CACHE_SCHEMA_VERSION,
+            apps: vec![website.clone()],
+            sources: vec![SourceSnapshot {
+                key: SourceKey("start-apps".into()),
+                fingerprint: None,
+                health: None,
+                apps: vec![website],
+            }],
+            filesystem_index,
+            ..CatalogCache::default()
+        };
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let loaded = read_document(dir.path()).unwrap();
+
+        assert_eq!(loaded.apps[0].artifact_kind, ArtifactKind::Documentation);
+        assert_eq!(loaded.apps[0].category, AppCategory::InstallersDocs);
+        assert_eq!(
+            loaded.sources[0].apps[0].artifact_kind,
+            ArtifactKind::Documentation
+        );
+        assert_eq!(loaded.filesystem_index.directories.len(), 1);
+    }
+
+    #[test]
+    fn migrates_legacy_array_to_lightweight_versioned_cache() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut legacy = AppInfo {
+            id: "editor".into(),
+            name: "Editor".into(),
+            path: r"C:\Editor.exe".into(),
+            icon_base64: Some("data:image/png;base64,abc".into()),
+            artifact_kind: Default::default(),
+            category: Default::default(),
+            launch_kind: Default::default(),
+            source_kind: Default::default(),
+            description: Some("Editor description".into()),
+            version: Some("1.0".into()),
+            publisher: Some("Publisher".into()),
+            product_name: Some("Editor".into()),
+            original_filename: Some("editor.exe".into()),
+            install_location: Some(r"C:\".into()),
+            can_uninstall: false,
+            resolved_path: None,
+            shortcut_icon_path: None,
+            launch_arguments: Some("--profile-directory=Work".into()),
+            canonical_identity: Some("identity:editor".into()),
+            preference_identity: None,
+            visibility_class: Default::default(),
+            visibility_score: 0,
+            visibility_reasons: Vec::new(),
+            target_availability: None,
+            category_reasons: Vec::new(),
+            close_risk: None,
+            scan_folder: None,
+            volume_id: None,
+        };
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&vec![legacy.clone()]).unwrap(),
+        )
+        .unwrap();
+
+        let document = read_document(dir.path()).unwrap();
+
+        assert_eq!(document.schema_version, CACHE_SCHEMA_VERSION);
+        assert_eq!(document.generation, 0);
+        assert_eq!(document.apps.len(), 1);
+        assert_eq!(document.apps[0].icon_base64, None);
+        legacy.icon_base64 = None;
+        crate::catalog::visibility::apply_visibility(&mut legacy);
+        assert_eq!(document.apps[0], legacy);
+    }
+
+    #[test]
+    fn legacy_array_reapplies_current_visibility_rules() {
+        let dir = tempfile::tempdir().unwrap();
+        let legacy = AppInfo {
+            id: "iconv".into(),
+            name: "iconv".into(),
+            path: r"C:\Git\usr\bin\iconv.exe".into(),
+            icon_base64: None,
+            artifact_kind: Default::default(),
+            category: Default::default(),
+            launch_kind: Default::default(),
+            source_kind: crate::catalog::SourceKind::Portable,
+            description: None,
+            version: None,
+            publisher: None,
+            product_name: None,
+            original_filename: None,
+            install_location: Some(r"C:\Git".into()),
+            can_uninstall: false,
+            resolved_path: None,
+            shortcut_icon_path: None,
+            launch_arguments: None,
+            canonical_identity: None,
+            preference_identity: None,
+            visibility_class: Default::default(),
+            visibility_score: 0,
+            visibility_reasons: Vec::new(),
+            target_availability: None,
+            category_reasons: Vec::new(),
+            close_risk: None,
+            scan_folder: None,
+            volume_id: None,
+        };
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&vec![legacy]).unwrap(),
+        )
+        .unwrap();
+
+        let document = read_document(dir.path()).unwrap();
+
+        assert_eq!(
+            document.apps[0].visibility_class,
+            crate::catalog::VisibilityClass::Auxiliary
+        );
+    }
+
+    #[test]
+    fn preserves_shortcut_resolution_fields_in_versioned_cache() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut app = AppInfo {
+            id: "firefox".into(),
+            name: "Firefox".into(),
+            path: r"C:\Menu\Firefox.lnk".into(),
+            icon_base64: None,
+            artifact_kind: Default::default(),
+            category: Default::default(),
+            launch_kind: Default::default(),
+            source_kind: Default::default(),
+            description: None,
+            version: None,
+            publisher: None,
+            product_name: None,
+            original_filename: None,
+            install_location: None,
+            can_uninstall: false,
+            resolved_path: Some(r"C:\Program Files\Mozilla Firefox\firefox.exe".into()),
+            shortcut_icon_path: Some(r"C:\Program Files\Mozilla Firefox\firefox.exe".into()),
+            launch_arguments: None,
+            canonical_identity: None,
+            preference_identity: None,
+            visibility_class: Default::default(),
+            visibility_score: 0,
+            visibility_reasons: Vec::new(),
+            target_availability: None,
+            category_reasons: Vec::new(),
+            close_risk: None,
+            scan_folder: None,
+            volume_id: None,
+        };
+        write_document(
+            dir.path(),
+            &CatalogCache {
+                apps: vec![app.clone()],
+                ..CatalogCache::default()
+            },
+        )
+        .unwrap();
+
+        let document = read_document(dir.path()).unwrap();
+
+        app.icon_base64 = None;
+        assert_eq!(document.apps[0], app);
+    }
+
+    #[test]
+    fn migrates_v2_cache_by_reclassifying_visibility_without_rescan() {
+        let dir = tempfile::tempdir().unwrap();
+        let document = serde_json::json!({
+            "schemaVersion": 2,
+            "generation": 7,
+            "apps": [{
+                "id": "iconv",
+                "name": "iconv",
+                "path": "C:\\Git\\usr\\bin\\iconv.exe",
+                "iconBase64": null,
+                "category": "development",
+                "launchKind": "executable",
+                "sourceKind": "portable",
+                "description": null,
+                "version": null,
+                "publisher": null,
+                "installLocation": "C:\\Git",
+                "canUninstall": false,
+                "uninstall": null
+            }],
+            "sources": [],
+            "filesystemIndex": { "directories": {} },
+            "lastSuccessfulSync": null,
+            "diagnostics": null
+        });
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = read_document(dir.path()).unwrap();
+
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
+        assert_eq!(migrated.generation, 7);
+        assert_eq!(
+            migrated.apps[0].visibility_class,
+            crate::catalog::VisibilityClass::Auxiliary
+        );
+    }
+
+    #[test]
+    fn migrates_v4_by_dropping_the_combined_windows_source() {
+        let dir = tempfile::tempdir().unwrap();
+        let document = serde_json::json!({
+            "schemaVersion": 4,
+            "generation": 12,
+            "apps": [],
+            "sources": [
+                { "key": "windows", "fingerprint": null, "apps": [] },
+                { "key": "steam", "fingerprint": null, "apps": [] },
+                { "key": "portable", "fingerprint": null, "apps": [] }
+            ],
+            "filesystemIndex": { "directories": {} },
+            "lastSuccessfulSync": null,
+            "diagnostics": null
+        });
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = read_document(dir.path()).unwrap();
+
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
+        assert_eq!(migrated.generation, 12);
+        let keys = migrated
+            .sources
+            .iter()
+            .map(|snapshot| snapshot.key.0.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(keys, vec!["steam"]);
+    }
+
+    #[test]
+    fn migrates_v5_without_details_and_preserves_document_data() {
+        let dir = tempfile::tempdir().unwrap();
+        let document = serde_json::json!({
+            "schemaVersion": 5,
+            "generation": 21,
+            "apps": [],
+            "sources": [{ "key": "portable", "fingerprint": null, "apps": [] }],
+            "filesystemIndex": { "directories": {} },
+            "lastSuccessfulSync": 123,
+            "diagnostics": null
+        });
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = read_document(dir.path()).unwrap();
+
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
+        assert_eq!(migrated.generation, 21);
+        assert!(migrated.sources.is_empty());
+        assert!(migrated.app_details.is_empty());
+    }
+
+    #[test]
+    fn migrates_v6_by_recomputing_cached_folder_availability() {
+        let dir = tempfile::tempdir().unwrap();
+        let document = serde_json::json!({
+            "schemaVersion": 6,
+            "generation": 22,
+            "apps": [],
+            "appDetails": {
+                "task-scheduler": {
+                    "fingerprint": "system-file",
+                    "details": {
+                        "fileSizeBytes": 145059,
+                        "fileCreatedAt": 1,
+                        "fileModifiedAt": 2,
+                        "architecture": "notApplicable",
+                        "signature": "verified",
+                        "executableExists": true,
+                        "installLocationExists": true
+                    }
+                }
+            }
+        });
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = read_document(dir.path()).unwrap();
+
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
+        assert!(migrated.app_details.is_empty());
+    }
+
+    #[test]
+    fn migrates_v7_by_recomputing_cached_folder_availability() {
+        let dir = tempfile::tempdir().unwrap();
+        let document = serde_json::json!({
+            "schemaVersion": 7,
+            "generation": 23,
+            "apps": [],
+            "appDetails": {
+                "battle-net": {
+                    "fingerprint": "shortcut-target",
+                    "details": {
+                        "fileSizeBytes": 216784,
+                        "fileCreatedAt": 1,
+                        "fileModifiedAt": 2,
+                        "architecture": "x86",
+                        "signature": "verified",
+                        "executableExists": true,
+                        "installLocationExists": true,
+                        "canOpenFolder": false
+                    }
+                }
+            }
+        });
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = read_document(dir.path()).unwrap();
+
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
+        assert!(migrated.app_details.is_empty());
+    }
+
+    #[test]
+    fn migrates_v9_by_dropping_the_uninstall_command_and_keeping_the_flag() {
+        let dir = tempfile::tempdir().unwrap();
+        let document = serde_json::json!({
+            "schemaVersion": 9,
+            "generation": 31,
+            "apps": [{
+                "id": "editor",
+                "name": "Editor",
+                "path": r"C:\Editor\editor.exe",
+                "iconBase64": null,
+                "canUninstall": true,
+                "uninstall": {
+                    "command": {
+                        "executable": r"C:\Editor\unins000.exe",
+                        "arguments": "/SILENT"
+                    }
+                }
+            }]
+        });
+        std::fs::write(
+            dir.path().join(CACHE_FILE),
+            serde_json::to_vec(&document).unwrap(),
+        )
+        .unwrap();
+
+        let migrated = read_document(dir.path()).unwrap();
+
+        assert_eq!(migrated.schema_version, CACHE_SCHEMA_VERSION);
+        assert_eq!(migrated.generation, 31);
+        assert!(migrated.apps[0].can_uninstall);
+        write_document(dir.path(), &migrated).unwrap();
+        let rewritten = std::fs::read_to_string(dir.path().join(CACHE_FILE)).unwrap();
+        assert!(!rewritten.contains("unins000"));
+    }
+
+    #[test]
+    fn reset_removes_cache_files_without_touching_preferences() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(CACHE_FILE), "{}").unwrap();
+        std::fs::write(dir.path().join("apps-cache.json.tmp"), "{}").unwrap();
+        std::fs::write(dir.path().join("apps-cache.json.bak"), "{}").unwrap();
+        std::fs::write(dir.path().join("apps-cache.json.firstrun-backup"), "{}").unwrap();
+        std::fs::write(dir.path().join("scan-settings.json"), "{}").unwrap();
+        std::fs::write(dir.path().join("uninstall-history.json"), "[]").unwrap();
+        std::fs::create_dir(dir.path().join("icons")).unwrap();
+        std::fs::write(dir.path().join("icons").join("a.png"), "").unwrap();
+
+        reset(dir.path()).unwrap();
+
+        assert!(!dir.path().join(CACHE_FILE).exists());
+        assert!(!dir.path().join("apps-cache.json.tmp").exists());
+        assert!(!dir.path().join("apps-cache.json.bak").exists());
+        assert!(!dir.path().join("apps-cache.json.firstrun-backup").exists());
+        assert!(dir.path().join("scan-settings.json").exists());
+        assert!(dir.path().join("uninstall-history.json").exists());
+        assert!(dir.path().join("icons").join("a.png").exists());
+    }
+
+    #[test]
+    fn reset_on_a_missing_directory_is_not_a_failure() {
+        let dir = tempfile::tempdir().unwrap();
+
+        assert!(reset(&dir.path().join("absent")).is_ok());
+    }
+}

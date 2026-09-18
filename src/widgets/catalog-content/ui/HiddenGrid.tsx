@@ -1,11 +1,13 @@
-import { EyeOff } from 'lucide-react'
+import { EyeOff, SearchX } from 'lucide-react'
 import { sortFavoritesFirst } from '../../../entities/app'
 import type { HiddenGridProps } from '../types'
-import { CatalogAppCard } from './CatalogAppCard/CatalogAppCard'
+import { AppRow } from './AppRow/AppRow'
 import { CatalogViewHeader } from './CatalogViewHeader'
+import { ViewEmptyState } from './ViewEmptyState'
 
 export function HiddenGrid(props: HiddenGridProps) {
 	const apps = sortFavoritesFirst(props.apps, props.favoriteAppIds)
+	const back = { label: 'Back to More', onBack: props.onBack }
 	return (
 		<section aria-labelledby="hidden-title">
 			<CatalogViewHeader
@@ -13,45 +15,43 @@ export function HiddenGrid(props: HiddenGridProps) {
 				title="Hidden"
 				titleId="hidden-title"
 				count={apps.length}
-				back={{ label: 'Back to More', onBack: props.onBack }}
+				description="Applications removed from your main catalog."
+				back={back}
 			/>
-			{apps.length ? (
-				<div className="app-card-grid">
-					{apps.map(app => (
-						<CatalogAppCard
-							key={app.id}
-							app={app}
-							isHidden
-							isFavorite={props.favoriteAppIds.includes(app.id)}
-							categories={props.categories}
-							categoryOrder={props.categoryOrder}
-							onToggleFavorite={props.onToggleFavorite}
-							onLaunch={props.onLaunch}
-							onMove={props.onMoveApp}
-							onInfo={props.onInfo}
-							onManageInWindows={props.onManageInWindows}
-							onHide={props.onHide}
-							onRestore={props.onRestore}
-							onDemote={props.onDemote}
-						/>
-					))}
-				</div>
-			) : (
-				<div className="grid min-h-[45vh] place-items-center text-center">
-					<div>
-						<h2 className="text-lg font-semibold">
-							{props.hasQuery
-								? 'No matching hidden apps'
-								: 'No hidden apps'}
-						</h2>
-						<p className="mt-2 text-sm text-(--text-muted)">
-							{props.hasQuery
-								? 'Try a different search.'
-								: 'Apps hidden from the catalog will appear here.'}
-						</p>
+			<div className="mx-auto max-w-3xl min-[1900px]:max-w-[80rem]">
+				{apps.length ? (
+					<div className="grid min-w-0 grid-cols-1 gap-2.5 min-[769px]:grid-cols-2 min-[1601px]:grid-cols-3">
+						{apps.map(app => (
+							<AppRow
+								key={app.id}
+								app={app}
+								categories={props.categories}
+								categoryOrder={props.categoryOrder}
+								isHidden
+								onLaunch={props.onLaunch}
+								onMove={props.onMoveApp}
+								onInfo={props.onInfo}
+								onManageInWindows={props.onManageInWindows}
+								onRestore={props.onRestore}
+								onDemote={props.onDemote}
+							/>
+						))}
 					</div>
-				</div>
-			)}
+				) : props.hasQuery ? (
+					<ViewEmptyState
+						icon={SearchX}
+						title="No matching hidden apps"
+						description="Try a different search."
+					/>
+				) : (
+					<ViewEmptyState
+						icon={EyeOff}
+						title="Nothing is hidden"
+						description="All applications are currently visible in your catalog."
+						back={back}
+					/>
+				)}
+			</div>
 		</section>
 	)
 }

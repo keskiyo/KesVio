@@ -78,6 +78,7 @@ export interface AppViewsProps {
 	systemClient: SystemClient
 	onFirstScan(): Promise<void>
 	onRefreshCatalog(): Promise<void>
+	onOpenFolder(app: AppInfo): Promise<void>
 }
 
 export interface GlobalActivityBarProps {

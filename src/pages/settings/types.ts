@@ -1,14 +1,7 @@
 import type { ReactNode } from 'react'
 import type { MaintenanceConfirmation } from '../../features/edit-settings'
 import type { UpdaterState } from '../../features/update-app'
-import type {
-	AppInfo,
-	CatalogDensity,
-	CatalogDiagnostics,
-	SourceHealth,
-	SourceStatusRow,
-	TargetAvailabilityDiff,
-} from '../../entities/app'
+import type { AppInfo, CatalogDensity } from '../../entities/app'
 import type { AppCategory, CategoryDefinition } from '../../entities/category'
 import type {
 	ScanSettings,
@@ -48,20 +41,8 @@ export interface SettingsPageProps {
 	client: SystemClient
 	density: CatalogDensity
 	onSetDensity(density: CatalogDensity): void
-	onExportPreferences?: () => string
-	onValidatePreferencesImport?: (
-		source: string,
-	) => { ok: true } | { ok: false; error: string }
-	onImportPreferences?: (
-		source: string,
-	) => { ok: true } | { ok: false; error: string }
-	onRestorePreferencesBackup?: () =>
-		{ ok: true } | { ok: false; error: string }
 	onForceFullScan?: () => Promise<void>
 	onResetCatalogCache?: () => Promise<void>
-	onRefreshCatalog?: () => Promise<void>
-	isRefreshing?: boolean
-	catalogDiagnostics?: CatalogDiagnostics | null
 	unclassifiedApps?: AppInfo[]
 	categories?: CategoryDefinition[]
 	categoryOrder?: AppCategory[]
@@ -98,28 +79,9 @@ export interface CatalogMaintenanceProps {
 	onResetCatalogCache(): Promise<void>
 }
 
-export interface DiagnosticsLogExportProps {
-	onPreview?(): Promise<string>
-	onExport(): Promise<boolean>
-}
-
-export interface ScanDiagnosticsProps {
-	diagnostics: CatalogDiagnostics
-}
-
-export interface CatalogSourcesProps {
-	sources: SourceHealth[]
-	lastScanAt: number | null
-	scanning: boolean
-	onRefresh?: () => Promise<void>
-}
-
-export interface SourceHealthTableProps {
-	rows: SourceStatusRow[]
-}
-
-export interface TargetAvailabilityPanelProps {
-	diff?: TargetAvailabilityDiff
+export interface CatalogSettingsProps {
+	discovery: SettingsDiscoveryControlsProps
+	maintenance: CatalogMaintenanceProps | null
 }
 
 export interface SettingsDiscoveryControlsProps {
@@ -156,8 +118,4 @@ export interface SettingsToggleProps {
 	checked: boolean
 	disabled?: boolean
 	onToggle(): void
-}
-
-export interface UninstallHistoryProps {
-	client: SystemClient
 }

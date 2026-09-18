@@ -9,6 +9,7 @@ import {
 
 interface AppFeedbackOptions {
 	onLaunch(app: AppInfo): Promise<void>
+	onOpenFolder(id: string): Promise<void>
 	onRefresh(): Promise<void>
 	onFullScan(): Promise<void>
 	onUndo(): { ok: true } | { ok: false; error: string }
@@ -30,6 +31,7 @@ async function reportScan(run: () => Promise<void>) {
 
 export function useAppFeedback({
 	onLaunch,
+	onOpenFolder,
 	onRefresh,
 	onFullScan,
 	onUndo,
@@ -49,6 +51,17 @@ export function useAppFeedback({
 			}
 		},
 		[onLaunch],
+	)
+
+	const openFolder = useCallback(
+		async (app: AppInfo) => {
+			try {
+				await onOpenFolder(app.id)
+			} catch {
+				toast.error(`Could not open the folder of ${app.name}`)
+			}
+		},
+		[onOpenFolder],
 	)
 
 	const refresh = useCallback(() => reportScan(onRefresh), [onRefresh])
@@ -72,5 +85,5 @@ export function useAppFeedback({
 		else toast.success(message)
 	}, [])
 
-	return { launch, refresh, fullScan, reportScenarioRun, undo }
+	return { launch, openFolder, refresh, fullScan, reportScenarioRun, undo }
 }

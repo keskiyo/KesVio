@@ -18,7 +18,7 @@ export function SettingsDiscoveryControls({
 	const disabled = !settings || saving
 
 	return (
-		<div className="settings-surface rounded-2xl border border-white/85 bg-white/58 p-5">
+		<div className="border-b border-slate-200 p-5">
 			<div className="flex items-start gap-4">
 				<SettingsSectionHeader
 					icon={HardDrive}

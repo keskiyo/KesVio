@@ -3,7 +3,7 @@ import { toast } from 'sonner'
 import type { AppInfo, AppView } from '../../entities/app'
 import type { SystemClient, TrayFavoriteEntry } from '../../entities/system'
 
-export const MAX_TRAY_FAVORITES = 5
+const MAX_TRAY_FAVORITES = 5
 
 interface TrayFavoritesOptions {
 	systemClient: Pick<

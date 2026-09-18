@@ -12,6 +12,7 @@ export interface AppRowProps {
 	onLaunch(app: AppInfo): Promise<void>
 	onMove(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void
+	onOpenFolder?(app: AppInfo): Promise<void>
 	onManageInWindows(): Promise<void>
 	onHide?(id: string): void
 	onRestore(id: string): void

@@ -1,16 +1,14 @@
 import { RefreshCw, RotateCcw, ScanSearch } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import type { MaintenanceConfirmation } from '../../../../features/edit-settings'
-import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
-import { DANGER_VARIANT } from '../../../../shared/ui/buttonVariants'
+import { SettingsRow } from '../components/SettingsRow'
 import {
 	ACTION_BUTTON,
 	ACTION_BUTTON_PRIMARY,
 	ACTION_ROW,
-	CANCEL_BUTTON,
-	CONFIRM_BUTTON,
-	SETTINGS_ACTION_FOOTER,
-} from '../../data'
+	DANGER_VARIANT,
+} from '../../../../shared/ui/buttonVariants'
+import { CANCEL_BUTTON, CONFIRM_BUTTON } from '../../data'
 import type { CatalogMaintenanceProps } from '../../types'
 
 export function CatalogMaintenance({
@@ -37,15 +35,12 @@ export function CatalogMaintenance({
 	}, [confirming])
 
 	return (
-		<div className="settings-surface flex flex-col rounded-2xl border border-white/85 bg-white/58 p-5">
-			<div className="flex items-start gap-4">
-				<SettingsSectionHeader
-					icon={RefreshCw}
-					title="Catalog maintenance"
-					description="Rebuild the application catalog."
-				/>
-			</div>
-			<div className={SETTINGS_ACTION_FOOTER}>
+		<div className="flex flex-col">
+			<SettingsRow
+				icon={RefreshCw}
+				title="Catalog maintenance"
+				description="Rebuild the application catalog."
+			>
 				<button
 					ref={forceTriggerRef}
 					type="button"
@@ -68,12 +63,12 @@ export function CatalogMaintenance({
 						Reset catalog cache
 					</button>
 				)}
-			</div>
+			</SettingsRow>
 			{confirming === 'force' && (
 				<div
 					role="dialog"
 					aria-label="Confirm full scan"
-					className="mt-4 flex flex-col gap-3 rounded-xl border border-violet-400/35 bg-violet-500/8 p-4 shadow-inner shadow-violet-950/10"
+					className="mx-5 my-4 flex flex-col gap-3 rounded-xl border border-violet-400/35 bg-violet-500/8 p-4 shadow-inner shadow-violet-950/10"
 				>
 					<p className="text-sm leading-6 text-slate-700">
 						The next scan will take longer than an incremental
@@ -103,7 +98,7 @@ export function CatalogMaintenance({
 				<div
 					role="dialog"
 					aria-label="Confirm catalog cache reset"
-					className="danger-panel mt-4 flex flex-col gap-3 rounded-xl border border-red-300/70 bg-red-50 p-4"
+					className="danger-panel mx-5 my-4 flex flex-col gap-3 rounded-xl border border-red-300/70 bg-red-50 p-4"
 				>
 					<p className="text-sm leading-6 text-red-800">
 						This removes the local app cache and icon cache, then

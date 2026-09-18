@@ -81,6 +81,8 @@ export type AppView =
 	| 'more'
 	| 'scenarios'
 	| 'settings'
+	| 'catalog_health'
+	| 'backup_restore'
 	| 'hidden'
 	| 'auxiliary'
 	| 'installers_docs'

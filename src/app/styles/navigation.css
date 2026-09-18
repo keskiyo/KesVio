@@ -119,6 +119,8 @@
 	.lucide-play,
 	.lucide-list-checks,
 	.lucide-check,
+	.lucide-circle-check,
+	.lucide-heart-pulse,
 	.lucide-badge-check,
 	.lucide-shield-check,
 	.lucide-plus,
@@ -173,9 +175,11 @@
 	.lucide-minimize2,
 	.lucide-menu,
 	.lucide-box,
+	.lucide-package,
 	.lucide-copy,
 	.lucide-clipboard-copy,
 	.lucide-square,
+	.lucide-circle-dashed,
 	.lucide-chevron-down,
 	.lucide-chevron-right {
 		color: var(--category-purple);

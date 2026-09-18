@@ -149,7 +149,10 @@ describe('catalog search transliteration', () => {
 	})
 })
 
-describe('Windows Terminal cmd alias', () => {
+// `cmd` used to be a synthetic alias of the genuine Windows Terminal package, and a `cmd` query
+// hid everything else. The alias now belongs to the real Command Prompt, resolved from its
+// executable, and nothing is filtered out: Git CMD stays below it because CMD is in its name.
+describe('command-line aliases', () => {
 	const commandPrompt = app({
 		id: 'command-prompt',
 		name: 'Command Prompt',
@@ -163,30 +166,34 @@ describe('Windows Terminal cmd alias', () => {
 		path: String.raw`C:\VSCode\node-pty\OpenConsole.exe`,
 		productName: 'Windows Terminal',
 	})
-	const fakePackage = app({
-		id: 'fake-terminal-package',
-		name: 'Windows Terminal',
-		path: 'Microsoft.WindowsTerminal_FakePublisher!App',
-		launchKind: 'app_user_model_id',
-		sourceKind: 'msix',
-	})
-	const candidates = [
-		commandPrompt,
-		gitCmd,
-		internalTerminal,
-		fakePackage,
-		terminal,
-	]
+	const candidates = [commandPrompt, gitCmd, internalTerminal, terminal]
 
 	it.each(['cmd', 'сьв'])(
-		'returns only genuine Windows Terminal for %s',
+		'puts Command Prompt first for %s and keeps Git CMD below it',
 		query => {
-			expect(rankAppsByQuery(candidates, query)).toEqual([terminal])
-			expect(filterAppsByQuery(candidates, query)).toEqual([terminal])
+			expect(
+				rankAppsByQuery(candidates, query).map(entry => entry.id),
+			).toEqual(['command-prompt', 'git-cmd'])
+			expect(
+				filterAppsByQuery(candidates, query).map(entry => entry.id),
+			).toEqual(['command-prompt', 'git-cmd'])
 		},
 	)
 
-	it('retains normal full-name searches for auxiliary command tools', () => {
+	it('does not lend cmd to Windows Terminal', () => {
+		expect(rankAppsByQuery([terminal, internalTerminal], 'cmd')).toEqual([])
+	})
+
+	it.each(['wt', 'windows terminal', 'terminal'])(
+		'finds the Windows Terminal package by %s',
+		query => {
+			expect(rankAppsByQuery([commandPrompt, terminal], query)).toEqual([
+				terminal,
+			])
+		},
+	)
+
+	it('retains full-name searches for the other command tools', () => {
 		expect(rankAppsByQuery(candidates, 'command prompt')).toEqual([
 			commandPrompt,
 		])

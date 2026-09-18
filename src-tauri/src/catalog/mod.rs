@@ -112,23 +112,10 @@ fn collapse_product_duplicates(
     kept
 }
 
-pub(crate) fn sanitize(apps: Vec<AppInfo>) -> Vec<AppInfo> {
-    let registrations = machine::Registrations::current();
-    let associations = machine::Associations::current();
-    let deduplicated = dedup::deduplicate(
-        filter_maintenance(apps, &registrations),
-        |app| classify::classify_app(app, &associations),
-        crate::platform::windows::os_ui_script(),
-    );
-    collapse_product_duplicates(deduplicated, &registrations)
-}
-
-pub(crate) fn sanitize_reported(apps: Vec<AppInfo>) -> Vec<AppInfo> {
+fn sanitize_with(apps: Vec<AppInfo>, inspect_filtered: impl FnOnce(&[AppInfo])) -> Vec<AppInfo> {
     let registrations = machine::Registrations::current();
     let filtered = filter_maintenance(apps, &registrations);
-    if dedup::dev_report_enabled() {
-        dedup::write_dev_report(&filtered);
-    }
+    inspect_filtered(&filtered);
     let associations = machine::Associations::current();
     let deduplicated = dedup::deduplicate(
         filtered,
@@ -136,6 +123,18 @@ pub(crate) fn sanitize_reported(apps: Vec<AppInfo>) -> Vec<AppInfo> {
         crate::platform::windows::os_ui_script(),
     );
     collapse_product_duplicates(deduplicated, &registrations)
+}
+
+pub(crate) fn sanitize(apps: Vec<AppInfo>) -> Vec<AppInfo> {
+    sanitize_with(apps, |_| {})
+}
+
+pub(crate) fn sanitize_reported(apps: Vec<AppInfo>) -> Vec<AppInfo> {
+    sanitize_with(apps, |filtered| {
+        if dedup::dev_report_enabled() {
+            dedup::write_dev_report(filtered);
+        }
+    })
 }
 
 #[cfg(test)]

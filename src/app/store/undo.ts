@@ -26,17 +26,17 @@ export type UndoSnapshot = Record<ListKey, string[]> & {
 	savedFilters: SavedFilter[]
 }
 
-export interface ListReversal {
+interface ListReversal {
 	restore: string[]
 	drop: string[]
 }
 
-export interface EntityReversal<T> {
+interface EntityReversal<T> {
 	id: string
 	previous: T | null
 }
 
-export interface UndoPatch {
+interface UndoPatch {
 	lists: Partial<Record<ListKey, ListReversal>>
 	records: {
 		categoryOverrides?: Record<string, AppCategory | null>

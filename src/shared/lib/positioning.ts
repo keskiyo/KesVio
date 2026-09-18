@@ -14,8 +14,9 @@ export function floatingMenuPosition(
 	padding = 12,
 	gap = 4,
 ): { left: number; top: number } {
+	const alignRight = (anchor.left + anchor.right) / 2 > viewportWidth / 2
 	const left = Math.min(
-		Math.max(anchor.left, padding),
+		Math.max(alignRight ? anchor.right - menuWidth : anchor.left, padding),
 		Math.max(padding, viewportWidth - menuWidth - padding),
 	)
 	const top = Math.min(

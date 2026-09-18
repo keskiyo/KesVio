@@ -1,5 +1,5 @@
 import { Sparkles, X } from 'lucide-react'
-import { formatBytes } from './format'
+import { formatBytes } from '../../../../shared/lib/bytes'
 import type { DialogHeaderProps } from './types'
 
 export function DialogHeader({

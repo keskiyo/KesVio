@@ -8,7 +8,7 @@ import {
 } from '../../entities/category'
 import type { AppInfo } from '../../entities/app'
 
-export interface DriveCategories {
+interface DriveCategories {
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
 	collapsedCategories: AppCategory[]

@@ -9,12 +9,20 @@ export function MoreCard({ destination, onSelect }: MoreCardProps) {
 	const Icon = destination.icon
 	const spotlight = useSpotlight()
 	const preview = destination.recent
+	const showViewAll =
+		preview?.kind === 'scenarios' &&
+		destination.count !== undefined &&
+		destination.count > preview.items.length
 
 	return (
 		<section className="flex flex-col overflow-hidden rounded-2xl border border-(--border-neutral) bg-(--surface-panel) shadow-(--shadow-summary)">
 			<button
 				type="button"
-				aria-label={`${destination.label} ${destination.count}`}
+				aria-label={
+					destination.count === undefined
+						? destination.label
+						: `${destination.label} ${destination.count}`
+				}
 				onClick={() => onSelect(destination.view)}
 				{...spotlight}
 				className="relative flex items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--accent-strong) motion-reduce:transition-none"
@@ -28,13 +36,20 @@ export function MoreCard({ destination, onSelect }: MoreCardProps) {
 						<span className="truncate text-base font-semibold text-(--text-primary)">
 							{destination.label}
 						</span>
-						<span className="shrink-0 rounded-md border border-(--border-neutral) bg-(--surface-inset) px-1.5 py-0.5 text-xs text-(--text-muted)">
-							{destination.count}
-						</span>
+						{destination.count !== undefined && (
+							<span className="shrink-0 rounded-md border border-(--border-neutral) bg-(--surface-inset) px-1.5 py-0.5 text-xs text-(--text-muted)">
+								{destination.count}
+							</span>
+						)}
 					</span>
 					<span className="mt-1 block text-sm leading-6 text-(--text-muted)">
 						{destination.description}
 					</span>
+					{destination.status && (
+						<span className="mt-1 block text-xs leading-5 text-(--text-muted)">
+							{destination.status}
+						</span>
+					)}
 				</span>
 				<ChevronRight
 					size={18}
@@ -42,7 +57,7 @@ export function MoreCard({ destination, onSelect }: MoreCardProps) {
 					className="shrink-0"
 				/>
 			</button>
-			{preview.items.length > 0 && (
+			{preview && preview.items.length > 0 && (
 				<ul
 					aria-label={`Recently added to ${destination.label}`}
 					className="flex flex-auto flex-col border-t border-(--border-neutral) pb-1"
@@ -67,17 +82,16 @@ export function MoreCard({ destination, onSelect }: MoreCardProps) {
 							))}
 				</ul>
 			)}
-			{preview.kind === 'scenarios' &&
-				destination.count > preview.items.length && (
-					<button
-						type="button"
-						onClick={preview.onViewAll}
-						className="mt-auto flex items-center justify-center gap-1.5 border-t border-(--border-neutral) px-5 py-2.5 text-sm font-medium text-(--text-muted) transition-colors hover:bg-(--surface-raised) hover:text-(--text-primary) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--accent-strong) motion-reduce:transition-none"
-					>
-						View all
-						<ChevronRight size={15} aria-hidden="true" />
-					</button>
-				)}
+			{showViewAll && (
+				<button
+					type="button"
+					onClick={preview.onViewAll}
+					className="mt-auto flex items-center justify-center gap-1.5 border-t border-(--border-neutral) px-5 py-2.5 text-sm font-medium text-(--text-muted) transition-colors hover:bg-(--surface-raised) hover:text-(--text-primary) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-(--accent-strong) motion-reduce:transition-none"
+				>
+					View all
+					<ChevronRight size={15} aria-hidden="true" />
+				</button>
+			)}
 		</section>
 	)
 }

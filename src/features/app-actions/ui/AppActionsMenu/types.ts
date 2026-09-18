@@ -22,6 +22,7 @@ export interface AppActionsMenuProps {
 		artifact?: CatalogArtifactKind,
 	): void
 	onInfo(app: AppInfo): void
+	onOpenFolder?(app: AppInfo): Promise<void>
 	onManageInWindows(): Promise<void>
 	isHidden?: boolean
 	isUserPromoted?: boolean
@@ -47,6 +48,7 @@ export interface CategorySubmenuProps {
 	categoryOrder: AppCategory[]
 	activeCategory: AppCategory
 	onSelect(category: AppCategory): void
+	onSelectArtifact(kind: CatalogArtifactKind): void
 	onExpand(category: AppCategory): void
 	expandedCategory: AppCategory | null
 	menuRef: RefObject<HTMLDivElement>
@@ -55,10 +57,7 @@ export interface CategorySubmenuProps {
 	label: string
 }
 
-export interface ArtifactSubmenuProps {
-	onSelect(kind: CatalogArtifactKind): void
-	menuRef: RefObject<HTMLDivElement>
-	position: Pick<CSSProperties, 'left' | 'top'>
-	onKeyDown(event: ReactKeyboardEvent<HTMLDivElement>): void
+export interface ArtifactBranchProps {
 	label: string
+	onSelect(kind: CatalogArtifactKind): void
 }

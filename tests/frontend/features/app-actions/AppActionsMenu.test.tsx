@@ -230,9 +230,61 @@ describe('AppActionsMenu category cascade', () => {
 		expect(demote.querySelector('svg')).toHaveClass('lucide-wrench')
 	})
 
-	it('opens installers and docs as a third level instead of filing immediately', async () => {
+	// A third floating panel had nowhere to go in a narrow window and was clamped over the
+	// category list; the branch now expands inside that list instead.
+	it('expands installers and docs inside the category list instead of filing immediately', async () => {
 		const user = userEvent.setup()
 		const { onMove, onClose } = renderMovableMenu(
+			createRef<HTMLButtonElement>(),
+			withArtifacts,
+		)
+
+		await user.click(
+			screen.getByRole('menuitem', { name: 'Move to category' }),
+		)
+		const categories = screen.getByRole('menu', {
+			name: 'Move Visual Studio Code to category',
+		})
+		const branch = screen.getByRole('menuitem', {
+			name: 'Installers & Docs',
+		})
+		expect(branch).toHaveAttribute('aria-haspopup', 'menu')
+		expect(branch).toHaveAttribute('aria-expanded', 'false')
+		expect(
+			screen.queryByRole('menuitem', { name: 'Installers' }),
+		).not.toBeInTheDocument()
+
+		await user.click(branch)
+
+		expect(onMove).not.toHaveBeenCalled()
+		expect(branch).toHaveAttribute('aria-expanded', 'true')
+		expect(screen.getAllByRole('menu')).toHaveLength(2)
+		const group = within(categories).getByRole('group', {
+			name: 'Installers & Docs',
+		})
+		expect(
+			within(group).getByRole('menuitem', { name: 'Installers' }),
+		).toBeInTheDocument()
+		const items = within(categories).getAllByRole('menuitem')
+		expect(items.indexOf(branch)).toBe(
+			items.indexOf(
+				within(group).getByRole('menuitem', { name: 'Installers' }),
+			) - 1,
+		)
+
+		await user.click(within(group).getByRole('menuitem', { name: 'Docs' }))
+
+		expect(onMove).toHaveBeenCalledWith(
+			visualStudioCode.id,
+			'installers_docs',
+			'documentation',
+		)
+		expect(onClose).toHaveBeenCalled()
+	})
+
+	it('walks the expanded branch with the arrow keys, collapses it on a second click and dismisses it with the rest', async () => {
+		const user = userEvent.setup()
+		const { onClose } = renderMovableMenu(
 			createRef<HTMLButtonElement>(),
 			withArtifacts,
 		)
@@ -243,43 +295,7 @@ describe('AppActionsMenu category cascade', () => {
 		const branch = screen.getByRole('menuitem', {
 			name: 'Installers & Docs',
 		})
-		expect(branch).toHaveAttribute('aria-haspopup', 'menu')
-		expect(branch).toHaveAttribute('aria-expanded', 'false')
-
 		await user.click(branch)
-
-		expect(onMove).not.toHaveBeenCalled()
-		expect(branch).toHaveAttribute('aria-expanded', 'true')
-		const third = screen.getByRole('menu', {
-			name: 'Move Visual Studio Code to installers or docs',
-		})
-		expect(
-			within(third).getByRole('menuitem', { name: 'Installers' }),
-		).toBeInTheDocument()
-
-		await user.click(within(third).getByRole('menuitem', { name: 'Docs' }))
-
-		expect(onMove).toHaveBeenCalledWith(
-			visualStudioCode.id,
-			'installers_docs',
-			'documentation',
-		)
-		expect(onClose).toHaveBeenCalled()
-	})
-
-	it('reaches the third level with the arrow keys and dismisses it with the rest', async () => {
-		const user = userEvent.setup()
-		const { onClose } = renderMovableMenu(
-			createRef<HTMLButtonElement>(),
-			withArtifacts,
-		)
-
-		await user.click(
-			screen.getByRole('menuitem', { name: 'Move to category' }),
-		)
-		await user.click(
-			screen.getByRole('menuitem', { name: 'Installers & Docs' }),
-		)
 		const docs = screen.getByRole('menuitem', { name: 'Docs' })
 
 		docs.focus()
@@ -287,6 +303,14 @@ describe('AppActionsMenu category cascade', () => {
 		expect(document.activeElement).toBe(
 			screen.getByRole('menuitem', { name: 'Installers' }),
 		)
+		await user.keyboard('{ArrowUp}')
+		expect(document.activeElement).toBe(branch)
+
+		await user.click(branch)
+		expect(branch).toHaveAttribute('aria-expanded', 'false')
+		expect(
+			screen.queryByRole('menuitem', { name: 'Docs' }),
+		).not.toBeInTheDocument()
 
 		await user.pointer({ target: document.body, keys: '[MouseLeft]' })
 		expect(onClose).toHaveBeenCalled()
@@ -369,15 +393,14 @@ describe('AppActionsMenu category cascade', () => {
 		expect(onClose).toHaveBeenCalledTimes(1)
 	})
 
-	// The third level used to be placed against the category panel, so a row near the bottom of a
-	// long list opened its submenu at the very top of the screen, nowhere near the pointer.
-	it('opens the third level beside the row that owns it, not beside the panel top', async () => {
+	// A third floating panel was clamped over the category list when the window had no room to
+	// its side; the branch now grows the category panel in place and never opens another panel.
+	it('keeps the category panel where it was when the branch expands and opens no third panel', async () => {
 		const user = userEvent.setup()
 		const viewport = {
 			width: Object.getOwnPropertyDescriptor(window, 'innerWidth'),
 			height: Object.getOwnPropertyDescriptor(window, 'innerHeight'),
 		}
-		const categoryBounds = rect(328, 136, 224, 400)
 		const getBoundingClientRect = vi
 			.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
 			.mockImplementation(function (this: HTMLElement) {
@@ -387,11 +410,7 @@ describe('AppActionsMenu category cascade', () => {
 				if (label === 'Visual Studio Code actions')
 					return rect(100, 136, 224, 200)
 				if (label === 'Move Visual Studio Code to category')
-					return categoryBounds
-				if (label === 'Move Visual Studio Code to installers or docs')
-					return rect(0, 0, 224, 80)
-				if (this.getAttribute('aria-haspopup') === 'menu')
-					return rect(336, 436, 208, 36)
+					return rect(328, 136, 224, 400)
 				return rect(0, 0, 0, 0)
 			})
 		Object.defineProperty(window, 'innerWidth', {
@@ -408,19 +427,22 @@ describe('AppActionsMenu category cascade', () => {
 			await user.click(
 				screen.getByRole('menuitem', { name: 'Move to category' }),
 			)
-			await user.click(
-				screen.getByRole('menuitem', { name: 'Installers & Docs' }),
-			)
 			const categories = screen.getByRole('menu', {
 				name: 'Move Visual Studio Code to category',
 			})
-			const artifacts = screen.getByRole('menu', {
-				name: 'Move Visual Studio Code to installers or docs',
-			})
+			expect(categories).toHaveStyle({ left: '328px', top: '136px' })
+
+			await user.click(
+				screen.getByRole('menuitem', { name: 'Installers & Docs' }),
+			)
 
 			expect(categories).toHaveStyle({ left: '328px', top: '136px' })
-			expect(artifacts).toHaveStyle({ left: '556px', top: '436px' })
-			expect(artifacts.style.top).not.toBe(categories.style.top)
+			expect(screen.getAllByRole('menu')).toHaveLength(2)
+			expect(
+				categories.contains(
+					screen.getByRole('menuitem', { name: 'Installers' }),
+				),
+			).toBe(true)
 		} finally {
 			getBoundingClientRect.mockRestore()
 			if (viewport.width)
@@ -430,6 +452,8 @@ describe('AppActionsMenu category cascade', () => {
 		}
 	})
 
+	// After the resize the trigger sits in the right half, so the menu hangs from the trigger's
+	// right edge and the category panel moves to whichever side still has room.
 	it('keeps the category panel four pixels from the menu after resize changes its viewport', async () => {
 		const user = userEvent.setup()
 		const anchorRef = createRef<HTMLButtonElement>()
@@ -485,11 +509,11 @@ describe('AppActionsMenu category cascade', () => {
 			})
 			fireEvent(window, new Event('resize'))
 
-			expect(menu).toHaveStyle({ left: '500px', top: '236px' })
-			expect(categories).toHaveStyle({ left: '272px', top: '236px' })
+			expect(menu).toHaveStyle({ left: '308px', top: '236px' })
+			expect(categories).toHaveStyle({ left: '536px', top: '236px' })
 			expect(
-				Number.parseFloat(menu.style.left) -
-					(Number.parseFloat(categories.style.left) + 224),
+				Number.parseFloat(categories.style.left) -
+					(Number.parseFloat(menu.style.left) + 224),
 			).toBe(4)
 		} finally {
 			getBoundingClientRect.mockRestore()

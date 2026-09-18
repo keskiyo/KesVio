@@ -64,7 +64,7 @@ describe('UpdateDialog', () => {
 		expect(
 			screen.getByText('Automatic updates - signed update.'),
 		).toBeInTheDocument()
-		expect(screen.getByText('11 Jul 2026')).toBeInTheDocument()
+		expect(screen.getByText('Jul 11, 2026')).toBeInTheDocument()
 		expect(screen.getByText('5.3 MB')).toBeInTheDocument()
 		expect(
 			screen.getByRole('link', { name: 'View full release notes' }),

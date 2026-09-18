@@ -1,11 +1,7 @@
 import { reconcileDriveCategories } from '../driveCategories'
 import { identityRekeys, rekeyRecord } from '../identityRekey'
-import {
-	catalogGenerationOrder,
-	mergeIcon,
-	reconcileFirstSeen,
-	reconcileMarks,
-} from '../reconciliation'
+import { catalogGenerationOrder, mergeIcon } from '../catalogGeneration'
+import { reconcileFirstSeen, reconcileMarks } from '../reconciliation'
 import type {
 	AppState,
 	GetAppState,

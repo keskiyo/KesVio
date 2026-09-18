@@ -20,10 +20,18 @@ export interface CatalogViewHeaderProps {
 	icon: LucideIcon
 	title: string
 	titleId: string
-	count: number
+	count?: number
 	noun?: string
+	description?: string
 	back?: { label: string; onBack(): void }
 	action?: ReactNode
+}
+
+export interface ViewEmptyStateProps {
+	icon: LucideIcon
+	title: string
+	description: string
+	back?: { label: string; onBack(): void }
 }
 
 export interface AuxiliaryGridProps {

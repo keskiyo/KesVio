@@ -1,5 +1,6 @@
 import { AppWindow, Keyboard, Minimize2 } from 'lucide-react'
-import { ACTION_BUTTON_PRIMARY, ROW_CHIP } from '../../data'
+import { ACTION_BUTTON_PRIMARY } from '../../../../shared/ui/buttonVariants'
+import { ROW_CHIP, SETTINGS_SECTION_LABEL, SETTINGS_SURFACE } from '../../data'
 import { CatalogDensityRow } from './CatalogDensityRow'
 import { SettingsRow } from '../components/SettingsRow'
 import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
@@ -7,9 +8,6 @@ import { SettingsToggle } from '../components/SettingsToggle'
 import { SettingsUpdateControls } from './SettingsUpdateControls'
 import { StartupSettingsRow } from './StartupSettingsRow'
 import type { GeneralSettingsProps } from '../../types'
-
-const SECTION_LABEL =
-	'border-b border-slate-200 bg-slate-50/35 px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500'
 
 export function GeneralSettings({
 	settings,
@@ -26,13 +24,13 @@ export function GeneralSettings({
 	const hideToTray = settings?.hideToTrayOnClose ?? true
 	return (
 		<>
-			<div className="settings-surface mt-5 overflow-hidden rounded-2xl border border-white/85 bg-white/58">
-				<p className={SECTION_LABEL}>Appearance</p>
+			<div className={SETTINGS_SURFACE}>
+				<p className={SETTINGS_SECTION_LABEL}>Appearance</p>
 				<CatalogDensityRow
 					density={density}
 					onSetDensity={onSetDensity}
 				/>
-				<p className={SECTION_LABEL}>Startup &amp; window</p>
+				<p className={SETTINGS_SECTION_LABEL}>Startup &amp; window</p>
 				<StartupSettingsRow
 					startupEntry={settings?.startupEntry ?? null}
 					saving={saving}
@@ -55,7 +53,7 @@ export function GeneralSettings({
 						onToggle={() => void onSetCloseBehavior(!hideToTray)}
 					/>
 				</div>
-				<p className={SECTION_LABEL}>System</p>
+				<p className={SETTINGS_SECTION_LABEL}>System</p>
 				<SettingsRow
 					icon={Keyboard}
 					title="Global shortcut"
@@ -79,7 +77,7 @@ export function GeneralSettings({
 						Open
 					</button>
 				</SettingsRow>
-				<p className={SECTION_LABEL}>Updates &amp; links</p>
+				<p className={SETTINGS_SECTION_LABEL}>Updates &amp; links</p>
 				<SettingsUpdateControls
 					updater={updater}
 					onOpenGithub={onOpenGithub}

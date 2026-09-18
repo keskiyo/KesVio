@@ -1,9 +1,9 @@
-export type UpdateDownloadEvent =
+type UpdateDownloadEvent =
 	| { event: 'Started'; data: { contentLength?: number } }
 	| { event: 'Progress'; data: { chunkLength: number } }
 	| { event: 'Finished' }
 
-export interface UpdateRequestOptions {
+interface UpdateRequestOptions {
 	timeout: number
 }
 

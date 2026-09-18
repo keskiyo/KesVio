@@ -1,13 +1,9 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SettingsPage } from '../../../../src/pages/settings/ui/SettingsPage'
 import type { UpdaterState } from '../../../../src/features/update-app'
 import type { SystemClient } from '../../../../src/entities/system'
-
-async function openAdvancedSettings() {
-	await userEvent.click(screen.getByRole('button', { name: /Advanced/ }))
-}
 
 describe('SettingsPage', () => {
 	const settings = {
@@ -148,10 +144,6 @@ describe('SettingsPage', () => {
 				onSetDensity={vi.fn()}
 				client={systemClient()}
 				updater={updaterState()}
-				onExportPreferences={() => '{}'}
-				onValidatePreferencesImport={() => ({ ok: true })}
-				onImportPreferences={() => ({ ok: true })}
-				onRestorePreferencesBackup={() => ({ ok: true })}
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
@@ -164,16 +156,59 @@ describe('SettingsPage', () => {
 			expect(screen.getByText(description)).toBeInTheDocument()
 		}
 
-		await openAdvancedSettings()
-
 		for (const description of [
 			'Choose where KesVio scans.',
-			'Export or import your settings.',
 			'Rebuild the application catalog.',
-			'Export recent scan logs.',
 		]) {
 			expect(screen.getByText(description)).toBeInTheDocument()
 		}
+	})
+
+	// Source health, scan diagnostics, the diagnostics log and the preferences backup moved to
+	// the Catalog Health and Backup & Restore pages under More; Settings keeps only the
+	// controls that change how the catalog is built.
+	it('no longer hosts the diagnostics and backup sections', async () => {
+		const client = systemClient()
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
+				onResetCatalogCache={vi.fn().mockResolvedValue(undefined)}
+			/>,
+		)
+		await screen.findByText('Version 0.1.0')
+
+		for (const gone of [
+			'Catalog sources',
+			'Last scan diagnostics',
+			'Diagnostics log',
+			'Backup & restore',
+		])
+			expect(screen.queryByText(gone)).not.toBeInTheDocument()
+		for (const name of [
+			'Refresh catalog',
+			'Export settings',
+			'Import settings',
+			'Restore local backup',
+			'Preview redacted log',
+			'Export log as XML',
+		])
+			expect(
+				screen.queryByRole('button', { name }),
+			).not.toBeInTheDocument()
+		expect(screen.queryByRole('status')).not.toBeInTheDocument()
+		expect(screen.getByText('Application discovery')).toBeInTheDocument()
+		expect(screen.getByText('Catalog maintenance')).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Force full scan' }),
+		).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Reset catalog cache' }),
+		).toBeInTheDocument()
+		expect(client.previewDiagnosticsLog).not.toHaveBeenCalled()
 	})
 
 	// Both sentences are guarantees the code keeps and the reader cannot otherwise check: the
@@ -189,7 +224,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 
 		for (const guarantee of [
 			'Fixed drives are walked only during Force full scan. An ordinary refresh reads Windows sources and the folders added below.',
@@ -278,7 +312,9 @@ describe('SettingsPage', () => {
 		expect(checkNow).toHaveBeenCalledOnce()
 	})
 
-	it('keeps infrequent settings in a collapsed Advanced section', async () => {
+	// The collapsed Advanced disclosure went with the sections it used to hide; what is left
+	// is one open block below General, laid out the same way.
+	it('shows the catalog settings as an open block below the general ones', async () => {
 		render(
 			<SettingsPage
 				density="comfortable"
@@ -290,15 +326,26 @@ describe('SettingsPage', () => {
 		)
 		await screen.findByText('Version 0.1.0')
 
-		const advanced = screen.getByRole('button', { name: /Advanced/ })
-		expect(advanced).toHaveAttribute('aria-expanded', 'false')
 		expect(
-			screen.queryByText('Application discovery'),
+			screen.queryByRole('button', { name: /Advanced/ }),
 		).not.toBeInTheDocument()
-
-		await userEvent.click(advanced)
-		expect(advanced).toHaveAttribute('aria-expanded', 'true')
-		expect(screen.getByText('Application discovery')).toBeInTheDocument()
+		const block = screen.getByRole('region', { name: 'Catalog' })
+		expect(block).toHaveClass('settings-surface')
+		expect(within(block).getByText('Catalog').className).toBe(
+			screen.getByText('Appearance').className,
+		)
+		const rows = ['Application discovery', 'Catalog maintenance'].map(
+			title => within(block).getByText(title),
+		)
+		expect(rows[0]!.compareDocumentPosition(rows[1]!)).toBe(
+			Node.DOCUMENT_POSITION_FOLLOWING,
+		)
+		expect(
+			screen.getByText('Updates & links').compareDocumentPosition(block),
+		).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+		expect(
+			within(block).getByRole('button', { name: 'Force full scan' }),
+		).toBeInTheDocument()
 	})
 
 	it('does not render catalog visibility counts outside scan diagnostics', async () => {
@@ -312,209 +359,11 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 
 		expect(
 			screen.queryByText('Primary applications'),
 		).not.toBeInTheDocument()
 		expect(screen.queryByText('Auxiliary tools')).not.toBeInTheDocument()
-	})
-
-	it('keeps scan diagnostics collapsed until toggled', async () => {
-		render(
-			<SettingsPage
-				density="comfortable"
-				onSetDensity={vi.fn()}
-				updater={updaterState()}
-				client={systemClient()}
-				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
-				catalogDiagnostics={{
-					completedAt: 1,
-					durationMs: 1936,
-					mode: 'startup',
-					totalApps: 269,
-					sourceCounts: { registry: 9 },
-					added: 0,
-					removed: 0,
-					updated: 77,
-				}}
-			/>,
-		)
-		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
-
-		const toggle = screen.getByRole('button', {
-			name: 'Last scan diagnostics',
-		})
-		expect(toggle).toHaveAttribute('aria-expanded', 'false')
-		expect(screen.queryByText('Duration')).not.toBeInTheDocument()
-
-		await userEvent.click(toggle)
-		expect(toggle).toHaveAttribute('aria-expanded', 'true')
-		expect(screen.getByText('Duration')).toBeInTheDocument()
-
-		await userEvent.click(toggle)
-		fireEvent.transitionEnd(
-			screen.getByText('Duration').closest('#catalog-diagnostics')!,
-			{ propertyName: 'grid-template-rows' },
-		)
-		expect(screen.queryByText('Duration')).not.toBeInTheDocument()
-	})
-
-	// A source that keeps failing serves months-old records and used to say nothing at all. The
-	// row has to name the state, the count it is still serving, and the failure streak.
-	it('reports a source that is serving older data', async () => {
-		render(
-			<SettingsPage
-				density="comfortable"
-				onSetDensity={vi.fn()}
-				updater={updaterState()}
-				client={systemClient()}
-				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
-				catalogDiagnostics={{
-					completedAt: 1,
-					durationMs: 10,
-					mode: 'refresh',
-					totalApps: 12,
-					sourceCounts: { registry: 9 },
-					added: 0,
-					removed: 0,
-					updated: 0,
-					sources: [
-						{
-							key: 'start-apps',
-							state: 'stale',
-							lastAttemptAt: 1_700_000_000,
-							lastSuccessAt: 1_699_000_000,
-							consecutiveFailures: 8,
-							lastDurationMs: 25,
-							lastError: 'provider_failed',
-							recordCount: 41,
-						},
-					],
-				}}
-			/>,
-		)
-		await screen.findByText('Version 0.1.0')
-
-		// The status is on the page itself, not behind Advanced: a smaller catalog needs an
-		// explanation where the user looks first.
-		expect(screen.getByRole('status')).toHaveTextContent(
-			'1 of 1 sources need attention: Start apps (Unavailable)',
-		)
-		const row = screen.getByRole('row', { name: /Start apps/ })
-		expect(row).toHaveTextContent('Unavailable')
-		expect(row).toHaveTextContent(
-			'Did not answer; showing the last successful result',
-		)
-		expect(row).toHaveTextContent('41')
-	})
-
-	it('shows no source table when the cache predates source health', async () => {
-		render(
-			<SettingsPage
-				density="comfortable"
-				onSetDensity={vi.fn()}
-				updater={updaterState()}
-				client={systemClient()}
-				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
-				catalogDiagnostics={{
-					completedAt: 1,
-					durationMs: 10,
-					mode: 'startup',
-					totalApps: 12,
-					sourceCounts: { registry: 9 },
-					added: 0,
-					removed: 0,
-					updated: 0,
-				}}
-			/>,
-		)
-		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Last scan diagnostics' }),
-		)
-
-		expect(screen.queryByRole('table')).not.toBeInTheDocument()
-		expect(screen.getByRole('status')).toHaveTextContent(
-			'No source has been scanned yet.',
-		)
-	})
-
-	// The number that would expose a wrong availability verdict on a machine no fixture models:
-	// applications this rule kept that the rule it replaced would have deleted.
-	it('reports how far the launch-target rule diverged from the one it replaced', async () => {
-		render(
-			<SettingsPage
-				density="comfortable"
-				onSetDensity={vi.fn()}
-				updater={updaterState()}
-				client={systemClient()}
-				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
-				catalogDiagnostics={{
-					completedAt: 1,
-					durationMs: 10,
-					mode: 'startup',
-					totalApps: 12,
-					sourceCounts: { registry: 9 },
-					added: 0,
-					removed: 0,
-					updated: 0,
-					targetAvailability: {
-						byReason: {
-							'target.present': 10,
-							'target.unverifiable.access_denied': 2,
-						},
-						keptByNewRule: 2,
-					},
-				}}
-			/>,
-		)
-		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Last scan diagnostics' }),
-		)
-
-		expect(screen.getByText('Verified on disk')).toBeInTheDocument()
-		expect(
-			screen.getByText('Not checked — access denied'),
-		).toBeInTheDocument()
-		expect(
-			screen.getByText(/Kept by the current rule: 2/),
-		).toBeInTheDocument()
-	})
-
-	it('shows no launch-target panel when the cache predates the diff', async () => {
-		render(
-			<SettingsPage
-				density="comfortable"
-				onSetDensity={vi.fn()}
-				updater={updaterState()}
-				client={systemClient()}
-				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
-				catalogDiagnostics={{
-					completedAt: 1,
-					durationMs: 10,
-					mode: 'startup',
-					totalApps: 12,
-					sourceCounts: { registry: 9 },
-					added: 0,
-					removed: 0,
-					updated: 0,
-				}}
-			/>,
-		)
-		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Last scan diagnostics' }),
-		)
-
-		expect(
-			screen.queryByText('Launch target check'),
-		).not.toBeInTheDocument()
 	})
 
 	it('does not render manual icon-maintenance controls', async () => {
@@ -549,7 +398,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Force full scan' }),
@@ -573,7 +421,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 		const trigger = screen.getByRole('button', { name: 'Force full scan' })
 		await userEvent.click(trigger)
 		await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -592,7 +439,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Force full scan' }),
@@ -618,7 +464,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Reset catalog cache' }),
@@ -644,7 +489,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Force full scan' }),
@@ -692,7 +536,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Force full scan' }),
@@ -717,7 +560,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 
 		expect(
 			screen.getByText('Application discovery').closest('div'),
@@ -785,7 +627,6 @@ describe('SettingsPage', () => {
 			}),
 		)
 		expect(client.openGithub).toHaveBeenCalledOnce()
-		await openAdvancedSettings()
 		expect(screen.getByText('Fixed local drives')).toBeInTheDocument()
 		expect(screen.getByText('E:\\')).toBeInTheDocument()
 		await userEvent.click(
@@ -839,7 +680,6 @@ describe('SettingsPage', () => {
 			/>,
 		)
 		await screen.findByText('Version 0.1.0')
-		await openAdvancedSettings()
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Browse for scan folder' }),
 		)

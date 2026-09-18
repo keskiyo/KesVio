@@ -1,8 +1,4 @@
-import type {
-	AppDetails,
-	AppInfo,
-	AppVisibilityReason,
-} from '../model/app.types'
+import type { AppInfo, AppVisibilityReason } from '../model/app.types'
 import { type CategoryDefinition, categoryLabel } from '../../category'
 import { categoryReasonsLabel } from './categoryReason'
 
@@ -81,95 +77,6 @@ export function displayVersion(version: string): string {
 
 export function descriptionLabel(description: string | null): string {
 	return description?.trim() || 'No description available'
-}
-
-const FILE_SIZE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'] as const
-
-export function middleEllipsis(value: string, maxLength: number): string {
-	if (value.length <= maxLength) return value
-	if (maxLength <= 1) return '…'
-	const leadingLength = Math.floor((maxLength - 1) / 2)
-	const trailingLength = maxLength - 1 - leadingLength
-	return `${value.slice(0, leadingLength)}…${value.slice(-trailingLength)}`
-}
-
-export function formatFileSize(bytes: number | null): string {
-	if (bytes == null || !Number.isFinite(bytes) || bytes < 0)
-		return 'Not available'
-	let value = bytes
-	let unitIndex = 0
-	while (value >= 1024 && unitIndex < FILE_SIZE_UNITS.length - 1) {
-		value /= 1024
-		unitIndex += 1
-	}
-	const formatted =
-		unitIndex === 0 ? String(value) : Number(value.toFixed(1)).toString()
-	return `${formatted} ${FILE_SIZE_UNITS[unitIndex]}`
-}
-
-export function formatFileDate(unixSeconds: number | null): string {
-	if (unixSeconds == null || !Number.isFinite(unixSeconds) || unixSeconds < 0)
-		return 'Not available'
-	const date = new Date(unixSeconds * 1000)
-	if (Number.isNaN(date.getTime())) return 'Not available'
-	return new Intl.DateTimeFormat('en-US', {
-		month: 'short',
-		day: 'numeric',
-		year: 'numeric',
-		timeZone: 'UTC',
-	}).format(date)
-}
-
-function availabilityLabel(value: boolean | null): string {
-	if (value == null) return 'Not available'
-	return value ? 'Yes' : 'No'
-}
-
-function signatureLabel(status: AppDetails['signature']): string {
-	if (status === 'verified') return 'Verified'
-	if (status === 'unsigned') return 'Unsigned'
-	return 'Not available'
-}
-
-function architectureLabel(architecture: AppDetails['architecture']): string {
-	return architecture === 'notApplicable' ? 'Not applicable' : architecture
-}
-
-export function buildAppReport(
-	app: AppInfo,
-	details: AppDetails | null,
-): string {
-	const targetLabel =
-		app.launchKind === 'app_user_model_id' ? 'Launch target' : 'Executable'
-	const fileDetails = details ?? {
-		fileSizeBytes: null,
-		fileCreatedAt: null,
-		fileModifiedAt: null,
-		architecture: 'unknown' as const,
-		signature: 'unavailable' as const,
-		executableExists: null,
-		installLocationExists: null,
-	}
-	return [
-		'Application',
-		`Name: ${app.name}`,
-		`Publisher: ${app.publisher ?? 'Not available'}`,
-		`Version: ${app.version ? displayVersion(app.version) : 'Not available'}`,
-		`Category: ${app.category}`,
-		'',
-		'Installation',
-		`Location: ${app.installLocation ?? 'Not available'}`,
-		`${targetLabel}: ${app.path}`,
-		`${targetLabel} found: ${availabilityLabel(fileDetails.executableExists)}`,
-		`Install location found: ${availabilityLabel(fileDetails.installLocationExists)}`,
-		'',
-		'File details',
-		`Size: ${formatFileSize(fileDetails.fileSizeBytes)}`,
-		`Created: ${formatFileDate(fileDetails.fileCreatedAt)}`,
-		`Modified: ${formatFileDate(fileDetails.fileModifiedAt)}`,
-		`Architecture: ${architectureLabel(fileDetails.architecture)}`,
-		`Digital signature: ${signatureLabel(fileDetails.signature)}`,
-	].join('\n')
 }
 
 export function metadataRows(

@@ -3,7 +3,7 @@ import type { AppInfo, AppSourceKind } from '../model/app.types'
 
 export const MAX_SAVED_FILTERS = 20
 export const MAX_SAVED_FILTER_NAME_LENGTH = 64
-export const MAX_ADDED_WITHIN_DAYS = 365
+const MAX_ADDED_WITHIN_DAYS = 365
 
 export const SAVED_FILTER_SOURCES: readonly AppSourceKind[] = [
 	'registry',

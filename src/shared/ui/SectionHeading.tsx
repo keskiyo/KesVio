@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import { countLabel } from '../lib/countLabel'
 
-export interface SectionHeadingProps {
+interface SectionHeadingProps {
 	icon: LucideIcon
 	title: string
 	titleId: string

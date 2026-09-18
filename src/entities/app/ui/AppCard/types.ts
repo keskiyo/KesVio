@@ -19,6 +19,7 @@ export interface AppCardProps {
 export interface CardIconProps {
 	iconBase64: string | null
 	launching: boolean
+	tone?: 'accent' | 'neutral'
 }
 
 export interface CardLabelProps {

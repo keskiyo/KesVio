@@ -2,6 +2,7 @@ import {
 	ArrowRight,
 	ExternalLink,
 	EyeOff,
+	FolderOpen,
 	Info,
 	RotateCcw,
 	Wrench,
@@ -13,7 +14,6 @@ import {
 	INSTALLERS_DOCS_CATEGORY,
 	isCatalogArtifact,
 } from '../../../../entities/app'
-import { ArtifactSubmenu } from './ArtifactSubmenu'
 import { CategorySubmenu } from './CategorySubmenu'
 import { MenuItem } from './MenuItem'
 import type { AppActionsMenuProps } from './types'
@@ -26,6 +26,7 @@ export function AppActionsMenu({
 	onClose,
 	onMove,
 	onInfo,
+	onOpenFolder,
 	onManageInWindows,
 	isHidden = false,
 	isUserPromoted = false,
@@ -36,21 +37,20 @@ export function AppActionsMenu({
 }: AppActionsMenuProps) {
 	const [showCategories, setShowCategories] = useState(false)
 	const [showArtifacts, setShowArtifacts] = useState(false)
-	const artifact = isCatalogArtifact(app) && !app.userPlacedArtifact
+	const filedArtifact = isCatalogArtifact(app)
+	const artifact = filedArtifact && !app.userPlacedArtifact
 	const drive = driveCategoryFor(app)
 	const {
 		menuRef,
 		categoryMenuRef,
-		artifactMenuRef,
 		position,
 		categoryPosition,
-		artifactPosition,
 		onMenuKeyDown,
 	} = useActionsMenu({
 		anchorRef,
 		onClose,
 		showCategories,
-		showArtifacts,
+		branchExpanded: showArtifacts,
 	})
 	return createPortal(
 		<>
@@ -125,7 +125,17 @@ export function AppActionsMenu({
 				{!isHidden && (
 					<div className="mx-1 my-1 border-t border-slate-200/55" />
 				)}
-				{!isHidden && app.canUninstall && (
+				{!isHidden && filedArtifact && onOpenFolder && (
+					<MenuItem
+						icon={FolderOpen}
+						label="Open folder"
+						onClick={() => {
+							void onOpenFolder(app)
+							onClose()
+						}}
+					/>
+				)}
+				{!isHidden && !filedArtifact && app.canUninstall && (
 					<MenuItem
 						icon={ExternalLink}
 						withSpotlight={false}
@@ -136,7 +146,7 @@ export function AppActionsMenu({
 						}}
 					/>
 				)}
-				{!isHidden && !app.canUninstall && (
+				{!isHidden && !filedArtifact && !app.canUninstall && (
 					<MenuItem
 						icon={ExternalLink}
 						disabled
@@ -162,24 +172,12 @@ export function AppActionsMenu({
 						onMove(app.id, category)
 						onClose()
 					}}
+					onSelectArtifact={kind => {
+						onMove(app.id, INSTALLERS_DOCS_CATEGORY, kind)
+						onClose()
+					}}
 				/>
 			)}
-			{!isHidden &&
-				!artifact &&
-				!drive &&
-				showCategories &&
-				showArtifacts && (
-					<ArtifactSubmenu
-						menuRef={artifactMenuRef}
-						position={artifactPosition}
-						onKeyDown={onMenuKeyDown}
-						label={`Move ${app.name} to installers or docs`}
-						onSelect={kind => {
-							onMove(app.id, INSTALLERS_DOCS_CATEGORY, kind)
-							onClose()
-						}}
-					/>
-				)}
 		</>,
 		document.querySelector<HTMLElement>('.app-shell') ?? document.body,
 	)

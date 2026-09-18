@@ -6,6 +6,7 @@ import {
 	createMarkLookup,
 	filterVisibleApps,
 	isCatalogArtifact,
+	isCatalogView,
 	joinHydrationIds,
 	rankAppsByQueryAndCategory,
 	type SavedFilter,
@@ -159,7 +160,6 @@ export function useCatalogView(state: CatalogViewState) {
 		return resolveScenarioApps([...identities], catalogApps).apps
 	}, [catalogApps, state.activeView, state.scenarios])
 	const hydrationApps = useMemo(() => {
-		if (state.activeView === 'settings') return []
 		if (state.activeView === 'scenarios') return scenarioApps
 		if (state.activeView === 'more')
 			return [
@@ -169,6 +169,7 @@ export function useCatalogView(state: CatalogViewState) {
 			]
 				.map(entry => entry.app)
 				.concat(scenarioApps)
+		if (!isCatalogView(state.activeView)) return []
 		return filteredApps
 	}, [filteredApps, morePreview, scenarioApps, state.activeView])
 	const visibleHydrationIds = useMemo(

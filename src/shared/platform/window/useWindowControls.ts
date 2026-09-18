@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 
 type AppWindow = ReturnType<typeof getCurrentWindow>
 
-export interface WindowControls {
+interface WindowControls {
 	maximized: boolean
 	minimize(): void
 	toggleMaximize(): void

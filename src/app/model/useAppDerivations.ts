@@ -18,7 +18,7 @@ interface AppDerivationsInput {
 	favoriteScenarioIds: string[]
 }
 
-export interface RecentApp {
+interface RecentApp {
 	app: AppInfo
 	firstSeenAt: number | null
 }

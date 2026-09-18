@@ -64,9 +64,26 @@ Main source areas:
 | `src-tauri/src/platform/windows/`             | Windows-native boundary                                       |
 | `tests/frontend/`                             | Frontend tests mirroring source ownership                     |
 
+Frontend slices and what each owns:
+
+| Slice                        | Owns                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app/model`                  | One hook per concern: bootstrap and re-hydration, dialogs, global shortcuts, search access, scenario/tray integration, navigation props, activity status, derivations                                                                                                                                                                                                          |
+| `app/layout`                 | Title bar, activity bar, banners, the four view branches (`AppViews`), dialogs host, toaster                                                                                                                                                                                                                                                                                   |
+| `app/store`                  | `appStore.ts` assembly; `actions/*` per owner; `catalogGeneration.ts` (generation order, held records, diagnostics); `reconciliation.ts` (marks, first-seen); `driveCategories.ts`; `identityRekey.ts`; `transaction.ts`/`undo.ts`; `preferences/*`                                                                                                                            |
+| `pages/*`                    | Catalog, Settings (`ui/sections`, page-local `ui/components`), Scenarios, More, Catalog Health (`catalog-health`: source health, last scan, diagnostics log), Backup & Restore (`backup-restore`: preferences export, import and local recovery)                                                                                                                               |
+| `widgets/app-header`         | Header, search field, scan button, active-filter chip                                                                                                                                                                                                                                                                                                                          |
+| `widgets/catalog-content`    | Grids and rows (`AppRow` shared by Auxiliary tools, Hidden and Installers & Docs), `useCatalogView`, More previews                                                                                                                                                                                                                                                             |
+| `widgets/sidebar-navigation` | Sidebar, drawer, saved-filter list, category reordering                                                                                                                                                                                                                                                                                                                        |
+| `features/*`                 | `app-actions`, `command-palette`, `edit-settings`, `launch-app`, `manage-category`, `manage-filters`, `manage-scenarios` (editor, picker, run dialog with `launcherKeys.ts`, filters via `useScenarioFilters`), `run-scenario`, `stale-copy`, `update-app` (`useUpdateCheck`, `useUpdateInstall`, `updateResource`, `updatePreferences`, `updateTimeouts`), `view-app-details` |
+| `entities/*`                 | `app` (records, clients, search, selectors, `isCatalogView`, metadata and file-detail labels, `AppCard`), `category` (definitions, accents, `driveCategoryFor`), `scenario` (model, resolution, order, search, filters, tray entries), `system` (settings, `SystemClient`, tray)                                                                                               |
+| `shared`                     | `ui` primitives, DOM hooks, `lib` (clipboard, positioning, `dates`, `bytes`, `text`, search variants, modal layering), Tauri transport                                                                                                                                                                                                                                         |
+
 Store assembly stays in `src/app/store/`. Action factories live in `actions/`;
 preference schema, normalization and storage live in `preferences/`, behind the
-existing `preferences.ts` facade. Component-only props stay with their component.
+existing `preferences.ts` facade (`preferencesFields.ts` keeps `custom:*` and
+`drive:*` category ids as user-defined). Component-only props stay with their
+component.
 The stylesheet entry `src/app/styles/index.css` imports tokens, navigation, base,
 notifications, surfaces, theme, catalog and motion in cascade order. Theme rules
 match whole class tokens rather than arbitrary substrings.
@@ -100,7 +117,8 @@ change to either is a change everywhere it applies:
 | Owner                                                        | Owns                                                                                                                                                                                               |
 | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/shared/hooks/useModalDialog.ts`                         | Modal lifecycle: body-scroll lock, focus trap, initial focus, focus restoration, and the optional Escape listener. Composes `useBodyScrollLock` and `useFocusTrap` rather than reimplementing them |
-| `src/pages/settings/ui/components/SettingsSectionHeader.tsx` | The icon tile, heading and description shared by every settings card                                                                                                                               |
+| `src/pages/settings/ui/components/SettingsSectionHeader.tsx` | The icon tile, heading and description shared by every settings card; `src/shared/ui/PanelHeader.tsx` is its token-coloured twin for the Catalog Health and Backup & Restore surfaces              |
+| `src/shared/ui/buttonVariants.ts`                            | `ACTION_BUTTON` and its primary, quiet, neutral and danger variants plus `ACTION_ROW`; Settings, Catalog Health and Backup & Restore all derive their card actions from it                         |
 
 `useModalDialog` captures the opening element once, on mount, so a dialog that
 re-renders mid-flight — an installer that starts, an update that begins
@@ -295,9 +313,9 @@ Three stores contain user data:
 
 | Store         | Owner                          | Rules                                                                                                                                |
 | ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Catalog cache | `catalog/storage/cache.rs`     | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                |
+| Catalog cache | `catalog/storage/cache/`       | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                |
 | Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 22) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
-| Window state  | `lifecycle/window_state.rs`    | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                           |
+| Window state  | `lifecycle/window_state/`      | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                           |
 
 Window state is presentation-only and deliberately disposable: a missing,
 malformed or newer-versioned document restores nothing, the window opens at the
@@ -646,8 +664,13 @@ Filing an application into Installers & Docs by hand records which half it
 belongs to. The category holds one bucket per artifact kind, so a placement that
 only said "Installers & Docs" had to pick installer, and a reference document
 filed by hand landed beside setup programs with no way back. The menu therefore
-opens a third level under that row — Installers or Docs — and the choice is
-persisted as its own placement. The scanner's own verdict is unchanged: an entry
+expands that row in place — Installers and Docs appear as an indented group
+inside the category panel (`ArtifactBranch`, a `role="group"` of two menu items
+that the panel's arrow-key walk includes in document order) — and the choice is
+persisted as its own placement. It used to be a third floating panel; in a
+narrow window that panel had no side left to open on, `floatingSubmenuPosition`
+clamped it over the category list and hid the last categories, so on
+18 September 2026 the third panel was replaced by the in-place branch. The scanner's own verdict is unchanged: an entry
 it already recognised as an installer or a document is not offered a move, and
 upgrading a document written before this split leaves every existing placement an
 installer.
@@ -725,8 +748,19 @@ optional fixed-drive discovery, and watcher-triggered refreshes. Each source
 reports health independently; failed or stale sources retain their last valid
 snapshot where safe.
 
-That health reaches the user as the **Catalog sources** section of Settings,
-which is visible without opening Advanced. `entities/app/lib/sourceHealth.ts`
+That health reaches the user on the **Catalog Health** page (More → Catalog
+Health, `pages/catalog-health`), which took over the source health, the last-scan
+diagnostics and the diagnostics log from Settings on 17 September 2026. The
+collapsed **Advanced** disclosure went with them: Settings is now two open
+blocks of the same shape — General, then **Catalog** with the Application
+discovery and Catalog maintenance rows — followed by the unclassified records
+when there are any. `entities/app/lib/catalogHealth.ts` folds the last
+diagnostics and the refreshing flag into one of four catalog states — no
+diagnostics, scanning, attention, healthy — and both the More card's second line
+and the page's summary block read that one verdict. The summary block is the
+only place with the primary **Refresh catalog** action; the **Catalog sources**
+section below it keeps the summary line and the **Source details** disclosure.
+`entities/app/lib/sourceHealth.ts`
 turns each `SourceHealth` record of the last diagnostics into a row with a
 human source name (Installed programs, Start Menu, Start apps, Installer cache,
 Steam, Portable folders) and one of: **Up to date**, **Unavailable** (the
@@ -741,13 +775,13 @@ ordinary refresh through the store — the same coordinator path as the header
 button. It is not a per-source retry: a scoped retry would need a backend
 allowlist and a scoped coordinator request, and the button is named for what it
 does. The store keeps the newest diagnostics by `completedAt`, so a late event
-from an earlier scan cannot make a recovered source read as failed again. The
-section lays out like every other Settings card: the icon centred on its text,
-**Source details** as a full-width disclosure with the chevron at the right,
-and the action row at the bottom — the button fills the width on a narrow
-window and sits at the right edge otherwise. Source health is a labelled list
-at the minimum window width and becomes a five-column table when the Settings
-surface is wide enough. There is no per-scan change
+from an earlier scan cannot make a recovered source read as failed again.
+Source health is a labelled list at the minimum window width and becomes a
+five-column table when the page surface is wide enough. The **Last scan**
+section shows the application, added, updated and removed counts and the
+duration in plain numbers, with mode, per-source and per-visibility counts,
+unreachable folders and the launch-target check behind **Technical details**.
+There is no per-scan change
 report: a **Changes from last scan** section was built and withdrawn at the
 user's request, and the toast that used to follow every background scan
 (`catalog://changed`, "N applications added") was removed on 15 September 2026
@@ -959,6 +993,120 @@ request. A stored `searchAliases` map is kept as unknown data by the
 preferences normalizer and ignored; the schema version was not bumped because
 the document shape only lost an optional field.
 
+Built-in search aliases replaced them on 18 September 2026 and were hardened
+for precision on 19 September 2026. They are search metadata only: nothing is
+persisted, nothing reaches `AppInfo`, and no UI shows or edits them.
+`entities/app/lib/search/` resolves them once per `AppInfo` object when
+`fieldsFor` builds the cached `SearchFields` (a `WeakMap` keyed by the record
+object; the store replaces a patched record with a new object, which is what
+invalidates the entry — `searchFieldsCache.test.ts` pins that from both sides):
+
+- `knownAliasMatch.ts` reads the identity facts of a record
+  (`appMatchFacts`: NFKC-normalised name and versionless name, product name,
+  publisher, the executable basename of a real filesystem launch path, the
+  `originalFilename`, the AUMID package family, the Steam app id, whether the
+  record is an installer or documentation artifact) and matches a dictionary
+  entry against them with a **declarative clause model**, not a score:
+  `anyOf` clauses each yield a strength — `packageFamily`, `steamAppId` and
+  `executable` (launch path only) are **strong** identity, `productName` and
+  `name` (exact) are **normal**, `nameStartsWith` / `productNameStartsWith`
+  are family rules with no strength of their own, and `publisherContains` /
+  `originalFilename` are **supporting** evidence that never matches alone. An
+  `allOf` takes the best member strength and is promoted one level when a
+  supporting member also matched (`name` + `originalFilename` → strong,
+  `productName` + `publisherContains` → strong, `nameStartsWith` +
+  `publisherContains` → normal). `exclude` clauses veto the entry on any
+  match. A **helper record** never matches any entry: an installer or
+  documentation artifact, a launch or original file name that is a known host
+  or helper (`update.exe`, `setup.exe`, `chrome_proxy.exe`,
+  `msedgewebview2.exe`, any stem containing `setup`/`install`/`updat`), or a
+  name carrying a helper word (`update`, `helper`, `agent`, `service`, `sdk`,
+  `webview2`, `bootstrapper`, `add-in`, `tunnel`, `proxy`, «деинсталлировать»,
+  «обновление», …). The granted confidence is capped by the match strength: a
+  strong alias rides only on strong identity and is demoted to normal when
+  only a name matched (a Start Menu shortcut before hydration).
+  `knownAliasIndex.ts` keys entries by their exact values and by the first two
+  characters of their prefix rules, so a record is tested against a handful
+  of entries (cold resolution of 2000 records: 11 ms).
+- `generatedAliases.ts` derives conservative aliases from the record itself:
+  the versionless name (`stripTrailingVersion`: `PostgreSQL 17` →
+  `postgresql`, `7-Zip` stays `7-Zip`); and, for non-helper records only, the
+  product name (never an operating-system product name, never when the launch
+  path is an interpreter or browser host or the `originalFilename` is a
+  browser, because that metadata belongs to the host), the executable file name
+  and stem of a real filesystem launch path and the stem without a
+  `32`/`64`/`x86`/`x64` suffix (`obs64.exe` → `obs64`, `obs`; never a generic
+  or host stem, never a numeric stem, never a `.lnk` basename or an AUMID),
+  the name without a known vendor prefix when a single specific word remains
+  (`Google Chrome` → `chrome`; `NVIDIA Control Panel` yields nothing) and, as
+  **weak** aliases only, three-to-eight-letter single-script acronyms of a
+  name with at least three words and no generic word (`World of Warcraft` →
+  `wow`; `SQL Server Management Studio` yields none — `ssms` is curated).
+  **`originalFilename` never creates an alias on its own**: it is host
+  metadata for every Electron app and PWA (`electron.exe`, `chrome.exe`).
+- `knownAppAliases.ts` is the curated dictionary assembled from the domain
+  files under `search/dictionary/` (about 190 entries after the 19 September
+  audit). Aliases name a product, never a category, format or vendor: the
+  audit removed `torrent`, `vpn`, `консоль`, `магазин`, `обои`, `mail`,
+  `почта`, `pdf`, `office`, `screenshot`, `антивирус`, `архиватор`, `mods`,
+  `llm`, `ssh`, `scp`, `ftp`, `linux`, `security`, `музыка`, `телефон`,
+  `notes`, `заметки`, `feedback`, `blizzard`, `anthropic`, `openai`,
+  `logitech`, `rar`, `ppt`, `ps1`, `calc` / `writer` / `draw` / `impress` of
+  LibreOffice, `ps`, `ai`, `tv`, `py`, `d4`, `pad` and the like. Windows tools
+  match their Russian display names («Командная строка», «Диспетчер задач»,
+  «Блокнот», «Ножницы»…) because a Russian Windows names them so. The registry
+  is `rule → aliases`, never `alias → app`.
+- `resolveSearchAliases.ts` merges both sources, drops values equal to the
+  name and keeps the highest confidence when a value comes from both.
+
+Scoring (`search/scoring.ts`, constants in `SEARCH_SCORE`) keeps the literal
+query variant above the layout-corrected and transliterated ones and orders
+direct hits: exact name 100, name prefix with an exact strong alias 95, name
+prefix 90, strong alias 88, normal alias 80, strong-alias prefix 76, name-word
+prefix 70, normal-alias prefix 66, weak alias 58 (exact only), name/product
+substring 50, publisher 30, secondary 10 (path, install location, version,
+description — not `originalFilename`). A multi-word alias matches only as a
+**phrase**: the whole query, in any single variant, equal to the alias or a
+prefix of it (`vs code`, `vs co`, `pg admin`, `мы сщву`); its words never
+satisfy tokens one by one, so `vs net` cannot be assembled from `vs code` and
+`battle net`. Only single-word strong aliases of five characters or more join
+the one-edit typo pool (`vscde` → `vscode`); normal aliases match exactly or
+by prefix, weak aliases exactly. `cmd` (and `сьв`, which `queryTokenVariants`
+remaps to it) ranks Command Prompt first, Git CMD below it because CMD is in
+its name, and Windows Terminal answers to `wt`, `windows terminal` and
+`terminal`; `OpenConsole.exe` is excluded from the Windows Terminal entry.
+
+Dictionary governance (`tests/frontend/entities/app/search/dictionaryGovernance.test.ts`
+fails the build on a violation):
+
+1. An alias identifies a product or application; category words, file formats
+   and vendor names are denylisted.
+2. No keyboard-layout variants and no transliteration twins — the query
+   normaliser produces them.
+3. Every strong alias needs a clause that can yield a strong match.
+4. Publisher-only, `originalFilename`-only and bare-prefix identity are
+   forbidden; a supporting clause lives only inside an `allOf` with an identity
+   clause.
+5. Strong alias collisions are forbidden; a normal or weak collision must be
+   listed in `KNOWN_ALIAS_COLLISIONS` with a reason (today: `powershell`,
+   `mysql`, `nvidia`).
+6. Every alias of three characters or fewer has a row in the golden query
+   corpus (`fixtures/aliasGoldenQueries.ts`, 280+ queries over six synthetic
+   catalogs: Windows EN/RU, developer, gaming, creative, helper-heavy); a strong
+   alias must rank its app first, a weaker one within the top three.
+7. Every new entry needs a positive row there and a negative row in
+   `fixtures/aliasNegativeQueries.ts` (a host, helper, installer or sibling
+   that must not own the alias); `knownAliasSiblingSafety.test.ts` holds the
+   sibling matrix (Visual Studio / VS Code, Edge / WebView2, Chrome / PWA,
+   Terminal / OpenConsole, Command Prompt / Git CMD, PowerShell / ISE, Steam,
+   Battle.net, PostgreSQL / psql / pgAdmin / Stack Builder, MySQL, Photoshop,
+   Java, Discord, Telegram, NVIDIA, Control Panel, Notepad, Paint, Word).
+8. A live catalog can be audited with
+   `KESVIO_ALIAS_AUDIT=<apps-cache.json> npx vitest run tests/audit` — it
+   writes `.1localDocuments/perf/alias-audit-<stamp>.json` and lists records
+   with many aliases, several matched entries, name-only identity or short
+   aliases.
+
 Search stays inside the active view, and a query that also matches records
 outside it reports those counts with a direct link to the owning view, rather
 than leaving the matches invisible. Every catalog view answers this way, not
@@ -1114,8 +1262,45 @@ The catalog scroll root reserves its vertical scrollbar gutter. The shared
 modal lifecycle can therefore lock that root for any drawer or dialog without
 changing the width of the obscured page underneath it.
 
-The More page previews every scenario while they all fit its card and spends the
-last slot on a "View all" row only once a scenario is left out of the preview.
+The More page ("Catalog views and tools.") holds six cards in two columns:
+Auxiliary tools, Scenarios, Hidden and Installers & Docs with their counts and
+recently-added previews, then Catalog Health and Backup & Restore, which carry
+no count and no preview — a card without a count renders no badge and its
+accessible name is the label alone. The Catalog Health card's second line is
+the catalog verdict from `assessCatalogHealth`; the Backup & Restore card names
+its three actions. Both open pages that render no catalog: `catalog_health` and
+`backup_restore` sit in `NON_CATALOG_VIEWS` beside `settings`, `more` and
+`scenarios`, so `isCatalogView` keeps them out of the grid, the search scope,
+saved-filter application and icon hydration, and their **Back to More** header
+returns to More. Neither has a sidebar entry. The **Recently added** section
+stays a separate block below the grid. The More page previews every scenario
+while they all fit its card and spends the last slot on a "View all" row only
+once a scenario is left out of the preview.
+
+The three catalog views reached from More share `CatalogViewHeader` (back
+button, icon, title, count and an optional one-line description) and, when they
+have nothing to show, `ViewEmptyState` (icon, title, sentence and a second
+**Back to More** button; a fruitless search gets the `SearchX` variant without
+the button). All three render `AppRow`, whose surface is neutral at rest —
+token border, panel background, neutral icon ring, menu button at reduced
+opacity — and takes the accent border only on hover, focus-within or while its
+menu is open, so seventy rows do not read as seventy violet outlines.
+**Auxiliary tools**, **Hidden** and **Installers & Docs** keep the dense
+one-to-three column grid of `AppRow` cards; Installers & Docs splits into
+**Installers** and **Documentation** sections whose headings carry an icon, a
+rule and the count, and each artifact row shows its middle-ellipsed path as a
+tertiary line. A hidden card's menu offers _App info_ and _Restore to catalog_
+and nothing that hides or uninstalls (a separate one-surface list with a
+visible Restore button was tried on 17–18 September 2026 and replaced by the
+shared card grid on 18 September at the user's request, so the three More
+views look alike). "Nothing is hidden" replaces the grid when it is empty. A
+menu opened from a trigger in the right half of the window
+hangs from the trigger's right edge (`floatingMenuPosition`), so a row's ⋮
+never gets a panel floating off to its side. An artifact row's menu replaces
+_Uninstall_ — which Windows cannot do for a file that was never installed —
+with **Open folder**, the same `openAppFolder` command the App info dialog
+uses, so the installer can be run or deleted by hand from where it lies; a
+failure is reported as a toast without the path.
 
 The scenario launcher is a root-level dialog rather than a page detail, reachable
 with Ctrl+Shift+K from any view and from that "View all" row. A shortcut nothing
@@ -1242,7 +1427,7 @@ suite at once: `Access 2016` and `Publisher 2016` carry no other evidence and
 would otherwise stay unclassified for the same reason as their telemetry and
 language companions.
 
-Records that still match nothing are listed under Settings → Advanced with every
+Records that still match nothing are listed at the bottom of Settings with every
 signal the classifier read, so a machine with unfamiliar software shows what the
 tables are missing rather than a silent pile in `Other`. One action copies the
 whole list — signals, source, artifact, visibility and the recorded reason — as
@@ -1746,24 +1931,24 @@ source is MIT-licensed; third-party notices are recorded in
 
 ## 17. Troubleshooting
 
-| Problem                        | First action                                                                                                                                              |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Catalog empty                  | Use **Scan for apps**; the first complete scan is explicit.                                                                                               |
-| Duplicate or stale entries     | Refresh; then use **Settings → Advanced → Catalog maintenance → Reset catalog cache**.                                                                    |
-| Missing application            | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive.                                           |
-| Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                                                            |
-| Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                                                               |
-| Uninstall unavailable          | Windows has no registered uninstaller for the entry, so there is nothing to open.                                                                         |
-| Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.                                                     |
-| A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.                                                        |
-| Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                                                               |
-| Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                                                                            |
-| SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                                                                |
-| Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.                                                       |
-| A scan never finishes          | Open the newest `KesVioData\logs\kesvio-<start>-<pid>.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.                     |
-| A stall must be traced further | Detailed scan steps are always logged; use **Settings → Advanced → Diagnostics log → Export log as XML** and read the `Scan step` lines around the stall. |
-| Closing the window hides it    | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                                                          |
-| Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.                                              |
+| Problem                        | First action                                                                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog empty                  | Use **Scan for apps**; the first complete scan is explicit.                                                                                                 |
+| Duplicate or stale entries     | Refresh; then use **Settings → Catalog → Reset catalog cache**.                                                                                             |
+| Missing application            | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive.                                             |
+| Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                                                              |
+| Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                                                                 |
+| Uninstall unavailable          | Windows has no registered uninstaller for the entry, so there is nothing to open.                                                                           |
+| Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.                                                       |
+| A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.                                                          |
+| Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                                                                 |
+| Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                                                                              |
+| SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                                                                  |
+| Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.                                                         |
+| A scan never finishes          | Open the newest `KesVioData\logs\kesvio-<start>-<pid>.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.                       |
+| A stall must be traced further | Detailed scan steps are always logged; use **More → Catalog Health → Diagnostics log → Export log as XML** and read the `Scan step` lines around the stall. |
+| Closing the window hides it    | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                                                            |
+| Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.                                                |
 
 ### Saved catalog filters
 
@@ -1832,8 +2017,8 @@ checks do not prove native application cooperation or cancellation support.
 
 ### Scenario import
 
-Scenarios travel only with the full settings backup (**Settings → Advanced →
-Backup & restore**). A
+Scenarios travel only with the full settings backup (**More → Backup &
+Restore**). A
 selective **Import scenarios** picker on the Scenarios page was built and
 withdrawn on 16 September 2026 at the user's request before it shipped; nothing
 of it remains in the tree.

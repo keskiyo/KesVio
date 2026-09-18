@@ -70,7 +70,7 @@ Inspect local file details, architecture, signature status, installation state, 
 
 ![KesVio settings showing personalization, Windows integration, and update controls](.github/images/settings.png)
 
-Control catalog density, application discovery, startup and tray behavior, updates, backups, diagnostics, and catalog maintenance from one place.
+Control catalog density, application discovery, startup and tray behavior, updates, and catalog maintenance from one place.
 
 <details>
 <summary>More screenshots</summary>
@@ -81,11 +81,11 @@ Control catalog density, application discovery, startup and tray behavior, updat
 
 Choose which applications a Scenario launches or closes and whether closing may be forced.
 
-### Additional catalog views
+### More: catalog views and tools
 
 ![KesVio More page with Auxiliary tools, Scenarios, Hidden, and Installers and Docs](.github/images/more.png)
 
-Auxiliary tools, hidden applications, installers, and documentation remain available without crowding the main catalog.
+Auxiliary tools, hidden applications, installers, and documentation remain available without crowding the main catalog. **Catalog Health** shows whether every source answered, what the last scan changed, and exports a redacted diagnostics log; **Backup & Restore** exports, imports, or recovers your preferences.
 
 </details>
 

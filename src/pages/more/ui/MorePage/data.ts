@@ -1,4 +1,16 @@
-import { Box, EyeOff, ListChecks, Wrench } from 'lucide-react'
+import {
+	Box,
+	DatabaseBackup,
+	EyeOff,
+	HeartPulse,
+	ListChecks,
+	Wrench,
+} from 'lucide-react'
+import {
+	assessCatalogHealth,
+	type CatalogDiagnostics,
+} from '../../../../entities/app'
+import { countLabel } from '../../../../shared/lib/countLabel'
 import type {
 	MoreAreaPreview,
 	MoreDestination,
@@ -20,11 +32,33 @@ export function formatPreviewDate(
 	}
 }
 
+export function catalogHealthLine(
+	diagnostics: CatalogDiagnostics | null,
+	refreshing: boolean,
+): string {
+	const health = assessCatalogHealth(diagnostics, refreshing)
+	switch (health.state) {
+		case 'scanning':
+			return 'Refreshing catalog…'
+		case 'no_diagnostics':
+			return 'No scan data yet.'
+		case 'attention': {
+			const attention = health.summary.attention.length
+			return `${countLabel(attention, 'catalog source')} ${attention === 1 ? 'needs' : 'need'} attention.`
+		}
+		case 'healthy':
+			return health.summary.total > 0
+				? 'All catalog sources are up to date.'
+				: `${countLabel(diagnostics?.totalApps ?? 0, 'application')} in the catalog.`
+	}
+}
+
 interface MoreCounts {
 	auxiliaryCount: number
 	hiddenCount: number
 	installersDocsCount: number
 	scenarioCount: number
+	catalogHealthStatus: string
 	preview: MoreAreaPreview
 	scenarioPreview: ScenarioPreviewControl
 }
@@ -34,6 +68,7 @@ export function buildMoreDestinations({
 	hiddenCount,
 	installersDocsCount,
 	scenarioCount,
+	catalogHealthStatus,
 	preview,
 	scenarioPreview,
 }: MoreCounts): MoreDestination[] {
@@ -74,6 +109,20 @@ export function buildMoreDestinations({
 			count: installersDocsCount,
 			icon: Box,
 			recent: { kind: 'apps', items: preview.installersDocs },
+		},
+		{
+			view: 'catalog_health',
+			label: 'Catalog Health',
+			description: 'Catalog status, sources and diagnostics.',
+			status: catalogHealthStatus,
+			icon: HeartPulse,
+		},
+		{
+			view: 'backup_restore',
+			label: 'Backup & Restore',
+			description: 'Export, import or recover your KesVio preferences.',
+			status: 'Export · Import · Local recovery',
+			icon: DatabaseBackup,
 		},
 	]
 }

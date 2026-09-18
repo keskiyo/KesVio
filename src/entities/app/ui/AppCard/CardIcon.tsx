@@ -1,9 +1,21 @@
 import { AppWindow, Loader2 } from 'lucide-react'
 import type { CardIconProps } from './types'
 
-export function CardIcon({ iconBase64, launching }: CardIconProps) {
+const TONE_RING = {
+	accent: 'ring-violet-300/70',
+	neutral:
+		'ring-(--border-neutral) transition-shadow group-hover:ring-(--accent)/60 group-focus-within:ring-(--accent)/60 motion-reduce:transition-none',
+}
+
+export function CardIcon({
+	iconBase64,
+	launching,
+	tone = 'accent',
+}: CardIconProps) {
 	return (
-		<span className="app-card-icon relative grid shrink-0 place-items-center rounded-xl bg-white/52 shadow-(--shadow-app-icon) ring-1 ring-violet-300/70 ring-inset">
+		<span
+			className={`app-card-icon relative grid shrink-0 place-items-center rounded-xl bg-white/52 shadow-(--shadow-app-icon) ring-1 ring-inset ${TONE_RING[tone]}`}
+		>
 			<span
 				className={
 					launching ? 'opacity-40 grayscale transition' : 'transition'

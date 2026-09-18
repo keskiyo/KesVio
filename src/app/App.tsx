@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { Toaster } from 'sonner'
 import { useStore } from 'zustand'
+import { isCatalogView } from '../entities/app'
 import { useCatalogView } from '../widgets/catalog-content'
 import {
 	AppDrawer,
@@ -10,11 +10,13 @@ import {
 } from '../widgets/sidebar-navigation'
 
 import { AppShellChrome } from './layout/AppShellChrome'
+import { AppToaster } from './layout/AppToaster'
 import { Header } from '../widgets/app-header'
 import { useAppFeedback } from './model/useAppFeedback'
 import { useActivityStatus } from './model/useActivityStatus'
 import { useAppDerivations } from './model/useAppDerivations'
 import { useCatalogDialogs } from './model/useCatalogDialogs'
+import { useNavigationProps } from './model/useNavigationProps'
 import { AppDialogs } from './layout/AppDialogs'
 import { AppViews } from './layout/AppViews'
 import { useCatalogBootstrap } from './model/useCatalogBootstrap'
@@ -62,6 +64,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	const menuButtonRef = useRef<HTMLButtonElement>(null)
 	const feedback = useAppFeedback({
 		onLaunch: state.launch,
+		onOpenFolder: appsClient.openAppFolder,
 		onRefresh: state.refresh,
 		onFullScan: state.forceFullScan,
 		onUndo: state.undo,
@@ -88,12 +91,8 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		hydrateVisibleIcons,
 	})
 
-	const isCatalogView =
-		activeView !== 'settings' &&
-		activeView !== 'more' &&
-		activeView !== 'scenarios'
 	const search = useSearchAccess({
-		isCatalogView,
+		isCatalogView: isCatalogView(activeView),
 		setQuery: state.setQuery,
 		selectView: navigation.selectView,
 	})
@@ -126,41 +125,18 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	})
 	useTraySearch({
 		systemClient,
-		isCatalogView,
+		isCatalogView: isCatalogView(activeView),
 		onSearch: search.select,
 		selectView: navigation.selectView,
 	})
 
-	const { auxiliaryCount, favoriteCount, navigationCounts } = counts
-	const appCount = counts.visibleCategorizedApps.length
-	const navigationProps = {
-		categoryOrder: state.categoryOrder,
-		categories: state.categories,
-		counts: navigationCounts,
-		activeView: state.activeView,
-		appCount,
-		favoriteCount,
-		favoriteScenarioCount: derivations.favoriteScenarios.length,
-		savedFilters: {
-			filters: state.savedFilters,
-			activeId: state.activeSavedFilterId,
-			onSelect: state.selectSavedFilter,
-			onCreate: dialogs.savedFilterEditor.create,
-			onDelete: state.deleteSavedFilter,
-		},
-		onSelectView: navigation.selectView,
-		onSelectCategory: navigation.selectCategory,
-		onReorderCategory: state.reorderCategory,
-		onCreateCategory: state.createCategory,
-	}
-	const activeFilter = catalog.activeFilter
-	const activeFilterChip = activeFilter
-		? {
-				name: activeFilter.name,
-				onEdit: () => dialogs.savedFilterEditor.edit(activeFilter),
-				onClear: () => state.selectSavedFilter(null),
-			}
-		: null
+	const { navigationProps, activeFilterChip } = useNavigationProps({
+		state,
+		catalog,
+		derivations,
+		navigation,
+		dialogs,
+	})
 
 	const activity = useActivityStatus({
 		apps: state.apps,
@@ -197,8 +173,8 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 						className="app-panel flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-2xl"
 					>
 						<Header
-							primaryAppCount={appCount}
-							auxiliaryToolCount={auxiliaryCount}
+							primaryAppCount={navigationProps.appCount}
+							auxiliaryToolCount={counts.auxiliaryCount}
 							visibleCount={filteredApps.length}
 							query={state.query}
 							isRefreshing={state.isRefreshing}
@@ -223,6 +199,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							systemClient={systemClient}
 							onFirstScan={feedback.fullScan}
 							onRefreshCatalog={feedback.refresh}
+							onOpenFolder={feedback.openFolder}
 						/>
 					</div>
 				</div>
@@ -251,16 +228,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 					}}
 					onError={dialogs.reportFailure}
 				/>
-				<Toaster
-					className="app-toaster"
-					theme="dark"
-					position="bottom-right"
-					expand
-					visibleToasts={5}
-					gap={10}
-					offset={16}
-					closeButton
-				/>
+				<AppToaster />
 			</div>
 		</AppStoreProvider>
 	)

@@ -12,10 +12,12 @@ const draggable = vi.hoisted(() => ({
 	setNodeRef: vi.fn(),
 	setActivatorNodeRef: vi.fn(),
 	onPointerDown: vi.fn(),
+	options: [] as Array<{ disabled?: boolean }>,
 }))
 
 vi.mock('@dnd-kit/core', () => ({
-	useDraggable: () => ({
+	useDraggable: (options: { disabled?: boolean }) => ({
+		...(draggable.options.push(options) && {}),
 		attributes: {},
 		listeners: { onPointerDown: draggable.onPointerDown },
 		setNodeRef: draggable.setNodeRef,
@@ -67,6 +69,7 @@ function props(appOverride: AppInfo = app) {
 }
 
 beforeEach(() => {
+	draggable.options.length = 0
 	draggable.setNodeRef.mockReset()
 	draggable.setActivatorNodeRef.mockReset()
 	draggable.onPointerDown.mockReset()
@@ -155,6 +158,103 @@ describe('AppRow', () => {
 		expect(
 			screen.getByText('D:\\Downloads\\vs_Community.exe'),
 		).toHaveAttribute('title', 'D:\\Downloads\\vs_Community.exe')
+	})
+
+	it('drags an auxiliary tool but never an installer, whose move would be a no-op', () => {
+		const { unmount } = render(<AppRow {...props()} />)
+		expect(draggable.options[draggable.options.length - 1]?.disabled).toBe(
+			false,
+		)
+		unmount()
+
+		render(
+			<AppRow
+				{...props({
+					...app,
+					id: 'setup',
+					artifactKind: 'installer',
+				})}
+				isHidden={false}
+			/>,
+		)
+		expect(draggable.options[draggable.options.length - 1]?.disabled).toBe(
+			true,
+		)
+	})
+
+	// Seventy tools with the same violet outline read as noise; the accent belongs to the row
+	// the pointer or keyboard is on.
+	it('keeps the row neutral until it is hovered, focused or has its menu open', () => {
+		render(<AppRow {...props()} />)
+
+		const row = screen
+			.getByRole('button', { name: 'Launch Claude Code' })
+			.closest('article')!
+		expect(row.className).not.toMatch(/border-white|app-card-glass/)
+		expect(row.className).toMatch(/\bborder-\(--border-neutral\)/)
+		expect(row.className).toMatch(/\bhover:border-\(--accent\)/)
+		expect(row.className).toMatch(
+			/\bdata-\[menu-open\]:border-\(--accent\)/,
+		)
+		expect(row.className).not.toMatch(/translate/)
+		expect(row.querySelector('.app-card-icon')!.className).not.toMatch(
+			/ring-violet/,
+		)
+		expect(
+			screen.getByRole('button', { name: 'Manage Claude Code' })
+				.className,
+		).toMatch(/\bopacity-60\b/)
+	})
+
+	// An installer is a file, not an installed program: Windows cannot uninstall it, but the
+	// folder it sits in is the place a user goes to delete or run it by hand.
+	it('opens the folder of an artifact instead of offering Uninstall', async () => {
+		const onOpenFolder = vi.fn().mockResolvedValue(undefined)
+		const installer = {
+			...props({
+				...app,
+				id: 'setup',
+				name: 'Setup',
+				artifactKind: 'installer' as const,
+				canUninstall: true,
+			}),
+			isHidden: false,
+			onOpenFolder,
+		}
+		render(<AppRow {...installer} />)
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Manage Setup' }),
+		)
+		expect(
+			screen.queryByRole('menuitem', { name: /Uninstall/ }),
+		).not.toBeInTheDocument()
+		await userEvent.click(
+			screen.getByRole('menuitem', { name: 'Open folder' }),
+		)
+
+		expect(onOpenFolder).toHaveBeenCalledWith(installer.app)
+		expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+	})
+
+	it('keeps Uninstall for an installed program and never shows Open folder there', async () => {
+		render(
+			<AppRow
+				{...props({ ...app, canUninstall: true })}
+				isHidden={false}
+				onOpenFolder={vi.fn()}
+			/>,
+		)
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Manage Claude Code' }),
+		)
+		expect(
+			screen.getByRole('menuitem', { name: 'Uninstall' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('menuitem', { name: 'Open folder' }),
+		).not.toBeInTheDocument()
 	})
 
 	it('launches the selected tool', async () => {

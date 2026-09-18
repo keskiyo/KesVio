@@ -1,4 +1,5 @@
 import {
+	isCatalogView,
 	MAX_SAVED_FILTER_NAME_LENGTH,
 	MAX_SAVED_FILTERS,
 	normalizeCriteria,
@@ -138,10 +139,7 @@ export function createSavedFilterActions({
 						? id
 						: null,
 				activeView:
-					id &&
-					(state.activeView === 'settings' ||
-						state.activeView === 'more' ||
-						state.activeView === 'scenarios')
+					id && !isCatalogView(state.activeView)
 						? 'all'
 						: state.activeView,
 			}))

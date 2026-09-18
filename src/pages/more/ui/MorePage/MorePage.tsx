@@ -1,5 +1,5 @@
 import { WandSparkles } from 'lucide-react'
-import { buildMoreDestinations } from './data'
+import { buildMoreDestinations, catalogHealthLine } from './data'
 import { MoreCard } from './MoreCard'
 import { MorePreviewRow } from './MorePreviewRow'
 import type { MorePageProps } from './types'
@@ -9,6 +9,8 @@ export function MorePage({
 	hiddenCount,
 	installersDocsCount,
 	scenarioCount,
+	catalogDiagnostics,
+	isRefreshing,
 	recentApps = [],
 	preview,
 	scenarioRun,
@@ -19,6 +21,10 @@ export function MorePage({
 		hiddenCount,
 		installersDocsCount,
 		scenarioCount,
+		catalogHealthStatus: catalogHealthLine(
+			catalogDiagnostics,
+			isRefreshing,
+		),
 		preview,
 		scenarioPreview: {
 			runningId: scenarioRun.runningId,
@@ -41,7 +47,7 @@ export function MorePage({
 						More
 					</h1>
 					<p className="mt-1 text-sm text-(--text-muted)">
-						Secondary catalog views.
+						Catalog views and tools.
 					</p>
 				</div>
 			</header>

@@ -37,19 +37,21 @@ export {
 	type SearchScopeCounts,
 } from './model/catalogSelectors'
 export { appIdentity } from './lib/appIdentity'
+export { isCatalogView } from './lib/appView'
 export { deduplicateVisibleApps } from './lib/appDeduplication'
 export {
-	buildAppReport,
 	classificationReasonsLabel,
 	descriptionLabel,
 	displayVersion,
-	formatFileDate,
-	formatFileSize,
 	metadataRows,
-	middleEllipsis,
 	SOURCE_LABELS,
 	targetAvailabilityLabel,
 } from './lib/appMetadata'
+export {
+	buildAppReport,
+	formatFileDate,
+	formatFileSize,
+} from './lib/appFileDetails'
 export { categoryReasonsLabel } from './lib/categoryReason'
 export { joinHydrationIds, splitHydrationIds } from './lib/hydrationIds'
 export {
@@ -103,6 +105,11 @@ export {
 	type SavedFilter,
 	type SavedFilterCriteria,
 } from './lib/savedFilters'
+export {
+	assessCatalogHealth,
+	type CatalogHealthState,
+	type CatalogHealthStatus,
+} from './lib/catalogHealth'
 export {
 	describeSourceHealth,
 	type SourceHealthSummary,

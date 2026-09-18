@@ -53,6 +53,10 @@ function renderPage(
 	onSelectView = vi.fn(),
 	preview: MorePreview = emptyPreview,
 	scenarioRun: MorePageProps['scenarioRun'] = runControl(),
+	health: Pick<MorePageProps, 'catalogDiagnostics' | 'isRefreshing'> = {
+		catalogDiagnostics: null,
+		isRefreshing: false,
+	},
 ) {
 	render(
 		<MorePage
@@ -63,16 +67,138 @@ function renderPage(
 			preview={preview}
 			scenarioRun={scenarioRun}
 			onSelectView={onSelectView}
+			{...health}
 		/>,
 	)
 	return onSelectView
 }
 
+function diagnostics(
+	sources: { key: string; state: 'fresh' | 'stale' }[],
+): NonNullable<MorePageProps['catalogDiagnostics']> {
+	return {
+		completedAt: 1_700_000_100,
+		durationMs: 10,
+		mode: 'refresh',
+		totalApps: 12,
+		sourceCounts: { registry: 9 },
+		added: 0,
+		removed: 0,
+		updated: 0,
+		sources: sources.map(source => ({
+			...source,
+			lastAttemptAt: 1_700_000_100,
+			lastSuccessAt: 1_700_000_100,
+			consecutiveFailures: 0,
+			lastDurationMs: 12,
+			lastError: null,
+			recordCount: 4,
+		})),
+	}
+}
+
 describe('MorePage', () => {
-	it('describes More as secondary catalog views', () => {
+	it('describes More as catalog views and tools', () => {
 		renderPage()
 
-		expect(screen.getByText('Secondary catalog views.')).toBeInTheDocument()
+		expect(screen.getByText('Catalog views and tools.')).toBeInTheDocument()
+	})
+
+	it('lists the four catalog views first and the two tool pages last', () => {
+		renderPage()
+
+		const cards = screen
+			.getAllByRole('button')
+			.map(button => button.getAttribute('aria-label'))
+			.filter(label => label !== null)
+		expect(cards).toEqual([
+			'Auxiliary tools 78',
+			'Scenarios 2',
+			'Hidden 4',
+			'Installers & Docs 12',
+			'Catalog Health',
+			'Backup & Restore',
+		])
+	})
+
+	it('opens the tool pages without a count badge', async () => {
+		const onSelectView = renderPage()
+
+		const health = screen.getByRole('button', { name: 'Catalog Health' })
+		const backup = screen.getByRole('button', { name: 'Backup & Restore' })
+		expect(health).toHaveTextContent(
+			'Catalog status, sources and diagnostics.',
+		)
+		expect(health).toHaveTextContent('No scan data yet.')
+		expect(health).not.toHaveTextContent(/\b0\b/)
+		expect(backup).toHaveTextContent(
+			'Export, import or recover your KesVio preferences.',
+		)
+		expect(backup).toHaveTextContent('Export · Import · Local recovery')
+		expect(backup).not.toHaveTextContent(/\b0\b/)
+
+		await userEvent.click(health)
+		expect(onSelectView).toHaveBeenCalledWith('catalog_health')
+		await userEvent.click(backup)
+		expect(onSelectView).toHaveBeenCalledWith('backup_restore')
+	})
+
+	it('summarizes the source health on the Catalog Health card', () => {
+		const { rerender } = render(
+			<MorePage
+				auxiliaryCount={0}
+				hiddenCount={0}
+				installersDocsCount={0}
+				scenarioCount={0}
+				preview={emptyPreview}
+				scenarioRun={runControl()}
+				onSelectView={vi.fn()}
+				catalogDiagnostics={diagnostics([
+					{ key: 'registry', state: 'fresh' },
+					{ key: 'steam', state: 'fresh' },
+				])}
+				isRefreshing={false}
+			/>,
+		)
+		const card = () =>
+			screen.getByRole('button', { name: 'Catalog Health' })
+		expect(card()).toHaveTextContent('All catalog sources are up to date.')
+
+		rerender(
+			<MorePage
+				auxiliaryCount={0}
+				hiddenCount={0}
+				installersDocsCount={0}
+				scenarioCount={0}
+				preview={emptyPreview}
+				scenarioRun={runControl()}
+				onSelectView={vi.fn()}
+				catalogDiagnostics={diagnostics([
+					{ key: 'registry', state: 'stale' },
+					{ key: 'steam', state: 'stale' },
+					{ key: 'portable', state: 'fresh' },
+				])}
+				isRefreshing={false}
+			/>,
+		)
+		expect(card()).toHaveTextContent('2 catalog sources need attention.')
+
+		rerender(
+			<MorePage
+				auxiliaryCount={0}
+				hiddenCount={0}
+				installersDocsCount={0}
+				scenarioCount={0}
+				preview={emptyPreview}
+				scenarioRun={runControl()}
+				onSelectView={vi.fn()}
+				catalogDiagnostics={diagnostics([
+					{ key: 'registry', state: 'stale' },
+				])}
+				isRefreshing
+			/>,
+		)
+		expect(card()).toHaveTextContent('Refreshing catalog…')
 	})
 
 	it('shows the More symbol in the page header', () => {
@@ -312,6 +438,8 @@ describe('MorePage', () => {
 					hiddenCount: 0,
 					installersDocsCount: 0,
 					scenarioCount: 0,
+					catalogDiagnostics: null,
+					isRefreshing: false,
 					preview: emptyPreview,
 					scenarioRun: runControl(),
 					onSelectView: vi.fn(),
@@ -405,6 +533,35 @@ describe('MorePage', () => {
 		expect(screen.queryAllByRole('list')).toEqual([])
 	})
 
+	it('keeps Recently added as its own section below the six cards', () => {
+		render(
+			<MorePage
+				auxiliaryCount={0}
+				hiddenCount={0}
+				installersDocsCount={0}
+				scenarioCount={0}
+				catalogDiagnostics={null}
+				isRefreshing={false}
+				recentApps={[
+					previewEntry(app({ id: 'new', name: 'New tool' })),
+				]}
+				preview={emptyPreview}
+				scenarioRun={runControl()}
+				onSelectView={vi.fn()}
+			/>,
+		)
+
+		const recent = screen
+			.getByRole('heading', { name: 'Recently added' })
+			.closest('section')!
+		expect(recent.querySelector('button')).toBeNull()
+		expect(within(recent).getByText('New tool')).toBeInTheDocument()
+		const backup = screen.getByRole('button', { name: 'Backup & Restore' })
+		expect(backup.compareDocumentPosition(recent)).toBe(
+			Node.DOCUMENT_POSITION_FOLLOWING,
+		)
+	})
+
 	it('stays usable when a destination is empty', async () => {
 		const onSelectView = vi.fn()
 		render(
@@ -413,6 +570,8 @@ describe('MorePage', () => {
 				hiddenCount={0}
 				installersDocsCount={0}
 				scenarioCount={0}
+				catalogDiagnostics={null}
+				isRefreshing={false}
 				preview={emptyPreview}
 				scenarioRun={runControl()}
 				onSelectView={onSelectView}

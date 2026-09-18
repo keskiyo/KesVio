@@ -1,6 +1,7 @@
-import { Box } from 'lucide-react'
+import { Box, FileText, Package, SearchX } from 'lucide-react'
 import { ArtifactSection } from './ArtifactSection'
 import { CatalogViewHeader } from '../CatalogViewHeader'
+import { ViewEmptyState } from '../ViewEmptyState'
 import type { InstallersDocsGridProps } from './types'
 
 export function InstallersDocsGrid({
@@ -15,6 +16,7 @@ export function InstallersDocsGrid({
 		if (app.artifactKind === 'installer') installers.push(app)
 		if (app.artifactKind === 'documentation') docs.push(app)
 	}
+	const back = { label: 'Back to More', onBack }
 	return (
 		<section aria-labelledby="installers-docs-title">
 			<CatalogViewHeader
@@ -23,12 +25,14 @@ export function InstallersDocsGrid({
 				titleId="installers-docs-title"
 				count={apps.length}
 				noun="item"
-				back={{ label: 'Back to More', onBack }}
+				description="Setup packages and documentation found while scanning."
+				back={back}
 			/>
 			{apps.length ? (
-				<div className="mx-auto max-w-3xl space-y-7 min-[1900px]:max-w-[80rem]">
+				<div className="mx-auto max-w-3xl space-y-8 min-[1900px]:max-w-[80rem]">
 					{installers.length > 0 && (
 						<ArtifactSection
+							icon={Package}
 							title="Installers"
 							apps={installers}
 							{...actions}
@@ -36,27 +40,26 @@ export function InstallersDocsGrid({
 					)}
 					{docs.length > 0 && (
 						<ArtifactSection
-							title="Docs"
+							icon={FileText}
+							title="Documentation"
 							apps={docs}
 							{...actions}
 						/>
 					)}
 				</div>
+			) : hasQuery ? (
+				<ViewEmptyState
+					icon={SearchX}
+					title="No matching installers or docs"
+					description="Try a different search."
+				/>
 			) : (
-				<div className="grid min-h-[45vh] place-items-center text-center">
-					<div>
-						<h2 className="text-lg font-semibold">
-							{hasQuery
-								? 'No matching installers or docs'
-								: 'No installers or docs found'}
-						</h2>
-						<p className="mt-2 text-sm text-(--text-muted)">
-							{hasQuery
-								? 'Try a different search.'
-								: 'Refresh the catalog to scan supported locations.'}
-						</p>
-					</div>
-				</div>
+				<ViewEmptyState
+					icon={Box}
+					title="No installers or docs found"
+					description="Refresh the catalog to scan supported locations."
+					back={back}
+				/>
 			)}
 		</section>
 	)

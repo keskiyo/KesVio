@@ -1,5 +1,9 @@
 import type { LucideIcon } from 'lucide-react'
-import type { AppInfo, AppView } from '../../../../entities/app'
+import type {
+	AppInfo,
+	AppView,
+	CatalogDiagnostics,
+} from '../../../../entities/app'
 import type { ScenarioSummary } from '../../../../entities/scenario'
 
 export interface MorePreviewItem {
@@ -29,9 +33,10 @@ export interface MoreDestination {
 	view: AppView
 	label: string
 	description: string
-	count: number
+	count?: number
+	status?: string
 	icon: LucideIcon
-	recent: MorePreview
+	recent?: MorePreview
 }
 
 export interface MoreAreaPreview {
@@ -46,6 +51,8 @@ export interface MorePageProps {
 	hiddenCount: number
 	installersDocsCount: number
 	scenarioCount: number
+	catalogDiagnostics: CatalogDiagnostics | null
+	isRefreshing: boolean
 	recentApps?: MorePreviewItem[]
 	preview: MoreAreaPreview
 	scenarioRun: ScenarioRunControl

@@ -1,9 +1,4 @@
-export const ACTION_BUTTON =
-	'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50'
-
-export const ACTION_BUTTON_PRIMARY = `${ACTION_BUTTON} utility-accent-button text-white focus-visible:outline-violet-400`
-
-export const ACTION_BUTTON_QUIET = `${ACTION_BUTTON} border border-(--border-neutral) hover:bg-(--surface-raised) focus-visible:outline-violet-400`
+import { ACTION_BUTTON } from '../../shared/ui/buttonVariants'
 
 export const ROW_CHIP = `${ACTION_BUTTON} border border-(--border-neutral) bg-(--surface-inset) shrink-0 text-(--text-primary)`
 
@@ -12,31 +7,8 @@ export const CONFIRM_BUTTON =
 
 export const CANCEL_BUTTON = `${CONFIRM_BUTTON} border border-slate-300/80 bg-white/60 text-slate-700 hover:bg-violet-100/70 focus-visible:outline-violet-400`
 
-export const ACTION_ROW = 'grid gap-2 sm:flex sm:flex-wrap sm:justify-end'
+export const SETTINGS_SURFACE =
+	'settings-surface mt-5 overflow-hidden rounded-2xl border border-white/85 bg-white/58'
 
-export const SETTINGS_ACTION_FOOTER = `mt-4 border-t border-(--border-neutral) pt-4 ${ACTION_ROW}`
-
-export const SETTINGS_SOURCE_ACTIONS =
-	'mt-4 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center'
-
-export const timestampFormatter = new Intl.DateTimeFormat(undefined, {
-	dateStyle: 'medium',
-	timeStyle: 'short',
-})
-
-export const SOURCE_STATE_LABELS = {
-	never_run: 'Never run',
-	fresh: 'Up to date',
-	stale: 'Serving older data',
-	incomplete: 'Stopped early',
-	failed_without_snapshot: 'Never succeeded',
-	unknown: 'Unknown',
-} as const
-
-export const SOURCE_ERROR_LABELS = {
-	cancelled: 'Cancelled',
-	timed_out: 'Timed out',
-	entry_limit: 'Entry limit reached',
-	provider_failed: 'Did not answer',
-	unknown: 'Unknown',
-} as const
+export const SETTINGS_SECTION_LABEL =
+	'border-b border-slate-200 bg-slate-50/35 px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500'

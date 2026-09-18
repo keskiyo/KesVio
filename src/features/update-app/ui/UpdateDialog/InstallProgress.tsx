@@ -1,4 +1,4 @@
-import { formatBytes } from './format'
+import { formatBytes } from '../../../../shared/lib/bytes'
 import type { InstallProgressProps } from './types'
 
 export function InstallProgress({

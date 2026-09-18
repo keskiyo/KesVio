@@ -1,4 +1,5 @@
 import { appIdentity } from '../lib/appIdentity'
+import { isCatalogView } from '../lib/appView'
 import {
 	INSTALLERS_DOCS_CATEGORY,
 	isCatalogArtifact,
@@ -23,12 +24,7 @@ export function filterVisibleApps(
 	isHidden: AppPredicate,
 	isFavorite: AppPredicate,
 ): AppInfo[] {
-	if (
-		activeView === 'settings' ||
-		activeView === 'more' ||
-		activeView === 'scenarios'
-	)
-		return []
+	if (!isCatalogView(activeView)) return []
 	if (activeView === 'installers_docs')
 		return categorized.filter(
 			app => isCatalogArtifact(app) && !isHidden(app),

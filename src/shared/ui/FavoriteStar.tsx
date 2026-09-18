@@ -1,5 +1,5 @@
 import { Star } from 'lucide-react'
-export interface FavoriteStarProps {
+interface FavoriteStarProps {
 	label: string
 	pressed: boolean
 	className?: string

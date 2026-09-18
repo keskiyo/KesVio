@@ -83,6 +83,9 @@ describe('AuxiliaryGrid', () => {
 
 		const view = screen.getByRole('region', { name: 'Auxiliary tools' })
 		expect(view).toHaveTextContent('2 tools')
+		expect(view).toHaveTextContent(
+			'Helper executables discovered by KesVio.',
+		)
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Back to More' }),
 		)
@@ -116,5 +119,25 @@ describe('AuxiliaryGrid', () => {
 			screen.getByRole('button', { name: 'Back to More' }),
 		)
 		expect(onBack).toHaveBeenCalled()
+	})
+
+	it('explains an empty catalog of tools and offers the way back', async () => {
+		const onBack = vi.fn()
+		render(<AuxiliaryGrid {...props()} apps={[]} onBack={onBack} />)
+
+		expect(
+			screen.getByRole('heading', { name: 'No auxiliary tools found' }),
+		).toBeVisible()
+		expect(
+			screen.getByText(
+				'KesVio did not find helper executables in the current catalog.',
+			),
+		).toBeVisible()
+		const backButtons = screen.getAllByRole('button', {
+			name: 'Back to More',
+		})
+		expect(backButtons).toHaveLength(2)
+		await userEvent.click(backButtons[1]!)
+		expect(onBack).toHaveBeenCalledOnce()
 	})
 })

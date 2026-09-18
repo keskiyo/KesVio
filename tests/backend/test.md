@@ -4,18 +4,17 @@ The Rust backend has no external integration-test crate. Tests live next to the
 modules they exercise in `#[cfg(test)]` blocks so they can validate private and
 `pub(crate)` behaviour without widening production APIs.
 
-Snapshot: `v0.5.1` plus the working tree after it.
-
-- Rust: **856 test entries** in **136 source files**; one developer-only test is
-  ignored in the normal run, so a green suite reports 855 passed. The ignored
-  case is `catalog/golden/timings.rs`, which prints stage medians instead of
+- Rust: colocated `#[cfg(test)]` modules; `cargo test --manifest-path
+src-tauri/Cargo.toml` is the count, and the script at the end prints the
+  per-module numbers when they are wanted. One developer-only test is ignored
+  in the normal run. The ignored case is `catalog/golden/timings.rs`, which prints stage medians instead of
   asserting a threshold. Removing the uninstall feature deleted
   `platform/windows/uninstall/`, `commands/uninstall.rs` and
   `app_state/uninstall.rs` along with their cases, and left one invariant behind
   that is now guarded on purpose: `can_uninstall` is the evidence that an entry
   is a registered product, worth 35 points in `visibility/mod.rs`, so
   `sync/document.rs` proves it survives a cache round trip with its score intact
-  and `storage/cache.rs` proves the cumulative cache migrations preserve supported
+  and `storage/cache/` proves the cumulative cache migrations preserve supported
   documents through schema 11 while dropping the legacy stored command
   without touching the flag. Moving every store beside the executable added
   `paths/`, where `portable.rs` proves that a root is created and probed once and
@@ -32,7 +31,7 @@ Snapshot: `v0.5.1` plus the working tree after it.
   watchdog: the threshold, the repeat interval, the reused detail buffer, and a
   thread that stops before its next poll rather than after it) and
   `platform/windows/apps_folder/`. `catalog/scan/settings.rs` and
-  `lifecycle/window_state.rs` each prove that rewriting the stored value is a
+  `lifecycle/window_state/store.rs` each prove that rewriting the stored value is a
   no-op while a malformed or unsupported document is still replaced.
   `diagnostics/export.rs` holds the XML document together — a plugin-formatted
   line becomes a structured entry, a line the logger did not write is kept
@@ -66,7 +65,7 @@ Snapshot: `v0.5.1` plus the working tree after it.
   The lifecycle module keeps the close-to-tray decision in `lifecycle/state.rs`,
   which now also proves the two rules behind settled persistence — every
   geometry change advances a generation, and only one persist waits at a time —
-  and window geometry in `lifecycle/window_state.rs`, where a window from a
+  and window geometry in `lifecycle/window_state/geometry.rs`, where a window from a
   disconnected monitor, one hanging off an edge, one larger than its screen and
   a maximized one each have a named case, and a resize reaches the stored state
   without a close, because an update, a shutdown or a kill ends the process
@@ -152,7 +151,7 @@ with the shared downloads folder and the subfolder case as the named negatives.
 `scan_sources/portable_sources/roots/` also proves the scan-folder stamp every
 portable record carries — the deepest added folder that contains it, matched
 without regard to case or a trailing separator, and nothing for a record a
-fixed-drive walk found on its own — and `storage/cache.rs` proves a document
+fixed-drive walk found on its own — and `storage/cache/` proves a document
 written before that field loads with it absent. The same module separates a
 missing folder from a missing drive: a folder that is gone from a mounted drive
 stays retained in every scan mode, a scan folder whose letter is not mounted is
@@ -209,80 +208,77 @@ a `.mui` resource stub standing in for the real executable, and packaging-toolki
 publisher/product/description — because those are unit-level facts that no
 corpus entry can pin down on its own.
 
-| Module                                                                                                                                       |     Tests |
-| -------------------------------------------------------------------------------------------------------------------------------------------- | --------: |
-| [`catalog/artifact/documentation.rs`](../../src-tauri/src/catalog/artifact/documentation.rs)                                                 |         7 |
-| [`catalog/artifact/installer.rs`](../../src-tauri/src/catalog/artifact/installer.rs)                                                         |        18 |
-| [`catalog/classify/mod.rs`](../../src-tauri/src/catalog/classify/mod.rs)                                                                     |        15 |
-| [`catalog/classify/signals.rs`](../../src-tauri/src/catalog/classify/signals.rs)                                                             |         5 |
-| [`catalog/classify/tables.rs`](../../src-tauri/src/catalog/classify/tables.rs)                                                               |         5 |
-| [`catalog/close.rs`](../../src-tauri/src/catalog/close.rs)                                                                                   |         6 |
-| [`catalog/dedup/merge/tests.rs`](../../src-tauri/src/catalog/dedup/merge/tests.rs)                                                           |         7 |
-| [`catalog/dedup/mod.rs`](../../src-tauri/src/catalog/dedup/mod.rs)                                                                           |        78 |
-| [`catalog/details/cache.rs`](../../src-tauri/src/catalog/details/cache.rs)                                                                   |         1 |
-| [`catalog/details/read.rs`](../../src-tauri/src/catalog/details/read.rs)                                                                     |         4 |
-| [`catalog/details/target.rs`](../../src-tauri/src/catalog/details/target.rs)                                                                 |         6 |
-| [`catalog/display.rs`](../../src-tauri/src/catalog/display.rs)                                                                               |         2 |
-| [`catalog/filters.rs`](../../src-tauri/src/catalog/filters.rs)                                                                               |         2 |
-| [`catalog/golden/mod.rs`](../../src-tauri/src/catalog/golden/mod.rs)                                                                         |         5 |
-| [`catalog/golden/properties.rs`](../../src-tauri/src/catalog/golden/properties.rs)                                                           |         7 |
-| [`catalog/golden/timings.rs`](../../src-tauri/src/catalog/golden/timings.rs)                                                                 | 1 ignored |
-| [`catalog/identity.rs`](../../src-tauri/src/catalog/identity.rs)                                                                             |         4 |
-| [`catalog/machine.rs`](../../src-tauri/src/catalog/machine.rs)                                                                               |         2 |
-| [`catalog/mod.rs`](../../src-tauri/src/catalog/mod.rs)                                                                                       |        55 |
-| [`catalog/model.rs`](../../src-tauri/src/catalog/model.rs)                                                                                   |         1 |
-| [`catalog/naming.rs`](../../src-tauri/src/catalog/naming.rs)                                                                                 |         2 |
-| [`catalog/place.rs`](../../src-tauri/src/catalog/place.rs)                                                                                   |         4 |
-| [`catalog/platform_kind.rs`](../../src-tauri/src/catalog/platform_kind.rs)                                                                   |         6 |
-| [`catalog/product_duplicates.rs`](../../src-tauri/src/catalog/product_duplicates.rs)                                                         |         9 |
-| [`catalog/registry_enrichment.rs`](../../src-tauri/src/catalog/registry_enrichment.rs)                                                       |         4 |
-| [`catalog/scan/coordinator.rs`](../../src-tauri/src/catalog/scan/coordinator.rs)                                                             |         9 |
-| [`catalog/scan/hydration/icon.rs`](../../src-tauri/src/catalog/scan/hydration/icon.rs)                                                       |         4 |
-| [`catalog/scan/hydration/mod.rs`](../../src-tauri/src/catalog/scan/hydration/mod.rs)                                                         |         2 |
-| [`catalog/scan/hydration/queue.rs`](../../src-tauri/src/catalog/scan/hydration/queue.rs)                                                     |         3 |
-| [`catalog/scan/hydration/sources.rs`](../../src-tauri/src/catalog/scan/hydration/sources.rs)                                                 |         3 |
-| [`catalog/scan/incremental/mod.rs`](../../src-tauri/src/catalog/scan/incremental/mod.rs)                                                     |        16 |
-| [`catalog/scan/incremental/walk.rs`](../../src-tauri/src/catalog/scan/incremental/walk.rs)                                                   |         1 |
-| [`catalog/scan/settings.rs`](../../src-tauri/src/catalog/scan/settings.rs)                                                                   |         5 |
-| [`catalog/sources/installer_cache.rs`](../../src-tauri/src/catalog/sources/installer_cache.rs)                                               |         3 |
-| [`catalog/sources/portable.rs`](../../src-tauri/src/catalog/sources/portable.rs)                                                             |        12 |
-| [`catalog/sources/portable_candidate.rs`](../../src-tauri/src/catalog/sources/portable_candidate.rs)                                         |         2 |
-| [`catalog/sources/registry.rs`](../../src-tauri/src/catalog/sources/registry.rs)                                                             |        11 |
-| [`catalog/sources/source.rs`](../../src-tauri/src/catalog/sources/source.rs)                                                                 |         4 |
-| [`catalog/sources/start_apps/package.rs`](../../src-tauri/src/catalog/sources/start_apps/package.rs)                                         |         4 |
-| [`catalog/sources/start_apps/tests.rs`](../../src-tauri/src/catalog/sources/start_apps/tests.rs)                                             |        10 |
-| [`catalog/sources/steam.rs`](../../src-tauri/src/catalog/sources/steam.rs)                                                                   |         7 |
-| [`catalog/start_menu.rs`](../../src-tauri/src/catalog/start_menu.rs)                                                                         |         7 |
-| [`catalog/storage/cache.rs`](../../src-tauri/src/catalog/storage/cache.rs)                                                                   |        23 |
-| [`catalog/storage/icon_cache.rs`](../../src-tauri/src/catalog/storage/icon_cache.rs)                                                         |        13 |
-| [`catalog/sync/delta.rs`](../../src-tauri/src/catalog/sync/delta.rs)                                                                         |         2 |
-| [`catalog/sync/document.rs`](../../src-tauri/src/catalog/sync/document.rs)                                                                   |         7 |
-| [`catalog/sync/health.rs`](../../src-tauri/src/catalog/sync/health.rs)                                                                       |         7 |
-| [`catalog/sync/hydration.rs`](../../src-tauri/src/catalog/sync/hydration.rs)                                                                 |         1 |
-| [`catalog/sync/mod.rs`](../../src-tauri/src/catalog/sync/mod.rs)                                                                             |         3 |
-| [`catalog/sync/portable/tests.rs`](../../src-tauri/src/catalog/sync/portable/tests.rs)                                                       |        10 |
-| [`catalog/sync/scan.rs`](../../src-tauri/src/catalog/sync/scan.rs)                                                                           |         2 |
-| [`catalog/sync/scan_control.rs`](../../src-tauri/src/catalog/sync/scan_control.rs)                                                           |         5 |
-| [`catalog/sync/scan_guard.rs`](../../src-tauri/src/catalog/sync/scan_guard.rs)                                                               |         2 |
-| [`catalog/sync/scan_sources/portable_sources/roots/tests.rs`](../../src-tauri/src/catalog/sync/scan_sources/portable_sources/roots/tests.rs) |        18 |
-| [`catalog/sync/scan_sources/portable_sources/tests.rs`](../../src-tauri/src/catalog/sync/scan_sources/portable_sources/tests.rs)             |         5 |
-| [`catalog/sync/scan_sources/selection.rs`](../../src-tauri/src/catalog/sync/scan_sources/selection.rs)                                       |         4 |
-| [`catalog/sync/scan_steps/tests.rs`](../../src-tauri/src/catalog/sync/scan_steps/tests.rs)                                                   |        11 |
-| [`catalog/sync/retry.rs`](../../src-tauri/src/catalog/sync/retry.rs)                                                                         |         7 |
-| [`catalog/sync/volumes.rs`](../../src-tauri/src/catalog/sync/volumes.rs)                                                                     |         5 |
-| [`catalog/sync/watch_paths.rs`](../../src-tauri/src/catalog/sync/watch_paths.rs)                                                             |         1 |
-| [`catalog/sync/watch_scope.rs`](../../src-tauri/src/catalog/sync/watch_scope.rs)                                                             |         1 |
-| [`catalog/sync/watcher.rs`](../../src-tauri/src/catalog/sync/watcher.rs)                                                                     |         1 |
-| [`catalog/target_availability.rs`](../../src-tauri/src/catalog/target_availability.rs)                                                       |        12 |
-| [`catalog/tree.rs`](../../src-tauri/src/catalog/tree.rs)                                                                                     |        13 |
-| [`catalog/visibility/markers/rules.rs`](../../src-tauri/src/catalog/visibility/markers/rules.rs)                                             |         5 |
-| [`catalog/visibility/mod.rs`](../../src-tauri/src/catalog/visibility/mod.rs)                                                                 |        38 |
-| [`catalog/visibility/report.rs`](../../src-tauri/src/catalog/visibility/report.rs)                                                           |         1 |
-| [`catalog/volumes.rs`](../../src-tauri/src/catalog/volumes.rs)                                                                               |         9 |
-
-Fixture corpora in `src-tauri/tests/fixtures/` anchor category, visibility and
-foreign-machine decisions. They are regression data, not claims of real-world
-coverage.
+- [`catalog/artifact/documentation.rs`](../../src-tauri/src/catalog/artifact/documentation.rs)
+- [`catalog/artifact/installer.rs`](../../src-tauri/src/catalog/artifact/installer.rs)
+- [`catalog/classify/mod.rs`](../../src-tauri/src/catalog/classify/mod.rs)
+- [`catalog/classify/signals.rs`](../../src-tauri/src/catalog/classify/signals.rs)
+- [`catalog/classify/tables.rs`](../../src-tauri/src/catalog/classify/tables.rs)
+- [`catalog/close.rs`](../../src-tauri/src/catalog/close.rs)
+- [`catalog/dedup/merge/tests.rs`](../../src-tauri/src/catalog/dedup/merge/tests.rs)
+- [`catalog/dedup/mod.rs`](../../src-tauri/src/catalog/dedup/mod.rs)
+- [`catalog/details/cache.rs`](../../src-tauri/src/catalog/details/cache.rs)
+- [`catalog/details/read.rs`](../../src-tauri/src/catalog/details/read.rs)
+- [`catalog/details/target.rs`](../../src-tauri/src/catalog/details/target.rs)
+- [`catalog/display.rs`](../../src-tauri/src/catalog/display.rs)
+- [`catalog/filters.rs`](../../src-tauri/src/catalog/filters.rs)
+- [`catalog/golden/mod.rs`](../../src-tauri/src/catalog/golden/mod.rs)
+- [`catalog/golden/properties.rs`](../../src-tauri/src/catalog/golden/properties.rs)
+- [`catalog/golden/timings.rs`](../../src-tauri/src/catalog/golden/timings.rs) (ignored)
+- [`catalog/identity.rs`](../../src-tauri/src/catalog/identity.rs)
+- [`catalog/machine.rs`](../../src-tauri/src/catalog/machine.rs)
+- [`catalog/mod.rs`](../../src-tauri/src/catalog/mod.rs)
+- [`catalog/model.rs`](../../src-tauri/src/catalog/model.rs)
+- [`catalog/naming.rs`](../../src-tauri/src/catalog/naming.rs)
+- [`catalog/place.rs`](../../src-tauri/src/catalog/place.rs)
+- [`catalog/platform_kind.rs`](../../src-tauri/src/catalog/platform_kind.rs)
+- [`catalog/product_duplicates.rs`](../../src-tauri/src/catalog/product_duplicates.rs)
+- [`catalog/registry_enrichment.rs`](../../src-tauri/src/catalog/registry_enrichment.rs)
+- [`catalog/scan/coordinator.rs`](../../src-tauri/src/catalog/scan/coordinator.rs)
+- [`catalog/scan/hydration/icon.rs`](../../src-tauri/src/catalog/scan/hydration/icon.rs)
+- [`catalog/scan/hydration/mod.rs`](../../src-tauri/src/catalog/scan/hydration/mod.rs)
+- [`catalog/scan/hydration/queue.rs`](../../src-tauri/src/catalog/scan/hydration/queue.rs)
+- [`catalog/scan/hydration/sources.rs`](../../src-tauri/src/catalog/scan/hydration/sources.rs)
+- [`catalog/scan/incremental/mod.rs`](../../src-tauri/src/catalog/scan/incremental/mod.rs)
+- [`catalog/scan/incremental/walk.rs`](../../src-tauri/src/catalog/scan/incremental/walk.rs)
+- [`catalog/scan/settings.rs`](../../src-tauri/src/catalog/scan/settings.rs)
+- [`catalog/sources/installer_cache.rs`](../../src-tauri/src/catalog/sources/installer_cache.rs)
+- [`catalog/sources/portable.rs`](../../src-tauri/src/catalog/sources/portable.rs)
+- [`catalog/sources/portable_candidate.rs`](../../src-tauri/src/catalog/sources/portable_candidate.rs)
+- [`catalog/sources/registry.rs`](../../src-tauri/src/catalog/sources/registry.rs)
+- [`catalog/sources/source.rs`](../../src-tauri/src/catalog/sources/source.rs)
+- [`catalog/sources/start_apps/package.rs`](../../src-tauri/src/catalog/sources/start_apps/package.rs)
+- [`catalog/sources/start_apps/tests.rs`](../../src-tauri/src/catalog/sources/start_apps/tests.rs)
+- [`catalog/sources/steam.rs`](../../src-tauri/src/catalog/sources/steam.rs)
+- [`catalog/start_menu.rs`](../../src-tauri/src/catalog/start_menu.rs)
+- [`catalog/storage/cache/mod.rs`](../../src-tauri/src/catalog/storage/cache/mod.rs) and [`cache/migrations.rs`](../../src-tauri/src/catalog/storage/cache/migrations.rs)
+- [`catalog/storage/icon_cache.rs`](../../src-tauri/src/catalog/storage/icon_cache.rs)
+- [`catalog/sync/delta.rs`](../../src-tauri/src/catalog/sync/delta.rs)
+- [`catalog/sync/document.rs`](../../src-tauri/src/catalog/sync/document.rs)
+- [`catalog/sync/health.rs`](../../src-tauri/src/catalog/sync/health.rs)
+- [`catalog/sync/hydration.rs`](../../src-tauri/src/catalog/sync/hydration.rs)
+- [`catalog/sync/mod.rs`](../../src-tauri/src/catalog/sync/mod.rs)
+- [`catalog/sync/portable/tests.rs`](../../src-tauri/src/catalog/sync/portable/tests.rs)
+- [`catalog/sync/scan.rs`](../../src-tauri/src/catalog/sync/scan.rs)
+- [`catalog/sync/scan_control.rs`](../../src-tauri/src/catalog/sync/scan_control.rs)
+- [`catalog/sync/scan_guard.rs`](../../src-tauri/src/catalog/sync/scan_guard.rs)
+- [`catalog/sync/scan_sources/portable_sources/roots/tests.rs`](../../src-tauri/src/catalog/sync/scan_sources/portable_sources/roots/tests.rs)
+- [`catalog/sync/scan_sources/portable_sources/tests.rs`](../../src-tauri/src/catalog/sync/scan_sources/portable_sources/tests.rs)
+- [`catalog/sync/scan_sources/selection.rs`](../../src-tauri/src/catalog/sync/scan_sources/selection.rs)
+- [`catalog/sync/scan_steps/tests.rs`](../../src-tauri/src/catalog/sync/scan_steps/tests.rs)
+- [`catalog/sync/retry.rs`](../../src-tauri/src/catalog/sync/retry.rs)
+- [`catalog/sync/volumes.rs`](../../src-tauri/src/catalog/sync/volumes.rs)
+- [`catalog/sync/watch_paths.rs`](../../src-tauri/src/catalog/sync/watch_paths.rs)
+- [`catalog/sync/watch_scope.rs`](../../src-tauri/src/catalog/sync/watch_scope.rs)
+- [`catalog/sync/watcher.rs`](../../src-tauri/src/catalog/sync/watcher.rs)
+- [`catalog/target_availability.rs`](../../src-tauri/src/catalog/target_availability.rs)
+- [`catalog/tree.rs`](../../src-tauri/src/catalog/tree.rs)
+- [`catalog/visibility/markers/rules.rs`](../../src-tauri/src/catalog/visibility/markers/rules.rs)
+- [`catalog/visibility/mod.rs`](../../src-tauri/src/catalog/visibility/mod.rs)
+- [`catalog/visibility/report.rs`](../../src-tauri/src/catalog/visibility/report.rs)
+- [`catalog/volumes.rs`](../../src-tauri/src/catalog/volumes.rs)
+  Fixture corpora in `src-tauri/tests/fixtures/` anchor category, visibility and
+  foreign-machine decisions. They are regression data, not claims of real-world
+  coverage.
 
 ## Windows platform boundary
 
@@ -298,40 +294,38 @@ promptly. `volumes.rs` proves a volume name buffer ends at its first NUL and,
 live, that the system drive reports a serial and a filesystem and appears in
 the mounted-volume enumeration.
 
-| Module                                                                                                                       | Tests |
-| ---------------------------------------------------------------------------------------------------------------------------- | ----: |
-| [`platform/windows/apps_folder/tests.rs`](../../src-tauri/src/platform/windows/apps_folder/tests.rs)                         |     3 |
-| [`platform/windows/change_watcher.rs`](../../src-tauri/src/platform/windows/change_watcher.rs)                               |     4 |
-| [`platform/windows/drives.rs`](../../src-tauri/src/platform/windows/drives.rs)                                               |     2 |
-| [`platform/windows/execution/closer/finish.rs`](../../src-tauri/src/platform/windows/execution/closer/finish.rs)             |     6 |
-| [`platform/windows/execution/closer/graceful.rs`](../../src-tauri/src/platform/windows/execution/closer/graceful.rs)         |     2 |
-| [`platform/windows/execution/closer/frames.rs`](../../src-tauri/src/platform/windows/execution/closer/frames.rs)             |     2 |
-| [`platform/windows/execution/closer/identity.rs`](../../src-tauri/src/platform/windows/execution/closer/identity.rs)         |    14 |
-| [`platform/windows/execution/closer/mod.rs`](../../src-tauri/src/platform/windows/execution/closer/mod.rs)                   |     6 |
-| [`platform/windows/execution/closer/processes.rs`](../../src-tauri/src/platform/windows/execution/closer/processes.rs)       |     3 |
-| [`platform/windows/execution/exec_target.rs`](../../src-tauri/src/platform/windows/execution/exec_target.rs)                 |     5 |
-| [`platform/windows/execution/executable_metadata.rs`](../../src-tauri/src/platform/windows/execution/executable_metadata.rs) |     7 |
-| [`platform/windows/execution/folder.rs`](../../src-tauri/src/platform/windows/execution/folder.rs)                           |     3 |
-| [`platform/windows/execution/launcher.rs`](../../src-tauri/src/platform/windows/execution/launcher.rs)                       |     9 |
-| [`platform/windows/execution/pe.rs`](../../src-tauri/src/platform/windows/execution/pe.rs)                                   |     3 |
-| [`platform/windows/execution/protected.rs`](../../src-tauri/src/platform/windows/execution/protected.rs)                     |     9 |
-| [`platform/windows/execution/signature.rs`](../../src-tauri/src/platform/windows/execution/signature.rs)                     |     1 |
-| [`platform/windows/icon_extractor/app_id.rs`](../../src-tauri/src/platform/windows/icon_extractor/app_id.rs)                 |     1 |
-| [`platform/windows/icon_extractor/gdi.rs`](../../src-tauri/src/platform/windows/icon_extractor/gdi.rs)                       |     1 |
-| [`platform/windows/icon_extractor/mod.rs`](../../src-tauri/src/platform/windows/icon_extractor/mod.rs)                       |     3 |
-| [`platform/windows/icon_extractor/shell.rs`](../../src-tauri/src/platform/windows/icon_extractor/shell.rs)                   |     9 |
-| [`platform/windows/known_folders.rs`](../../src-tauri/src/platform/windows/known_folders.rs)                                 |     1 |
-| [`platform/windows/locale.rs`](../../src-tauri/src/platform/windows/locale.rs)                                               |     1 |
-| [`platform/windows/process_priority.rs`](../../src-tauri/src/platform/windows/process_priority.rs)                           |     1 |
-| [`platform/windows/registry/associations.rs`](../../src-tauri/src/platform/windows/registry/associations.rs)                 |     3 |
-| [`platform/windows/registry/install_registry.rs`](../../src-tauri/src/platform/windows/registry/install_registry.rs)         |     5 |
-| [`platform/windows/registry/package_registry.rs`](../../src-tauri/src/platform/windows/registry/package_registry.rs)         |     1 |
-| [`platform/windows/registry/registered_targets.rs`](../../src-tauri/src/platform/windows/registry/registered_targets.rs)     |     1 |
-| [`platform/windows/registry/startup_approval.rs`](../../src-tauri/src/platform/windows/registry/startup_approval.rs)         |     5 |
-| [`platform/windows/registry/uninstall_registry.rs`](../../src-tauri/src/platform/windows/registry/uninstall_registry.rs)     |     2 |
-| [`platform/windows/shortcuts/global_shortcut.rs`](../../src-tauri/src/platform/windows/shortcuts/global_shortcut.rs)         |     3 |
-| [`platform/windows/volume_watcher.rs`](../../src-tauri/src/platform/windows/volume_watcher.rs)                               |     5 |
-| [`platform/windows/volumes.rs`](../../src-tauri/src/platform/windows/volumes.rs)                                             |     2 |
+- [`platform/windows/apps_folder/tests.rs`](../../src-tauri/src/platform/windows/apps_folder/tests.rs)
+- [`platform/windows/change_watcher.rs`](../../src-tauri/src/platform/windows/change_watcher.rs)
+- [`platform/windows/drives.rs`](../../src-tauri/src/platform/windows/drives.rs)
+- [`platform/windows/execution/closer/finish.rs`](../../src-tauri/src/platform/windows/execution/closer/finish.rs)
+- [`platform/windows/execution/closer/graceful.rs`](../../src-tauri/src/platform/windows/execution/closer/graceful.rs)
+- [`platform/windows/execution/closer/frames.rs`](../../src-tauri/src/platform/windows/execution/closer/frames.rs)
+- [`platform/windows/execution/closer/identity.rs`](../../src-tauri/src/platform/windows/execution/closer/identity.rs)
+- [`platform/windows/execution/closer/mod.rs`](../../src-tauri/src/platform/windows/execution/closer/mod.rs)
+- [`platform/windows/execution/closer/processes.rs`](../../src-tauri/src/platform/windows/execution/closer/processes.rs)
+- [`platform/windows/execution/exec_target.rs`](../../src-tauri/src/platform/windows/execution/exec_target.rs)
+- [`platform/windows/execution/executable_metadata.rs`](../../src-tauri/src/platform/windows/execution/executable_metadata.rs)
+- [`platform/windows/execution/folder.rs`](../../src-tauri/src/platform/windows/execution/folder.rs)
+- [`platform/windows/execution/launcher.rs`](../../src-tauri/src/platform/windows/execution/launcher.rs)
+- [`platform/windows/execution/pe.rs`](../../src-tauri/src/platform/windows/execution/pe.rs)
+- [`platform/windows/execution/protected.rs`](../../src-tauri/src/platform/windows/execution/protected.rs)
+- [`platform/windows/execution/signature.rs`](../../src-tauri/src/platform/windows/execution/signature.rs)
+- [`platform/windows/icon_extractor/app_id.rs`](../../src-tauri/src/platform/windows/icon_extractor/app_id.rs)
+- [`platform/windows/icon_extractor/gdi.rs`](../../src-tauri/src/platform/windows/icon_extractor/gdi.rs)
+- [`platform/windows/icon_extractor/mod.rs`](../../src-tauri/src/platform/windows/icon_extractor/mod.rs)
+- [`platform/windows/icon_extractor/shell.rs`](../../src-tauri/src/platform/windows/icon_extractor/shell.rs)
+- [`platform/windows/known_folders.rs`](../../src-tauri/src/platform/windows/known_folders.rs)
+- [`platform/windows/locale.rs`](../../src-tauri/src/platform/windows/locale.rs)
+- [`platform/windows/process_priority.rs`](../../src-tauri/src/platform/windows/process_priority.rs)
+- [`platform/windows/registry/associations.rs`](../../src-tauri/src/platform/windows/registry/associations.rs)
+- [`platform/windows/registry/install_registry.rs`](../../src-tauri/src/platform/windows/registry/install_registry.rs)
+- [`platform/windows/registry/package_registry.rs`](../../src-tauri/src/platform/windows/registry/package_registry.rs)
+- [`platform/windows/registry/registered_targets.rs`](../../src-tauri/src/platform/windows/registry/registered_targets.rs)
+- [`platform/windows/registry/startup_approval.rs`](../../src-tauri/src/platform/windows/registry/startup_approval.rs)
+- [`platform/windows/registry/uninstall_registry.rs`](../../src-tauri/src/platform/windows/registry/uninstall_registry.rs)
+- [`platform/windows/shortcuts/global_shortcut.rs`](../../src-tauri/src/platform/windows/shortcuts/global_shortcut.rs)
+- [`platform/windows/volume_watcher.rs`](../../src-tauri/src/platform/windows/volume_watcher.rs)
+- [`platform/windows/volumes.rs`](../../src-tauri/src/platform/windows/volumes.rs)
 
 ## Core, IPC and lifecycle
 
@@ -347,48 +341,47 @@ autostart hides only after tray setup succeeds, an exact `--autostart` argument
 is required, and every store beside the executable is created, adopted and
 declined by the rules `paths/` names.
 
-| Module                                                                                   | Tests |
-| ---------------------------------------------------------------------------------------- | ----: |
-| [`app_state/catalog_memory.rs`](../../src-tauri/src/app_state/catalog_memory.rs)         |     7 |
-| [`app_state/catalog_generation.rs`](../../src-tauri/src/app_state/catalog_generation.rs) |     3 |
-| [`app_state/launch_waits.rs`](../../src-tauri/src/app_state/launch_waits.rs)             |     1 |
-| [`app_state/mod.rs`](../../src-tauri/src/app_state/mod.rs)                               |     1 |
-| [`commands/catalog.rs`](../../src-tauri/src/commands/catalog.rs)                         |     6 |
-| [`commands/close.rs`](../../src-tauri/src/commands/close.rs)                             |     6 |
-| [`commands/contract.rs`](../../src-tauri/src/commands/contract.rs)                       |     2 |
-| [`commands/details.rs`](../../src-tauri/src/commands/details.rs)                         |     1 |
-| [`commands/diagnostics.rs`](../../src-tauri/src/commands/diagnostics.rs)                 |     3 |
-| [`commands/launch.rs`](../../src-tauri/src/commands/launch.rs)                           |     5 |
-| [`commands/mod.rs`](../../src-tauri/src/commands/mod.rs)                                 |     1 |
-| [`commands/settings.rs`](../../src-tauri/src/commands/settings.rs)                       |     3 |
-| [`commands/tray.rs`](../../src-tauri/src/commands/tray.rs)                               |     5 |
-| [`diagnostics/export.rs`](../../src-tauri/src/diagnostics/export.rs)                     |    13 |
-| [`diagnostics/log_collection.rs`](../../src-tauri/src/diagnostics/log_collection.rs)     |     1 |
-| [`diagnostics/log_sink.rs`](../../src-tauri/src/diagnostics/log_sink.rs)                 |     3 |
-| [`diagnostics/operation.rs`](../../src-tauri/src/diagnostics/operation.rs)               |     1 |
-| [`diagnostics/panic_log.rs`](../../src-tauri/src/diagnostics/panic_log.rs)               |     2 |
-| [`diagnostics/redaction.rs`](../../src-tauri/src/diagnostics/redaction.rs)               |     5 |
-| [`diagnostics/redaction_paths.rs`](../../src-tauri/src/diagnostics/redaction_paths.rs)   |     3 |
-| [`diagnostics/retention.rs`](../../src-tauri/src/diagnostics/retention.rs)               |     9 |
-| [`diagnostics/retention_worker.rs`](../../src-tauri/src/diagnostics/retention_worker.rs) |     2 |
-| [`diagnostics/segment_writer.rs`](../../src-tauri/src/diagnostics/segment_writer.rs)     |     4 |
-| [`error.rs`](../../src-tauri/src/error.rs)                                               |     8 |
-| [`lifecycle/mod.rs`](../../src-tauri/src/lifecycle/mod.rs)                               |     3 |
-| [`lifecycle/presentation.rs`](../../src-tauri/src/lifecycle/presentation.rs)             |     2 |
-| [`lifecycle/quiet_start.rs`](../../src-tauri/src/lifecycle/quiet_start.rs)               |     3 |
-| [`lifecycle/state.rs`](../../src-tauri/src/lifecycle/state.rs)                           |    11 |
-| [`lifecycle/tray/menu/tests.rs`](../../src-tauri/src/lifecycle/tray/menu/tests.rs)       |    12 |
-| [`lifecycle/tray/model.rs`](../../src-tauri/src/lifecycle/tray/model.rs)                 |     1 |
-| [`lifecycle/tray/search.rs`](../../src-tauri/src/lifecycle/tray/search.rs)               |     1 |
-| [`lifecycle/window_state.rs`](../../src-tauri/src/lifecycle/window_state.rs)             |    17 |
-| [`paths/adopt.rs`](../../src-tauri/src/paths/adopt.rs)                                   |     5 |
-| [`paths/mod.rs`](../../src-tauri/src/paths/mod.rs)                                       |     5 |
-| [`paths/portable.rs`](../../src-tauri/src/paths/portable.rs)                             |     9 |
+- [`app_state/catalog_memory.rs`](../../src-tauri/src/app_state/catalog_memory.rs)
+- [`app_state/catalog_generation.rs`](../../src-tauri/src/app_state/catalog_generation.rs)
+- [`app_state/launch_waits.rs`](../../src-tauri/src/app_state/launch_waits.rs)
+- [`app_state/mod.rs`](../../src-tauri/src/app_state/mod.rs)
+- [`commands/catalog.rs`](../../src-tauri/src/commands/catalog.rs)
+- [`commands/close.rs`](../../src-tauri/src/commands/close.rs)
+- [`commands/contract.rs`](../../src-tauri/src/commands/contract.rs)
+- [`commands/details.rs`](../../src-tauri/src/commands/details.rs)
+- [`commands/diagnostics.rs`](../../src-tauri/src/commands/diagnostics.rs)
+- [`commands/launch.rs`](../../src-tauri/src/commands/launch.rs)
+- [`commands/mod.rs`](../../src-tauri/src/commands/mod.rs)
+- [`commands/settings.rs`](../../src-tauri/src/commands/settings.rs)
+- [`commands/tray.rs`](../../src-tauri/src/commands/tray.rs)
+- [`diagnostics/export.rs`](../../src-tauri/src/diagnostics/export.rs)
+- [`diagnostics/log_collection.rs`](../../src-tauri/src/diagnostics/log_collection.rs)
+- [`diagnostics/log_sink.rs`](../../src-tauri/src/diagnostics/log_sink.rs)
+- [`diagnostics/operation.rs`](../../src-tauri/src/diagnostics/operation.rs)
+- [`diagnostics/panic_log.rs`](../../src-tauri/src/diagnostics/panic_log.rs)
+- [`diagnostics/redaction.rs`](../../src-tauri/src/diagnostics/redaction.rs)
+- [`diagnostics/redaction_paths.rs`](../../src-tauri/src/diagnostics/redaction_paths.rs)
+- [`diagnostics/retention.rs`](../../src-tauri/src/diagnostics/retention.rs)
+- [`diagnostics/retention_worker.rs`](../../src-tauri/src/diagnostics/retention_worker.rs)
+- [`diagnostics/segment_writer.rs`](../../src-tauri/src/diagnostics/segment_writer.rs)
+- [`error.rs`](../../src-tauri/src/error.rs)
+- [`lifecycle/mod.rs`](../../src-tauri/src/lifecycle/mod.rs)
+- [`lifecycle/presentation.rs`](../../src-tauri/src/lifecycle/presentation.rs)
+- [`lifecycle/quiet_start.rs`](../../src-tauri/src/lifecycle/quiet_start.rs)
+- [`lifecycle/state.rs`](../../src-tauri/src/lifecycle/state.rs)
+- [`lifecycle/tray/menu/tests.rs`](../../src-tauri/src/lifecycle/tray/menu/tests.rs)
+- [`lifecycle/tray/model.rs`](../../src-tauri/src/lifecycle/tray/model.rs)
+- [`lifecycle/tray/search.rs`](../../src-tauri/src/lifecycle/tray/search.rs)
+- [`lifecycle/window_state/geometry.rs`](../../src-tauri/src/lifecycle/window_state/geometry.rs) and [`window_state/store.rs`](../../src-tauri/src/lifecycle/window_state/store.rs)
+- [`paths/adopt.rs`](../../src-tauri/src/paths/adopt.rs)
+- [`paths/mod.rs`](../../src-tauri/src/paths/mod.rs)
+- [`paths/portable.rs`](../../src-tauri/src/paths/portable.rs)
 
 ## Refreshing this map
 
-Run this after backend test changes, then update the affected module count and
-the snapshot totals. It needs only PowerShell; `rg` is not part of the toolchain.
+Run this to list the per-module counts when a review wants them; the map above
+records which modules carry tests and what they prove, not numbers that drift
+with every change. It needs only PowerShell; `rg` is not part of the toolchain.
 
 ```powershell
 $files = Get-ChildItem src-tauri\src -Recurse -Filter *.rs |

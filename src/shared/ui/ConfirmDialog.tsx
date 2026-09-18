@@ -3,7 +3,7 @@ import { useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useModalDialog } from '../hooks/useModalDialog'
 import type { ReactNode } from 'react'
-export interface ConfirmDialogProps {
+interface ConfirmDialogProps {
 	label: string
 	title: string
 	description: string

@@ -88,6 +88,7 @@ function renderGrid(size: number) {
 				onMoveApp={vi.fn()}
 				onLaunch={vi.fn().mockResolvedValue(undefined)}
 				onInfo={vi.fn()}
+				onOpenFolder={vi.fn().mockResolvedValue(undefined)}
 				onManageInWindows={vi.fn()}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}

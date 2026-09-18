@@ -1,4 +1,4 @@
-export interface ShortcutHintProps {
+interface ShortcutHintProps {
 	label: string
 	keys: string
 	className?: string

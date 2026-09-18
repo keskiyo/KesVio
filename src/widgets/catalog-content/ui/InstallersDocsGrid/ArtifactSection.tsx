@@ -2,6 +2,7 @@ import { AppRow } from '../AppRow/AppRow'
 import type { ArtifactSectionProps } from './types'
 
 export function ArtifactSection({
+	icon: Icon,
 	title,
 	apps,
 	...actions
@@ -10,10 +11,15 @@ export function ArtifactSection({
 		<section aria-label={`${title} ${apps.length}`} className="space-y-3">
 			<h2
 				aria-label={`${title} ${apps.length}`}
-				className="flex items-center gap-2 text-base font-semibold text-(--text-primary)"
+				className="flex items-center gap-3 text-base font-semibold text-(--text-primary)"
 			>
-				{title}
-				<span className="rounded-full border border-(--border-neutral) bg-(--surface-raised) px-2 py-0.5 text-xs text-(--text-muted)">
+				<Icon size={18} aria-hidden="true" className="shrink-0" />
+				<span className="shrink-0">{title}</span>
+				<span
+					aria-hidden="true"
+					className="h-px min-w-4 flex-1 bg-(--border-neutral)"
+				/>
+				<span className="shrink-0 text-sm font-normal text-(--text-muted) tabular-nums">
 					{apps.length}
 				</span>
 			</h2>
@@ -28,6 +34,7 @@ export function ArtifactSection({
 						onLaunch={actions.onLaunch}
 						onMove={actions.onMoveApp}
 						onInfo={actions.onInfo}
+						onOpenFolder={actions.onOpenFolder}
 						onManageInWindows={actions.onManageInWindows}
 						onHide={actions.onHide}
 						onRestore={actions.onRestore}

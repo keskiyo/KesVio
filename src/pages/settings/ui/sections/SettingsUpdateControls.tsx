@@ -1,5 +1,8 @@
 import { Clock, ExternalLink, RefreshCw, Send } from 'lucide-react'
-import { ACTION_BUTTON_PRIMARY, ACTION_BUTTON_QUIET } from '../../data'
+import {
+	ACTION_BUTTON_PRIMARY,
+	ACTION_BUTTON_QUIET,
+} from '../../../../shared/ui/buttonVariants'
 import { GithubIcon } from '../../../../shared/ui/GithubIcon'
 import type { SettingsUpdateControlsProps } from '../../types'
 import { SettingsRow } from '../components/SettingsRow'

@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { INSTALLERS_DOCS_CATEGORY } from '../../entities/app'
+import { INSTALLERS_DOCS_CATEGORY, isCatalogView } from '../../entities/app'
+import { BackupRestorePage } from '../../pages/backup-restore'
 import { CatalogPage } from '../../pages/catalog'
+import { CatalogHealthPage } from '../../pages/catalog-health'
 import { MorePage } from '../../pages/more'
 import { ScenariosPage } from '../../pages/scenarios'
 import { SettingsPage } from '../../pages/settings'
@@ -17,15 +19,12 @@ export function AppViews({
 	systemClient,
 	onFirstScan,
 	onRefreshCatalog,
+	onOpenFolder,
 }: AppViewsProps) {
 	const [scanPromptDismissed, setScanPromptDismissed] = useState(false)
 	const { catalogApps, counts, deferredQuery, filteredApps, morePreview } =
 		catalog
 	const { auxiliaryCount, hiddenCount, navigationCounts } = counts
-	const isCatalogView =
-		state.activeView !== 'settings' &&
-		state.activeView !== 'more' &&
-		state.activeView !== 'scenarios'
 
 	return (
 		<main className="mx-auto w-full max-w-375 px-5 pt-7 pb-12 sm:px-8">
@@ -37,6 +36,8 @@ export function AppViews({
 						navigationCounts.get(INSTALLERS_DOCS_CATEGORY) ?? 0
 					}
 					scenarioCount={state.scenarios.length}
+					catalogDiagnostics={state.catalogDiagnostics}
+					isRefreshing={state.isRefreshing}
 					recentApps={derivations.recentApps}
 					preview={morePreview}
 					scenarioRun={{
@@ -69,22 +70,33 @@ export function AppViews({
 					onToggleFavorite={state.toggleFavoriteScenario}
 				/>
 			)}
+			{state.activeView === 'catalog_health' && (
+				<CatalogHealthPage
+					diagnostics={state.catalogDiagnostics}
+					isRefreshing={state.isRefreshing}
+					onRefresh={onRefreshCatalog}
+					onPreviewDiagnostics={systemClient.previewDiagnosticsLog}
+					onExportDiagnostics={systemClient.exportDiagnosticsLog}
+					onBack={() => navigation.selectView('more')}
+				/>
+			)}
+			{state.activeView === 'backup_restore' && (
+				<BackupRestorePage
+					onExport={state.exportPreferences}
+					onSaveExport={systemClient.savePreferencesBackup}
+					onValidateImport={state.validatePreferencesImport}
+					onImport={state.importPreferences}
+					onRestore={state.restorePreferencesBackup}
+					onBack={() => navigation.selectView('more')}
+				/>
+			)}
 			{state.activeView === 'settings' && (
 				<SettingsPage
 					client={systemClient}
 					density={state.catalogDensity}
 					onSetDensity={state.setCatalogDensity}
-					onExportPreferences={state.exportPreferences}
-					onValidatePreferencesImport={
-						state.validatePreferencesImport
-					}
-					onImportPreferences={state.importPreferences}
-					onRestorePreferencesBackup={state.restorePreferencesBackup}
 					onForceFullScan={state.forceFullScan}
 					onResetCatalogCache={state.resetCatalogCache}
-					onRefreshCatalog={onRefreshCatalog}
-					isRefreshing={state.isRefreshing}
-					catalogDiagnostics={state.catalogDiagnostics}
 					unclassifiedApps={derivations.unclassifiedApps}
 					categories={state.categories}
 					categoryOrder={state.categoryOrder}
@@ -92,7 +104,7 @@ export function AppViews({
 					updater={updater}
 				/>
 			)}
-			{isCatalogView && (
+			{isCatalogView(state.activeView) && (
 				<CatalogPage
 					showScanPrompt={
 						!state.isLoading &&
@@ -132,6 +144,7 @@ export function AppViews({
 						onMoveApp: state.moveApp,
 						onLaunch: dialogs.installerLaunch.requestLaunch,
 						onInfo: dialogs.appInfo.open,
+						onOpenFolder,
 						onManageInWindows: systemClient.openAppsSettings,
 						onHide: state.hideApp,
 						onRestore: state.restoreApp,

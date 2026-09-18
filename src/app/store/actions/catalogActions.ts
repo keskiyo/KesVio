@@ -6,9 +6,8 @@ import {
 	catalogGenerationOrder,
 	keepHeldRecords,
 	newerDiagnostics,
-	reconcileFirstSeen,
-	reconcileMarks,
-} from '../reconciliation'
+} from '../catalogGeneration'
+import { reconcileFirstSeen, reconcileMarks } from '../reconciliation'
 import type { AppsClient, CatalogScanResult } from '../../../entities/app'
 import type {
 	AppState,

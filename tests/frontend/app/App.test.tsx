@@ -489,6 +489,52 @@ describe('App', () => {
 		).toBeInTheDocument()
 	})
 
+	// The two tool pages under More hold no application list, so they must replace the catalog
+	// entirely and take the reader back to More, not to the last catalog view.
+	it('opens Catalog Health and Backup & Restore from More and returns to More', async () => {
+		setDesktopNavigation(true)
+		const { store, systemClient } = renderApp()
+		await screen.findByRole('button', { name: 'Launch Steam' })
+		await userEvent.click(screen.getByRole('button', { name: /^More/ }))
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Catalog Health' }),
+		)
+		expect(store.getState().activeView).toBe('catalog_health')
+		expect(
+			screen.getByRole('heading', { name: 'Catalog Health' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Launch Steam' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('heading', { name: 'Games' }),
+		).not.toBeInTheDocument()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Preview redacted log' }),
+		)
+		expect(systemClient.previewDiagnosticsLog).toHaveBeenCalledOnce()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Back to More' }),
+		)
+		expect(store.getState().activeView).toBe('more')
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Backup & Restore' }),
+		)
+		expect(store.getState().activeView).toBe('backup_restore')
+		expect(
+			screen.getByRole('heading', { name: 'Backup & Restore' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Launch Steam' }),
+		).not.toBeInTheDocument()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Back to More' }),
+		)
+		expect(store.getState().activeView).toBe('more')
+	})
+
 	it('exposes full app and category names when visible labels are truncated', async () => {
 		renderApp()
 		const steam = await screen.findByText('Steam')
@@ -808,7 +854,7 @@ describe('App', () => {
 			within(installers).getByRole('button', { name: 'Launch Steam' }),
 		).toBeInTheDocument()
 		expect(
-			screen.queryByRole('region', { name: /^Docs/ }),
+			screen.queryByRole('region', { name: /^Documentation/ }),
 		).not.toBeInTheDocument()
 
 		// A hand-filed artifact keeps "Move to category", which is the only way back out.
@@ -842,7 +888,9 @@ describe('App', () => {
 		expect(store.getState().documentAppIds).toEqual(['steam'])
 		expect(store.getState().installerAppIds).toEqual([])
 		store.getState().setActiveView('installers_docs')
-		const docs = await screen.findByRole('region', { name: 'Docs 1' })
+		const docs = await screen.findByRole('region', {
+			name: 'Documentation 1',
+		})
 		expect(
 			within(docs).getByRole('button', { name: 'Launch Steam' }),
 		).toBeInTheDocument()

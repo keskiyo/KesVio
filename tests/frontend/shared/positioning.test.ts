@@ -23,11 +23,25 @@ describe('floatingMenuPosition', () => {
 		bottom: 252,
 	}
 
-	it('keeps a right-edge menu inside the viewport', () => {
+	// A trigger in the right half opens its menu leftwards, ending at the trigger's right edge,
+	// so a row's ⋮ at the far right never gets a panel floating off to its side.
+	it('hangs a right-half menu from the trigger instead of pushing it to the viewport edge', () => {
 		expect(floatingMenuPosition(anchor, 224, 300, 1080, 720)).toEqual({
-			left: 844,
+			left: 708,
 			top: 256,
 		})
+	})
+
+	it('still clamps a right-aligned menu that is wider than the room left of the trigger', () => {
+		expect(
+			floatingMenuPosition(
+				{ left: 700, right: 732, top: 220, bottom: 252 },
+				900,
+				300,
+				1080,
+				720,
+			),
+		).toEqual({ left: 12, top: 256 })
 	})
 
 	it('keeps the menu within the viewport without flipping above the trigger', () => {

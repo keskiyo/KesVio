@@ -2,14 +2,8 @@ import {
 	type SettingsArea,
 	useSystemSettings,
 } from '../../../features/edit-settings'
-import { CatalogMaintenance } from './sections/CatalogMaintenance'
-import { CatalogSources } from './sections/CatalogSources'
-import { DiagnosticsLogExport } from './sections/DiagnosticsLogExport/DiagnosticsLogExport'
-import { ScanDiagnostics } from './sections/ScanDiagnostics'
-import { AdvancedSettings } from './sections/AdvancedSettings'
+import { CatalogSettings } from './sections/CatalogSettings'
 import { GeneralSettings } from './sections/GeneralSettings'
-import { PreferencesBackup } from './sections/PreferencesBackup/PreferencesBackup'
-import { SettingsDiscoveryControls } from './sections/SettingsDiscoveryControls'
 import { UnclassifiedApps } from './sections/UnclassifiedApps/UnclassifiedApps'
 import type { SettingsPageProps } from '../types'
 
@@ -17,15 +11,8 @@ export function SettingsPage({
 	client,
 	density,
 	onSetDensity,
-	onExportPreferences,
-	onValidatePreferencesImport,
-	onImportPreferences,
-	onRestorePreferencesBackup,
 	onForceFullScan,
 	onResetCatalogCache,
-	onRefreshCatalog,
-	isRefreshing = false,
-	catalogDiagnostics,
 	unclassifiedApps,
 	categories,
 	categoryOrder,
@@ -87,69 +74,39 @@ export function SettingsPage({
 				onSetStartupEnabled={setStartupEnabled}
 			/>
 			{areaError('settings')}
-			{catalogDiagnostics !== undefined && (
-				<CatalogSources
-					sources={catalogDiagnostics?.sources ?? []}
-					lastScanAt={catalogDiagnostics?.completedAt ?? null}
-					scanning={isRefreshing}
-					onRefresh={onRefreshCatalog}
+			<CatalogSettings
+				discovery={{
+					settings,
+					saving,
+					onSaveScanSettings: saveScanSettings,
+					onAddPath: addPath,
+					onRemovePath: removePath,
+					onPickFolder: client.pickFolder,
+				}}
+				maintenance={
+					onForceFullScan
+						? {
+								forcing,
+								resetting,
+								confirming,
+								canReset: Boolean(onResetCatalogCache),
+								setConfirming,
+								onForceFullScan: forceFullScan,
+								onResetCatalogCache: resetCatalogCache,
+							}
+						: null
+				}
+			/>
+			{areaError('discovery')}
+			{areaError('maintenance')}
+			{unclassifiedApps && categories && categoryOrder && onMoveApp && (
+				<UnclassifiedApps
+					apps={unclassifiedApps}
+					categories={categories}
+					categoryOrder={categoryOrder}
+					onMoveApp={onMoveApp}
 				/>
 			)}
-			<AdvancedSettings>
-				<SettingsDiscoveryControls
-					settings={settings}
-					saving={saving}
-					onSaveScanSettings={saveScanSettings}
-					onAddPath={addPath}
-					onRemovePath={removePath}
-					onPickFolder={client.pickFolder}
-				/>
-				{areaError('discovery')}
-				{onExportPreferences &&
-					onValidatePreferencesImport &&
-					onImportPreferences &&
-					onRestorePreferencesBackup && (
-						<PreferencesBackup
-							onExport={onExportPreferences}
-							onSaveExport={client.savePreferencesBackup}
-							onValidateImport={onValidatePreferencesImport}
-							onImport={onImportPreferences}
-							onRestore={onRestorePreferencesBackup}
-						/>
-					)}
-				<div className="grid gap-5 sm:grid-cols-2">
-					{onForceFullScan && (
-						<CatalogMaintenance
-							forcing={forcing}
-							resetting={resetting}
-							confirming={confirming}
-							canReset={Boolean(onResetCatalogCache)}
-							setConfirming={setConfirming}
-							onForceFullScan={forceFullScan}
-							onResetCatalogCache={resetCatalogCache}
-						/>
-					)}
-					<DiagnosticsLogExport
-						onExport={client.exportDiagnosticsLog}
-						onPreview={client.previewDiagnosticsLog}
-					/>
-				</div>
-				{areaError('maintenance')}
-				{catalogDiagnostics && (
-					<ScanDiagnostics diagnostics={catalogDiagnostics} />
-				)}
-				{unclassifiedApps &&
-					categories &&
-					categoryOrder &&
-					onMoveApp && (
-						<UnclassifiedApps
-							apps={unclassifiedApps}
-							categories={categories}
-							categoryOrder={categoryOrder}
-							onMoveApp={onMoveApp}
-						/>
-					)}
-			</AdvancedSettings>
 		</section>
 	)
 }

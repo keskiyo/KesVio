@@ -19,6 +19,7 @@ vi.mock('sonner', () => ({
 function options(overrides: Partial<Parameters<typeof useAppFeedback>[0]>) {
 	return {
 		onLaunch: vi.fn().mockResolvedValue(undefined),
+		onOpenFolder: vi.fn().mockResolvedValue(undefined),
 		onFullScan: vi.fn().mockResolvedValue(undefined),
 		onRefresh: vi.fn().mockResolvedValue(undefined),
 		onUndo: vi.fn().mockReturnValue({ ok: true as const }),
@@ -103,5 +104,31 @@ describe('useAppFeedback', () => {
 
 		act(() => result.current.undo())
 		expect(toastError).toHaveBeenCalledWith('Nothing to undo')
+	})
+
+	it('reports a folder that could not be opened without exposing the reason', async () => {
+		const { result } = renderHook(() =>
+			useAppFeedback(
+				options({
+					onOpenFolder: vi
+						.fn()
+						.mockRejectedValue(
+							new Error('C:\\Users\\Example\\denied'),
+						),
+				}),
+			),
+		)
+
+		await act(() =>
+			result.current.openFolder({
+				id: 'setup',
+				name: 'Setup',
+			} as Parameters<typeof result.current.openFolder>[0]),
+		)
+
+		expect(toastError).toHaveBeenCalledWith(
+			'Could not open the folder of Setup',
+		)
+		expect(String(toastError.mock.calls[0])).not.toContain('Example')
 	})
 })

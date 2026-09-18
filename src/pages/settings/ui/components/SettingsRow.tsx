@@ -1,4 +1,4 @@
-import { ACTION_ROW } from '../../data'
+import { ACTION_ROW } from '../../../../shared/ui/buttonVariants'
 import { SettingsSectionHeader } from './SettingsSectionHeader'
 import type { SettingsRowProps } from '../../types'
 

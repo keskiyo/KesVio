@@ -16,27 +16,22 @@ interface Options {
 	anchorRef: RefObject<HTMLButtonElement | null>
 	onClose(): void
 	showCategories: boolean
-	showArtifacts: boolean
+	branchExpanded: boolean
 }
 
 export function useActionsMenu({
 	anchorRef,
 	onClose,
 	showCategories,
-	showArtifacts,
+	branchExpanded,
 }: Options) {
 	const [position, setPosition] = useState({ left: 12, top: 48 })
 	const [categoryPosition, setCategoryPosition] = useState({
 		left: 12,
 		top: 48,
 	})
-	const [artifactPosition, setArtifactPosition] = useState({
-		left: 12,
-		top: 48,
-	})
 	const menuRef = useRef<HTMLDivElement>(null)
 	const categoryMenuRef = useRef<HTMLDivElement>(null)
-	const artifactMenuRef = useRef<HTMLDivElement>(null)
 	const adjustedHeightRef = useRef(0)
 
 	useLayoutEffect(() => {
@@ -53,59 +48,27 @@ export function useActionsMenu({
 				window.innerHeight,
 			)
 			setPosition(nextPosition)
-			const nextMenuBounds = {
-				left: nextPosition.left,
-				right: nextPosition.left + menu.width,
-				top: nextPosition.top,
-				bottom: nextPosition.top + menu.height,
-			}
 			const categoryMenu =
 				categoryMenuRef.current?.getBoundingClientRect()
 			if (
 				showCategories &&
 				categoryMenu &&
 				(categoryMenu.width !== 0 || categoryMenu.height !== 0)
-			) {
-				const nextCategoryPosition = floatingSubmenuPosition(
-					nextMenuBounds,
-					categoryMenu.width,
-					categoryMenu.height,
-					window.innerWidth,
-					window.innerHeight,
+			)
+				setCategoryPosition(
+					floatingSubmenuPosition(
+						{
+							left: nextPosition.left,
+							right: nextPosition.left + menu.width,
+							top: nextPosition.top,
+							bottom: nextPosition.top + menu.height,
+						},
+						categoryMenu.width,
+						categoryMenu.height,
+						window.innerWidth,
+						window.innerHeight,
+					),
 				)
-				setCategoryPosition(nextCategoryPosition)
-				const artifactMenu =
-					artifactMenuRef.current?.getBoundingClientRect()
-				if (
-					showArtifacts &&
-					artifactMenu &&
-					(artifactMenu.width !== 0 || artifactMenu.height !== 0)
-				) {
-					const branch = categoryMenuRef.current
-						?.querySelector<HTMLElement>('[aria-haspopup="menu"]')
-						?.getBoundingClientRect()
-					const branchOffset = branch
-						? branch.top - categoryMenu.top
-						: 0
-					const branchTop = nextCategoryPosition.top + branchOffset
-					setArtifactPosition(
-						floatingSubmenuPosition(
-							{
-								left: nextCategoryPosition.left,
-								right:
-									nextCategoryPosition.left +
-									categoryMenu.width,
-								top: branchTop,
-								bottom: branchTop + (branch?.height ?? 0),
-							},
-							artifactMenu.width,
-							artifactMenu.height,
-							window.innerWidth,
-							window.innerHeight,
-						),
-					)
-				}
-			}
 			const menuHeight = Math.round(menu.height)
 			const scrollAmount = requiredMenuScroll(
 				anchor.bottom,
@@ -141,7 +104,7 @@ export function useActionsMenu({
 			window.removeEventListener('resize', placeMenu)
 			window.removeEventListener('scroll', placeMenu, true)
 		}
-	}, [anchorRef, showCategories, showArtifacts])
+	}, [anchorRef, showCategories, branchExpanded])
 
 	useEffect(() => {
 		function keydown(event: KeyboardEvent) {
@@ -151,7 +114,6 @@ export function useActionsMenu({
 			const target = event.target as Node
 			if (menuRef.current?.contains(target)) return
 			if (categoryMenuRef.current?.contains(target)) return
-			if (artifactMenuRef.current?.contains(target)) return
 			if (anchorRef.current?.contains(target)) return
 			onClose()
 		}
@@ -181,19 +143,9 @@ export function useActionsMenu({
 			categoryMenuRef.current?.querySelectorAll<HTMLElement>(
 				'[role="menuitem"]:not([disabled])',
 			) ?? [],
-		)
-		const artifactItems = Array.from(
-			artifactMenuRef.current?.querySelectorAll<HTMLElement>(
-				'[role="menuitem"]:not([disabled])',
-			) ?? [],
-		)
+		).filter(item => item.closest('[inert]') === null)
 		const items = categoryItems.length
-			? [
-					menuItems[0]!,
-					...categoryItems,
-					...artifactItems,
-					...menuItems.slice(1),
-				]
+			? [menuItems[0]!, ...categoryItems, ...menuItems.slice(1)]
 			: menuItems
 		if (items.length === 0) return
 		event.preventDefault()
@@ -206,10 +158,8 @@ export function useActionsMenu({
 	return {
 		menuRef,
 		categoryMenuRef,
-		artifactMenuRef,
 		position,
 		categoryPosition,
-		artifactPosition,
 		onMenuKeyDown,
 	}
 }

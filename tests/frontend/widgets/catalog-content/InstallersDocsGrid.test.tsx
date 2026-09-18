@@ -40,6 +40,7 @@ const callbacks = {
 	onLaunch: vi.fn().mockResolvedValue(undefined),
 	onMoveApp: vi.fn(),
 	onInfo: vi.fn(),
+	onOpenFolder: vi.fn().mockResolvedValue(undefined),
 	onManageInWindows: vi.fn(),
 	onHide: vi.fn(),
 	onRestore: vi.fn(),
@@ -62,7 +63,14 @@ describe('InstallersDocsGrid', () => {
 		expect(
 			screen.getByRole('heading', { name: 'Installers 1' }),
 		).toBeVisible()
-		expect(screen.getByRole('heading', { name: 'Docs 1' })).toBeVisible()
+		expect(
+			screen.getByRole('heading', { name: 'Documentation 1' }),
+		).toBeVisible()
+		expect(
+			screen.getByRole('region', { name: 'Installers & Docs' }),
+		).toHaveTextContent(
+			'Setup packages and documentation found while scanning.',
+		)
 		expect(screen.getByText('Visual Studio Setup')).toBeVisible()
 		expect(screen.getByText('Application Verifier Help')).toBeVisible()
 	})
@@ -77,7 +85,7 @@ describe('InstallersDocsGrid', () => {
 		)
 		// Anchored: the page title is "Installers & Docs" and must not be mistaken for the group.
 		expect(
-			screen.queryByRole('heading', { name: /^Docs/ }),
+			screen.queryByRole('heading', { name: /^Documentation/ }),
 		).not.toBeInTheDocument()
 
 		rerender(
@@ -108,9 +116,11 @@ describe('InstallersDocsGrid', () => {
 		expect(
 			screen.getByRole('region', { name: 'Installers & Docs' }),
 		).toHaveTextContent('0 items')
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Back to More' }),
-		)
-		expect(onBack).toHaveBeenCalled()
+		const backButtons = screen.getAllByRole('button', {
+			name: 'Back to More',
+		})
+		expect(backButtons).toHaveLength(2)
+		await userEvent.click(backButtons[1]!)
+		expect(onBack).toHaveBeenCalledOnce()
 	})
 })

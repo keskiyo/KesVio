@@ -1,11 +1,13 @@
-import { Wrench } from 'lucide-react'
+import { SearchX, Wrench } from 'lucide-react'
 import { sortFavoritesFirst } from '../../../entities/app'
 import type { AuxiliaryGridProps } from '../types'
 import { AppRow } from './AppRow/AppRow'
 import { CatalogViewHeader } from './CatalogViewHeader'
+import { ViewEmptyState } from './ViewEmptyState'
 
 export function AuxiliaryGrid(props: AuxiliaryGridProps) {
 	const apps = sortFavoritesFirst(props.apps, props.favoriteAppIds)
+	const back = { label: 'Back to More', onBack: props.onBack }
 	return (
 		<section aria-labelledby="auxiliary-title">
 			<CatalogViewHeader
@@ -14,7 +16,8 @@ export function AuxiliaryGrid(props: AuxiliaryGridProps) {
 				titleId="auxiliary-title"
 				count={apps.length}
 				noun="tool"
-				back={{ label: 'Back to More', onBack: props.onBack }}
+				description="Helper executables discovered by KesVio."
+				back={back}
 			/>
 			<div className="mx-auto max-w-3xl min-[1900px]:max-w-[80rem]">
 				{apps.length ? (
@@ -35,21 +38,19 @@ export function AuxiliaryGrid(props: AuxiliaryGridProps) {
 							/>
 						))}
 					</div>
+				) : props.hasQuery ? (
+					<ViewEmptyState
+						icon={SearchX}
+						title="No matching auxiliary tools"
+						description="Try a different search."
+					/>
 				) : (
-					<div className="grid min-h-[45vh] place-items-center text-center">
-						<div className="max-w-sm">
-							<h2 className="text-lg font-semibold">
-								{props.hasQuery
-									? 'No matching auxiliary tools'
-									: 'No auxiliary tools'}
-							</h2>
-							<p className="mt-2 text-sm text-(--text-muted)">
-								{props.hasQuery
-									? 'Try a different search.'
-									: 'Runtime components and maintenance tools separated from the main catalog appear here.'}
-							</p>
-						</div>
-					</div>
+					<ViewEmptyState
+						icon={Wrench}
+						title="No auxiliary tools found"
+						description="KesVio did not find helper executables in the current catalog."
+						back={back}
+					/>
 				)}
 			</div>
 		</section>
