@@ -101,6 +101,7 @@ export interface AppState {
 	exportPreferences(): string
 	validatePreferencesImport(source: string): PreferenceTransferResult
 	importPreferences(source: string): PreferenceTransferResult
+	hasPreferencesBackup(): boolean
 	restorePreferencesBackup(): PreferenceTransferResult
 	toggleFavorite(id: string): void
 	hideApp(id: string): void

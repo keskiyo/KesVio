@@ -42,6 +42,89 @@ describe('generateAppAliases', () => {
 		},
 	)
 
+	it('drops the product name when the original file name is a host executable', () => {
+		const aliases = values(
+			shortcut({
+				id: 'notes',
+				name: 'Acme Notes',
+				originalFilename: 'electron.exe',
+				productName: 'Electron',
+				publisher: 'GitHub, Inc.',
+			}),
+		)
+		expect(aliases).not.toContain('electron')
+	})
+
+	it('generates no acronym from a name that carries a URL or a path', () => {
+		expect(
+			values(
+				app({ id: 'xz', name: 'XZ Utils <https://tukaani.org/xz/>' }),
+			),
+		).not.toContain('xuhtox')
+		expect(
+			values(app({ id: 'w', name: 'Widget Wizard www.example.com' })),
+		).toEqual(expect.not.arrayContaining(['wwwec', 'wwwe']))
+	})
+
+	it.each([
+		['7-Zip', null],
+		['4K Video Downloader', null],
+		['3DMark', null],
+		['Windows 11', null],
+		['Visual Studio 2022', 'visual studio'],
+		['Guitar Pro 8', 'guitar pro'],
+		['PostgreSQL 17', 'postgresql'],
+		['Python 3.12 (64-bit)', 'python'],
+	])('derives the versionless name of %s as %s', (name, expected) => {
+		const aliases = values(app({ id: name, name }))
+		if (expected === null)
+			expect(
+				aliases.filter(alias => name.toLowerCase().startsWith(alias)),
+			).toEqual([])
+		else expect(aliases).toContain(expected)
+	})
+
+	it.each([
+		[
+			'Quillrock Notes Studio',
+			'qns.exe',
+			['quillrock notes studio', 'qns'],
+		],
+		[
+			'Fennelworks Ledger 3.4',
+			'fwledger64.exe',
+			['fennelworks ledger', 'fwledger64', 'fwledger'],
+		],
+		['Orbital Tidewatch', 'tidewatch.exe', ['tidewatch']],
+		['Marrowbyte Sketch', 'mbsketch.exe', ['mbsketch']],
+		['Halcyon Vault Manager', 'hvault.exe', ['hvault']],
+	])(
+		'keeps an invented application %s searchable through its own record only',
+		(name, executable, expected) => {
+			const record = app({
+				id: name,
+				name,
+				path: `C:\\Invented\\${executable}`,
+				publisher: 'Invented Labs',
+			})
+			const aliases = values(record)
+			for (const value of expected)
+				if (value !== name.toLowerCase())
+					expect(aliases).toContain(value)
+			expect(aliases).not.toContain('manager')
+			expect(aliases).not.toContain('notes')
+		},
+	)
+
+	it('never generates a semantic category word or a host stem as an acronym', () => {
+		expect(
+			values(app({ id: 'scp', name: 'SteamPal for Command Palette' })),
+		).not.toContain('scp')
+		expect(
+			values(app({ id: 'cmd', name: 'Central Media Dispatcher' })),
+		).not.toContain('cmd')
+	})
+
 	it('does not derive an alias from a shortcut file name or an AppUserModelID', () => {
 		expect(
 			values(

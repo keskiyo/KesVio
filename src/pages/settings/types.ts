@@ -103,6 +103,8 @@ export interface PathEditorProps {
 	label: string
 	buttonLabel: string
 	browseLabel: string
+	removeDialogTitle: string
+	removeDialogDescription: string
 	value: string
 	paths: string[]
 	icon: ReactNode

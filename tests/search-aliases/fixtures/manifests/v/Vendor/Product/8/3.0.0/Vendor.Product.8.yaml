@@ -1,0 +1,15 @@
+PackageIdentifier: Vendor.Product.8
+PackageVersion: 3.0.0
+PackageLocale: en-US
+Publisher: Vendor Inc.
+PackageName: Product 8
+Moniker: product8
+License: MIT
+ShortDescription: fixture
+Installers:
+    - Architecture: x64
+      InstallerType: exe
+      InstallerUrl: https://vendor.example.com/product8.exe
+      InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+ManifestType: singleton
+ManifestVersion: 1.0.0

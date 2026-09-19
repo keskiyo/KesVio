@@ -41,7 +41,8 @@ Bring Start Menu shortcuts, installed desktop programs, Microsoft Store apps, St
 Categorize unfamiliar software using Windows registrations, file metadata, and Start Menu structure instead of a hard-coded product list.
 
 **Search beyond app names**<br>
-Find software by name, publisher, description, path, or category. Search tolerates typos, transliteration, and Russian/Latin keyboard-layout mismatches.
+Find software by name, publisher, description, path, or category, or by the short names people actually type: cmd, scode, wt, kubectl,
+vim, chrome-beta and thousands more from a built-in dictionary and a bundled, offline index of winget package names. Search tolerates typos, transliteration, and Russian/Latin keyboard-layout mismatches.
 
 **Launch workflows, not only apps**<br>
 Use Favorites, saved catalog filters, and Scenarios to keep useful applications together and launch or close groups when needed.

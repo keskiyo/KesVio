@@ -2,8 +2,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const read = file => (existsSync(file) ? readFileSync(file, 'utf8') : '')
-const dialog = read(
-	'src/features/manage-filters/ui/SavedFilterDialog/SavedFilterDialog.tsx',
+const nameField = read(
+	'src/features/manage-filters/ui/SavedFilterDialog/SavedFilterNameField.tsx',
 )
 const criteria = read(
 	'src/features/manage-filters/ui/SavedFilterDialog/CriteriaFieldset.tsx',
@@ -21,8 +21,8 @@ const panel = read('src/shared/ui/CollapsiblePanel.tsx')
 
 describe('saved filter controls', () => {
 	it('reuses the main search surface and shared destructive action', () => {
-		expect(dialog).toContain('search-input')
-		expect(actions).toContain('DANGER_ICON_BUTTON')
+		expect(nameField).toContain('search-input')
+		expect(actions).toContain('DANGER_VARIANT')
 	})
 
 	it('renders every checkbox and radio through one native control', () => {

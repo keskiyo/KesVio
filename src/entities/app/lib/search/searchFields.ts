@@ -1,4 +1,5 @@
 import type { AppInfo } from '../../model/app.types'
+import { knownPackageGeneration } from './knownPackageIndex'
 import { resolveSearchAliases } from './resolveSearchAliases'
 import type { AliasConfidence, SearchAlias } from './types'
 
@@ -18,9 +19,14 @@ export interface SearchFields {
 	words: string[]
 }
 
-const searchFields = new WeakMap<AppInfo, SearchFields>()
+let searchFields = new WeakMap<AppInfo, SearchFields>()
+let cachedGeneration = knownPackageGeneration()
 
 export function fieldsFor(app: AppInfo): SearchFields {
+	if (cachedGeneration !== knownPackageGeneration()) {
+		searchFields = new WeakMap()
+		cachedGeneration = knownPackageGeneration()
+	}
 	const cached = searchFields.get(app)
 	if (cached) return cached
 	const name = app.name.toLocaleLowerCase()

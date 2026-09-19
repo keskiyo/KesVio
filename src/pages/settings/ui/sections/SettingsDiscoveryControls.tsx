@@ -66,6 +66,8 @@ export function SettingsDiscoveryControls({
 					label="Additional scan folder"
 					buttonLabel="Add scan folder"
 					browseLabel="Browse for scan folder"
+					removeDialogTitle="Remove scan folder?"
+					removeDialogDescription="KesVio will stop scanning this folder. The folder and its files stay on your computer."
 					value={includedPath}
 					paths={settings?.scanSettings.includedPaths ?? []}
 					icon={<FolderPlus size={16} aria-hidden="true" />}
@@ -82,6 +84,8 @@ export function SettingsDiscoveryControls({
 					label="Excluded folder"
 					buttonLabel="Exclude folder"
 					browseLabel="Browse for excluded folder"
+					removeDialogTitle="Remove excluded folder?"
+					removeDialogDescription="KesVio may scan this folder again. The folder and its files stay on your computer."
 					value={excludedPath}
 					paths={settings?.scanSettings.excludedPaths ?? []}
 					icon={<FolderX size={16} aria-hidden="true" />}

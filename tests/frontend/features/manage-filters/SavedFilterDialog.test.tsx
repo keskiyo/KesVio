@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SavedFilterDialog } from '../../../../src/features/manage-filters'
@@ -113,7 +113,8 @@ describe('saved filter editor', () => {
 		).not.toBeInTheDocument()
 		expect(screen.getByText(/Steam covers the client itself/)).toBeVisible()
 	})
-	it('offers a labelled danger Delete action for an existing filter', () => {
+	it('requires confirmation before deleting an existing filter', async () => {
+		const onDelete = vi.fn()
 		render(
 			<SavedFilterDialog
 				filter={{
@@ -128,13 +129,35 @@ describe('saved filter editor', () => {
 				}}
 				publishers={[]}
 				onSave={() => ({ ok: true })}
-				onDelete={vi.fn()}
+				onDelete={onDelete}
 				onClose={vi.fn()}
 			/>,
 		)
 
 		const button = screen.getByRole('button', { name: 'Delete filter' })
-		expect(button).not.toHaveTextContent('Delete')
+		expect(button).toHaveTextContent('Delete')
+		await userEvent.click(button)
+
+		const confirmation = screen.getByRole('alertdialog', {
+			name: 'Delete Work filter',
+		})
+		expect(confirmation).toBeVisible()
+		expect(onDelete).not.toHaveBeenCalled()
+
+		await userEvent.click(
+			within(confirmation).getByRole('button', { name: 'Cancel' }),
+		)
+		expect(onDelete).not.toHaveBeenCalled()
+
+		await userEvent.click(button)
+		await userEvent.click(
+			within(
+				screen.getByRole('alertdialog', {
+					name: 'Delete Work filter',
+				}),
+			).getByRole('button', { name: 'Delete filter' }),
+		)
+		expect(onDelete).toHaveBeenCalledOnce()
 	})
 	it('keeps edits open on save failure and lets Escape cancel', async () => {
 		const onClose = vi.fn()

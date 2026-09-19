@@ -19,8 +19,8 @@ const cardActions = [
 	'src/pages/settings/ui/sections/CatalogMaintenance.tsx',
 	'src/pages/settings/ui/sections/UnclassifiedApps/UnclassifiedApps.tsx',
 	'src/pages/backup-restore/ui/ExportSettingsCard.tsx',
-	'src/pages/backup-restore/ui/ImportSettingsCard.tsx',
-	'src/pages/backup-restore/ui/LocalRecoveryCard.tsx',
+	'src/pages/backup-restore/ui/RecoverySettingsCard/ImportRecoveryMethod.tsx',
+	'src/pages/backup-restore/ui/RecoverySettingsCard/LocalRecoveryMethod.tsx',
 	'src/pages/catalog-health/ui/CatalogHealthSummary.tsx',
 	'src/pages/catalog-health/ui/DiagnosticsLog/DiagnosticsLog.tsx',
 ].map(read)

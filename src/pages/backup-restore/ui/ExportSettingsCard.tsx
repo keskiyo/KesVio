@@ -9,11 +9,11 @@ export function ExportSettingsCard({
 	onExport,
 }: ExportSettingsCardProps) {
 	return (
-		<section aria-label="Export settings" className={BACKUP_SURFACE}>
+		<section aria-label="Create backup" className={BACKUP_SURFACE}>
 			<PanelHeader
 				icon={Download}
-				title="Export settings"
-				description="Save your current preferences to a JSON file you choose where to keep."
+				title="Create backup"
+				description="Save a JSON backup of your current preferences, then choose where to keep it."
 			/>
 			<p className="mt-3 mb-4 text-xs leading-5 text-(--text-muted)">
 				Nothing changes in KesVio; the file is yours to move or keep.

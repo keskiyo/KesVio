@@ -13,7 +13,10 @@ export function CatalogSources({ health, scanning }: CatalogSourcesProps) {
 	const [expanded, setExpanded] = useState(summary.attention.length > 0)
 	const contentId = 'catalog-sources'
 	return (
-		<section aria-label="Catalog sources" className={SECTION_SURFACE}>
+		<section
+			aria-label="Catalog sources"
+			className={`${SECTION_SURFACE} min-w-0`}
+		>
 			<PanelHeader
 				icon={Activity}
 				title="Catalog sources"

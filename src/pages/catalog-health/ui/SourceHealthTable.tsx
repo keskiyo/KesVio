@@ -78,7 +78,7 @@ export function SourceHealthTable({ rows }: SourceHealthTableProps) {
 								{row.label}
 							</th>
 							<td
-								className={`py-1.5 pr-3 break-words ${row.needsAttention ? '${ATTENTION_TEXT} font-medium' : ''}`}
+								className={`py-1.5 pr-3 break-words ${row.needsAttention ? `${ATTENTION_TEXT} font-medium` : ''}`}
 							>
 								{row.statusLabel}
 							</td>

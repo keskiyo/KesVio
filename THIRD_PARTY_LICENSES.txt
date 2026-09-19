@@ -1,4 +1,4 @@
-KesVio 0.5.2 - third-party licenses
+KesVio 0.5.3 - third-party licenses
 ===============================================================================
 
 KesVio is distributed under the MIT License; see LICENSE. It also distributes the

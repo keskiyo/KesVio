@@ -4,6 +4,7 @@ import { App } from './App'
 import { AppErrorBoundary } from './AppErrorBoundary'
 import { FrontendReadyGate } from './model/FrontendReadyGate'
 import { FRONTEND_READY_EVENT } from './model/scheduleFrontendReady'
+import { loadKnownPackageIndex } from '../entities/app'
 import { tauriAppsClient } from '../entities/app/api/appsClient'
 import { tauriSystemClient } from '../entities/system/api/systemClient'
 import { emitIfTauri } from '../shared/api/tauri/client'
@@ -11,6 +12,9 @@ import { createAppStore } from './store/appStore'
 import './styles/index.css'
 
 const appStore = createAppStore(tauriAppsClient)
+if (typeof performance.mark === 'function')
+	performance.mark('kesvio:store-ready')
+void loadKnownPackageIndex()
 
 function reportInterfaceFailure(kind: string, detail: string) {
 	void tauriSystemClient.logClientError?.(kind, detail).catch(() => undefined)

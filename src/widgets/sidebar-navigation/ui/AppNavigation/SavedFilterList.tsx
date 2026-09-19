@@ -1,9 +1,10 @@
-import { Filter, Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
-import { DANGER_ICON_BUTTON } from '../../../../shared/ui/buttonVariants'
 import { ConfirmDialog } from '../../../../shared/ui/ConfirmDialog'
-import { NavItem } from './NavItem'
+import { SavedFilterRow } from './SavedFilterRow'
 import type { SavedFilterListProps } from './types'
+
+const COLLAPSED_FILTER_LIMIT = 6
 
 export function SavedFilterList({
 	filters,
@@ -13,13 +14,18 @@ export function SavedFilterList({
 	onDelete,
 }: SavedFilterListProps) {
 	const [deletingId, setDeletingId] = useState<string | null>(null)
+	const [expanded, setExpanded] = useState(false)
 	const deletingFilter = filters.find(filter => filter.id === deletingId)
+	const visibleFilters = expanded
+		? filters
+		: filters.slice(0, COLLAPSED_FILTER_LIMIT)
+	const canExpand = filters.length > COLLAPSED_FILTER_LIMIT
 
 	return (
 		<>
 			<div className="mt-4 mb-2 flex items-center justify-between px-1">
 				<p className="text-[.68rem] font-semibold tracking-[.16em] text-(--text-subtle) uppercase">
-					Filters
+					Saved filters
 				</p>
 				<button
 					type="button"
@@ -36,36 +42,31 @@ export function SavedFilterList({
 				</p>
 			) : (
 				<ul className="space-y-1" aria-label="Saved filters">
-					{filters.map(filter => (
-						<li key={filter.id} className="group relative">
-							<NavItem
-								icon={Filter}
-								label={filter.name}
-								active={filter.id === activeId}
-								className="pr-12"
-								onClick={() =>
-									onSelect(
-										filter.id === activeId
-											? null
-											: filter.id,
-									)
-								}
-							/>
-							<button
-								type="button"
-								aria-label={`Delete ${filter.name} filter`}
-								title={`Delete ${filter.name} filter`}
-								onClick={event => {
-									event.stopPropagation()
-									setDeletingId(filter.id)
-								}}
-								className={`absolute top-1/2 right-1.5 -translate-y-1/2 bg-(--surface-panel) opacity-100 transition-opacity motion-reduce:transition-none lg:pointer-events-none lg:opacity-0 lg:group-focus-within:pointer-events-auto lg:group-focus-within:opacity-100 lg:group-hover:pointer-events-auto lg:group-hover:opacity-100 ${DANGER_ICON_BUTTON}`}
-							>
-								<Trash2 size={15} aria-hidden="true" />
-							</button>
-						</li>
+					{visibleFilters.map(filter => (
+						<SavedFilterRow
+							key={filter.id}
+							filter={filter}
+							active={filter.id === activeId}
+							onSelect={() =>
+								onSelect(
+									filter.id === activeId ? null : filter.id,
+								)
+							}
+							onRequestDelete={() => setDeletingId(filter.id)}
+						/>
 					))}
 				</ul>
+			)}
+			{canExpand && (
+				<button
+					type="button"
+					onClick={() => setExpanded(value => !value)}
+					className="mt-1 inline-flex min-h-9 w-full items-center justify-center rounded-lg px-3 text-xs font-medium text-(--text-muted) hover:bg-(--surface-raised) hover:text-(--text-primary) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
+				>
+					{expanded
+						? 'Show fewer saved filters'
+						: `Show all ${filters.length} saved filters`}
+				</button>
 			)}
 			{deletingFilter && (
 				<ConfirmDialog

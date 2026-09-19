@@ -5,7 +5,7 @@ export interface SearchAlias {
 	confidence: AliasConfidence
 }
 
-export type MatchStrength = 'strong' | 'normal' | 'none'
+export type MatchStrength = 'strong' | 'normal' | 'weak' | 'none'
 
 export type MatchClause =
 	| { packageFamily: readonly string[] }
@@ -19,14 +19,38 @@ export type MatchClause =
 	| { originalFilename: readonly string[] }
 	| { allOf: readonly MatchClause[] }
 
+export type AliasSource = 'curated' | 'external'
+
 export interface KnownAppAliasEntry {
 	id: string
 	match: {
 		anyOf: readonly MatchClause[]
 		exclude?: readonly MatchClause[]
+		nameOnly?: readonly string[]
 	}
 	aliases: readonly (readonly [string, AliasConfidence])[]
+	source?: AliasSource
+	blockedAliases?: readonly string[]
 }
+
+export interface KnownPackageIndexData {
+	version: number
+	source: string
+	commit: string
+	generator: number
+	strings: string[]
+	records: KnownPackageRecordData[]
+}
+
+export type KnownPackageRecordData = [
+	id: number,
+	names: number[],
+	soloNames: number[],
+	publishers: number[],
+	families: number[],
+	executables: number[],
+	aliases: number[],
+]
 
 export interface AppMatchFacts {
 	name: string

@@ -17,11 +17,29 @@ const CONFIDENCE_RANK: Record<AliasConfidence, number> = {
 	weak: 1,
 }
 
+const STRENGTH_CAP: Record<Exclude<MatchStrength, 'none'>, AliasConfidence> = {
+	strong: 'strong',
+	normal: 'normal',
+	weak: 'weak',
+}
+
 export function grantedConfidence(
 	declared: AliasConfidence,
 	strength: Exclude<MatchStrength, 'none'>,
 ): AliasConfidence {
-	return strength === 'normal' && declared === 'strong' ? 'normal' : declared
+	const cap = STRENGTH_CAP[strength]
+	return CONFIDENCE_RANK[declared] > CONFIDENCE_RANK[cap] ? cap : declared
+}
+
+export function externalConfidence(
+	declared: AliasConfidence,
+	strength: Exclude<MatchStrength, 'none'>,
+): Exclude<AliasConfidence, 'strong'> {
+	const granted = grantedConfidence(
+		declared === 'weak' ? 'weak' : 'normal',
+		strength,
+	)
+	return granted === 'strong' ? 'normal' : granted
 }
 
 export function matchedKnownEntries(
@@ -39,6 +57,8 @@ export function matchedKnownEntries(
 export function resolveSearchAliases(app: AppInfo): SearchAlias[] {
 	const name = normalizeSearchAlias(app.name)
 	const merged = new Map<string, AliasConfidence>()
+	const decided = new Set<string>()
+	const blocked = new Set<string>()
 	const consider = (value: string, confidence: AliasConfidence) => {
 		const normalized = normalizeSearchAlias(value)
 		if (!normalized || normalized === name) return
@@ -47,11 +67,27 @@ export function resolveSearchAliases(app: AppInfo): SearchAlias[] {
 			merged.set(normalized, confidence)
 	}
 	const facts = appMatchFacts(app)
-	for (const { entry, strength } of matchedKnownEntries(app, facts))
-		for (const [value, confidence] of entry.aliases)
+	const matches = matchedKnownEntries(app, facts)
+	for (const { entry, strength } of matches) {
+		if (entry.source === 'external') continue
+		for (const value of entry.blockedAliases ?? [])
+			blocked.add(normalizeSearchAlias(value))
+		for (const [value, confidence] of entry.aliases) {
+			decided.add(normalizeSearchAlias(value))
 			consider(value, grantedConfidence(confidence, strength))
+		}
+	}
+	for (const { entry, strength } of matches) {
+		if (entry.source !== 'external') continue
+		for (const [value, confidence] of entry.aliases) {
+			const normalized = normalizeSearchAlias(value)
+			if (decided.has(normalized) || blocked.has(normalized)) continue
+			consider(normalized, externalConfidence(confidence, strength))
+		}
+	}
 	for (const alias of generateAppAliases(app, facts))
-		consider(alias.value, alias.confidence)
+		if (!decided.has(alias.value) && !blocked.has(alias.value))
+			consider(alias.value, alias.confidence)
 	return [...merged]
 		.map(([value, confidence]) => ({ value, confidence }))
 		.sort(

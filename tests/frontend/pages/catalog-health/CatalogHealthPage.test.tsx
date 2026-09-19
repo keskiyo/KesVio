@@ -96,6 +96,12 @@ describe('CatalogHealthPage', () => {
 		expect(screen.getByText('No scan diagnostics yet.')).toBeInTheDocument()
 		expect(screen.queryByText('Applications')).not.toBeInTheDocument()
 		expect(
+			screen
+				.getByRole('heading', { name: 'No scan data yet' })
+				.closest('section')!
+				.querySelector('dl'),
+		).toBeNull()
+		expect(
 			screen.queryByRole('button', { name: 'Source details' }),
 		).not.toBeInTheDocument()
 	})
@@ -109,14 +115,16 @@ describe('CatalogHealthPage', () => {
 		expect(screen.getAllByRole('status')[0]).toHaveTextContent(
 			'Every catalog source answered on the last scan.',
 		)
-		const hero = screen
+		const summary = screen
 			.getByRole('heading', { name: 'Everything looks good' })
 			.closest('section')!
-		expect(hero).toHaveTextContent('Applications184')
-		expect(hero).toHaveTextContent('Sources3 up to date')
-		expect(hero).toHaveTextContent(/Last scan.+/)
-		expect(hero).toHaveTextContent('Duration1.4 s')
-		expect(hero).toHaveTextContent('Changes+3 · ~2 · −1')
+		expect(summary).toHaveTextContent('Applications184')
+		expect(summary).toHaveTextContent('Sources3 up to date')
+		expect(summary).toHaveTextContent(/Last scan.+/)
+		expect(summary).not.toHaveTextContent('Duration')
+		expect(summary).not.toHaveTextContent('Changes')
+		const lastScan = screen.getByRole('region', { name: 'Last scan' })
+		expect(lastScan).not.toHaveTextContent('Applications')
 		expect(
 			screen.getByRole('button', { name: 'Source details' }),
 		).toHaveAttribute('aria-expanded', 'false')
@@ -176,6 +184,9 @@ describe('CatalogHealthPage', () => {
 		const table = screen.getByRole('table', {
 			name: 'Application source health',
 		})
+		const attentionStatus = within(table).getByText('Unavailable')
+		expect(attentionStatus).toHaveClass('text-(--category-amber)')
+		expect(attentionStatus.className).not.toContain('${ATTENTION_TEXT}')
 		const steam = within(table).getByRole('row', { name: /Steam/ })
 		expect(steam).toHaveTextContent('Failed')
 		expect(steam).toHaveTextContent('Never')
@@ -201,6 +212,12 @@ describe('CatalogHealthPage', () => {
 		expect(
 			screen.getByRole('heading', { name: 'Refreshing catalog…' }),
 		).toBeInTheDocument()
+		const summary = screen
+			.getByRole('heading', { name: 'Refreshing catalog…' })
+			.closest('section')!
+		expect(summary).toHaveTextContent('Applications184')
+		expect(summary).toHaveTextContent('Sources3 scanning…')
+		expect(summary).toHaveTextContent(/Last scan.+/)
 		expect(screen.getAllByRole('status')[1]).toHaveTextContent(
 			'Scanning 3 sources…',
 		)
@@ -222,7 +239,7 @@ describe('CatalogHealthPage', () => {
 		})
 
 		const lastScan = screen.getByRole('region', { name: 'Last scan' })
-		expect(lastScan).toHaveTextContent('Applications184')
+		expect(lastScan).not.toHaveTextContent('Applications')
 		expect(lastScan).toHaveTextContent('Added3')
 		expect(lastScan).toHaveTextContent('Updated2')
 		expect(lastScan).toHaveTextContent('Removed1')
@@ -273,10 +290,7 @@ describe('CatalogHealthPage', () => {
 		).not.toBeInTheDocument()
 	})
 
-	// At the 446 px minimum window the metric grid has two columns: a long value ("2 of 6 need
-	// attention", a full date) must wrap rather than be cut, and the fifth tile takes the whole
-	// last row instead of sitting alone on the left.
-	it('lets long metric values wrap and fills the last metric row on narrow windows', () => {
+	it('keeps the concise summary and scan values readable', () => {
 		renderPage({
 			diagnostics: diagnostics({
 				sources: [
@@ -294,19 +308,16 @@ describe('CatalogHealthPage', () => {
 			.getByRole('heading', { name: 'Catalog needs attention' })
 			.closest('section')!
 		const values = [...hero.querySelectorAll('dd')]
-		expect(values).toHaveLength(5)
+		expect(values).toHaveLength(3)
 		for (const value of values) {
 			expect(value.className).not.toMatch(/\btruncate\b/)
 			expect(value.className).toMatch(/\bbreak-words\b/)
 		}
-		expect(values[4]!.parentElement!.className).toMatch(
-			/\bcol-span-2\b.*\blg:col-span-1\b/,
-		)
 		const lastScan = screen.getByRole('region', { name: 'Last scan' })
 		const scanValues = [...lastScan.querySelectorAll('dd')]
-		expect(scanValues[4]!.parentElement!.className).toMatch(
-			/\bcol-span-2\b.*\blg:col-span-1\b/,
-		)
+		expect(scanValues).toHaveLength(4)
+		for (const value of scanValues)
+			expect(value.className).toMatch(/\bbreak-words\b/)
 	})
 
 	it('keeps sub-second durations in milliseconds', () => {

@@ -1,7 +1,7 @@
 import { Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useModalDialog } from '../../../../shared/hooks/useModalDialog'
-import { rankAppsByQueryTop } from '../../../../entities/app'
+import { useSearchIndex } from '../../../../entities/app'
 import { MAX_RESULTS } from './data'
 import { ResultItem } from './ResultItem'
 import type { CommandPaletteProps } from './types'
@@ -18,13 +18,14 @@ export function CommandPalette({
 	const [query, setQuery] = useState('')
 	const [selected, setSelected] = useState(0)
 	useModalDialog({ ref: dialogRef, initialFocusRef: inputRef })
+	const search = useSearchIndex()
 
 	const results = useMemo(
 		() =>
 			query.trim()
-				? rankAppsByQueryTop(apps, query, MAX_RESULTS)
+				? search.rankAppsByQueryTop(apps, query, MAX_RESULTS)
 				: suggestions.slice(0, MAX_RESULTS),
-		[apps, query, suggestions],
+		[apps, query, suggestions, search],
 	)
 
 	useEffect(() => {

@@ -20,7 +20,10 @@ export function LastScanPanel({ diagnostics }: LastScanPanelProps) {
 		? formatScanTime(diagnostics.completedAt)
 		: null
 	return (
-		<section aria-label="Last scan" className={SECTION_SURFACE}>
+		<section
+			aria-label="Last scan"
+			className={`${SECTION_SURFACE} min-w-0`}
+		>
 			<PanelHeader
 				icon={Wrench}
 				title="Last scan"
@@ -34,7 +37,7 @@ export function LastScanPanel({ diagnostics }: LastScanPanelProps) {
 			/>
 			{diagnostics ? (
 				<>
-					<dl className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+					<dl className="mt-4 grid grid-cols-2 gap-3">
 						{metrics(diagnostics).map(metric => (
 							<MetricTile key={metric.label} {...metric} />
 						))}
@@ -69,14 +72,12 @@ export function LastScanPanel({ diagnostics }: LastScanPanelProps) {
 
 function metrics(diagnostics: CatalogDiagnostics): MetricTileProps[] {
 	return [
-		{ label: 'Applications', value: String(diagnostics.totalApps) },
 		{ label: 'Added', value: String(diagnostics.added) },
 		{ label: 'Updated', value: String(diagnostics.updated) },
 		{ label: 'Removed', value: String(diagnostics.removed) },
 		{
 			label: 'Duration',
 			value: formatDuration(diagnostics.durationMs),
-			wide: true,
 		},
 	]
 }

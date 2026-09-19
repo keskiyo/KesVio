@@ -10,6 +10,7 @@ export {
 	type PreferenceTransferResult,
 } from './preferences/preferencesSchema'
 export {
+	hasPreferenceBackup,
 	hasNewerStoredPreferences,
 	parsePreferenceImport,
 	readPreferenceBackup,

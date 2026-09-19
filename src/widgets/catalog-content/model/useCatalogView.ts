@@ -8,12 +8,11 @@ import {
 	isCatalogArtifact,
 	isCatalogView,
 	joinHydrationIds,
-	rankAppsByQueryAndCategory,
 	type SavedFilter,
 	selectCatalogCounts,
 	selectCategorizedApps,
 	selectRecentApps,
-	selectSearchScopeCounts,
+	useSearchIndex,
 } from '../../../entities/app'
 import type { CategoryDefinition } from '../../../entities/category'
 import { resolveScenarioApps, type Scenario } from '../../../entities/scenario'
@@ -108,15 +107,16 @@ export function useCatalogView(state: CatalogViewState) {
 		].slice(0, PALETTE_SUGGESTIONS)
 	}, [primaryApps, state.favoriteAppIds, state.firstSeenAt])
 	const deferredQuery = useDeferredValue(state.query)
+	const search = useSearchIndex()
 	const { activeFilter, scopedApps } = useSavedFilterScope(state, visibleApps)
 	const filteredApps = useMemo(
 		() =>
-			rankAppsByQueryAndCategory(
+			search.rankAppsByQueryAndCategory(
 				scopedApps,
 				deferredQuery,
 				state.categories,
 			),
-		[scopedApps, deferredQuery, state.categories],
+		[scopedApps, deferredQuery, state.categories, search],
 	)
 	const counts = useMemo(
 		() => selectCatalogCounts(categorizedApps, isHidden, isFavorite),
@@ -124,12 +124,12 @@ export function useCatalogView(state: CatalogViewState) {
 	)
 	const searchScopeCounts = useMemo(
 		() =>
-			selectSearchScopeCounts(
+			search.selectSearchScopeCounts(
 				categorizedApps,
 				deferredQuery,
 				state.hiddenAppIds,
 			),
-		[categorizedApps, deferredQuery, state.hiddenAppIds],
+		[categorizedApps, deferredQuery, state.hiddenAppIds, search],
 	)
 	const morePreview = useMemo(
 		() =>

@@ -103,7 +103,7 @@ mod tests {
         let empty = PlaceIndex::from_roots(Vec::new());
 
         assert_eq!(
-            empty.classify(r"D:\1MAIN\Загрузки\VanyaVPN.exe"),
+            empty.classify(r"D:\Data\Загрузки\VanyaVPN.exe"),
             Place::TransientDrop
         );
         assert_eq!(
@@ -119,7 +119,7 @@ mod tests {
             Place::TransientDrop
         );
         assert_eq!(
-            empty.classify(r"D:\1MAIN\Архив\VanyaVPN.exe"),
+            empty.classify(r"D:\Data\Архив\VanyaVPN.exe"),
             Place::Unknown
         );
     }

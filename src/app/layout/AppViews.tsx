@@ -86,6 +86,7 @@ export function AppViews({
 					onSaveExport={systemClient.savePreferencesBackup}
 					onValidateImport={state.validatePreferencesImport}
 					onImport={state.importPreferences}
+					hasLocalBackup={state.hasPreferencesBackup}
 					onRestore={state.restorePreferencesBackup}
 					onBack={() => navigation.selectView('more')}
 				/>

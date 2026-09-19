@@ -1,7 +1,23 @@
+import type { AppView } from '../../../../entities/app'
+
 export const CATEGORY_REORDER_KEYS = {
 	start: ['Space'],
 	cancel: ['Escape'],
 	end: ['Space', 'Enter'],
+}
+
+const MORE_NAVIGATION_VIEWS = new Set<AppView>([
+	'more',
+	'auxiliary',
+	'scenarios',
+	'hidden',
+	'installers_docs',
+	'catalog_health',
+	'backup_restore',
+])
+
+export function isMoreNavigationView(view: AppView) {
+	return MORE_NAVIGATION_VIEWS.has(view)
 }
 
 export function navigationItemClass(active: boolean) {

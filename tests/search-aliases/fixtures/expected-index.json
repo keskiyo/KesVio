@@ -1,0 +1,1178 @@
+{
+ "index": {
+  "version": 1,
+  "source": "microsoft/winget-pkgs",
+  "commit": "0a5a7ba57e69adc0a8016154b5b1d7eaae82f916",
+  "generator": 2,
+  "strings": [
+   "Adobe.Acrobat.Reader.64-bit",
+   "adobe acrobat reader",
+   "acrobat reader",
+   "adobe acrobat",
+   "acrobat",
+   "adobe acrobat reader (64-bit)",
+   "acrobat reader (64-bit)",
+   "adobe acrobat (64-bit)",
+   "acrobat (64-bit)",
+   "adobe",
+   "acrobatreader",
+   "acrobatreader64-bit",
+   "AgileBits.1Password.CLI",
+   "1password cli",
+   "agilebits",
+   "op.exe",
+   "1password-cli",
+   "1passwordcli",
+   "ArobasMusic.GuitarPro",
+   "guitar pro",
+   "arobas music",
+   "guitarpro",
+   "DWANGO.SeirenVoice.yukari.Trial",
+   "seirenvoice 結月ゆかり",
+   "seiren voice 1.4.0",
+   "seiren voice",
+   "dwango",
+   "voicechanger",
+   "seirenvoiceyukaritrial",
+   "Datadog.dd-trace-dotnet",
+   "datadog .net tracer",
+   ".net tracer",
+   "datadog .net tracer 64-bit",
+   ".net tracer 64-bit",
+   "datadog",
+   "dd-trace-dotnet",
+   "Git.MinGit",
+   "mingit",
+   "git development",
+   "git.exe",
+   "scalar.exe",
+   "scalar",
+   "git",
+   "Google.AndroidStudio",
+   "android studio",
+   "google",
+   "android-studio",
+   "androidstudio",
+   "Google.Chrome.Beta",
+   "google chrome beta",
+   "chrome beta",
+   "google chrome 测试版",
+   "chrome 测试版",
+   "chrome-beta",
+   "chromebeta",
+   "HandBrake.HandBrake.CLI",
+   "handbrake cli",
+   "handbrake",
+   "handbrakecli.exe",
+   "handbrakecli",
+   "Kubernetes.kubectl",
+   "kubernetes cli",
+   "kubernetes authors",
+   "kubectl",
+   "Microsoft.EdgeWebView2Runtime",
+   "microsoft edge webview2 runtime",
+   "edge webview2 runtime",
+   "microsoft",
+   "webview2",
+   "edgewebview2runtime",
+   "Microsoft.VisualStudioCode",
+   "microsoft visual studio code",
+   "visual studio code",
+   "visualstudiocode",
+   "Microsoft.WindowsTerminal",
+   "windows terminal",
+   "microsoft.windowsterminal_8wekyb3d8bbwe",
+   "windowsterminal",
+   "Mozilla.Firefox",
+   "mozilla firefox",
+   "firefox",
+   "mozilla firefox (en-us)",
+   "firefox (en-us)",
+   "mozilla firefox (ru)",
+   "firefox (ru)",
+   "mozilla",
+   "Neovim.Neovim",
+   "neovim",
+   "nvim",
+   "OpenJS.NodeJS",
+   "node.js",
+   "node.js (lts)",
+   "nodejs-lts",
+   "corepack",
+   "Proton.ProtonVPN",
+   "proton vpn",
+   "proton",
+   "protonvpn",
+   "Python.Python",
+   "python",
+   "pyw",
+   "RubyInstallerTeam.Ruby",
+   "ruby",
+   "rubyinstaller",
+   "rubyw",
+   "Vendor.Product.7",
+   "product 7",
+   "product",
+   "vendor",
+   "product7",
+   "Vendor.Product.8",
+   "product 8",
+   "product8",
+   "Vendor.Studio",
+   "vendor studio",
+   "vstudio",
+   "WeirdCorp.Tool",
+   "weird 'quote' tool ✨",
+   "weird tool",
+   "weird tool (x64)",
+   "weird corp \"international\"",
+   "weird",
+   "weirdcorp.tool_abcdef123456",
+   "weird-tool.exe",
+   "weirdtool",
+   "wtool",
+   "wt-run",
+   "weird-cli",
+   "a b",
+   "sordum.WindowsUpdateBlocker",
+   "windows update blocker",
+   "sordum",
+   "wub_x64.exe",
+   "wub.exe",
+   "wub",
+   "windowsupdateblocker"
+  ],
+  "records": [
+   [
+    0,
+    [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8
+    ],
+    [
+     5,
+     6,
+     2,
+     7,
+     8,
+     4
+    ],
+    [
+     9
+    ],
+    [],
+    [],
+    [
+     10,
+     0,
+     1,
+     0,
+     2,
+     0,
+     11,
+     0
+    ]
+   ],
+   [
+    12,
+    [
+     13
+    ],
+    [
+     13
+    ],
+    [
+     14
+    ],
+    [],
+    [
+     15
+    ],
+    [
+     16,
+     0,
+     17,
+     0
+    ]
+   ],
+   [
+    18,
+    [
+     19
+    ],
+    [
+     19
+    ],
+    [
+     20
+    ],
+    [],
+    [],
+    [
+     21,
+     0
+    ]
+   ],
+   [
+    22,
+    [
+     23,
+     24,
+     25
+    ],
+    [
+     23,
+     24,
+     25
+    ],
+    [
+     26
+    ],
+    [],
+    [],
+    [
+     27,
+     0,
+     23,
+     0,
+     28,
+     0
+    ]
+   ],
+   [
+    29,
+    [
+     30,
+     31,
+     32,
+     33
+    ],
+    [
+     30,
+     31,
+     32,
+     33
+    ],
+    [
+     34
+    ],
+    [],
+    [],
+    [
+     35,
+     0,
+     30,
+     0,
+     31,
+     0
+    ]
+   ],
+   [
+    36,
+    [
+     37
+    ],
+    [
+     37
+    ],
+    [
+     38
+    ],
+    [],
+    [
+     39,
+     40
+    ],
+    [
+     41,
+     0,
+     42,
+     1
+    ]
+   ],
+   [
+    43,
+    [
+     44
+    ],
+    [],
+    [
+     45
+    ],
+    [],
+    [],
+    [
+     46,
+     0,
+     47,
+     0
+    ]
+   ],
+   [
+    48,
+    [
+     49,
+     50,
+     51,
+     52
+    ],
+    [
+     51,
+     52
+    ],
+    [
+     45
+    ],
+    [],
+    [],
+    [
+     53,
+     0,
+     49,
+     0,
+     50,
+     0,
+     54,
+     0
+    ]
+   ],
+   [
+    55,
+    [
+     56
+    ],
+    [
+     56
+    ],
+    [
+     57
+    ],
+    [],
+    [
+     58
+    ],
+    [
+     59,
+     0
+    ]
+   ],
+   [
+    60,
+    [
+     61
+    ],
+    [
+     61
+    ],
+    [
+     62
+    ],
+    [],
+    [],
+    [
+     63,
+     0
+    ]
+   ],
+   [
+    64,
+    [
+     65,
+     66
+    ],
+    [],
+    [
+     67
+    ],
+    [],
+    [],
+    [
+     68,
+     0,
+     65,
+     0,
+     66,
+     0,
+     69,
+     0
+    ]
+   ],
+   [
+    70,
+    [
+     71,
+     72
+    ],
+    [
+     71
+    ],
+    [
+     67
+    ],
+    [],
+    [],
+    [
+     71,
+     0,
+     72,
+     0,
+     73,
+     0
+    ]
+   ],
+   [
+    74,
+    [
+     75
+    ],
+    [],
+    [
+     67
+    ],
+    [
+     76
+    ],
+    [],
+    [
+     77,
+     0
+    ]
+   ],
+   [
+    78,
+    [
+     79,
+     80,
+     81,
+     82,
+     83,
+     84
+    ],
+    [
+     81,
+     82,
+     83,
+     84
+    ],
+    [
+     85
+    ],
+    [],
+    [],
+    [
+     79,
+     0
+    ]
+   ],
+   [
+    86,
+    [
+     87
+    ],
+    [],
+    [
+     87
+    ],
+    [],
+    [],
+    [
+     88,
+     0
+    ]
+   ],
+   [
+    89,
+    [
+     90,
+     91
+    ],
+    [
+     91
+    ],
+    [
+     90
+    ],
+    [],
+    [],
+    [
+     92,
+     0,
+     93,
+     0
+    ]
+   ],
+   [
+    94,
+    [
+     95
+    ],
+    [
+     95
+    ],
+    [
+     96
+    ],
+    [],
+    [],
+    [
+     97,
+     0
+    ]
+   ],
+   [
+    98,
+    [
+     99
+    ],
+    [],
+    [
+     99
+    ],
+    [],
+    [],
+    [
+     100,
+     1
+    ]
+   ],
+   [
+    101,
+    [
+     102
+    ],
+    [],
+    [
+     103
+    ],
+    [],
+    [],
+    [
+     104,
+     0
+    ]
+   ],
+   [
+    105,
+    [
+     106,
+     107
+    ],
+    [
+     106
+    ],
+    [
+     108
+    ],
+    [],
+    [],
+    [
+     109,
+     0,
+     106,
+     0,
+     107,
+     1
+    ]
+   ],
+   [
+    110,
+    [
+     111,
+     107
+    ],
+    [
+     111
+    ],
+    [
+     108
+    ],
+    [],
+    [],
+    [
+     112,
+     0,
+     111,
+     0,
+     107,
+     1
+    ]
+   ],
+   [
+    113,
+    [
+     114
+    ],
+    [
+     114
+    ],
+    [
+     108
+    ],
+    [],
+    [],
+    [
+     115,
+     0
+    ]
+   ],
+   [
+    116,
+    [
+     117,
+     118,
+     119
+    ],
+    [
+     117,
+     119,
+     118
+    ],
+    [
+     120,
+     121
+    ],
+    [
+     122
+    ],
+    [
+     123
+    ],
+    [
+     124,
+     0,
+     125,
+     0,
+     126,
+     0,
+     121,
+     0,
+     127,
+     0,
+     128,
+     1
+    ]
+   ],
+   [
+    129,
+    [
+     130
+    ],
+    [],
+    [
+     131
+    ],
+    [],
+    [
+     132,
+     133
+    ],
+    [
+     134,
+     1,
+     135,
+     0
+    ]
+   ]
+  ]
+ },
+ "report": {
+  "source": "microsoft/winget-pkgs",
+  "commit": "0a5a7ba57e69adc0a8016154b5b1d7eaae82f916",
+  "generator": 2,
+  "sourcePackages": 33,
+  "mergedPackages": 29,
+  "runtimeRecords": 24,
+  "packagesWithMoniker": 25,
+  "packagesWithCommands": 10,
+  "packagesWithoutIdentity": 0,
+  "packagesPrunedNameOnly": 5,
+  "packagesPrunedHelper": 0,
+  "identity": {
+   "packageFamily": 2,
+   "executable+publisher": 5,
+   "name+publisher": 24,
+   "soloName": 17,
+   "soloNameOnly": 0
+  },
+  "aliasesEmitted": 53,
+  "normalAliases": 47,
+  "weakAliases": 6,
+  "aliasesByKind": {
+   "moniker": 15,
+   "portable": 5,
+   "command": 7,
+   "name": 16,
+   "derived": 10
+  },
+  "aliasesPerRecord": {
+   "1": 10,
+   "2": 5,
+   "3": 5,
+   "4": 3,
+   "6": 1
+  },
+  "uniqueAliasValues": 52,
+  "dropped": {
+   "too_short": 4,
+   "semantic": 2,
+   "generic": 4,
+   "host": 2,
+   "generic_command": 2,
+   "helper_command": 0,
+   "no_letters": 0,
+   "invalid_characters": 2,
+   "curated_strong": 6,
+   "curated_owned": 0,
+   "curated_name": 0,
+   "high_collision": 0,
+   "three_char_collision": 0,
+   "equals_identity_name": 13,
+   "over_limit": 0
+  },
+  "quarantined": 18,
+  "collisions": {
+   "unique": 86,
+   "two": 1,
+   "threeToFive": 0,
+   "moreThanFive": 0,
+   "moreThanTwenty": 0
+  },
+  "topCollisions": []
+ },
+ "quarantine": [
+  [
+   "/verysilent",
+   "WeirdCorp.Tool",
+   "invalid_characters",
+   1
+  ],
+  [
+   "7zip",
+   "7zip.7zip",
+   "curated_strong",
+   1
+  ],
+  [
+   "code",
+   "Microsoft.VisualStudioCode",
+   "generic",
+   1
+  ],
+  [
+   "firefox",
+   "Mozilla.Firefox",
+   "curated_strong",
+   1
+  ],
+  [
+   "node",
+   "OpenJS.NodeJS",
+   "host",
+   1
+  ],
+  [
+   "nodejs",
+   "OpenJS.NodeJS",
+   "curated_strong",
+   1
+  ],
+  [
+   "npm",
+   "OpenJS.NodeJS",
+   "generic_command",
+   1
+  ],
+  [
+   "npx",
+   "OpenJS.NodeJS",
+   "generic_command",
+   1
+  ],
+  [
+   "open",
+   "WeirdCorp.Tool",
+   "generic",
+   1
+  ],
+  [
+   "pythonw",
+   "Python.Python",
+   "host",
+   1
+  ],
+  [
+   "rivatuner",
+   "Guru3D.RTSS",
+   "curated_strong",
+   1
+  ],
+  [
+   "rtss",
+   "Guru3D.RTSS",
+   "curated_strong",
+   1
+  ],
+  [
+   "run",
+   "WeirdCorp.Tool",
+   "generic",
+   1
+  ],
+  [
+   "studio",
+   "Vendor.Studio",
+   "generic",
+   1
+  ],
+  [
+   "terminal",
+   "Microsoft.WindowsTerminal",
+   "semantic",
+   1
+  ],
+  [
+   "tool",
+   "WeirdCorp.Tool",
+   "semantic",
+   1
+  ],
+  [
+   "vscode",
+   "Microsoft.VisualStudioCode",
+   "curated_strong",
+   1
+  ],
+  [
+   "weird 'quote' tool ✨",
+   "WeirdCorp.Tool",
+   "invalid_characters",
+   1
+  ]
+ ],
+ "provenance": [
+  [
+   ".net tracer",
+   "Datadog.dd-trace-dotnet",
+   "name",
+   "normal"
+  ],
+  [
+   "1password-cli",
+   "AgileBits.1Password.CLI",
+   "moniker",
+   "normal"
+  ],
+  [
+   "1passwordcli",
+   "AgileBits.1Password.CLI",
+   "derived",
+   "normal"
+  ],
+  [
+   "a b",
+   "WeirdCorp.Tool",
+   "command",
+   "weak"
+  ],
+  [
+   "acrobat reader",
+   "Adobe.Acrobat.Reader.64-bit",
+   "name",
+   "normal"
+  ],
+  [
+   "acrobatreader",
+   "Adobe.Acrobat.Reader.64-bit",
+   "moniker",
+   "normal"
+  ],
+  [
+   "acrobatreader64-bit",
+   "Adobe.Acrobat.Reader.64-bit",
+   "derived",
+   "normal"
+  ],
+  [
+   "adobe acrobat reader",
+   "Adobe.Acrobat.Reader.64-bit",
+   "name",
+   "normal"
+  ],
+  [
+   "android-studio",
+   "Google.AndroidStudio",
+   "moniker",
+   "normal"
+  ],
+  [
+   "androidstudio",
+   "Google.AndroidStudio",
+   "derived",
+   "normal"
+  ],
+  [
+   "chrome beta",
+   "Google.Chrome.Beta",
+   "name",
+   "normal"
+  ],
+  [
+   "chrome-beta",
+   "Google.Chrome.Beta",
+   "moniker",
+   "normal"
+  ],
+  [
+   "chromebeta",
+   "Google.Chrome.Beta",
+   "derived",
+   "normal"
+  ],
+  [
+   "corepack",
+   "OpenJS.NodeJS",
+   "command",
+   "normal"
+  ],
+  [
+   "datadog .net tracer",
+   "Datadog.dd-trace-dotnet",
+   "name",
+   "normal"
+  ],
+  [
+   "dd-trace-dotnet",
+   "Datadog.dd-trace-dotnet",
+   "moniker",
+   "normal"
+  ],
+  [
+   "edge webview2 runtime",
+   "Microsoft.EdgeWebView2Runtime",
+   "name",
+   "normal"
+  ],
+  [
+   "edgewebview2runtime",
+   "Microsoft.EdgeWebView2Runtime",
+   "derived",
+   "normal"
+  ],
+  [
+   "git",
+   "Git.MinGit",
+   "portable",
+   "weak"
+  ],
+  [
+   "google chrome beta",
+   "Google.Chrome.Beta",
+   "name",
+   "normal"
+  ],
+  [
+   "guitarpro",
+   "ArobasMusic.GuitarPro",
+   "derived",
+   "normal"
+  ],
+  [
+   "handbrakecli",
+   "HandBrake.HandBrake.CLI",
+   "portable",
+   "normal"
+  ],
+  [
+   "kubectl",
+   "Kubernetes.kubectl",
+   "moniker",
+   "normal"
+  ],
+  [
+   "microsoft edge webview2 runtime",
+   "Microsoft.EdgeWebView2Runtime",
+   "name",
+   "normal"
+  ],
+  [
+   "microsoft visual studio code",
+   "Microsoft.VisualStudioCode",
+   "name",
+   "normal"
+  ],
+  [
+   "mozilla firefox",
+   "Mozilla.Firefox",
+   "name",
+   "normal"
+  ],
+  [
+   "nodejs-lts",
+   "OpenJS.NodeJS",
+   "moniker",
+   "normal"
+  ],
+  [
+   "nvim",
+   "Neovim.Neovim",
+   "moniker",
+   "normal"
+  ],
+  [
+   "product",
+   "Vendor.Product.7",
+   "name",
+   "weak"
+  ],
+  [
+   "product",
+   "Vendor.Product.8",
+   "name",
+   "weak"
+  ],
+  [
+   "product 7",
+   "Vendor.Product.7",
+   "name",
+   "normal"
+  ],
+  [
+   "product 8",
+   "Vendor.Product.8",
+   "name",
+   "normal"
+  ],
+  [
+   "product7",
+   "Vendor.Product.7",
+   "moniker",
+   "normal"
+  ],
+  [
+   "product8",
+   "Vendor.Product.8",
+   "moniker",
+   "normal"
+  ],
+  [
+   "protonvpn",
+   "Proton.ProtonVPN",
+   "moniker",
+   "normal"
+  ],
+  [
+   "pyw",
+   "Python.Python",
+   "command",
+   "weak"
+  ],
+  [
+   "rubyw",
+   "RubyInstallerTeam.Ruby",
+   "command",
+   "normal"
+  ],
+  [
+   "scalar",
+   "Git.MinGit",
+   "portable",
+   "normal"
+  ],
+  [
+   "seirenvoice 結月ゆかり",
+   "DWANGO.SeirenVoice.yukari.Trial",
+   "name",
+   "normal"
+  ],
+  [
+   "seirenvoiceyukaritrial",
+   "DWANGO.SeirenVoice.yukari.Trial",
+   "derived",
+   "normal"
+  ],
+  [
+   "visual studio code",
+   "Microsoft.VisualStudioCode",
+   "name",
+   "normal"
+  ],
+  [
+   "visualstudiocode",
+   "Microsoft.VisualStudioCode",
+   "derived",
+   "normal"
+  ],
+  [
+   "voicechanger",
+   "DWANGO.SeirenVoice.yukari.Trial",
+   "moniker",
+   "normal"
+  ],
+  [
+   "vstudio",
+   "Vendor.Studio",
+   "moniker",
+   "normal"
+  ],
+  [
+   "webview2",
+   "Microsoft.EdgeWebView2Runtime",
+   "moniker",
+   "normal"
+  ],
+  [
+   "weird",
+   "WeirdCorp.Tool",
+   "command",
+   "normal"
+  ],
+  [
+   "weird-cli",
+   "WeirdCorp.Tool",
+   "command",
+   "normal"
+  ],
+  [
+   "weirdtool",
+   "WeirdCorp.Tool",
+   "moniker",
+   "normal"
+  ],
+  [
+   "windowsterminal",
+   "Microsoft.WindowsTerminal",
+   "derived",
+   "normal"
+  ],
+  [
+   "windowsupdateblocker",
+   "sordum.WindowsUpdateBlocker",
+   "derived",
+   "normal"
+  ],
+  [
+   "wt-run",
+   "WeirdCorp.Tool",
+   "command",
+   "normal"
+  ],
+  [
+   "wtool",
+   "WeirdCorp.Tool",
+   "portable",
+   "normal"
+  ],
+  [
+   "wub",
+   "sordum.WindowsUpdateBlocker",
+   "portable",
+   "weak"
+  ]
+ ]
+}

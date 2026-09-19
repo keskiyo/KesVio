@@ -28,11 +28,3 @@ export function formatDuration(durationMs: number): string {
 export function formatScanTime(completedAt: number): string | null {
 	return formatDateTime(new Date(completedAt * 1000))
 }
-
-export function formatChanges(changes: {
-	added: number
-	updated: number
-	removed: number
-}): string {
-	return `+${changes.added} · ~${changes.updated} · −${changes.removed}`
-}

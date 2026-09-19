@@ -172,16 +172,16 @@ mod tests {
 
     #[test]
     fn windows_unc_unicode_and_uri_values_are_hidden_with_stable_tokens() {
-        let mut redactor = Redactor::new(vec!["Maks".into(), "WORK-PC".into()]);
-        let input = "root=\"C:\\Users\\Maks\\Мои файлы\\app.exe\" source=portable generation=42\nUNC=\\\\server\\share\\private file.exe duration=5\nurl=https://user:secret@example.com/path?token=secret\nMaks WORK-PC";
+        let mut redactor = Redactor::new(vec!["Ann".into(), "WORK-PC".into()]);
+        let input = "root=\"C:\\Users\\Ann\\Мои файлы\\app.exe\" source=portable generation=42\nUNC=\\\\server\\share\\private file.exe duration=5\nurl=https://user:secret@example.com/path?token=secret\nAnn WORK-PC";
         let output = redactor.redact(input);
-        for secret in ["Maks", "WORK-PC", "server", "share", "secret", "Мои файлы"] {
+        for secret in ["Ann", "WORK-PC", "server", "share", "secret", "Мои файлы"] {
             assert!(!output.contains(secret));
         }
         assert!(output.contains("source=portable generation=42"));
         assert!(output.contains("duration=5"));
         assert_eq!(
-            redactor.redact(r"C:\Users\Maks\Мои файлы\app.exe"),
+            redactor.redact(r"C:\Users\Ann\Мои файлы\app.exe"),
             "[path-1]"
         );
     }

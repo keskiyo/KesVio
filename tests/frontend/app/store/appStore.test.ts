@@ -200,6 +200,24 @@ describe('app store', () => {
 		expect(store.getState().favoriteAppIds).toEqual(['before'])
 	})
 
+	it('reports whether a valid local preference backup is available', () => {
+		const missing = createAppStore(client(), memoryStorage())
+		expect(missing.getState().hasPreferencesBackup()).toBe(false)
+
+		const malformedStorage = memoryStorage()
+		malformedStorage.setItem(PREFERENCES_BACKUP_KEY, '{invalid')
+		const malformed = createAppStore(client(), malformedStorage)
+		expect(malformed.getState().hasPreferencesBackup()).toBe(false)
+
+		const validStorage = memoryStorage()
+		validStorage.setItem(
+			PREFERENCES_BACKUP_KEY,
+			JSON.stringify({ version: 14 }),
+		)
+		const valid = createAppStore(client(), validStorage)
+		expect(valid.getState().hasPreferencesBackup()).toBe(true)
+	})
+
 	it('carries a custom category through an export and back', () => {
 		const stable = stableCustomCategoryAccent('custom:work')
 		const chosen = CUSTOM_CATEGORY_ACCENTS.find(

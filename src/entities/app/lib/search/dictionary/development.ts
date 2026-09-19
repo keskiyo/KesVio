@@ -334,6 +334,7 @@ export const DEVELOPMENT: readonly KnownAppAliasEntry[] = [
 				},
 				{
 					allOf: [
+						{ nameStartsWith: ['java'] },
 						{ productNameStartsWith: ['java(tm)'] },
 						{ publisherContains: ['oracle'] },
 					],

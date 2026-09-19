@@ -2,6 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { appMatchFacts } from '../../src/entities/app/lib/search/knownAliasMatch'
+import { loadKnownPackageIndex } from '../../src/entities/app/lib/search/knownPackageIndex'
 import {
 	matchedKnownEntries,
 	resolveSearchAliases,
@@ -49,11 +50,15 @@ function suspicionsFor(app, entries, aliases) {
 }
 
 describe.skipIf(!cachePath)('search alias audit of a live catalog', () => {
-	it('writes the audit report', () => {
+	it('writes the audit report', async () => {
+		await loadKnownPackageIndex()
 		const document = JSON.parse(readFileSync(cachePath, 'utf8'))
 		const rows = document.apps.map(app => {
 			const entries = matchedKnownEntries(app).map(
 				match => `${match.entry.id}:${match.strength}`,
+			)
+			const external = entries.filter(entry =>
+				entry.startsWith('winget:'),
 			)
 			const aliases = resolveSearchAliases(app)
 			return {
@@ -61,6 +66,7 @@ describe.skipIf(!cachePath)('search alias audit of a live catalog', () => {
 				path: app.path,
 				visibility: app.visibilityClass ?? 'primary',
 				entries,
+				external,
 				aliases: aliases.map(
 					alias => `${alias.value} (${alias.confidence})`,
 				),
@@ -73,6 +79,13 @@ describe.skipIf(!cachePath)('search alias audit of a live catalog', () => {
 				.length,
 			withStrongEntry: rows.filter(row =>
 				row.entries.some(entry => entry.endsWith(':strong')),
+			).length,
+			withExternalEntry: rows.filter(row => row.external.length > 0)
+				.length,
+			withOnlyExternalEntry: rows.filter(
+				row =>
+					row.external.length > 0 &&
+					row.external.length === row.entries.length,
 			).length,
 			suspicious: rows.filter(row => row.suspicious.length > 0).length,
 		}

@@ -1,0 +1,30 @@
+PackageIdentifier: WeirdCorp.Tool
+PackageVersion: 1.0.0
+InstallerType: zip
+NestedInstallerType: portable
+NestedInstallerFiles: &files
+    - RelativeFilePath: bin\weird-tool.exe
+      PortableCommandAlias: wtool
+    - RelativeFilePath: bin/very long path/that wraps onto
+          a second line/helper.exe
+Commands: ['wtool', 'wt-run', run, open, /verysilent, 'a b']
+AppsAndFeaturesEntries:
+    - DisplayName: Weird Tool (x64)
+      Publisher: Weird Corp Ltd.
+      DisplayVersion: null
+    - DisplayName: ~
+Installers:
+    - Architecture: x64
+      InstallerUrl: https://weird.example.com/tool-x64.zip
+      InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+      NestedInstallerFiles: *files
+      Commands:
+          - weird
+          - 'weird-cli'
+    - Architecture: arm64
+      InstallerUrl: https://weird.example.com/tool-arm64.zip
+      InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+      NestedInstallerFiles: *files
+      PackageFamilyName: WeirdCorp.Tool_abcdef123456
+ManifestType: installer
+ManifestVersion: 1.10.0

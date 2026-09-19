@@ -1,0 +1,237 @@
+{
+  "source": "microsoft/winget-pkgs",
+  "commit": "0a5a7ba57e69adc0a8016154b5b1d7eaae82f916",
+  "generator": 2,
+  "sourcePackages": 14828,
+  "mergedPackages": 13948,
+  "runtimeRecords": 7756,
+  "packagesWithMoniker": 4942,
+  "packagesWithCommands": 1788,
+  "packagesWithoutIdentity": 64,
+  "packagesPrunedNameOnly": 5909,
+  "packagesPrunedHelper": 219,
+  "identity": {
+    "packageFamily": 172,
+    "executable+publisher": 1392,
+    "name+publisher": 7747,
+    "soloName": 6837,
+    "soloNameOnly": 0
+  },
+  "aliasesEmitted": 13638,
+  "normalAliases": 12422,
+  "weakAliases": 1216,
+  "aliasesByKind": {
+    "moniker": 2308,
+    "portable": 907,
+    "command": 594,
+    "name": 4379,
+    "derived": 5450
+  },
+  "aliasesPerRecord": {
+    "1": 4291,
+    "2": 1779,
+    "3": 1226,
+    "4": 356,
+    "5": 45,
+    "6": 22,
+    "7": 8,
+    "8": 3,
+    "9": 10,
+    "10": 16
+  },
+  "uniqueAliasValues": 13217,
+  "dropped": {
+    "too_short": 143,
+    "semantic": 83,
+    "generic": 55,
+    "host": 299,
+    "generic_command": 13,
+    "helper_command": 79,
+    "no_letters": 1,
+    "invalid_characters": 110,
+    "curated_strong": 90,
+    "curated_owned": 5,
+    "curated_name": 1,
+    "high_collision": 1974,
+    "three_char_collision": 302,
+    "equals_identity_name": 9335,
+    "over_limit": 161
+  },
+  "quarantined": 3172,
+  "collisions": {
+    "unique": 22359,
+    "two": 741,
+    "threeToFive": 183,
+    "moreThanFive": 81,
+    "moreThanTwenty": 27
+  },
+  "topCollisions": [
+    [
+      "java",
+      134
+    ],
+    [
+      "javaw",
+      131
+    ],
+    [
+      "keytool",
+      131
+    ],
+    [
+      "jar",
+      81
+    ],
+    [
+      "jarsigner",
+      81
+    ],
+    [
+      "javac",
+      81
+    ],
+    [
+      "javadoc",
+      81
+    ],
+    [
+      "javap",
+      81
+    ],
+    [
+      "jconsole",
+      81
+    ],
+    [
+      "jdeps",
+      81
+    ],
+    [
+      "jps",
+      81
+    ],
+    [
+      "jstat",
+      81
+    ],
+    [
+      "jlink",
+      75
+    ],
+    [
+      "jdeprscan",
+      74
+    ],
+    [
+      "jmod",
+      74
+    ],
+    [
+      "jshell",
+      74
+    ],
+    [
+      "jabswitch",
+      50
+    ],
+    [
+      "kinit",
+      50
+    ],
+    [
+      "klist",
+      50
+    ],
+    [
+      "ktab",
+      50
+    ],
+    [
+      "rmiregistry",
+      50
+    ],
+    [
+      "jaccessinspector",
+      45
+    ],
+    [
+      "jaccesswalker",
+      45
+    ],
+    [
+      "jrunscript",
+      45
+    ],
+    [
+      "jfr",
+      40
+    ],
+    [
+      "azul zulu jdk",
+      21
+    ],
+    [
+      "zulu jdk",
+      21
+    ],
+    [
+      "leagueoflegends",
+      17
+    ],
+    [
+      "devenv",
+      16
+    ],
+    [
+      "league of legends",
+      16
+    ],
+    [
+      "ffmpeg",
+      15
+    ],
+    [
+      "rmid",
+      15
+    ],
+    [
+      "connect",
+      14
+    ],
+    [
+      "ffprobe",
+      14
+    ],
+    [
+      "jwebserver",
+      14
+    ],
+    [
+      "agent",
+      13
+    ],
+    [
+      "azul zulufx jdk",
+      13
+    ],
+    [
+      "eclipse temurin jdk with hotspot",
+      13
+    ],
+    [
+      "ffplay",
+      13
+    ],
+    [
+      "launcher",
+      13
+    ]
+  ],
+  "sizes": {
+    "generatedBytes": 1163381,
+    "generatedGzipBytes": 342921,
+    "strings": 34455
+  },
+  "parseFailures": 0,
+  "parseFailureSamples": []
+}

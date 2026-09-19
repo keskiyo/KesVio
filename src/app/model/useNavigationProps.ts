@@ -38,7 +38,10 @@ export function useNavigationProps({
 		savedFilters: {
 			filters: state.savedFilters,
 			activeId: state.activeSavedFilterId,
-			onSelect: state.selectSavedFilter,
+			onSelect: id => {
+				state.selectSavedFilter(id)
+				navigation.selectView('all')
+			},
 			onCreate: dialogs.savedFilterEditor.create,
 			onDelete: state.deleteSavedFilter,
 		},

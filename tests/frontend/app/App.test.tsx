@@ -10,6 +10,7 @@ import type {
 	AppsClient,
 	CatalogDelta,
 } from '../../../src/entities/app'
+import { EMPTY_CRITERIA } from '../../../src/entities/app'
 import type { SystemClient } from '../../../src/entities/system'
 
 function app(
@@ -214,6 +215,44 @@ describe('App', () => {
 		).not.toBeInTheDocument()
 		const settings = screen.getByRole('button', { name: 'Settings' })
 		expect(settings).toHaveTextContent('Settings')
+	})
+
+	it('opens All Apps and closes the drawer when a saved filter is selected', async () => {
+		const { store } = renderApp()
+		await screen.findByText('Steam')
+		let filterId = ''
+		act(() => {
+			const result = store
+				.getState()
+				.createSavedFilter('Work', EMPTY_CRITERIA)
+			if (!result.ok) throw new Error(result.error)
+			filterId = result.id
+			store.getState().selectSavedFilter(null)
+			store.getState().setActiveView('more')
+		})
+		expect(
+			screen.getByRole('heading', { name: 'More' }),
+		).toBeInTheDocument()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Open navigation' }),
+		)
+		const drawer = screen.getByRole('dialog', { name: 'App navigation' })
+		await userEvent.click(
+			within(drawer).getByRole('button', { name: 'Work' }),
+		)
+
+		await waitFor(() => {
+			expect(store.getState().activeView).toBe('all')
+			expect(store.getState().activeSavedFilterId).toBe(filterId)
+		})
+		expect(
+			screen.queryByRole('dialog', { name: 'App navigation' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('heading', { name: 'More' }),
+		).not.toBeInTheDocument()
+		expect(screen.getByText('Steam')).toBeVisible()
 	})
 
 	it('does not rehydrate the whole catalog on a recovery timer', async () => {

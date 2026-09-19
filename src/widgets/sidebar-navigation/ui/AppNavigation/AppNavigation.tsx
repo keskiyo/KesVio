@@ -13,7 +13,7 @@ import {
 	staysVisibleWhenEmpty,
 } from '../../../../entities/category'
 import { CategoryNameEditor } from '../../../../features/manage-category'
-import { CATEGORY_REORDER_KEYS } from './data'
+import { CATEGORY_REORDER_KEYS, isMoreNavigationView } from './data'
 import { NavItem } from './NavItem'
 import { SavedFilterList } from './SavedFilterList'
 import { SortableCategoryList } from './SortableCategoryList'
@@ -76,7 +76,7 @@ export function AppNavigation(props: AppNavigationProps) {
 				<NavItem
 					icon={WandSparkles}
 					label="More"
-					active={props.activeView === 'more'}
+					active={isMoreNavigationView(props.activeView)}
 					onClick={() => props.onSelectView('more')}
 				/>
 				<NavItem

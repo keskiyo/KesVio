@@ -173,7 +173,7 @@ mod tests {
             (
                 candidate(
                     "hidemy.name VPN",
-                    r"D:\1MAIN\Downloads\hidemyname_vpn_2.1.915.exe",
+                    r"D:\Data\Downloads\hidemyname_vpn_2.1.915.exe",
                 ),
                 Some("hidemyname_vpn_setup_v2.1.915.exe"),
                 None,
@@ -312,7 +312,7 @@ mod tests {
 
         let mut attack_shark = candidate(
             "Attack Shark Software",
-            r"D:\1MAIN\Загрузки\ATTACK SHARK X11 SOFT.exe",
+            r"D:\Data\Загрузки\ATTACK SHARK X11 SOFT.exe",
         );
         attack_shark.description = Some("Attack Shark Software Setup".into());
         attack_shark.product_name = Some("Attack Shark Software".into());
@@ -407,7 +407,7 @@ mod tests {
         for path in [
             r"F:\Pobrane\sterowniki-setup.exe",
             r"D:\Distr\contabilita_setup_2024.exe",
-            r"E:\1MAIN\Загрузки\vendor-installer.exe",
+            r"E:\Data\Загрузки\vendor-installer.exe",
             r"G:\Soft\setup.exe",
         ] {
             assert_eq!(
@@ -458,26 +458,26 @@ mod tests {
     fn a_metadata_poor_download_is_an_installer_and_a_described_one_stays_an_app() {
         let drop = MachineFacts {
             places: crate::catalog::place::PlaceIndex::from_roots(vec![(
-                std::path::PathBuf::from(r"D:\1MAIN\Downloads"),
+                std::path::PathBuf::from(r"D:\Data\Downloads"),
                 crate::catalog::place::Place::TransientDrop,
             )]),
             registrations: crate::catalog::machine::Registrations::empty(),
         };
 
-        let bare = candidate("VanyaVPN", r"D:\1MAIN\Downloads\VanyaVPN.exe");
+        let bare = candidate("VanyaVPN", r"D:\Data\Downloads\VanyaVPN.exe");
         assert_eq!(
             super::super::classify(&bare, None, &drop),
             ArtifactKind::Installer
         );
 
-        let mut described = candidate("Portable Tool", r"D:\1MAIN\Downloads\PortableTool.exe");
+        let mut described = candidate("Portable Tool", r"D:\Data\Downloads\PortableTool.exe");
         described.description = Some("Portable Tool".into());
         assert_eq!(
             super::super::classify(&described, None, &drop),
             ArtifactKind::Application
         );
 
-        let mut registered = candidate("Vendor Agent", r"D:\1MAIN\Downloads\agent.exe");
+        let mut registered = candidate("Vendor Agent", r"D:\Data\Downloads\agent.exe");
         registered.source_kind = SourceKind::Registry;
         registered.can_uninstall = true;
         assert_eq!(
@@ -485,7 +485,7 @@ mod tests {
             ArtifactKind::Application
         );
 
-        let elsewhere = candidate("VanyaVPN", r"D:\1MAIN\Archive\VanyaVPN.exe");
+        let elsewhere = candidate("VanyaVPN", r"D:\Data\Archive\VanyaVPN.exe");
         assert_eq!(
             super::super::classify(&elsewhere, None, &drop),
             ArtifactKind::Application
@@ -506,7 +506,7 @@ mod tests {
     fn a_versioned_download_is_an_installer_even_with_the_product_description() {
         let drop = MachineFacts {
             places: crate::catalog::place::PlaceIndex::from_roots(vec![(
-                std::path::PathBuf::from(r"D:\1MAIN\Downloads"),
+                std::path::PathBuf::from(r"D:\Data\Downloads"),
                 crate::catalog::place::Place::TransientDrop,
             )]),
             registrations: crate::catalog::machine::Registrations::empty(),
@@ -514,7 +514,7 @@ mod tests {
 
         let mut download = candidate(
             "Яндекс Музыка",
-            r"D:\1MAIN\Downloads\Yandex_Music_x64_5.115.3.exe",
+            r"D:\Data\Downloads\Yandex_Music_x64_5.115.3.exe",
         );
         download.description = Some("Персональные рекомендации и музыкальные новинки".into());
         assert_eq!(
@@ -532,7 +532,7 @@ mod tests {
             ArtifactKind::Application
         );
 
-        let mut unversioned = candidate("Portable Tool", r"D:\1MAIN\Downloads\PortableTool.exe");
+        let mut unversioned = candidate("Portable Tool", r"D:\Data\Downloads\PortableTool.exe");
         unversioned.description = Some("Portable Tool".into());
         assert_eq!(
             super::super::classify(&unversioned, None, &drop),

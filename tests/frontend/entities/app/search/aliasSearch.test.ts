@@ -4,6 +4,7 @@ import {
 	rankAppsByQuery,
 	rankAppsByQueryTop,
 } from '../../../../../src/entities/app/lib/catalogSearch'
+import { resolveSearchAliases } from '../../../../../src/entities/app/lib/search/resolveSearchAliases'
 import { SEARCH_SCORE } from '../../../../../src/entities/app/lib/search/scoring'
 import { app, ids, msix, shortcut } from './fixtures/app'
 
@@ -296,6 +297,41 @@ describe('alias ranking safety', () => {
 		expect(ids(rankAppsByQuery([vscode], 'vsc'))).toEqual(['vscode'])
 		expect(rankAppsByQuery([vscode], 'вско')).toEqual([])
 		expect(rankAppsByQuery([photoshop], 'фш')).toEqual([photoshop])
+	})
+})
+
+// An app that no dictionary and no package corpus knows still has to be findable by every safe
+// form of its own metadata: the external corpus is an enhancement, never a requirement.
+describe('unknown app fallback', () => {
+	const acme = app({
+		id: 'acme',
+		name: 'Acme Super Editor 4.2',
+		path: String.raw`C:\Acme\SuperEditor.exe`,
+		publisher: 'Acme Corp',
+	})
+
+	it.each([
+		'acme super editor',
+		'supereditor',
+		'supereditor.exe',
+		'super',
+		'acme',
+		'editor',
+		'фсьу',
+	])('finds the unknown app by %s', query => {
+		expect(ids(rankAppsByQuery([acme, vscode], query))[0]).toBe('acme')
+	})
+
+	it('does not lend it a host or helper name', () => {
+		const hosted = app({
+			id: 'hosted',
+			name: 'Acme Notes',
+			path: String.raw`C:\Acme\electron.exe`,
+			publisher: 'Acme Corp',
+		})
+		expect(
+			resolveSearchAliases(hosted).map(alias => alias.value),
+		).not.toContain('electron')
 	})
 })
 

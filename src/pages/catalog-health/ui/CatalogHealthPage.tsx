@@ -19,7 +19,7 @@ export function CatalogHealthPage({
 	return (
 		<section
 			aria-labelledby="catalog-health-title"
-			className="mx-auto w-full max-w-3xl"
+			className="mx-auto w-full max-w-5xl"
 		>
 			<CatalogViewHeader
 				icon={HeartPulse}
@@ -34,7 +34,7 @@ export function CatalogHealthPage({
 				refreshing={isRefreshing}
 				onRefresh={onRefresh}
 			/>
-			<div className="mt-6 space-y-4">
+			<div className="mt-6 grid items-start gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(18rem,0.85fr)]">
 				<CatalogSources health={health} scanning={isRefreshing} />
 				<LastScanPanel diagnostics={diagnostics} />
 			</div>

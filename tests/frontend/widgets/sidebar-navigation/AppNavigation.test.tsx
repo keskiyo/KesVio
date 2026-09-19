@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { AppNavigation } from '../../../../src/widgets/sidebar-navigation/ui/AppNavigation/AppNavigation'
+import type { AppView, SavedFilter } from '../../../../src/entities/app'
 import type {
 	AppCategory,
 	CategoryDefinition,
@@ -13,7 +14,65 @@ const categories: CategoryDefinition[] = [
 	{ id: 'other', label: 'Other', builtIn: true },
 ]
 
+function renderNavigation(activeView: AppView) {
+	return render(
+		<AppNavigation
+			categoryOrder={[]}
+			categories={categories}
+			counts={new Map()}
+			activeView={activeView}
+			appCount={3}
+			favoriteCount={0}
+			onSelectView={vi.fn()}
+			onSelectCategory={vi.fn()}
+			onCreateCategory={() => ({ ok: true, id: 'custom' })}
+			onReorderCategory={vi.fn()}
+		/>,
+	)
+}
+
+function savedFilter(index: number): SavedFilter {
+	return {
+		id: `filter:${index}`,
+		name: `Filter ${index}`,
+		criteria: {
+			sources: [],
+			publishers: [],
+			availability: [],
+			addedWithinDays: null,
+		},
+	}
+}
+
 describe('AppNavigation', () => {
+	it.each([
+		'more',
+		'auxiliary',
+		'scenarios',
+		'hidden',
+		'installers_docs',
+		'catalog_health',
+		'backup_restore',
+	] as const)('keeps More current while viewing %s', activeView => {
+		renderNavigation(activeView)
+
+		expect(screen.getByRole('button', { name: 'More' })).toHaveAttribute(
+			'aria-current',
+			'page',
+		)
+	})
+
+	it.each(['all', 'favorites', 'settings'] as const)(
+		'does not mark More current while viewing %s',
+		activeView => {
+			renderNavigation(activeView)
+
+			expect(
+				screen.getByRole('button', { name: 'More' }),
+			).not.toHaveAttribute('aria-current')
+		},
+	)
+
 	it('always distinguishes favorite app and scenario counts', () => {
 		render(
 			<AppNavigation
@@ -162,6 +221,86 @@ describe('AppNavigation', () => {
 			work.compareDocumentPosition(games) &
 				Node.DOCUMENT_POSITION_FOLLOWING,
 		).toBeTruthy()
+	})
+
+	it('presents an active saved filter as an applied preset, not a page', () => {
+		render(
+			<AppNavigation
+				categoryOrder={[]}
+				categories={categories}
+				counts={new Map()}
+				activeView="all"
+				appCount={1}
+				favoriteCount={0}
+				savedFilters={{
+					filters: [savedFilter(1)],
+					activeId: 'filter:1',
+					onSelect: vi.fn(),
+					onCreate: vi.fn(),
+					onDelete: vi.fn(),
+				}}
+				onSelectView={vi.fn()}
+				onSelectCategory={vi.fn()}
+				onCreateCategory={() => ({ ok: true, id: 'custom' })}
+				onReorderCategory={vi.fn()}
+			/>,
+		)
+
+		expect(screen.getByText('Saved filters')).toBeVisible()
+		const filter = screen.getByRole('button', {
+			name: 'Filter 1, applied',
+		})
+		expect(filter).toHaveAttribute('aria-pressed', 'true')
+		expect(filter).not.toHaveAttribute('aria-current')
+		expect(filter).toHaveClass(
+			'border-(--accent)',
+			'bg-(--utility-accent)',
+			'shadow-(--shadow-active-navigation)',
+		)
+		expect(filter).not.toHaveTextContent('Applied')
+	})
+
+	it('keeps categories close by collapsing a long saved-filter list', async () => {
+		render(
+			<AppNavigation
+				categoryOrder={[]}
+				categories={categories}
+				counts={new Map()}
+				activeView="all"
+				appCount={1}
+				favoriteCount={0}
+				savedFilters={{
+					filters: Array.from({ length: 7 }, (_, index) =>
+						savedFilter(index + 1),
+					),
+					activeId: null,
+					onSelect: vi.fn(),
+					onCreate: vi.fn(),
+					onDelete: vi.fn(),
+				}}
+				onSelectView={vi.fn()}
+				onSelectCategory={vi.fn()}
+				onCreateCategory={() => ({ ok: true, id: 'custom' })}
+				onReorderCategory={vi.fn()}
+			/>,
+		)
+
+		expect(screen.getByRole('button', { name: 'Filter 6' })).toBeVisible()
+		expect(
+			screen.queryByRole('button', { name: 'Filter 7' }),
+		).not.toBeInTheDocument()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Show all 7 saved filters' }),
+		)
+		expect(screen.getByRole('button', { name: 'Filter 7' })).toBeVisible()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Show fewer saved filters' }),
+		)
+		expect(
+			screen.queryByRole('button', { name: 'Filter 7' }),
+		).not.toBeInTheDocument()
 	})
 
 	it('deletes a saved filter from its row without selecting it', async () => {

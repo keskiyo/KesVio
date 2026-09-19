@@ -12,6 +12,7 @@ function renderPage(overrides: Partial<BackupRestorePageProps> = {}) {
 		onSaveExport: vi.fn().mockResolvedValue(true),
 		onValidateImport: vi.fn(() => ({ ok: true }) as const),
 		onImport: vi.fn(() => ({ ok: true }) as const),
+		hasLocalBackup: vi.fn(() => true),
 		onRestore: vi.fn(() => ({ ok: true }) as const),
 		onBack: vi.fn(),
 		...overrides,
@@ -29,20 +30,40 @@ function backupFile(name: string, contents = '{"version":14}'): File {
 }
 
 describe('BackupRestorePage', () => {
-	it('returns to More and shows the three recovery surfaces', async () => {
+	it('returns to More and separates backup creation from recovery', async () => {
 		const props = renderPage()
 
-		for (const name of [
-			'Export settings',
-			'Import settings',
-			'Local recovery',
-		])
-			expect(screen.getByRole('region', { name })).toBeInTheDocument()
+		expect(
+			screen.getByRole('region', { name: 'Create backup' }),
+		).toBeInTheDocument()
+		const recovery = screen.getByRole('region', {
+			name: 'Recover settings',
+		})
+		expect(within(recovery).getByText('From a backup file')).toBeVisible()
+		expect(within(recovery).getByText('From local recovery')).toBeVisible()
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Back to More' }),
 		)
 
 		expect(props.onBack).toHaveBeenCalledOnce()
+	})
+
+	it('disables local recovery when no valid backup is available', () => {
+		renderPage({ hasLocalBackup: () => false })
+
+		expect(screen.getByText('Not available yet')).toBeVisible()
+		expect(
+			screen.getByRole('button', { name: 'Restore local backup' }),
+		).toBeDisabled()
+	})
+
+	it('enables local recovery when a valid backup is available', () => {
+		renderPage({ hasLocalBackup: () => true })
+
+		expect(screen.getByText('Available')).toBeVisible()
+		expect(
+			screen.getByRole('button', { name: 'Restore local backup' }),
+		).toBeEnabled()
 	})
 
 	// The file holds preferences only; naming what is inside is the one thing a reader needs
@@ -141,14 +162,20 @@ describe('BackupRestorePage', () => {
 
 	it('drops the import when the confirmation is cancelled', async () => {
 		const props = renderPage()
+		const trigger = screen.getByRole('button', { name: 'Choose backup' })
 
 		await userEvent.upload(
 			screen.getByLabelText('Choose settings backup'),
 			backupFile('settings.json'),
 		)
+		const confirmation = await screen.findByRole('group', {
+			name: /Import settings\.json/,
+		})
+		expect(confirmation).toHaveFocus()
 		await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
 
 		expect(props.onImport).not.toHaveBeenCalled()
+		expect(trigger).toHaveFocus()
 		expect(
 			screen.queryByText(/^Import settings\.json\?/),
 		).not.toBeInTheDocument()
@@ -213,16 +240,21 @@ describe('BackupRestorePage', () => {
 
 	it('restores the local backup only after confirmation', async () => {
 		const props = renderPage()
+		const trigger = screen.getByRole('button', {
+			name: 'Restore local backup',
+		})
 
-		await userEvent.click(
-			screen.getByRole('button', { name: 'Restore local backup' }),
-		)
+		await userEvent.click(trigger)
 		expect(props.onRestore).not.toHaveBeenCalled()
-		expect(
-			screen.getByText(
-				'Restore the local backup? This replaces your current settings.',
-			),
-		).toBeInTheDocument()
+		const confirmation = screen.getByRole('group', {
+			name: /Restore the local backup/,
+		})
+		expect(confirmation).toHaveFocus()
+
+		await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		expect(trigger).toHaveFocus()
+
+		await userEvent.click(trigger)
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Restore backup' }),

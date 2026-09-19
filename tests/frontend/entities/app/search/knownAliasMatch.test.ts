@@ -3,7 +3,13 @@ import {
 	normalizeIdentityFact,
 	normalizeSearchAlias,
 } from '../../../../../src/entities/app/lib/search/aliasText'
-import { isHelperRecord } from '../../../../../src/entities/app/lib/search/helperRecords'
+import {
+	endsWithHelperWord,
+	helperReason,
+	isHelperName,
+	isHelperRecord,
+	isReleaseFileName,
+} from '../../../../../src/entities/app/lib/search/helperRecords'
 import {
 	appMatchFacts,
 	clauseStrengthCeiling,
@@ -295,6 +301,114 @@ describe('helper records', () => {
 	])('treats %s as a helper record', (_label, record) => {
 		expect(isHelperRecord(appMatchFacts(record))).toBe(true)
 	})
+
+	// A downloaded release file that the scanner did not classify as an installer still looks
+	// like one: an architecture token plus digits in the file name (winrar-x64-701ru.exe,
+	// python-3.14.0-amd64.exe). Real portable products carry no such token next to a version.
+	it.each([
+		'winrar-x64-701ru.exe',
+		'python-3.14.0-amd64.exe',
+		'product_1.2.3_win64.exe',
+		'7z2301-x64.exe',
+		'VSCodeUserSetup-x64-1.138.0.exe',
+	])('reads %s as a release file', fileName => {
+		expect(isReleaseFileName(fileName)).toBe(true)
+		expect(
+			isHelperRecord(
+				appMatchFacts(
+					app({
+						id: fileName,
+						name: 'Product',
+						path: `D:\\Downloads\\${fileName}`,
+					}),
+				),
+			),
+		).toBe(true)
+	})
+
+	it.each([
+		'obs64.exe',
+		'idea64.exe',
+		'hwinfo64.exe',
+		'cpuz_x64.exe',
+		'gimp-2.10.exe',
+		'rufus-4.11p.exe',
+		'notepad++.exe',
+		'wow-64.exe',
+	])('keeps %s as a product executable', fileName => {
+		expect(isReleaseFileName(fileName)).toBe(false)
+	})
+})
+
+describe('helper reasons', () => {
+	it.each([
+		[
+			app({ id: 'a', name: 'Proton VPN', artifactKind: 'installer' }),
+			'artifact',
+		],
+		[
+			app({
+				id: 'b',
+				name: 'Discord',
+				path: String.raw`C:\Discord\Update.exe`,
+			}),
+			'helper executable',
+		],
+		[
+			app({
+				id: 'c',
+				name: 'Tailscale',
+				path: String.raw`C:\T\tailscaled-svc.exe`,
+			}),
+			'helper executable stem',
+		],
+		[
+			shortcut({
+				id: 'd',
+				name: 'OneDrive',
+				originalFilename: 'OneDriveSetup.exe',
+			}),
+			'helper original file name',
+		],
+		[
+			app({
+				id: 'e',
+				name: 'WinRAR',
+				path: String.raw`D:\Downloads\winrar-x64-701.exe`,
+			}),
+			'release file name',
+		],
+		[app({ id: 'f', name: 'Google Update' }), 'helper word in name'],
+		[
+			app({
+				id: 'g',
+				name: 'Google Chrome',
+				path: String.raw`C:\G\chrome.exe`,
+			}),
+			null,
+		],
+	])('explains why %o is or is not a helper', (record, reason) => {
+		expect(helperReason(appMatchFacts(record))).toBe(reason)
+		expect(isHelperRecord(appMatchFacts(record))).toBe(reason !== null)
+	})
+})
+
+describe('helper names', () => {
+	it.each([
+		['google update', true, true],
+		['figma agent', true, true],
+		['windows update blocker', true, false],
+		['veeam agent for microsoft windows', true, false],
+		['microsoft edge webview2 runtime', true, false],
+		['acme notes', false, false],
+		['update', true, false],
+	])(
+		'classifies %s as helper %s and helper-suffixed %s',
+		(name, helper, suffixed) => {
+			expect(isHelperName(name)).toBe(helper)
+			expect(endsWithHelperWord(name)).toBe(suffixed)
+		},
+	)
 })
 
 describe('normalization', () => {

@@ -59,6 +59,10 @@ export function readPreferenceBackup(storage: Storage): PreferenceImportResult {
 	}
 }
 
+export function hasPreferenceBackup(storage: Storage): boolean {
+	return readPreferenceBackup(storage).ok
+}
+
 export function readPreferences(storage: Storage): AppPreferencesV22 {
 	return (
 		readSlot(storage, PREFERENCES_KEY) ??

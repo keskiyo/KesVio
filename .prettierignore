@@ -11,3 +11,10 @@ THIRD_PARTY_NOTICES.md
 
 # CI definitions are SHA-pinned and hand-maintained.
 .github/workflows/
+
+# Generated known-package alias index, its lock and audit outputs: reformatting them drifts from their generator.
+src/entities/app/lib/search/generated/
+data/search-aliases/
+
+# Verbatim upstream manifests and the recorded generator output over them.
+tests/search-aliases/fixtures/

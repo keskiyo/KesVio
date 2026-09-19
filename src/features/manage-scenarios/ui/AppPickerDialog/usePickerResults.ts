@@ -1,8 +1,5 @@
 import { useMemo } from 'react'
-import {
-	type AppInfo,
-	rankAppsByQueryAndCategory,
-} from '../../../../entities/app'
+import { type AppInfo, useSearchIndex } from '../../../../entities/app'
 import type { CategoryDefinition } from '../../../../entities/category'
 
 const BY_NAME = new Intl.Collator(undefined, {
@@ -23,8 +20,9 @@ export function usePickerResults(
 		[apps],
 	)
 
+	const search = useSearchIndex()
 	return useMemo(
-		() => rankAppsByQueryAndCategory(byName, query, categories),
-		[byName, categories, query],
+		() => search.rankAppsByQueryAndCategory(byName, query, categories),
+		[byName, categories, query, search],
 	)
 }

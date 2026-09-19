@@ -1,9 +1,14 @@
 import { KNOWN_APP_ALIASES } from './knownAppAliases'
+import {
+	knownPackageEntries,
+	knownPackageGeneration,
+} from './knownPackageIndex'
 import type { AppMatchFacts, KnownAppAliasEntry, MatchClause } from './types'
 
 const PREFIX_KEY_LENGTH = 2
 
 interface KnownAliasIndex {
+	generation: number
 	byExactKey: Map<string, KnownAppAliasEntry[]>
 	byPrefixKey: Map<string, KnownAppAliasEntry[]>
 }
@@ -38,22 +43,27 @@ function file(
 function buildIndex(): KnownAliasIndex {
 	const byExactKey = new Map<string, KnownAppAliasEntry[]>()
 	const byPrefixKey = new Map<string, KnownAppAliasEntry[]>()
-	for (const entry of KNOWN_APP_ALIASES) {
+	for (const entry of [...KNOWN_APP_ALIASES, ...knownPackageEntries()]) {
 		const exact: string[] = []
 		const prefixed: string[] = []
 		for (const clause of entry.match.anyOf)
 			collectKeys(clause, exact, prefixed)
+		exact.push(...(entry.match.nameOnly ?? []))
 		for (const key of exact) file(byExactKey, key, entry)
 		for (const prefix of prefixed)
 			file(byPrefixKey, prefix.slice(0, PREFIX_KEY_LENGTH), entry)
 	}
-	return { byExactKey, byPrefixKey }
+	return { generation: knownPackageGeneration(), byExactKey, byPrefixKey }
 }
 
 export function candidateKnownEntries(
 	facts: AppMatchFacts,
 ): Set<KnownAppAliasEntry> {
-	index ??= buildIndex()
+	if (!index || index.generation !== knownPackageGeneration()) {
+		index = buildIndex()
+		if (typeof performance.mark === 'function')
+			performance.mark('kesvio:alias-reverse-index-built')
+	}
 	const candidates = new Set<KnownAppAliasEntry>()
 	for (const key of [
 		facts.pathExecutable,

@@ -25,7 +25,6 @@ export interface MetricTileProps {
 	label: string
 	value: string
 	attention?: boolean
-	wide?: boolean
 }
 
 export interface CatalogSourcesProps {

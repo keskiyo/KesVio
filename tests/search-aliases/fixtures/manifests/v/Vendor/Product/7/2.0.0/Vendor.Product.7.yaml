@@ -1,0 +1,15 @@
+PackageIdentifier: Vendor.Product.7
+PackageVersion: 2.0.0
+PackageLocale: en-US
+Publisher: Vendor Inc.
+PackageName: Product 7
+Moniker: product7
+License: MIT
+ShortDescription: fixture
+Installers:
+    - Architecture: x64
+      InstallerType: exe
+      InstallerUrl: https://vendor.example.com/product7.exe
+      InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+ManifestType: singleton
+ManifestVersion: 1.0.0

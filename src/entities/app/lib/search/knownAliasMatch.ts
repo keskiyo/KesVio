@@ -18,8 +18,9 @@ import type {
 type ClauseOutcome = MatchStrength | 'support' | 'miss'
 
 const STRENGTH_RANK: Record<MatchStrength, number> = {
-	strong: 2,
-	normal: 1,
+	strong: 3,
+	normal: 2,
+	weak: 1,
 	none: 0,
 }
 
@@ -127,6 +128,11 @@ export function matchKnownEntry(
 		if (STRENGTH_RANK[strength] > STRENGTH_RANK[best]) best = strength
 		if (best === 'strong') break
 	}
+	if (
+		best === 'none' &&
+		entry.match.nameOnly?.some(candidate => facts.names.includes(candidate))
+	)
+		best = 'weak'
 	if (best === 'none') return best
 	if (isHelperRecord(facts)) return 'none'
 	for (const clause of entry.match.exclude ?? [])

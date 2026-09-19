@@ -4,8 +4,7 @@ import { usePreferencesBackup } from '../model/usePreferencesBackup'
 import type { BackupRestorePageProps } from '../types'
 import { BackupContents } from './BackupContents'
 import { ExportSettingsCard } from './ExportSettingsCard'
-import { ImportSettingsCard } from './ImportSettingsCard'
-import { LocalRecoveryCard } from './LocalRecoveryCard'
+import { RecoverySettingsCard } from './RecoverySettingsCard/RecoverySettingsCard'
 
 export function BackupRestorePage({
 	onBack,
@@ -15,7 +14,7 @@ export function BackupRestorePage({
 	return (
 		<section
 			aria-labelledby="backup-restore-title"
-			className="mx-auto w-full max-w-3xl"
+			className="mx-auto w-full max-w-4xl"
 		>
 			<CatalogViewHeader
 				icon={DatabaseBackup}
@@ -25,23 +24,17 @@ export function BackupRestorePage({
 				back={{ label: 'Back to More', onBack }}
 			/>
 			<BackupContents />
-			<div className="mt-4 grid gap-4 md:grid-cols-2">
+			<div className="mt-4 grid items-start gap-4 lg:grid-cols-[minmax(16rem,0.8fr)_minmax(0,1.2fr)]">
 				<ExportSettingsCard
 					exporting={backup.exporting}
 					onExport={backup.exportSettings}
 				/>
-				<ImportSettingsCard
+				<RecoverySettingsCard
 					inputRef={backup.inputRef}
 					pending={backup.pending}
+					localBackupAvailable={backup.localBackupAvailable}
 					onSelect={backup.selectImport}
-					onCancel={backup.cancelPending}
-					onConfirm={backup.confirmPending}
-				/>
-			</div>
-			<div className="mt-6">
-				<LocalRecoveryCard
-					pending={backup.pending}
-					onRequest={backup.requestRestore}
+					onRequestRestore={backup.requestRestore}
 					onCancel={backup.cancelPending}
 					onConfirm={backup.confirmPending}
 				/>

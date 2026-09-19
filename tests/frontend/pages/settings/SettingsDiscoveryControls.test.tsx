@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SettingsDiscoveryControls } from '../../../../src/pages/settings/ui/sections/SettingsDiscoveryControls'
@@ -66,5 +66,92 @@ describe('SettingsDiscoveryControls', () => {
 			'includedPaths',
 			String.raw`F:\Tools`,
 		)
+	})
+
+	it('requires confirmation before removing a scan folder', async () => {
+		const onRemovePath = vi.fn()
+		const settingsWithPath: SystemSettings = {
+			...settings,
+			scanSettings: {
+				...settings.scanSettings,
+				includedPaths: [String.raw`D:\Apps`],
+			},
+		}
+		render(
+			<SettingsDiscoveryControls
+				settings={settingsWithPath}
+				saving={false}
+				onSaveScanSettings={vi.fn()}
+				onAddPath={vi.fn()}
+				onRemovePath={onRemovePath}
+				onPickFolder={vi.fn()}
+			/>,
+		)
+
+		await userEvent.click(
+			screen.getByRole('button', { name: String.raw`Remove D:\Apps` }),
+		)
+
+		expect(onRemovePath).not.toHaveBeenCalled()
+		const dialog = screen.getByRole('alertdialog', {
+			name: 'Remove scan folder',
+		})
+		expect(dialog).toBeVisible()
+		expect(within(dialog).getByText(String.raw`D:\Apps`)).toBeVisible()
+
+		await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+		expect(onRemovePath).not.toHaveBeenCalled()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: String.raw`Remove D:\Apps` }),
+		)
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Remove folder' }),
+		)
+
+		expect(onRemovePath).toHaveBeenCalledOnce()
+		expect(onRemovePath).toHaveBeenCalledWith(
+			'includedPaths',
+			String.raw`D:\Apps`,
+		)
+	})
+
+	it('identifies an excluded folder and keeps a long path readable', async () => {
+		const longPath = String.raw`E:\Development\Very long workspace directory\Applications\Utilities`
+		const onRemovePath = vi.fn()
+		const settingsWithPath: SystemSettings = {
+			...settings,
+			scanSettings: {
+				...settings.scanSettings,
+				excludedPaths: [longPath],
+			},
+		}
+		render(
+			<SettingsDiscoveryControls
+				settings={settingsWithPath}
+				saving={false}
+				onSaveScanSettings={vi.fn()}
+				onAddPath={vi.fn()}
+				onRemovePath={onRemovePath}
+				onPickFolder={vi.fn()}
+			/>,
+		)
+
+		await userEvent.click(
+			screen.getByRole('button', { name: `Remove ${longPath}` }),
+		)
+
+		const dialog = screen.getByRole('alertdialog', {
+			name: 'Remove excluded folder',
+		})
+		expect(dialog).toBeVisible()
+		expect(within(dialog).getByText(longPath)).toHaveClass('break-all')
+		expect(onRemovePath).not.toHaveBeenCalled()
+
+		await userEvent.click(
+			within(dialog).getByRole('button', { name: 'Remove folder' }),
+		)
+
+		expect(onRemovePath).toHaveBeenCalledWith('excludedPaths', longPath)
 	})
 })

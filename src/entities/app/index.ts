@@ -85,6 +85,8 @@ export {
 	rankAppsByQueryAndCategory,
 	rankAppsByQueryTop,
 } from './lib/catalogSearch'
+export { loadKnownPackageIndex } from './lib/search/knownPackageIndex'
+export { type SearchIndex, useSearchIndex } from './model/useSearchIndex'
 export {
 	ADDED_WITHIN_CHOICES,
 	applySavedFilter,

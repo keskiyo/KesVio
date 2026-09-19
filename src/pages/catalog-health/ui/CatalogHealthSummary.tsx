@@ -13,12 +13,7 @@ import type {
 } from '../../../entities/app'
 import { countLabel } from '../../../shared/lib/countLabel'
 import { ACTION_BUTTON_PRIMARY } from '../../../shared/ui/buttonVariants'
-import {
-	formatChanges,
-	formatDuration,
-	formatScanTime,
-	HERO_SURFACE,
-} from '../data'
+import { formatScanTime, HERO_SURFACE } from '../data'
 import type { CatalogHealthSummaryProps, MetricTileProps } from '../types'
 import { MetricTile } from './MetricTile'
 
@@ -80,7 +75,7 @@ export function CatalogHealthSummary({
 				</button>
 			</div>
 			{metrics.length > 0 && (
-				<dl className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-5">
+				<dl className="mt-5 grid gap-3 sm:grid-cols-3">
 					{metrics.map(metric => (
 						<MetricTile key={metric.label} {...metric} />
 					))}
@@ -130,7 +125,5 @@ function buildMetrics(
 			label: 'Last scan',
 			value: formatScanTime(diagnostics.completedAt) ?? '—',
 		},
-		{ label: 'Duration', value: formatDuration(diagnostics.durationMs) },
-		{ label: 'Changes', value: formatChanges(diagnostics), wide: true },
 	]
 }

@@ -1,0 +1,24 @@
+# Deliberately awkward YAML: quoted escapes, anchors, flow style, unicode, odd indentation.
+PackageIdentifier: WeirdCorp.Tool
+PackageVersion: 1.0.0
+PackageLocale: en-US
+Publisher: &pub 'Weird Corp "International" Ltd.'
+PublisherUrl: https://weird.example.com
+PackageName: "Weird 'Quote' Tool ✨"
+Moniker: weirdtool
+Author: *pub
+ShortDescription: >-
+    A folded
+    description that must
+    never become an alias.
+Description: |
+    Literal block
+    with two lines.
+Tags: [editor, weird, 'quoted tag']
+Agreements:
+    - AgreementLabel: EULA
+      AgreementUrl: https://weird.example.com/eula
+__proto__:
+    polluted: true
+ManifestType: defaultLocale
+ManifestVersion: 1.10.0

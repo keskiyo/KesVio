@@ -1,11 +1,14 @@
 import { FolderSearch, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import { useSpotlight } from '../../../../shared/hooks/useSpotlight'
 import { DANGER_ICON_BUTTON } from '../../../../shared/ui/buttonVariants'
+import { ConfirmDialog } from '../../../../shared/ui/ConfirmDialog'
 import { SpotlightLayer } from '../../../../shared/ui/SpotlightLayer'
 import type { PathEditorProps } from '../../types'
 
 export function PathEditor(props: PathEditorProps) {
 	const spotlight = useSpotlight()
+	const [removingPath, setRemovingPath] = useState<string | null>(null)
 	async function browse() {
 		if (props.disabled) return
 		const picked = await props.onBrowse()
@@ -55,7 +58,7 @@ export function PathEditor(props: PathEditorProps) {
 						<button
 							type="button"
 							aria-label={`Remove ${path}`}
-							onClick={() => props.onRemove(path)}
+							onClick={() => setRemovingPath(path)}
 							className={DANGER_ICON_BUTTON}
 						>
 							<Trash2 size={15} aria-hidden="true" />
@@ -63,6 +66,25 @@ export function PathEditor(props: PathEditorProps) {
 					</li>
 				))}
 			</ul>
+			{removingPath && (
+				<ConfirmDialog
+					label={props.removeDialogTitle.replace(/\?$/, '')}
+					title={props.removeDialogTitle}
+					description={props.removeDialogDescription}
+					confirmLabel="Remove folder"
+					closeLabel="Close folder removal"
+					onClose={() => setRemovingPath(null)}
+					onConfirm={() => {
+						const path = removingPath
+						setRemovingPath(null)
+						props.onRemove(path)
+					}}
+				>
+					<code className="block text-xs break-all text-(--text-secondary)">
+						{removingPath}
+					</code>
+				</ConfirmDialog>
+			)}
 		</div>
 	)
 }

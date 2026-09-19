@@ -1,4 +1,5 @@
 import {
+	hasPreferenceBackup,
 	hasNewerStoredPreferences,
 	parsePreferenceImport,
 	readPreferenceBackup,
@@ -27,6 +28,7 @@ type PreferenceTransferActions = Pick<
 	| 'validatePreferencesImport'
 	| 'importPreferences'
 	| 'restorePreferencesBackup'
+	| 'hasPreferencesBackup'
 >
 
 function preferencesFromState(state: AppState): AppPreferencesV22 {
@@ -120,6 +122,9 @@ export function createPreferenceTransferActions({
 		importPreferences(source) {
 			const result = parsePreferenceImport(source)
 			return result.ok ? applyPreferences(result.preferences) : result
+		},
+		hasPreferencesBackup() {
+			return hasPreferenceBackup(storage)
 		},
 		restorePreferencesBackup() {
 			const result = readPreferenceBackup(storage)

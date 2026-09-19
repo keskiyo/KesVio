@@ -8,6 +8,7 @@ export function usePreferencesBackup({
 	onSaveExport,
 	onValidateImport,
 	onImport,
+	hasLocalBackup,
 	onRestore,
 }: PreferencesBackupActions) {
 	const inputRef = useRef<HTMLInputElement>(null)
@@ -15,6 +16,7 @@ export function usePreferencesBackup({
 	const [exporting, setExporting] = useState(false)
 	const [message, setMessage] = useState<string | null>(null)
 	const [error, setError] = useState<string | null>(null)
+	const localBackupAvailable = hasLocalBackup()
 
 	function clearFeedback() {
 		setMessage(null)
@@ -84,6 +86,7 @@ export function usePreferencesBackup({
 		exporting,
 		message,
 		error,
+		localBackupAvailable,
 		exportSettings,
 		selectImport,
 		requestRestore,

@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react'
-import { DANGER_ICON_BUTTON } from '../../../../shared/ui/buttonVariants'
+import { DANGER_VARIANT } from '../../../../shared/ui/buttonVariants'
 
 interface SavedFilterActionsProps {
 	editing: boolean
@@ -20,9 +20,10 @@ export function SavedFilterActions({
 					aria-label="Delete filter"
 					title="Delete filter"
 					onClick={onDelete}
-					className={`mr-auto ${DANGER_ICON_BUTTON}`}
+					className={`mr-auto inline-flex h-9 items-center gap-2 rounded-lg px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 ${DANGER_VARIANT}`}
 				>
 					<Trash2 size={15} aria-hidden="true" />
+					Delete
 				</button>
 			)}
 			<button

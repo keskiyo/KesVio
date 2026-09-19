@@ -41,6 +41,7 @@ export default tseslint.config(
 		ignores: [
 			'dist',
 			'coverage',
+			'src/entities/app/lib/search/generated',
 			'graphify-out',
 			'node_modules',
 			'src-tauri/target',
