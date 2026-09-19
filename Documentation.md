@@ -1183,7 +1183,7 @@ only with `KESVIO_ALIAS_FIXTURE_UPDATE=1` and reviewed as a diff.
 Runtime cost of the external tier (`tests/perf/externalAliases.bench.ts` and
 `scripts/search-aliases/measure-webview.mjs`, a developer-only CDP benchmark
 against the dev app started with `--remote-debugging-port`): the lazy chunk is
-1.14 MB raw / 344 KB gzip; in Node 22 `JSON.parse` + decode take about 19 ms
+1.16 MB raw / 343 KB gzip; in Node 22 `JSON.parse` + decode take about 19 ms
 cold and 2.7 ms warm, the reverse index build about 2 ms, and a warm keystroke
 over 2000 records stays at 0.9–1.4 ms. Inside the WebView2 of the running
 application the index import starts right after the store exists, decodes

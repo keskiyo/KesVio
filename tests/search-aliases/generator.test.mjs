@@ -50,7 +50,9 @@ describe('generator over the fixture corpus', () => {
 			!existsSync(EXPECTED)
 		)
 			writeFileSync(EXPECTED, snapshot + '\n')
-		expect(snapshot + '\n').toBe(readFileSync(EXPECTED, 'utf8'))
+		expect(snapshot + '\n').toBe(
+			readFileSync(EXPECTED, 'utf8').replace(/\r\n/g, '\n'),
+		)
 	})
 
 	it('encodes a string table where every record index resolves and the header pins the source', () => {
