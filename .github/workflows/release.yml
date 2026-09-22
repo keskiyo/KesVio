@@ -117,6 +117,14 @@ jobs:
             - name: Lint Rust
               run: cargo clippy --locked --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 
+            # THIRD_PARTY_LICENSES.txt is bundled into the installer, so the texts a user receives
+            # must describe the dependency graph this tag is built from. `verify.yml` checks the
+            # same thing on master, but a tag can be pushed before that run finishes or from a
+            # commit it never covered, and a stale file here is a distribution-license defect.
+            - name: Verify third-party licenses
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/verify-third-party-licenses.ps1
+
             # A failed tag build can leave a draft release with an orphaned tag after a
             # release tag is corrected. Remove only this version's draft before Tauri
             # Action creates its authoritative replacement.

@@ -155,18 +155,27 @@ export function reconcileFirstSeen(
 	previous: Record<string, number>,
 	now: number,
 ): Record<string, number> {
-	const next: Record<string, number> = {}
-	let changed = false
+	let next = previous
 	for (const app of apps) {
 		const identity = identityOf(app)
 		if (identity in next) continue
-		const seenAt = previous[identity]
-		if (seenAt === undefined) changed = true
-		next[identity] = seenAt ?? now
+		if (next === previous) next = { ...previous }
+		next[identity] = now
 	}
-	return changed || Object.keys(next).length !== Object.keys(previous).length
-		? next
-		: previous
+	return next
+}
+
+export function pruneFirstSeen(
+	apps: AppInfo[],
+	firstSeenAt: Record<string, number>,
+): Record<string, number> {
+	const present = new Set(apps.map(identityOf))
+	const identities = Object.keys(firstSeenAt)
+	if (identities.every(identity => present.has(identity))) return firstSeenAt
+	const next: Record<string, number> = {}
+	for (const identity of identities)
+		if (present.has(identity)) next[identity] = firstSeenAt[identity]
+	return next
 }
 
 export function addUnique(list: string[], value: string): string[] {

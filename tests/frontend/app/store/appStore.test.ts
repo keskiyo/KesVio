@@ -615,13 +615,13 @@ describe('app store', () => {
 		).toEqual(['code'])
 	})
 
-	it('stamps a newly discovered app and prunes what the catalog dropped', async () => {
+	it('stamps a newly discovered app and keeps a stamp the snapshot does not carry', async () => {
 		const getApps = vi
 			.fn()
 			.mockResolvedValueOnce({ apps: [apps[0]], hasCache: true })
 			.mockResolvedValueOnce({ apps: [apps[0], apps[1]], hasCache: true })
 			.mockResolvedValueOnce({ apps: [apps[1]], hasCache: true })
-		const store = createAppStore(client({ getApps }))
+		const store = createAppStore(client({ getApps }), memoryStorage())
 		// A real clock resolves the three loads to the same millisecond, which would let a stamp
 		// that is rewritten on every load pass as one that was kept.
 		const clock = vi
@@ -629,6 +629,7 @@ describe('app store', () => {
 			.mockReturnValueOnce(1_000)
 			.mockReturnValueOnce(2_000)
 			.mockReturnValueOnce(3_000)
+			.mockReturnValue(4_000)
 
 		try {
 			await store.getState().load()
@@ -642,11 +643,71 @@ describe('app store', () => {
 			})
 
 			await store.getState().load()
-			// Pruned to the catalog, so the map cannot grow without bound.
-			expect(store.getState().firstSeenAt).toEqual({ chrome: 2_000 })
+			// A snapshot without an app is not evidence that the app is gone, and only a
+			// completed scan prunes.
+			expect(store.getState().firstSeenAt).toEqual({
+				code: 1_000,
+				chrome: 2_000,
+			})
 		} finally {
 			clock.mockRestore()
 		}
+	})
+
+	it('keeps the stamp when a delta brings back an app the startup snapshot lacked', async () => {
+		const getApps = vi
+			.fn()
+			.mockResolvedValueOnce({
+				apps: [apps[0], apps[1]],
+				generation: 2,
+				hasCache: true,
+			})
+			.mockResolvedValueOnce({
+				apps: [apps[0]],
+				generation: 3,
+				hasCache: true,
+			})
+		const store = createAppStore(client({ getApps }), memoryStorage())
+		const clock = vi
+			.spyOn(Date, 'now')
+			.mockReturnValueOnce(1_000)
+			.mockReturnValue(9_000)
+
+		try {
+			await store.getState().load()
+			await store.getState().load()
+			store.getState().applyDelta({
+				generation: 4,
+				removedIds: [],
+				summary: { added: 0, removed: 0, updated: 0 },
+				upserted: [apps[1]],
+			})
+
+			// The startup order is load() over the cached snapshot and then the scan delta. A
+			// stamp dropped by the snapshot came back as Date.now(), so every start moved long
+			// installed apps into Recently added.
+			expect(store.getState().firstSeenAt.chrome).toBe(1_000)
+		} finally {
+			clock.mockRestore()
+		}
+	})
+
+	it('prunes stamps for apps a completed scan no longer reports', async () => {
+		const refreshApps = vi
+			.fn()
+			.mockResolvedValueOnce({ apps: [apps[0], apps[1]], generation: 1 })
+			.mockResolvedValueOnce({ apps: [apps[1]], generation: 2 })
+		const store = createAppStore(client({ refreshApps }), memoryStorage())
+
+		await store.getState().refresh()
+		expect(Object.keys(store.getState().firstSeenAt).sort()).toEqual([
+			'chrome',
+			'code',
+		])
+
+		await store.getState().refresh()
+		// The scan output is the catalog, so the map cannot grow without bound.
+		expect(Object.keys(store.getState().firstSeenAt)).toEqual(['chrome'])
 	})
 
 	it('persists first-seen stamps and reads them back', async () => {

@@ -128,7 +128,12 @@ would have to reintroduce it deliberately.
   to see between those two moments, so it is not shown.
 - Position, size and the maximized flag are remembered per user. The window is
   restored onto whichever connected monitor holds most of it, clamped inside
-  that monitor and to the minimum window size; geometry that no longer overlaps
+  that monitor and to the minimum window size. That minimum is read from
+  `minWidth`/`minHeight` in `tauri.conf.json` and converted to the physical
+  pixels a stored geometry is measured in, so a restored window can never be
+  narrower than the width the interface is designed and tested at; a second
+  constant in the restore path had drifted below it and reopened the window
+  sixteen pixels too narrow. Geometry that no longer overlaps
   any monitor — the second display was unplugged — is discarded and the window
   opens at its configured default instead. A minimized window keeps the last
   geometry it had, and a maximized one keeps the rectangle it will restore to

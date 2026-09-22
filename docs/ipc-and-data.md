@@ -216,6 +216,17 @@ store whose loss costs the user nothing, so it never falls back to a backup copy
 and never blocks startup. Geometry is optional inside the document, because the
 close setting has to survive a session in which the window was never moved.
 
+`firstSeenAt` maps a preference identity to the moment the catalog first
+carried it, and **Recently added** reads nothing else, so a stamp is written
+once and never rewritten. An identity that is absent from the catalog the
+frontend currently holds keeps its stamp: the startup snapshot is cache-first
+and the scan delta arrives after it, so treating that gap as a removal dropped
+stamps and re-issued them at `Date.now()` when the delta brought the records
+back — every start moved dozens of long-installed applications into Recently
+added. Only a completed scan prunes the map, because its output is the catalog
+rather than a moment in the middle of one, and that keeps the document bounded
+by the catalog size.
+
 Schema 19 adds `lastRunAt` to a scenario. Documents written before it upgrade
 unstamped rather than being stamped with the migration time, which would claim
 every scenario ran at once and reorder the tray and the Recent filter around a

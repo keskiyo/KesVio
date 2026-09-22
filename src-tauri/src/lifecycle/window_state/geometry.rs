@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-const MIN_WIDTH: u32 = 430;
-const MIN_HEIGHT: u32 = 520;
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(crate) struct MinimumSize {
+    pub width: u32,
+    pub height: u32,
+}
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -42,10 +45,11 @@ fn overlap_area(geometry: &WindowGeometry, screen: &ScreenRect) -> u64 {
 pub(crate) fn fit_to_screens(
     geometry: WindowGeometry,
     screens: &[ScreenRect],
+    minimum: MinimumSize,
 ) -> Option<WindowGeometry> {
     let mut fitted = geometry;
-    fitted.width = fitted.width.max(MIN_WIDTH);
-    fitted.height = fitted.height.max(MIN_HEIGHT);
+    fitted.width = fitted.width.max(minimum.width);
+    fitted.height = fitted.height.max(minimum.height);
     let home = screens
         .iter()
         .max_by_key(|screen| overlap_area(&fitted, screen))?;
@@ -113,26 +117,34 @@ mod tests {
         }
     }
 
+    fn minimum() -> MinimumSize {
+        MinimumSize {
+            width: 446,
+            height: 529,
+        }
+    }
+
     #[test]
     fn a_geometry_inside_a_monitor_is_kept_unchanged() {
         let saved = geometry(200, 150, 1250, 720);
 
-        assert_eq!(fit_to_screens(saved, &[primary()]), Some(saved));
+        assert_eq!(fit_to_screens(saved, &[primary()], minimum()), Some(saved));
     }
 
     #[test]
     fn a_window_from_a_disconnected_monitor_is_rejected() {
         let saved = geometry(3000, 200, 1250, 720);
 
-        assert_eq!(fit_to_screens(saved, &[primary()]), None);
-        assert_eq!(fit_to_screens(saved, &[]), None);
+        assert_eq!(fit_to_screens(saved, &[primary()], minimum()), None);
+        assert_eq!(fit_to_screens(saved, &[], minimum()), None);
     }
 
     #[test]
     fn a_window_hanging_off_the_edge_is_pulled_back_onto_its_monitor() {
         let saved = geometry(1800, 1000, 1250, 720);
 
-        let fitted = fit_to_screens(saved, &[primary()]).expect("a sliver still overlaps");
+        let fitted =
+            fit_to_screens(saved, &[primary()], minimum()).expect("a sliver still overlaps");
 
         assert_eq!(fitted.x, 1920 - 1250);
         assert_eq!(fitted.y, 1080 - 720);
@@ -143,7 +155,8 @@ mod tests {
     fn a_window_larger_than_its_monitor_is_clamped_to_it() {
         let saved = geometry(-40, -30, 3000, 2000);
 
-        let fitted = fit_to_screens(saved, &[primary()]).expect("the window overlaps the monitor");
+        let fitted = fit_to_screens(saved, &[primary()], minimum())
+            .expect("the window overlaps the monitor");
 
         assert_eq!((fitted.x, fitted.y), (0, 0));
         assert_eq!((fitted.width, fitted.height), (1920, 1080));
@@ -153,9 +166,13 @@ mod tests {
     fn a_geometry_below_the_minimum_size_grows_to_it() {
         let saved = geometry(10, 10, 120, 90);
 
-        let fitted = fit_to_screens(saved, &[primary()]).expect("the window overlaps the monitor");
+        let fitted = fit_to_screens(saved, &[primary()], minimum())
+            .expect("the window overlaps the monitor");
 
-        assert_eq!((fitted.width, fitted.height), (MIN_WIDTH, MIN_HEIGHT));
+        assert_eq!(
+            (fitted.width, fitted.height),
+            (minimum().width, minimum().height)
+        );
     }
 
     #[test]
@@ -168,7 +185,10 @@ mod tests {
         };
         let saved = geometry(-1400, 200, 1250, 720);
 
-        assert_eq!(fit_to_screens(saved, &[primary(), secondary]), Some(saved));
+        assert_eq!(
+            fit_to_screens(saved, &[primary(), secondary], minimum()),
+            Some(saved)
+        );
     }
 
     #[test]
@@ -220,7 +240,7 @@ mod tests {
         };
 
         assert_eq!(
-            fit_to_screens(saved, &[primary()]).map(|fitted| fitted.maximized),
+            fit_to_screens(saved, &[primary()], minimum()).map(|fitted| fitted.maximized),
             Some(true)
         );
     }

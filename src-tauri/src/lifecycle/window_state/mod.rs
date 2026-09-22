@@ -1,7 +1,7 @@
 mod geometry;
 mod store;
 
-pub(crate) use geometry::{fit_to_screens, ScreenRect, WindowGeometry};
+pub(crate) use geometry::{fit_to_screens, MinimumSize, ScreenRect, WindowGeometry};
 pub(crate) use store::{read, write, WindowPreferences};
 
 use super::state::LifecycleState;
@@ -110,12 +110,43 @@ fn screen_rects(window: &WebviewWindow) -> Vec<ScreenRect> {
         .collect()
 }
 
+fn physical_minimum(logical: Option<f64>, scale: f64) -> u32 {
+    let scale = if scale.is_finite() && scale > 0.0 {
+        scale
+    } else {
+        1.0
+    };
+    logical
+        .filter(|value| value.is_finite() && *value > 0.0)
+        .map(|value| (value * scale).round().min(f64::from(u32::MAX)) as u32)
+        .unwrap_or(0)
+}
+
+fn configured_minimum(window: &WebviewWindow) -> MinimumSize {
+    let scale = window.scale_factor().unwrap_or(1.0);
+    let (width, height) = window
+        .app_handle()
+        .config()
+        .app
+        .windows
+        .iter()
+        .find(|configured| configured.label == window.label())
+        .map_or((None, None), |configured| {
+            (configured.min_width, configured.min_height)
+        });
+    MinimumSize {
+        width: physical_minimum(width, scale),
+        height: physical_minimum(height, scale),
+    }
+}
+
 fn restore(window: &WebviewWindow, app_data_dir: &Path, lifecycle: &LifecycleState) {
     let stored = read(app_data_dir);
     lifecycle.set_hides_to_tray(stored.hide_to_tray);
+    let minimum = configured_minimum(window);
     let Some(fitted) = stored
         .geometry
-        .and_then(|geometry| fit_to_screens(geometry, &screen_rects(window)))
+        .and_then(|geometry| fit_to_screens(geometry, &screen_rects(window), minimum))
     else {
         log::info!(
             "Window state not restored: stored {}, using the configured window",
@@ -143,5 +174,37 @@ pub(crate) fn restore_main_window(app: &AppHandle, lifecycle: &LifecycleState) {
     };
     if let Ok(app_data_dir) = paths::data_dir(app) {
         restore(&window, &app_data_dir, lifecycle);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_configured_minimum_is_converted_to_the_physical_pixels_a_geometry_is_stored_in() {
+        assert_eq!(physical_minimum(Some(446.0), 1.0), 446);
+        assert_eq!(physical_minimum(Some(446.0), 1.25), 558);
+        assert_eq!(physical_minimum(Some(529.0), 1.5), 794);
+    }
+
+    #[test]
+    fn a_missing_or_impossible_minimum_clamps_nothing_away() {
+        assert_eq!(physical_minimum(None, 1.0), 0);
+        assert_eq!(physical_minimum(Some(0.0), 1.0), 0);
+        assert_eq!(physical_minimum(Some(f64::NAN), 1.0), 0);
+        assert_eq!(physical_minimum(Some(446.0), f64::NAN), 446);
+        assert_eq!(physical_minimum(Some(446.0), 0.0), 446);
+    }
+
+    #[test]
+    fn the_window_configuration_declares_the_minimum_the_interface_is_built_for() {
+        let config: serde_json::Value =
+            serde_json::from_str(include_str!("../../../tauri.conf.json"))
+                .expect("tauri.conf.json is valid JSON");
+        let window = &config["app"]["windows"][0];
+
+        assert_eq!(window["minWidth"].as_u64(), Some(446));
+        assert_eq!(window["minHeight"].as_u64(), Some(529));
     }
 }

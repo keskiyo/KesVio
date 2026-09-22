@@ -2,3 +2,10 @@
 # checkout with core.autocrlf=true (the default on GitHub's Windows runners) rewrites LF to CRLF
 # and the detached signature no longer covers the bytes on disk.
 src-tauri/tests/fixtures/updater-signature/** binary
+
+# Recorded fixtures their tests compare byte for byte against generator output written with LF.
+# A CRLF checkout turns an unchanged fixture into a failing snapshot, which is how the alias
+# index snapshot broke the release commit's CI run; pinning the ending removes the class.
+tests/search-aliases/fixtures/** text eol=lf
+src-tauri/tests/fixtures/golden/** text eol=lf
+src-tauri/tests/fixtures/ipc/** text eol=lf

@@ -179,6 +179,12 @@ checkout with `core.autocrlf` enabled cannot rewrite line endings and invalidate
 the detached signature; `test-verify-updater-signature.ps1` also compares each
 fixture against its size in the index and names that failure explicitly.
 
+The same file pins `tests/search-aliases/fixtures/`, `golden/` and `ipc/` to
+`text eol=lf`. Those fixtures are recorded by generators that write LF and are
+compared byte for byte, so a CRLF checkout turns an unchanged fixture into a
+failing snapshot — which is how the alias index snapshot failed on a Windows
+runner while passing locally.
+
 Node.js `22.22.2` and Rust `1.96.0` are pinned in `.node-version` and
 `rust-toolchain.toml`. Cargo verification uses `--locked`; the separate MSRV
 job builds with Rust `1.88.0`.
@@ -196,7 +202,10 @@ critical development-only advisories require dated entries in
 
 Release is tag-only: a `v*` tag on the exact `master` SHA triggers
 `release.yml`. Version values must agree across npm/Cargo manifests, lockfiles
-and `tauri.conf.json`. The release workflow reruns critical gates, builds and
+and `tauri.conf.json`. The release workflow reruns critical gates — lint,
+formatting, both boundary scripts, the frontend and Rust suites, the build, and
+the third-party license check, because that file is bundled into the installer
+and a tag can be pushed from a commit `verify.yml` never covered — builds and
 signs the NSIS bundle, verifies its detached updater signature against the
 configured public key, creates/verifies `latest.json`, then publishes the draft.
 Published tags are immutable; corrections use a new patch version. The project

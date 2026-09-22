@@ -7,7 +7,11 @@ import {
 	keepHeldRecords,
 	newerDiagnostics,
 } from '../catalogGeneration'
-import { reconcileFirstSeen, reconcileMarks } from '../reconciliation'
+import {
+	pruneFirstSeen,
+	reconcileFirstSeen,
+	reconcileMarks,
+} from '../reconciliation'
 import type { AppsClient, CatalogScanResult } from '../../../entities/app'
 import type {
 	AppState,
@@ -104,12 +108,15 @@ export function createCatalogActions({
 		if (order === 'stale') return
 		const apps = keepHeldRecords(get().apps, scan.apps, order)
 		const adopted = adoptCatalog(apps)
+		const firstSeenAt = pruneFirstSeen(apps, adopted.patch.firstSeenAt)
 		set({
 			...adopted.patch,
+			firstSeenAt,
 			hasCache: true,
 			catalogGeneration: scan.generation,
 		})
-		if (adopted.changed) persist()
+		if (adopted.changed || firstSeenAt !== adopted.patch.firstSeenAt)
+			persist()
 	}
 
 	return {
