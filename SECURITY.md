@@ -32,8 +32,8 @@ in-app updater; there are no maintained release lines behind the current one.
 
 ## Out of scope
 
-These are known properties of the project, documented in
-[README](README.md#code-signing-policy) and [Documentation.md](Documentation.md). Reports about
+These are known properties of the project, documented in the
+[technical security model](docs/security.md). Reports about
 them will be closed as intended behaviour:
 
 - **The installer is not Authenticode-signed.** There is no code signing certificate behind this
@@ -71,3 +71,6 @@ also be submitted to the antivirus vendor for analysis.
 
 KesVio is local-first: no telemetry, no accounts, and no catalog uploads. The only network requests
 it makes are update checks and downloads against this repository's Releases.
+
+Implementation trust boundaries and native capability constraints are documented in the
+[technical security model](docs/security.md).

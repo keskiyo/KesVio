@@ -6,7 +6,7 @@
 //   npm run aliases:diagnose -- --catalog <apps-cache.json> "query"
 //
 // The catalog defaults to KESVIO_ALIAS_AUDIT or %APPDATA%\keskiyo.kesvio\apps-cache.json.
-// Every no-match ends with a gap class from the list in Documentation.md ("Search gap triage").
+// Every no-match ends with a gap class from docs/search-aliases.md ("Search gap triage").
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { rankAppsByQuery } from '../../src/entities/app/lib/catalogSearch.ts'

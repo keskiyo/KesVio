@@ -4,7 +4,7 @@ import { loadKnownPackageIndex } from '../../../../../src/entities/app/lib/searc
 import { resolveSearchAliases } from '../../../../../src/entities/app/lib/search/resolveSearchAliases'
 import { REAL_WORLD_GAPS } from './fixtures/realWorldGaps'
 
-// The regression corpus of the search-gap workflow (Documentation.md, "Search gap triage").
+// The regression corpus of the search-gap workflow (docs/search-aliases.md, "Search gap triage").
 // Every row started as a reproduced real query; a row with expectedTop null pins a false
 // positive that must stay fixed.
 describe('real-world search gaps', () => {

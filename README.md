@@ -122,7 +122,7 @@ KesVio is local-first:
 
 Your catalog remains on your computer. Network access is used for update checks, downloads, and WebView2 installation when required. KesVio does not remove software itself; when Windows has a registered uninstaller, KesVio opens the Windows Apps settings page.
 
-[Privacy Policy](PRIVACY.md) · [Security Policy](SECURITY.md) · [Technical security model](Documentation.md#13-privacy-and-security)
+[Privacy Policy](PRIVACY.md) · [Security Policy](SECURITY.md) · [Technical security model](docs/security.md)
 
 ### Release verification
 
@@ -132,7 +132,7 @@ KesVio installers are currently not Authenticode-signed. Each release instead in
 - a Tauri updater signature;
 - GitHub build provenance.
 
-See [Verifying a downloaded installer](Documentation.md#verifying-a-downloaded-installer) for the manual verification commands. These checks verify release integrity but do not suppress SmartScreen.
+See [Verifying a downloaded installer](docs/development.md#verifying-a-downloaded-installer) for the manual verification commands. These checks verify release integrity but do not suppress SmartScreen.
 
 ## Development
 
@@ -143,7 +143,7 @@ npm install
 npm run tauri dev
 ```
 
-See [Verification and releases](Documentation.md#16-verification-and-releases) for repository checks and release architecture.
+See [Verification and releases](docs/development.md#verification-and-releases) for repository checks and release architecture.
 
 ## Contributing
 

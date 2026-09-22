@@ -147,6 +147,14 @@ jobs:
               shell: pwsh
               run: powershell -NoProfile -File scripts/verify-platform-boundaries.ps1
 
+            - name: Verify documentation links and paths
+              shell: pwsh
+              run: node scripts/verify-docs-links.mjs
+
+            - name: Test documentation verification
+              shell: pwsh
+              run: node --test scripts/test-verify-docs-links.mjs
+
             - name: Test release source verification
               shell: pwsh
               run: powershell -NoProfile -File scripts/test-verify-release-source.ps1

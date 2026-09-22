@@ -33,9 +33,10 @@ discussion will be asked for that discussion before anything else.
 
 ## Before you open a pull request
 
-Read [Documentation.md](Documentation.md). It is the technical record for this repository:
-architecture layers, IPC and event contracts, persisted formats, the security boundary around the
-webview, and how the pieces fit together.
+Start with [Documentation.md](Documentation.md), then read the domain document for the area you are
+changing. The index routes architecture, IPC and persisted data, catalog scanning, classification,
+search, UI workflows, desktop operations, security, verification and troubleshooting to their
+canonical owners.
 
 Two conventions catch people out:
 
@@ -58,7 +59,16 @@ npm run tauri dev
 
 ## What has to pass
 
-Run the gates for the layers you touched, and say in the pull request which ones you ran.
+Run the gates for the layers you touched, and say in the pull request which ones you ran. One
+command covers the frontend, the documentation and the boundary checks:
+
+```bash
+npm run verify
+```
+
+It is lint, formatting check, typecheck, tests, production build, `npm run verify:docs` and
+`npm run verify:boundaries` in that order, so the first failure stops it. Run the parts alone
+while iterating:
 
 ```bash
 npm run lint
@@ -67,6 +77,8 @@ npm run format:check
 npm test
 npm run build
 ```
+
+A change under `src-tauri/` also needs the backend gate, `npm run verify:rust`, or its parts:
 
 ```bash
 cargo fmt --manifest-path src-tauri/Cargo.toml --check

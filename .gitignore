@@ -16,6 +16,20 @@ dev-launcher.log
 .superpowers/
 graphify-out/
 docs/
+!docs/
+docs/*
+!docs/architecture.md
+!docs/ipc-and-data.md
+!docs/catalog.md
+!docs/classification.md
+!docs/search.md
+!docs/search-aliases.md
+!docs/ui-and-workflows.md
+!docs/desktop-operations.md
+!docs/security.md
+!docs/development.md
+!docs/troubleshooting.md
+!docs/decisions.md
 
 .sentry-native/
 
