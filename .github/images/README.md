@@ -32,6 +32,9 @@ in its frame.
 ## Refresh guidance
 
 - Capture the current interface whenever branding or the pictured controls change.
+  A release that changes nothing visible keeps these images, even though the
+  version under the logo then trails the release; the version recorded above is
+  the one pictured.
 - Keep these filenames synchronized with the root README and verify all seven files.
 - Use a desktop viewport with the sidebar visible and one consistent theme.
 - Save PNG files under roughly 500 KB each and inspect every image before publishing.
