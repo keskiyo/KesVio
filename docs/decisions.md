@@ -106,6 +106,16 @@ Domain documents describe current behavior. This document retains only history t
 
 **Current consequence:** The last eligible transaction is reversed with `Ctrl+Z` outside text fields. The persisted-data contract remains in [IPC and data](ipc-and-data.md).
 
+## An update installs from one pill
+
+**Context:** An available version was announced by a dismissible banner above the catalog, and its action opened a modal with release highlights, package size and an **Update & restart** button. The logo and the version were also repeated in the Settings header.
+
+**Decision:** The banner, the dialog, the dismiss and the visible Settings header (logo, title and version) were withdrawn on 23 September 2026. The version lives under the KesVio name in the sidebar and the drawer, and an available update replaces it with a pill that installs on one click and shows the progress in place.
+
+**Reason:** Two surfaces and a confirmation step said the same thing three times; the pill is always visible where the version already is.
+
+**Current consequence:** Release notes are read on the GitHub release page, reachable from the failure toast. On a narrow window the pill is inside the drawer. See [Windows integration and updates](desktop-operations.md#windows-integration-and-updates).
+
 ## Artifact placement expands in place
 
 **Context:** Choosing Installers or Documentation once opened a third floating panel beside the category menu.

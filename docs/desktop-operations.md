@@ -168,17 +168,24 @@ would have to reintroduce it deliberately.
   (`embedBootstrapper`). The bootstrapper downloads the runtime from Microsoft,
   so this installation step requires internet access. A machine with WebView2
   already installed can use the local catalog offline.
-- The updater fetches the release manifest over HTTPS on startup. An available
-  version is announced by a dismissible banner in the shell notice area beside
-  the stale-copy and preference-write notices; it never opens a dialog by
-  itself. The update dialog opens only from the banner's action, and download,
-  verification, installation and restart remain modal from that point.
+- The updater fetches the release manifest over HTTPS on startup (and from
+  **Check updates** in Settings). The only update surface is the
+  **Update X available** pill that replaces the version under the KesVio name in
+  the sidebar and the drawer (`src/features/update-app/ui/UpdatePill.tsx`, see
+  [UI and workflows](ui-and-workflows.md)). One click downloads, verifies,
+  installs and restarts; there is no confirmation dialog, no shell banner and no
+  dismiss. Both were withdrawn together, and a version dismissed through the old
+  banner (`kesvio.dismissed-update-version`, left unread in storage) is
+  announced again. The app stays usable while the download runs.
 - Installer verification follows the trust contract in
   [Security model](security.md#update-and-release-integrity) before installation.
-- Download progress reports real bytes/percentage; verification, installation
-  and restart are indeterminate stages. Manifest checks have a thirty-second
-  request timeout and user-started downloads have a fifteen-minute timeout.
-  Update failures retain a safe retry UI.
+- While installing, the pill becomes a progress bar: the download shows its
+  real percentage when the size is known, verification, installation and
+  restart show a full bar with the stage name. Manifest checks have a
+  thirty-second request timeout and user-started downloads have a
+  fifteen-minute timeout. A failure turns the pill into **Retry update X** and
+  raises one toast with the safe error message and an **Open release** action
+  (`src/app/model/useUpdateFailureNotice.ts`).
 - The downloaded installer runs in NSIS passive mode: non-interactive, but with
   a visible progress window. An unsigned installer that runs itself with no
   window at all is the shape of behaviour that heuristics score, and the user

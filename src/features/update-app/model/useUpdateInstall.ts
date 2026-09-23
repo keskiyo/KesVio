@@ -13,8 +13,6 @@ export function useUpdateInstall(
 ) {
 	const [phase, setPhase] = useState<UpdateInstallPhase>('idle')
 	const [progress, setProgress] = useState<number | null>(null)
-	const [downloadedBytes, setDownloadedBytes] = useState(0)
-	const [totalBytes, setTotalBytes] = useState<number | null>(null)
 	const [error, setError] = useState<string | null>(null)
 	const inFlight = useRef(false)
 	const mounted = useRef(false)
@@ -33,8 +31,6 @@ export function useUpdateInstall(
 		setError(null)
 		setPhase('downloading')
 		setProgress(0)
-		setDownloadedBytes(0)
-		setTotalBytes(null)
 		try {
 			let total = 0,
 				downloaded = 0
@@ -43,11 +39,9 @@ export function useUpdateInstall(
 					if (!mounted.current) return
 					if (event.event === 'Started') {
 						total = event.data.contentLength ?? 0
-						setTotalBytes(total || null)
 						setProgress(0)
 					} else if (event.event === 'Progress') {
 						downloaded += event.data.chunkLength
-						setDownloadedBytes(downloaded)
 						setProgress(
 							total
 								? Math.min(
@@ -84,8 +78,6 @@ export function useUpdateInstall(
 	return {
 		phase,
 		progress,
-		downloadedBytes,
-		totalBytes,
 		error,
 		installing: isUpdateInstalling(phase),
 		install,

@@ -40,7 +40,7 @@
 | Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.                                                       |
 | A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.                                                          |
 | Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                                                                 |
-| Update/download failure        | Retry from the update dialog or use the linked GitHub release.                                                                                              |
+| Update/download failure        | Press **Retry update** under the KesVio name, or **Open release** in the error toast to download the installer.                                             |
 | SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                                                                  |
 | Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.                                                         |
 | A scan never finishes          | Open the newest `KesVioData\logs\kesvio-<start>-<pid>.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.                       |

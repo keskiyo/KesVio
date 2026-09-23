@@ -3,10 +3,8 @@ import type { UpdateCheckStatus } from '../types'
 import type { UpdateHandle, UpdateResource } from './updateResource'
 import {
 	automaticCheckIsDue,
-	dismissedVersion,
 	failedChecks,
 	rememberCheck,
-	rememberDismissedVersion,
 	rememberFailedChecks,
 	storedAutomaticChecks,
 	rememberAutomaticChecks,
@@ -63,10 +61,7 @@ export function useUpdateCheck(
 						resource.discard(found)
 						return
 					}
-					if (
-						!request.manual &&
-						(!found || dismissedVersion() === found.version)
-					) {
+					if (!request.manual && !found) {
 						resource.discard(found)
 						return
 					}
@@ -103,18 +98,11 @@ export function useUpdateCheck(
 		rememberAutomaticChecks(enabled)
 		setAutomaticChecksState(enabled)
 	}, [])
-	const dismiss = useCallback(() => {
-		const update = resource.get()
-		if (update) rememberDismissedVersion(update.version)
-		resource.replace(null)
-		setAvailable(null)
-	}, [resource])
 	return {
 		available,
 		status,
 		automaticChecks,
 		checkNow,
 		setAutomaticChecks,
-		dismiss,
 	}
 }

@@ -3,27 +3,19 @@ import {
 	isUpdateInstalling,
 	updateErrorMessage,
 	updatePresentation,
+	updateProgressLabel,
 } from '../../../../src/features/update-app/lib/updatePresentation'
 
 describe('update presentation', () => {
-	it('drops unsafe links and invalid package sizes from metadata', () => {
+	it('exposes only the version of an available update', () => {
 		const handle = {
 			version: '0.5.1',
-			rawJson: {
-				releaseUrl: 'javascript:alert(1)',
-				packageSize: Infinity,
-			},
+			rawJson: { releaseUrl: 'javascript:alert(1)' },
 			download: async () => {},
 			install: async () => {},
 			close: async () => {},
 		}
-		expect(updatePresentation(handle)).toEqual({
-			version: '0.5.1',
-			notes: null,
-			date: null,
-			packageSize: null,
-			releaseUrl: null,
-		})
+		expect(updatePresentation(handle)).toEqual({ version: '0.5.1' })
 		expect(updatePresentation(null)).toBeNull()
 	})
 	it('returns safe text for unknown errors containing local paths', () => {
@@ -34,5 +26,12 @@ describe('update presentation', () => {
 	it('allows retry after failure and keeps restart in the installing state', () => {
 		expect(isUpdateInstalling('failed')).toBe(false)
 		expect(isUpdateInstalling('restarting')).toBe(true)
+	})
+	it('names every installing stage, with a percentage only while it is known', () => {
+		expect(updateProgressLabel('downloading', 42)).toBe('Downloading 42%')
+		expect(updateProgressLabel('downloading', null)).toBe('Downloading…')
+		expect(updateProgressLabel('verifying', 100)).toBe('Verifying…')
+		expect(updateProgressLabel('installing', 100)).toBe('Installing…')
+		expect(updateProgressLabel('restarting', 100)).toBe('Restarting…')
 	})
 })

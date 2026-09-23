@@ -16,12 +16,6 @@ vi.mock('@tauri-apps/plugin-process', () => ({
 function update(version: string) {
 	return {
 		version,
-		date: '2026-07-11T10:00:00Z',
-		body: '## Highlights\n- Test update.',
-		rawJson: {
-			packageSize: 5_600_000,
-			releaseUrl: `https://github.com/keskiyo/KesVio/releases/tag/v${version}`,
-		},
 		download: vi.fn(),
 		install: vi.fn(),
 		close: vi.fn().mockResolvedValue(undefined),
@@ -39,27 +33,16 @@ describe('useUpdater', () => {
 		vi.restoreAllMocks()
 	})
 
-	it('does not auto-show an update version dismissed earlier', async () => {
+	// The sidebar pill is the only update surface and has no dismiss, so a version hidden through
+	// the withdrawn banner by an earlier release must not stay invisible forever.
+	it('announces an automatic result even when an earlier release dismissed it', async () => {
+		localStorage.setItem('kesvio.dismissed-update-version', '0.2.2')
 		check.mockResolvedValue(update('0.2.2'))
 
-		const { result, unmount } = renderHook(() => useUpdater())
+		const { result } = renderHook(() => useUpdater())
 
 		await waitFor(() =>
 			expect(result.current.update?.version).toBe('0.2.2'),
-		)
-		act(() => result.current.dismiss())
-		expect(result.current.update).toBeNull()
-		unmount()
-		// This case is about dismissal, not cadence: clear the throttle so the second mount
-		// actually reaches the network the way a launch four hours later would.
-		localStorage.removeItem('kesvio.last-update-check')
-
-		const second = renderHook(() => useUpdater())
-
-		await waitFor(() => expect(check).toHaveBeenCalledTimes(2))
-		expect(second.result.current.update).toBeNull()
-		expect(localStorage.getItem('kesvio.dismissed-update-version')).toBe(
-			'0.2.2',
 		)
 	})
 
@@ -242,8 +225,7 @@ describe('useUpdater', () => {
 		expect(result.current.update).not.toBeNull()
 	})
 
-	it('manual checks show a dismissed version again', async () => {
-		localStorage.setItem('kesvio.dismissed-update-version', '0.2.2')
+	it('manual checks report an available version', async () => {
 		check.mockResolvedValue(update('0.2.2'))
 
 		const { result } = renderHook(() => useUpdater({ autoCheck: false }))
@@ -254,16 +236,10 @@ describe('useUpdater', () => {
 
 		expect(result.current.update?.version).toBe('0.2.2')
 		expect(result.current.status).toBe('available')
-		expect(result.current.update).toMatchObject({
-			version: '0.2.2',
-			date: '2026-07-11T10:00:00Z',
-			packageSize: 5_600_000,
-			releaseUrl: 'https://github.com/keskiyo/KesVio/releases/tag/v0.2.2',
-		})
+		expect(result.current.update).toEqual({ version: '0.2.2' })
 	})
 
-	it('coalesces an automatic and manual check while preserving manual visibility', async () => {
-		localStorage.setItem('kesvio.dismissed-update-version', '0.2.2')
+	it('coalesces an automatic and manual check into one request', async () => {
 		let resolveCheck:
 			((value: ReturnType<typeof update>) => void) | undefined
 		check.mockImplementation(
@@ -364,7 +340,7 @@ describe('useUpdater', () => {
 		expect(consoleError).not.toHaveBeenCalled()
 	})
 
-	it('tracks downloaded bytes and uses separate download and install stages', async () => {
+	it('uses separate download and install stages', async () => {
 		const download = vi.fn(async callback => {
 			callback({ event: 'Started', data: { contentLength: 1000 } })
 			callback({ event: 'Progress', data: { chunkLength: 250 } })
@@ -385,8 +361,6 @@ describe('useUpdater', () => {
 			installing = result.current.install()
 		})
 		await waitFor(() => expect(result.current.phase).toBe('installing'))
-		expect(result.current.downloadedBytes).toBe(250)
-		expect(result.current.totalBytes).toBe(1000)
 		expect(result.current.progress).toBe(100)
 		expect(download).toHaveBeenCalledOnce()
 		expect(install).toHaveBeenCalledOnce()

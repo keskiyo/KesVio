@@ -36,7 +36,10 @@ export function AppDrawer(props: AppDrawerProps) {
 				className="drawer-panel absolute inset-y-0 left-0 flex w-full flex-col border-slate-300/70 bg-slate-50 shadow-(--shadow-drawer) sm:w-[min(22rem,88vw)] sm:border-r"
 			>
 				<div className="flex items-center justify-between gap-3 border-b border-slate-300/65 px-4 py-4">
-					<NavigationIdentity onGoHome={props.onGoHome} />
+					<NavigationIdentity
+						{...props.identity}
+						onGoHome={props.onGoHome}
+					/>
 					<button
 						type="button"
 						aria-label="Close navigation"

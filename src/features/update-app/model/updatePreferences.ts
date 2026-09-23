@@ -1,26 +1,9 @@
-const DISMISSED_UPDATE_KEY = 'kesvio.dismissed-update-version'
 const LAST_CHECK_KEY = 'kesvio.last-update-check'
 const FAILED_CHECKS_KEY = 'kesvio.update-check-failures'
 const AUTOMATIC_CHECKS_KEY = 'kesvio.automatic-update-checks'
 const AUTO_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 const MAX_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000
 const MAX_COUNTED_FAILURES = 8
-
-export function dismissedVersion(): string | null {
-	try {
-		return globalThis.localStorage?.getItem(DISMISSED_UPDATE_KEY) ?? null
-	} catch {
-		return null
-	}
-}
-
-export function rememberDismissedVersion(version: string) {
-	try {
-		globalThis.localStorage?.setItem(DISMISSED_UPDATE_KEY, version)
-	} catch (ignored) {
-		void ignored
-	}
-}
 
 function lastAutomaticCheck(): number {
 	try {

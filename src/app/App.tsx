@@ -16,6 +16,7 @@ import { useAppFeedback } from './model/useAppFeedback'
 import { useActivityStatus } from './model/useActivityStatus'
 import { useAppDerivations } from './model/useAppDerivations'
 import { useCatalogDialogs } from './model/useCatalogDialogs'
+import { useNavigationIdentity } from './model/useNavigationIdentity'
 import { useNavigationProps } from './model/useNavigationProps'
 import { AppDialogs } from './layout/AppDialogs'
 import { AppViews } from './layout/AppViews'
@@ -26,6 +27,7 @@ import { useSearchAccess } from './model/useSearchAccess'
 import { useTrayCatalogScan } from './model/useTrayCatalogScan'
 import { useTrayFavorites } from './model/useTrayFavorites'
 import { useTraySearch } from './model/useTraySearch'
+import { useUpdateFailureNotice } from './model/useUpdateFailureNotice'
 
 import { useGlobalShortcuts } from './model/useGlobalShortcuts'
 import { useStaleCopy } from '../features/stale-copy'
@@ -144,6 +146,8 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		isRefreshing: state.isRefreshing,
 	})
 	const updater = useUpdater()
+	const identity = useNavigationIdentity({ systemClient, updater })
+	useUpdateFailureNotice({ systemClient, updater })
 	const { dismiss: dismissStaleCopy, staleCopy } = useStaleCopy(systemClient)
 
 	return (
@@ -158,20 +162,19 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 					preferencesPersisted={preferencesPersisted}
 					staleCopy={staleCopy}
 					systemClient={systemClient}
-					updater={updater}
 					onDismissStaleCopy={dismissStaleCopy}
 				/>
-				<div className="flex min-h-0 flex-1 gap-2 px-2 pb-2">
+				<div
+					className={`grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] ${desktopNavigation ? 'grid-cols-[auto_minmax(0,1fr)]' : 'grid-cols-1'}`}
+				>
 					{desktopNavigation && (
 						<AppSidebar
 							{...navigationProps}
+							identity={identity}
 							onGoHome={navigation.goHome}
 						/>
 					)}
-					<div
-						id="catalog-scroll"
-						className="app-panel flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto rounded-2xl"
-					>
+					<div className="catalog-canvas row-span-2 grid min-h-0 grid-cols-[minmax(0,1fr)] grid-rows-subgrid overflow-hidden">
 						<Header
 							primaryAppCount={navigationProps.appCount}
 							auxiliaryToolCount={counts.auxiliaryCount}
@@ -188,19 +191,24 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							onOpenNavigation={drawer.onOpen}
 							showMenu={!desktopNavigation}
 						/>
-						<AppViews
-							state={state}
-							catalog={catalog}
-							derivations={derivations}
-							navigation={navigation}
-							scenarioRunner={scenarios.runner}
-							dialogs={dialogs}
-							updater={updater}
-							systemClient={systemClient}
-							onFirstScan={feedback.fullScan}
-							onRefreshCatalog={feedback.refresh}
-							onOpenFolder={feedback.openFolder}
-						/>
+						<div
+							id="catalog-scroll"
+							className="min-h-0 overflow-x-hidden overflow-y-auto"
+						>
+							<AppViews
+								state={state}
+								catalog={catalog}
+								derivations={derivations}
+								navigation={navigation}
+								scenarioRunner={scenarios.runner}
+								dialogs={dialogs}
+								updater={updater}
+								systemClient={systemClient}
+								onFirstScan={feedback.fullScan}
+								onRefreshCatalog={feedback.refresh}
+								onOpenFolder={feedback.openFolder}
+							/>
+						</div>
 					</div>
 				</div>
 				{drawer.mounted && !desktopNavigation && (
@@ -208,6 +216,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 						{...navigationProps}
 						open={drawer.open}
 						triggerRef={menuButtonRef}
+						identity={identity}
 						onGoHome={navigation.goHome}
 						onClose={drawer.close}
 						onExited={drawer.onExited}

@@ -24,22 +24,51 @@
 	backdrop-filter: blur(14px) saturate(115%);
 }
 
-.app-panel {
-	background: oklch(0.34 0.012 272 / 0.82);
-	border: 1px solid oklch(0.56 0.014 274 / 0.38);
-	-webkit-backdrop-filter: blur(16px) saturate(118%);
-	backdrop-filter: blur(16px) saturate(118%);
-	box-shadow: 0 20px 48px oklch(0.16 0.016 270 / 0.42);
-}
-
 #catalog-scroll {
 	scrollbar-gutter: stable;
 }
 
-.app-header-glass {
-	background: oklch(0.36 0.012 272 / 0.86);
+.catalog-canvas {
+	background: transparent;
+}
+
+.app-header-glass,
+.app-sidebar {
+	background: var(--shell-chrome);
 	-webkit-backdrop-filter: blur(18px) saturate(115%);
 	backdrop-filter: blur(18px) saturate(115%);
+}
+
+.app-header-glass {
+	border-bottom: 1px solid var(--shell-divider);
+}
+
+.app-sidebar {
+	border-right: 1px solid var(--shell-divider);
+}
+
+.app-sidebar-brand {
+	border-bottom: 1px solid var(--shell-divider);
+}
+
+.update-pill-progress {
+	background: linear-gradient(
+		90deg,
+		color-mix(in oklch, var(--accent) 48%, transparent)
+			var(--update-progress, 100%),
+		color-mix(in oklch, var(--accent) 12%, transparent)
+			var(--update-progress, 100%)
+	);
+}
+
+.app-header-status {
+	height: 1.75rem;
+}
+
+@media (pointer: coarse) {
+	.app-header-status {
+		height: 44px;
+	}
 }
 
 .app-card-glass {
@@ -81,14 +110,9 @@
 		backdrop-filter: none;
 	}
 
-	.app-panel {
-		background: oklch(0.34 0.012 272);
-		-webkit-backdrop-filter: none;
-		backdrop-filter: none;
-	}
-
-	.app-header-glass {
-		background: oklch(0.36 0.012 272);
+	.app-header-glass,
+	.app-sidebar {
+		background: var(--shell-chrome-opaque);
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
 	}

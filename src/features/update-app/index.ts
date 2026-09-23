@@ -1,9 +1,9 @@
-export { UpdateBanner } from './ui/UpdateBanner'
-export { UpdateDialog } from './ui/UpdateDialog/UpdateDialog'
+export { UpdatePill } from './ui/UpdatePill'
 export { useUpdater } from './model/useUpdater'
 export type {
 	AvailableUpdate,
 	UpdateCheckStatus,
 	UpdateInstallPhase,
+	UpdatePillProps,
 	UpdaterState,
 } from './types'

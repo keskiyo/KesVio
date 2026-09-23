@@ -20,6 +20,7 @@ export interface CardIconProps {
 	iconBase64: string | null
 	launching: boolean
 	tone?: 'accent' | 'neutral'
+	badge?: ReactNode
 }
 
 export interface CardLabelProps {

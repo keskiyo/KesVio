@@ -26,11 +26,7 @@ export interface AppShellChromeProps {
 	activityLabel: string
 	preferencesPersisted: boolean
 	staleCopy: StaleCopyInfo | null
-	systemClient: Pick<
-		SystemClient,
-		'openGithub' | 'openInstalledCopy' | 'openRelease'
-	>
-	updater: ReturnType<typeof useUpdater>
+	systemClient: Pick<SystemClient, 'openInstalledCopy'>
 	onDismissStaleCopy: () => void
 }
 

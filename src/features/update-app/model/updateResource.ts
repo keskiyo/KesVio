@@ -9,9 +9,6 @@ interface UpdateRequestOptions {
 
 export interface UpdateHandle {
 	version: string
-	body?: string
-	date?: string
-	rawJson: Record<string, unknown>
 	download(
 		onEvent: (event: UpdateDownloadEvent) => void,
 		options: UpdateRequestOptions,

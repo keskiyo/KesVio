@@ -14,6 +14,7 @@ dev-launcher.log
 *.key.pub
 .agents/
 .superpowers/
+.impeccable/critique/*.md
 graphify-out/
 docs/
 !docs/

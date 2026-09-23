@@ -11,13 +11,11 @@
 	animation: activity-slide 1.1s ease-in-out infinite;
 }
 
-.motion-overlay,
-.update-modal-backdrop {
+.motion-overlay {
 	animation: overlay-enter var(--motion-fast) var(--motion-ease-out) both;
 }
 
-.motion-panel,
-.update-modal-panel {
+.motion-panel {
 	animation: panel-enter var(--motion-medium) var(--motion-ease-out) both;
 	will-change: transform, opacity;
 }
@@ -168,9 +166,7 @@
 	.activity-bar-fill,
 	.app-card,
 	.motion-overlay,
-	.update-modal-backdrop,
 	.motion-panel,
-	.update-modal-panel,
 	.drawer-backdrop,
 	.drawer-panel,
 	.drawer-shell.is-closing .drawer-backdrop,

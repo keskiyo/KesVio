@@ -69,7 +69,7 @@ Inspect local file details, architecture, signature status, installation state, 
 
 ### Settings and maintenance
 
-![KesVio settings showing personalization, Windows integration, and update controls](.github/images/settings.png)
+![KesVio settings showing appearance, startup and tray behavior, and Windows integration](.github/images/settings.png)
 
 Control catalog density, application discovery, startup and tray behavior, updates, and catalog maintenance from one place.
 

@@ -11,6 +11,7 @@ export function CardIcon({
 	iconBase64,
 	launching,
 	tone = 'accent',
+	badge,
 }: CardIconProps) {
 	return (
 		<span
@@ -42,6 +43,7 @@ export function CardIcon({
 					aria-hidden="true"
 				/>
 			)}
+			{badge}
 		</span>
 	)
 }

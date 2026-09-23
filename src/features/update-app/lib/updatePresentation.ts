@@ -12,20 +12,15 @@ export function isUpdateInstalling(phase: UpdateInstallPhase): boolean {
 	return ACTIVE_UPDATE_PHASES.has(phase)
 }
 
-function positiveNumber(value: unknown): number | null {
-	return typeof value === 'number' && Number.isFinite(value) && value > 0
-		? value
-		: null
-}
-
-function httpUrl(value: unknown): string | null {
-	if (typeof value !== 'string') return null
-	try {
-		const url = new URL(value)
-		return url.protocol === 'https:' ? url.toString() : null
-	} catch {
-		return null
-	}
+export function updateProgressLabel(
+	phase: UpdateInstallPhase,
+	progress: number | null,
+): string {
+	if (phase === 'downloading')
+		return progress === null ? 'Downloading…' : `Downloading ${progress}%`
+	if (phase === 'verifying') return 'Verifying…'
+	if (phase === 'installing') return 'Installing…'
+	return 'Restarting…'
 }
 
 export function updateErrorMessage(error: unknown): string {
@@ -58,12 +53,5 @@ export function updateErrorMessage(error: unknown): string {
 export function updatePresentation(
 	update: UpdateHandle | null,
 ): AvailableUpdate | null {
-	if (!update) return null
-	return {
-		version: update.version,
-		notes: update.body ?? null,
-		date: update.date ?? null,
-		packageSize: positiveNumber(update.rawJson.packageSize),
-		releaseUrl: httpUrl(update.rawJson.releaseUrl),
-	}
+	return update ? { version: update.version } : null
 }

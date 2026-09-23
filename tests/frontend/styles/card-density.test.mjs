@@ -93,10 +93,10 @@ describe('catalog density presets', () => {
 		)
 		expect(rule('.app-card-row')).toContain('var(--app-card-row-height)')
 		expect(rule('.app-card-platform-badge')).toContain(
-			'bottom: var(--app-card-platform-badge-inset)',
+			'right: calc(var(--app-card-platform-badge-inset) * -1)',
 		)
 		expect(rule('.app-card-platform-badge')).toContain(
-			'left: var(--app-card-platform-badge-inset)',
+			'bottom: calc(var(--app-card-platform-badge-inset) * -1)',
 		)
 		expect(rule('.app-card-platform-badge')).toContain(
 			'width: var(--app-card-platform-badge-size)',

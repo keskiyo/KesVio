@@ -62,7 +62,7 @@ export function Header({
 		scanProgress,
 	})
 	return (
-		<header className="app-header-glass sticky top-0 z-300 border-b border-slate-300/65 shadow-(--shadow-header)">
+		<header className="app-header-glass sticky top-0 z-300">
 			<div className="mx-auto flex w-full max-w-375 items-start gap-3 px-5 pt-4.75 pb-4 sm:px-8">
 				{showMenu && (
 					<button
@@ -82,15 +82,19 @@ export function Header({
 							searchRef={searchRef}
 							onQueryChange={onQueryChange}
 						/>
-						<p
-							role="status"
-							aria-live="polite"
-							aria-atomic="true"
-							className={`mt-1.5 truncate px-1 text-xs ${isRefreshing ? 'text-violet-700' : 'text-(--text-muted)'}`}
-						>
-							{status}
-						</p>
-						{activeFilter && <FilterChip filter={activeFilter} />}
+						<div className="app-header-status mt-1.5 flex min-w-0 items-center gap-2 px-1">
+							<p
+								role="status"
+								aria-live="polite"
+								aria-atomic="true"
+								className={`max-w-[70%] min-w-0 shrink-0 truncate text-xs ${isRefreshing ? 'text-violet-700' : 'text-(--text-muted)'}`}
+							>
+								{status}
+							</p>
+							{activeFilter && (
+								<FilterChip filter={activeFilter} />
+							)}
+						</div>
 					</div>
 					<ScanButton
 						isRefreshing={isRefreshing}

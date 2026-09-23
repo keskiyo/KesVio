@@ -69,7 +69,12 @@ src-tauri/Cargo.toml` is the count, and the script at the end prints the
   disconnected monitor, one hanging off an edge, one larger than its screen and
   a maximized one each have a named case, and a resize reaches the stored state
   without a close, because an update, a shutdown or a kill ends the process
-  without one. `lifecycle/presentation.rs` keeps ordinary startup hidden until
+  without one. `lifecycle/window_state/mod.rs` proves the restore clamps to the
+  minimum the window configuration declares, converted to the physical pixels a
+  geometry is stored in, that a missing or impossible minimum clamps nothing
+  away, and that `tauri.conf.json` still declares the 446 × 529 minimum the
+  interface is built for — a second constant in the restore path had drifted
+  to 430 × 520. `lifecycle/presentation.rs` keeps ordinary startup hidden until
   the frontend readiness event while tray-backed autostart remains hidden.
   `lifecycle/state.rs` also proves the quiet-start rules — a fresh session is
   not one, it ends exactly once, and ending it releases a deferred startup scan
@@ -372,7 +377,7 @@ declined by the rules `paths/` names.
 - [`lifecycle/tray/menu/tests.rs`](../../src-tauri/src/lifecycle/tray/menu/tests.rs)
 - [`lifecycle/tray/model.rs`](../../src-tauri/src/lifecycle/tray/model.rs)
 - [`lifecycle/tray/search.rs`](../../src-tauri/src/lifecycle/tray/search.rs)
-- [`lifecycle/window_state/geometry.rs`](../../src-tauri/src/lifecycle/window_state/geometry.rs) and [`window_state/store.rs`](../../src-tauri/src/lifecycle/window_state/store.rs)
+- [`lifecycle/window_state/mod.rs`](../../src-tauri/src/lifecycle/window_state/mod.rs), [`window_state/geometry.rs`](../../src-tauri/src/lifecycle/window_state/geometry.rs) and [`window_state/store.rs`](../../src-tauri/src/lifecycle/window_state/store.rs)
 - [`paths/adopt.rs`](../../src-tauri/src/paths/adopt.rs)
 - [`paths/mod.rs`](../../src-tauri/src/paths/mod.rs)
 - [`paths/portable.rs`](../../src-tauri/src/paths/portable.rs)

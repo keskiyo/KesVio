@@ -59,8 +59,13 @@ Compact and Dense — and `App.tsx` stamps the choice as `data-density` on
 subset, because a partly-defined preset would inherit comfortable sizes and
 overflow its own shorter card. Compact and Dense hide the version line through
 `--app-card-version-display`, which keeps the element and its tooltip in the
-tree. A passive lower-left badge identifies Steam, Battle.net, Microsoft Store
-and portable entries; ordinary Windows entries have no badge. Steam games and
+tree. A passive badge on the lower-right corner of the app icon identifies
+Steam, Battle.net, Microsoft Store and portable entries; ordinary Windows
+entries have no badge. It is drawn through the `badge` slot of `CardIcon`, so it
+follows the icon at every density and overhangs its corner by
+`--app-card-platform-badge-inset`; it used to be pinned to the lower-left corner
+of the card, which is where the centred name runs, and hid the first letters of
+long names. Steam games and
 the trusted Valve Steam client use the Steam classification. Steam and
 Battle.net use a gamepad mark, Microsoft Store uses a shopping-bag mark, and
 portable entries use a USB-drive silhouette. Every glyph is monochrome white;
@@ -154,9 +159,48 @@ modal lifecycle as the rest, and a regression test opens it from a control and
 asserts the control has focus again after it closes. The navigation drawer restores focus to its
 menu button explicitly, because the burger outlives the panel.
 
-The catalog scroll root reserves its vertical scrollbar gutter. The shared
-modal lifecycle can therefore lock that root for any drawer or dialog without
-changing the width of the obscured page underneath it.
+The catalog is a continuous canvas rather than a raised panel. Its header is a
+fixed sibling above the catalog scroll root, so the narrow violet scrollbar
+starts below the header divider instead of breaking the header into two visual
+regions. The scroll root reserves its vertical scrollbar gutter, while every
+scroll surface uses the same 8 px scrollbar with a transparent track and no
+native arrow buttons. That scrollbar is drawn only by the `::-webkit-scrollbar`
+rules in `src/app/styles/base.css`; the stylesheet declares no standard
+`scrollbar-color` or `scrollbar-width`, because Chromium ignores every webkit
+scrollbar rule on an element where either is set and `scrollbar-color` is
+inherited — one declaration on `:root` brought back the 15 px native scrollbar
+with arrows everywhere.
+The window chrome is one L-shaped frame around that canvas. On desktop widths
+the navigation sidebar sits flush against the window edge and the catalog, drawn
+in the same translucent material as the header (`--shell-chrome`) and separated
+by the same 1 px line (`--shell-divider`); it used to float as a rounded,
+shadowed island inside an inset frame while the catalog beside it was already
+flush. The sidebar and the catalog canvas are both two-row subgrids of the shell
+grid, so the brand block and the header share the first row and their dividers
+form one line across the window in every state. Each of the two subgrid columns
+declares an explicit `minmax(0, 1fr)` track: a subgrid's implicit column is
+`auto` and grows to the nowrap width of its content, which widened the sidebar
+past 280 px under a long saved-filter name and pushed the scan button off a
+446 px window. Narrow
+windows have no sidebar and replace it with the drawer. The header uses a quiet
+divider instead of a drop shadow, and under `prefers-reduced-transparency` both
+chrome surfaces fall back to `--shell-chrome-opaque`. The shared modal lifecycle can therefore lock the catalog scroll root
+for any drawer or dialog without changing the width of the obscured page
+underneath it.
+
+The brand block (`src/widgets/sidebar-navigation/ui/NavigationIdentity.tsx`) is
+the same in the sidebar and the drawer header: the logo and name form the
+**Go to All Apps** button, and the line under the name shows the running version
+read once by `src/app/model/useNavigationIdentity.ts`, or nothing while it is
+unknown. When an update is available that line becomes an accent
+**Update X available** pill that installs it on click and turns into a progress
+bar with the percentage while it runs
+([Desktop operations](desktop-operations.md) owns the update flow). The pill is
+a sibling of the home button, not nested inside it, and it is absolutely
+positioned over the version line so the coarse-pointer 44 px minimum cannot grow
+it over the name. The Settings page has no visible header: its title is a
+screen-reader-only `h1` that still names the page region, and the logo and
+version live only in the brand block.
 
 ## More and catalog utility pages
 
@@ -250,7 +294,13 @@ The first six stay visible and the rest sit behind **Show all**, so a long filte
 list does not bury the category list.
 
 Selecting a saved filter opens **All Apps** and closes the navigation drawer; the
-header chip edits or clears the active filter. Sidebar and editor deletion both
+header chip edits or clears the active filter. The chip sits in the catalog
+status line, directly after the "167 apps · 75 tools found" count and outside its
+live region, and that line reserves the chip's height — 1.75 rem for a mouse,
+44 px under `(pointer: coarse)` — so applying or clearing a filter never changes
+the header height. It used to open a second row and push the catalog down by
+36 px. When the line is short of room the chip's name truncates first; the count
+keeps up to 70 % of the line. Sidebar and editor deletion both
 use the shared confirmation dialog, while the editor exposes a labelled
 **Delete** action. Create, edit and delete are undoable. A failed storage write
 restores the previous filter state; failed saves leave the editor open. The active
@@ -334,7 +384,13 @@ platform repaints in its own colours; text inputs that set `outline-none`
 receive an explicit `Highlight` outline under `forced-colors: active`, and the
 toggle switch draws its track border and knob in `ButtonText`/`Highlight` so
 its state remains visible without colour. Reduced motion is honoured through
-`motion.css`. None of this is a WCAG conformance claim: unit tests prove roles,
+`motion.css`. Muted and subtle normal text keep at least 4.5:1 contrast on the
+application surfaces. Coarse-pointer devices give application buttons and
+links a minimum 44 by 44 pixel hit area while the custom Windows title bar
+keeps its compact native-style height. Absolutely positioned overlay controls —
+the card menu and favourite buttons, the scenario tile remove badges, the
+search clear button — keep their own size: they sit on top of content, and
+growing them to 44 pixels covered the app icon on every catalog card. None of this is a WCAG conformance claim: unit tests prove roles,
 names, focus order and keyboard paths in jsdom; Narrator, forced colours,
 100/150/200 % scaling, the minimum window and long names are checked by hand
 as part of the manual accessibility matrix.

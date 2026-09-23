@@ -5,23 +5,28 @@ include them in the application bundle.
 
 ## Current capture
 
-Captured on 2026-09-15 from the running KesVio 0.5.1 application at source
-revision `baee6cc`. The catalog counts, categories and application names come
-from a real Windows installation rather than fixtures. Scenario names are
-presentation-ready, and the application details use a standard Program Files
+Captured on 2026-09-23 from the running KesVio 0.5.4 application, built from the
+release change set that introduces these images on top of revision `63dde23`. The window
+was rendered at a 1600 × 900 viewport through the WebView2 debugging protocol, so
+the images are native size rather than downscaled. The catalog counts, categories
+and application names come from a real Windows installation rather than fixtures.
+Scenario names are presentation-ready, saved filters were hidden for the capture
+and restored afterwards, and the application details use a standard Program Files
 path without account or machine identifiers.
 
-All six application screenshots are 1600 × 900, use the same dark theme and
-remain below 500 KB. The Social Preview is 1280 × 640.
+All six application screenshots are 1600 × 900 and use the same dark theme; five
+are below 500 KB and `catalog.png`, the densest view, is about 565 KB. The Social
+Preview is 1280 × 640 and reuses the previous layout with the new catalog capture
+in its frame.
 
 | File                 | Content                                                                |
 | -------------------- | ---------------------------------------------------------------------- |
-| `catalog.png`        | Main catalog with the KesVio logo, sidebar, categories and cards.      |
+| `catalog.png`        | Main catalog with the logo and version, sidebar, categories and cards. |
 | `favorites.png`      | Favorite applications and two saved scenarios.                         |
 | `more.png`           | Auxiliary tools, Scenarios, Hidden and Installers & Docs previews.     |
 | `scenarios.png`      | Configured scenarios with their launch and close lists.                |
 | `app-info.png`       | Application information, installation path, status and detection.      |
-| `settings.png`       | Version, global shortcut, Windows apps, tray behavior and updates.     |
+| `settings.png`       | Density, startup and tray behavior, shortcut and Windows apps.         |
 | `social-preview.png` | 1280 × 640 repository preview built from the icon and catalog capture. |
 
 ## Refresh guidance

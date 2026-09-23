@@ -2,7 +2,10 @@ import { ChevronDown, ClipboardCopy, HelpCircle } from 'lucide-react'
 import { useState } from 'react'
 import { CollapsiblePanel } from '../../../../../shared/ui/CollapsiblePanel'
 import { copyToClipboard } from '../../../../../shared/lib/clipboard'
-import { ACTION_BUTTON_PRIMARY } from '../../../../../shared/ui/buttonVariants'
+import {
+	ACTION_BUTTON_PRIMARY,
+	ACTION_ROW,
+} from '../../../../../shared/ui/buttonVariants'
 import { buildDiagnosticsReport } from './data'
 import { UnclassifiedRow } from './UnclassifiedRow'
 import type { UnclassifiedAppsProps } from './types'
@@ -57,7 +60,7 @@ export function UnclassifiedApps({
 			</button>
 			<CollapsiblePanel open={expanded} id={contentId}>
 				<div className="mt-4 flex flex-col gap-3">
-					<div className="flex items-center justify-end gap-3">
+					<div className={`${ACTION_ROW} sm:items-center`}>
 						<p
 							role="status"
 							aria-live="polite"

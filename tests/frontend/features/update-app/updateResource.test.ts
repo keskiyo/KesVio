@@ -7,7 +7,6 @@ import {
 function handle(): UpdateHandle {
 	return {
 		version: '0.5.1',
-		rawJson: {},
 		download: vi.fn(),
 		install: vi.fn(),
 		close: vi.fn().mockResolvedValue(undefined),

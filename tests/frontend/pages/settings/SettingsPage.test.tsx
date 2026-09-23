@@ -45,15 +45,12 @@ describe('SettingsPage', () => {
 		update: null,
 		installing: false,
 		progress: null,
-		downloadedBytes: 0,
-		totalBytes: null,
 		phase: 'idle',
 		error: null,
 		status: 'idle',
 		automaticChecks: true,
 		checkNow: vi.fn().mockResolvedValue(undefined),
 		install: vi.fn().mockResolvedValue(undefined),
-		dismiss: vi.fn(),
 		setAutomaticChecks: vi.fn(),
 		...overrides,
 	})
@@ -68,7 +65,7 @@ describe('SettingsPage', () => {
 				updater={updaterState()}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		await userEvent.click(
 			screen.getByRole('button', {
@@ -89,7 +86,7 @@ describe('SettingsPage', () => {
 				updater={updaterState()}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 		expect(
 			screen.queryByRole('button', { name: 'Manage startup in Windows' }),
 		).not.toBeInTheDocument()
@@ -122,7 +119,7 @@ describe('SettingsPage', () => {
 				updater={updaterState()}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 		const sections = [
 			'Appearance',
 			'Startup & window',
@@ -147,7 +144,7 @@ describe('SettingsPage', () => {
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		for (const description of [
 			'Works in any keyboard layout.',
@@ -179,7 +176,7 @@ describe('SettingsPage', () => {
 				onResetCatalogCache={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		for (const gone of [
 			'Catalog sources',
@@ -223,7 +220,7 @@ describe('SettingsPage', () => {
 				client={systemClient()}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		for (const guarantee of [
 			'Fixed drives are walked only during Force full scan. An ordinary refresh reads Windows sources and the folders added below.',
@@ -243,7 +240,7 @@ describe('SettingsPage', () => {
 				updater={updaterState()}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 		const toggle = screen.getByRole('switch', {
 			name: 'Keep running in the tray when the window is closed',
 		})
@@ -275,7 +272,7 @@ describe('SettingsPage', () => {
 				updater={updaterState()}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		await userEvent.click(
 			screen.getByRole('switch', {
@@ -292,8 +289,8 @@ describe('SettingsPage', () => {
 	})
 
 	it('runs the manual update check on the shared updater instance', async () => {
-		// The update dialog lives on App's updater; if the button checked on a private
-		// instance, a dismissed update could never be reopened from Settings.
+		// The sidebar update pill reads App's updater; if the button checked on a private
+		// instance, a version found from Settings would never reach the pill.
 		const checkNow = vi.fn().mockResolvedValue(undefined)
 		render(
 			<SettingsPage
@@ -303,7 +300,7 @@ describe('SettingsPage', () => {
 				updater={updaterState({ checkNow })}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		await userEvent.click(
 			screen.getByRole('button', { name: /Check updates/ }),
@@ -324,7 +321,7 @@ describe('SettingsPage', () => {
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		expect(
 			screen.queryByRole('button', { name: /Advanced/ }),
@@ -358,7 +355,7 @@ describe('SettingsPage', () => {
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		expect(
 			screen.queryByText('Primary applications'),
@@ -376,7 +373,7 @@ describe('SettingsPage', () => {
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		expect(
 			screen.queryByRole('button', { name: 'Repair missing icons' }),
@@ -397,7 +394,7 @@ describe('SettingsPage', () => {
 				onForceFullScan={onForceFullScan}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Force full scan' }),
@@ -420,7 +417,7 @@ describe('SettingsPage', () => {
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 		const trigger = screen.getByRole('button', { name: 'Force full scan' })
 		await userEvent.click(trigger)
 		await userEvent.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -438,7 +435,7 @@ describe('SettingsPage', () => {
 				onForceFullScan={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Force full scan' }),
@@ -463,7 +460,7 @@ describe('SettingsPage', () => {
 				onResetCatalogCache={onResetCatalogCache}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Reset catalog cache' }),
@@ -488,7 +485,7 @@ describe('SettingsPage', () => {
 				onResetCatalogCache={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Force full scan' }),
@@ -535,7 +532,7 @@ describe('SettingsPage', () => {
 				onResetCatalogCache={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Force full scan' }),
@@ -559,7 +556,7 @@ describe('SettingsPage', () => {
 				onResetCatalogCache={vi.fn().mockResolvedValue(undefined)}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 
 		expect(
 			screen.getByText('Application discovery').closest('div'),
@@ -615,8 +612,15 @@ describe('SettingsPage', () => {
 				updater={updaterState()}
 			/>,
 		)
-		expect(await screen.findByText('Version 0.1.0')).toBeInTheDocument()
-		expect(screen.getByText('Win+Shift+Q')).toBeInTheDocument()
+		expect(await screen.findByText('Win+Shift+Q')).toBeInTheDocument()
+		expect(screen.queryByText(/Version 0\.1\.0/)).toBeNull()
+		expect(screen.queryByRole('img', { name: 'KesVio logo' })).toBeNull()
+		expect(
+			screen.getByRole('heading', { level: 1, name: 'Settings' }),
+		).toBeInTheDocument()
+		expect(
+			screen.getByRole('region', { name: 'Settings' }),
+		).toBeInTheDocument()
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Open @keskiyo on Telegram' }),
 		)
@@ -679,7 +683,7 @@ describe('SettingsPage', () => {
 				updater={updaterState()}
 			/>,
 		)
-		await screen.findByText('Version 0.1.0')
+		await screen.findByText('Win+Shift+Q')
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Browse for scan folder' }),
 		)

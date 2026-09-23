@@ -9,7 +9,7 @@ export function FilterChip({ filter }: FilterChipProps) {
 		<span
 			role="group"
 			aria-label={`Filter ${filter.name}`}
-			className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-lg border border-(--border-neutral) bg-(--surface-inset) py-0.5 pr-1 pl-2 text-xs text-(--text-primary)"
+			className="inline-flex min-w-0 items-center gap-1 rounded-lg border border-(--border-neutral) bg-(--surface-inset) pr-0.5 pl-2 text-xs text-(--text-primary)"
 		>
 			<Filter size={13} aria-hidden="true" className="shrink-0" />
 			<span className="truncate">{filter.name}</span>

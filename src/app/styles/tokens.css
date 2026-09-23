@@ -6,10 +6,13 @@
 	--surface-panel: oklch(0.34 0.012 272 / 0.9);
 	--surface-raised: oklch(0.39 0.014 274 / 0.84);
 	--surface-inset: oklch(0.31 0.012 272);
+	--shell-chrome: oklch(0.34 0.012 272 / 0.72);
+	--shell-chrome-opaque: oklch(0.36 0.012 272);
+	--shell-divider: oklch(0.58 0.018 274 / 0.22);
 	--border-neutral: oklch(0.52 0.016 274 / 0.58);
 	--text-primary: oklch(0.91 0.01 270);
-	--text-muted: oklch(0.72 0.014 270);
-	--text-subtle: oklch(0.62 0.014 270);
+	--text-muted: oklch(0.78 0.014 270);
+	--text-subtle: oklch(0.75 0.014 270);
 	--accent: oklch(0.7 0.14 292);
 	--accent-strong: oklch(0.76 0.13 292);
 	--utility-accent: oklch(0.5 0.075 292 / 0.9);
@@ -50,21 +53,16 @@
 	--app-card-row-height: 4.5rem;
 	--color-telegram: #229ed9;
 	--color-telegram-text: #5cc8f5;
-	--surface-dialog: oklch(0.34 0.012 272);
 
 	--color-palette-selected: #6d28d9;
 	--color-palette-selected-text: #ffffff;
 	--shadow-summary: 0 10px 22px oklch(0.15 0.014 270 / 0.22);
-	--shadow-header: 0 10px 30px oklch(0.15 0.014 270 / 0.24);
 
 	--shadow-accent-soft: 0 8px 18px oklch(0.45 0.16 292 / 0.28);
 	--shadow-dialog: 0 24px 70px oklch(0.15 0.014 270 / 0.45);
-	--shadow-update-dialog:
-		0 24px 70px oklch(0.15 0.014 270 / 0.45),
-		0 0 38px oklch(0.76 0.13 292 / 0.18);
 	--shadow-palette: 0 28px 80px oklch(0.15 0.014 270 / 0.5);
 	--shadow-menu: 0 18px 45px oklch(0.15 0.014 270 / 0.38);
-	--shadow-drawer: 24px 0 70px oklch(0.15 0.014 270 / 0.42);
+	--shadow-drawer: 12px 0 32px oklch(0.15 0.014 270 / 0.32);
 	--shadow-active-navigation: inset 1px 1px 3px oklch(0.15 0.014 270 / 0.22);
 	--shadow-app-icon:
 		inset 1px 1px 3px rgba(111, 124, 146, 0.13),
@@ -76,6 +74,4 @@
 	--motion-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
 	--motion-fast: 180ms;
 	--motion-medium: 240ms;
-	scrollbar-width: thin;
-	scrollbar-color: oklch(0.63 0.09 292) oklch(0.25 0.012 270);
 }

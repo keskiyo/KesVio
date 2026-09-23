@@ -370,6 +370,77 @@ describe('App', () => {
 		)
 	})
 
+	it('lets the narrow catalog reach the window edges', async () => {
+		setDesktopNavigation(false)
+		renderApp()
+		await screen.findByRole('button', { name: 'Launch Steam' })
+		const frame = document.querySelector('.catalog-canvas')?.parentElement
+
+		expect(frame).not.toHaveClass('gap-2', 'px-2', 'pb-2')
+	})
+
+	// The desktop sidebar used to float as a rounded island inside an inset frame while the
+	// catalog beside it had already become one flush canvas.
+	it('puts desktop navigation flush against the catalog', async () => {
+		setDesktopNavigation(true)
+		renderApp()
+		await screen.findByRole('button', { name: 'Launch Steam' })
+		const frame = document.querySelector('.catalog-canvas')?.parentElement
+
+		expect(frame).not.toHaveClass('gap-2', 'px-2', 'pb-2')
+		expect(screen.getByRole('complementary')).not.toHaveClass(
+			'app-panel',
+			'rounded-2xl',
+		)
+	})
+
+	// The brand divider and the header divider form one line across the window. A fixed height
+	// cannot keep them together, because an active saved filter grows the header by a chip row;
+	// sharing the first row of one grid through subgrid does.
+	it('shares the first shell row between the navigation brand and the catalog header', async () => {
+		setDesktopNavigation(true)
+		renderApp()
+		await screen.findByRole('button', { name: 'Launch Steam' })
+		const sidebar = screen.getByRole('complementary')
+		const canvas = document.querySelector('.catalog-canvas')
+
+		// Each subgrid column also needs an explicit minmax(0, 1fr) track: its implicit auto column
+		// grows to the nowrap width of its content. A long saved-filter name widened the sidebar
+		// past 280 px and clipped its delete buttons; the status line plus the filter chip pushed
+		// the scan button off a 446 px window.
+		for (const column of [sidebar, canvas])
+			expect(column).toHaveClass(
+				'row-span-2',
+				'grid-rows-subgrid',
+				'grid-cols-[minmax(0,1fr)]',
+			)
+		expect(canvas?.firstElementChild).toBe(screen.getByRole('banner'))
+		expect(sidebar.firstElementChild).toContainElement(
+			screen.getByRole('button', { name: 'Go to All Apps' }),
+		)
+	})
+
+	it('keeps the sticky catalog header flat', async () => {
+		renderApp()
+		await screen.findByRole('button', { name: 'Launch Steam' })
+
+		expect(screen.getByRole('banner')).not.toHaveClass(
+			'shadow-(--shadow-header)',
+		)
+	})
+
+	it('starts catalog scrolling below the header', async () => {
+		renderApp()
+		const launch = await screen.findByRole('button', {
+			name: 'Launch Steam',
+		})
+		const catalogScroll = document.getElementById('catalog-scroll')
+		const catalogMain = launch.closest('main')
+
+		expect(catalogScroll).not.toContainElement(screen.getByRole('banner'))
+		expect(catalogScroll).toContainElement(catalogMain)
+	})
+
 	it('pads every view with the same page margins', async () => {
 		setDesktopNavigation(true)
 		renderApp()

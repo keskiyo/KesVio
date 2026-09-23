@@ -29,6 +29,48 @@ function header(
 }
 
 describe('Header', () => {
+	// The chip used to open a second row under the counts, so applying a saved filter grew the
+	// header by 36 px and pushed the whole catalog down under the pointer.
+	it('shows the active filter beside the counts in a row that keeps its height', () => {
+		const props = {
+			primaryAppCount: 12,
+			auxiliaryToolCount: 3,
+			visibleCount: 12,
+			query: '',
+			isRefreshing: false,
+			scanProgress: null,
+			menuButtonRef: createRef<HTMLButtonElement>(),
+			onOpenNavigation: vi.fn(),
+			onQueryChange: vi.fn(),
+			onRefresh: vi.fn().mockResolvedValue(undefined),
+			onCancelScan: vi.fn().mockResolvedValue(undefined),
+			showMenu: false,
+		}
+		const { rerender } = render(<Header {...props} />)
+		const rowWithout = screen.getByRole('status').parentElement
+
+		rerender(
+			<Header
+				{...props}
+				activeFilter={{
+					name: 'Work',
+					onEdit: vi.fn(),
+					onClear: vi.fn(),
+				}}
+			/>,
+		)
+		const status = screen.getByRole('status')
+		const chip = screen.getByRole('group', { name: 'Filter Work' })
+
+		expect(rowWithout).toHaveClass('app-header-status')
+		expect(chip.parentElement).toBe(status.parentElement)
+		expect(status.parentElement).toHaveClass('app-header-status')
+		expect(status.nextElementSibling).toBe(chip)
+		expect(status).not.toHaveClass('flex-1')
+		expect(status).not.toContainElement(chip)
+		expect(status).toHaveTextContent(/^12 apps · 3 tools found$/)
+	})
+
 	it('keeps navigation, search, scan controls, and catalog result available together', () => {
 		render(
 			<Header

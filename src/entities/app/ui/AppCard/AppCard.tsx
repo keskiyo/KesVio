@@ -50,14 +50,17 @@ export function AppCard({
 				title={launching ? 'Launching…' : app.name}
 				className="app-card-face relative z-1 flex size-full flex-col items-center justify-center text-center focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-violet-500 disabled:cursor-progress"
 			>
-				<CardIcon iconBase64={app.iconBase64} launching={launching} />
+				<CardIcon
+					iconBase64={app.iconBase64}
+					launching={launching}
+					badge={<PlatformBadge platformKind={app.platformKind} />}
+				/>
 				<CardLabel
 					name={app.name}
 					version={app.version}
 					launching={launching}
 				/>
 			</button>
-			<PlatformBadge platformKind={app.platformKind} />
 			<button
 				type="button"
 				ref={menuTriggerRef}

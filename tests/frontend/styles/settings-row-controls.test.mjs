@@ -65,6 +65,19 @@ describe('settings row controls', () => {
 		}
 	})
 
+	// The Copy diagnostics row was a hand-written `flex justify-end`, so on a 446 px window the
+	// button sat at its content width in the corner while every other card action filled the card.
+	it('stacks the unrecognised-applications action on the shared action row', () => {
+		const unrecognised = read(
+			'src/pages/settings/ui/sections/UnclassifiedApps/UnclassifiedApps.tsx',
+		)
+
+		expect(unrecognised).toContain('ACTION_ROW')
+		expect(unrecognised).not.toMatch(
+			/className="flex items-center justify-end/,
+		)
+	})
+
 	// Dialog confirmations keep their own smaller `CONFIRM_BUTTON` shape; this is only about the
 	// full-size card action, which was the same string written out three times.
 	it('keeps the card actions on the shared shape rather than a copy of it', () => {

@@ -11,7 +11,6 @@ vi.mock('@tauri-apps/plugin-process', () => ({ relaunch: () => relaunch() }))
 function update(version = '0.4.2') {
 	return {
 		version,
-		rawJson: {},
 		close: vi.fn().mockResolvedValue(undefined),
 		download: vi.fn().mockResolvedValue(undefined),
 		install: vi.fn().mockResolvedValue(undefined),
@@ -33,17 +32,14 @@ beforeEach(() => {
 })
 
 describe('update resource ownership', () => {
-	it('closes a dismissed update once, including subsequent unmount', async () => {
+	it('closes an available update once on unmount', async () => {
 		const found = update()
 		check.mockResolvedValue(found)
 		const { result, unmount } = renderHook(() =>
 			useUpdater({ autoCheck: false }),
 		)
 		await act(async () => result.current.checkNow())
-		act(() => {
-			result.current.dismiss()
-			result.current.dismiss()
-		})
+		expect(found.close).not.toHaveBeenCalled()
 		unmount()
 		await waitFor(() => expect(found.close).toHaveBeenCalledOnce())
 	})
@@ -61,14 +57,6 @@ describe('update resource ownership', () => {
 		expect(second.close).not.toHaveBeenCalled()
 		unmount()
 		await waitFor(() => expect(second.close).toHaveBeenCalledOnce())
-	})
-	it('closes an automatic result hidden by the dismissed version', async () => {
-		const found = update()
-		localStorage.setItem('kesvio.dismissed-update-version', found.version)
-		check.mockResolvedValue(found)
-		const { result } = renderHook(() => useUpdater())
-		await waitFor(() => expect(found.close).toHaveBeenCalledOnce())
-		expect(result.current.update).toBeNull()
 	})
 	it.each([true, false])(
 		'closes a late result after unmount (automatic=%s)',
@@ -183,14 +171,15 @@ describe('update resource ownership', () => {
 		expect(found.install).not.toHaveBeenCalled()
 		expect(relaunch).not.toHaveBeenCalled()
 	})
-	it('contains cleanup rejection without keeping the dismissed notice', async () => {
-		const found = update()
-		found.close.mockRejectedValue(new Error('resource missing'))
-		check.mockResolvedValue(found)
+	it('contains cleanup rejection when a replaced update fails to close', async () => {
+		const first = update(),
+			second = update('0.4.3')
+		first.close.mockRejectedValue(new Error('resource missing'))
+		check.mockResolvedValueOnce(first).mockResolvedValueOnce(second)
 		const { result } = renderHook(() => useUpdater({ autoCheck: false }))
 		await act(async () => result.current.checkNow())
-		await act(async () => result.current.dismiss())
-		expect(found.close).toHaveBeenCalledOnce()
-		expect(result.current.update).toBeNull()
+		await act(async () => result.current.checkNow())
+		expect(first.close).toHaveBeenCalledOnce()
+		expect(result.current.update?.version).toBe('0.4.3')
 	})
 })

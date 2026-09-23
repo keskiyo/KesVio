@@ -44,23 +44,9 @@ export function SettingsPage({
 		) : null
 	return (
 		<section aria-labelledby="settings-title" className="mx-auto max-w-3xl">
-			<div className="mb-8 flex items-center gap-4">
-				<img
-					src="/app-icon.png"
-					alt="KesVio logo"
-					className="size-16 rounded-2xl ring-1 ring-violet-400/25"
-				/>
-				<div>
-					<h1 id="settings-title" className="text-2xl font-semibold">
-						Settings
-					</h1>
-					<p className="mt-1 text-sm text-slate-600">
-						{settings
-							? `Version ${settings.version}`
-							: 'Loading version…'}
-					</p>
-				</div>
-			</div>
+			<h1 id="settings-title" className="sr-only">
+				Settings
+			</h1>
 			<GeneralSettings
 				settings={settings}
 				updater={updater}

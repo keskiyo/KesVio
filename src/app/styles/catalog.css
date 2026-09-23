@@ -99,8 +99,8 @@
 }
 
 .app-card-platform-badge {
-	bottom: var(--app-card-platform-badge-inset);
-	left: var(--app-card-platform-badge-inset);
+	right: calc(var(--app-card-platform-badge-inset) * -1);
+	bottom: calc(var(--app-card-platform-badge-inset) * -1);
 	width: var(--app-card-platform-badge-size);
 	height: var(--app-card-platform-badge-size);
 }

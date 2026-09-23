@@ -53,6 +53,16 @@ function renderCard(entry: AppInfo) {
 }
 
 describe('CatalogAppCard', () => {
+	// The badge was a card-level sibling pinned to the bottom-left corner, which is where the
+	// centred name runs: "Hearthstone" read "'earthstone" and "World of Warcraft" lost its W.
+	it('draws the platform badge on the icon corner, off the name row', () => {
+		renderCard({ ...app, name: 'Hearthstone', platformKind: 'battle_net' })
+
+		const badge = document.querySelector('[data-platform="battle_net"]')
+		expect(badge).not.toBeNull()
+		expect(badge?.closest('.app-card-icon')).not.toBeNull()
+	})
+
 	it('renders non-draggable card actions', () => {
 		render(
 			<CatalogAppCard

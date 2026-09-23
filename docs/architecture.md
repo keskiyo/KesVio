@@ -119,10 +119,11 @@ edges, private slice entry points and cycles. Its regression fixtures run with
 
 Updater orchestration lives in `features/update-app/model/useUpdater.ts`;
 checking, installation, preferences and native-resource ownership have separate
-modules. Concurrent checks share one request. Dismissed, replaced and late results
-close their native Update resource once; an active download/install retains its
-handle until the operation settles. Unmount prevents starting the next installation
-or relaunch step. Release metadata and errors are sanitized before presentation.
+modules, and `ui/UpdatePill.tsx` is its only surface. Concurrent checks share one
+request. Replaced and late results close their native Update resource once; an
+active download/install retains its handle until the operation settles. Unmount
+prevents starting the next installation or relaunch step. Only the version
+reaches the interface, and errors are sanitized before presentation.
 
 Catalog record creation lives in `catalog/app_record.rs`, registry enrichment in
 `registry_enrichment.rs`, source candidates in `sources/`, watcher roots in

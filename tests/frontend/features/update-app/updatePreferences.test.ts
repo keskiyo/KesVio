@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
 	automaticCheckIsDue,
-	dismissedVersion,
 	failedChecks,
 	rememberAutomaticChecks,
 	rememberCheck,
-	rememberDismissedVersion,
 	rememberFailedChecks,
 	storedAutomaticChecks,
 } from '../../../../src/features/update-app/model/updatePreferences'
@@ -25,14 +23,12 @@ describe('update preferences', () => {
 		expect(automaticCheckIsDue(start + 24 * 3600000 - 1)).toBe(false)
 		expect(automaticCheckIsDue(start + 24 * 3600000)).toBe(true)
 	})
-	it('keeps KesVio storage keys and dismissed-version values', () => {
+	it('keeps the KesVio storage key for automatic checks', () => {
 		rememberAutomaticChecks(false)
-		rememberDismissedVersion('0.5.1')
 		expect(localStorage.getItem('kesvio.automatic-update-checks')).toBe(
 			'off',
 		)
 		expect(storedAutomaticChecks()).toBe(false)
-		expect(dismissedVersion()).toBe('0.5.1')
 	})
 	it('falls back safely when storage cannot be read or written', () => {
 		vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
@@ -42,14 +38,12 @@ describe('update preferences', () => {
 			throw new Error('full')
 		})
 		expect(storedAutomaticChecks()).toBe(true)
-		expect(dismissedVersion()).toBeNull()
 		expect(failedChecks()).toBe(0)
 		expect(automaticCheckIsDue(Date.now())).toBe(true)
 		expect(() => {
 			rememberCheck(1)
 			rememberFailedChecks(1)
 			rememberAutomaticChecks(false)
-			rememberDismissedVersion('0.5.1')
 		}).not.toThrow()
 	})
 })

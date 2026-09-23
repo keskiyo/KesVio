@@ -5,6 +5,7 @@ import type {
 	CategoryDefinition,
 	CustomCategoryAccent,
 } from '../../entities/category'
+import type { UpdatePillProps } from '../../features/update-app'
 
 export type CreateCategoryResult =
 	{ ok: true; id: string } | { ok: false; error: string }
@@ -45,6 +46,7 @@ export interface AppDrawerProps {
 	favoriteScenarioCount?: number
 	savedFilters?: SavedFiltersNavigation
 	triggerRef: RefObject<HTMLButtonElement>
+	identity: NavigationIdentityDetails
 	onGoHome(): void
 	onSelectView(view: AppView): void
 	onSelectCategory(category: AppCategory): void
@@ -55,10 +57,16 @@ export interface AppDrawerProps {
 }
 
 export interface AppSidebarProps extends AppNavigationProps {
+	identity: NavigationIdentityDetails
 	onGoHome(): void
 }
 
-export interface NavigationIdentityProps {
+export interface NavigationIdentityDetails {
+	version: string | null
+	update: Omit<UpdatePillProps, 'className'> | null
+}
+
+export interface NavigationIdentityProps extends NavigationIdentityDetails {
 	onGoHome(): void
 }
 
