@@ -198,9 +198,9 @@ bar with the percentage while it runs
 ([Desktop operations](desktop-operations.md) owns the update flow). The pill is
 a sibling of the home button, not nested inside it, and it is absolutely
 positioned over the version line so the coarse-pointer 44 px minimum cannot grow
-it over the name. The Settings page has no visible header: its title is a
-screen-reader-only `h1` that still names the page region, and the logo and
-version live only in the brand block.
+it over the name. The Settings page header matches More: a gear icon, the
+**Settings** title and a one-line description, with no logo and no version; the
+brand block is the only place for both.
 
 ## More and catalog utility pages
 

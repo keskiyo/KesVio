@@ -1,3 +1,4 @@
+import { Settings } from 'lucide-react'
 import {
 	type SettingsArea,
 	useSystemSettings,
@@ -44,9 +45,21 @@ export function SettingsPage({
 		) : null
 	return (
 		<section aria-labelledby="settings-title" className="mx-auto max-w-3xl">
-			<h1 id="settings-title" className="sr-only">
-				Settings
-			</h1>
+			<header className="mb-8 flex items-start gap-3">
+				<Settings
+					aria-hidden="true"
+					className="mt-0.5 shrink-0"
+					size={28}
+				/>
+				<div>
+					<h1 id="settings-title" className="text-2xl font-semibold">
+						Settings
+					</h1>
+					<p className="mt-1 text-sm text-(--text-muted)">
+						Appearance, startup, discovery and updates.
+					</p>
+				</div>
+			</header>
 			<GeneralSettings
 				settings={settings}
 				updater={updater}

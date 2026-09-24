@@ -12,7 +12,7 @@ This release turns updating into one click from the sidebar, joins the navigatio
 ## Changed
 
 - **No more update banner or update dialog.** The strip above the catalog and the confirmation window with release highlights are gone; the full release notes stay on the GitHub release page. **Settings → Check updates** and the automatic-check switch remain, and a version found there appears in the sidebar pill.
-- **Settings starts with the settings.** The logo, title and version at the top of the page are gone; the sidebar already shows them.
+- **Settings looks like the other pages.** Its header now has a gear icon, the title and a short description, like More; the logo and version moved to the sidebar.
 - **One window frame.** On wide windows the navigation sidebar no longer floats as a rounded island: it sits flush against the window edge in the same translucent material as the header, and the line under the logo meets the line under the search bar across the whole window.
 - **The header keeps its height.** An applied saved filter now appears right after the `apps · tools found` count instead of adding a row, so the catalog no longer shifts down, and the chip is next to what it filters instead of in the far corner.
 - **The platform badge sits on the icon.** The Store, Steam or portable mark moved to the corner of the app icon, so it never covers the app name at any card density.
