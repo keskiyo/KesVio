@@ -12,15 +12,16 @@ import { createPersist } from './persist'
 import { createPreferenceTransferActions } from './actions/preferenceTransferActions'
 import { createSavedFilterActions } from './actions/savedFilterActions'
 import { createScenarioActions } from './actions/scenarioActions'
+import { createScenarioMembershipActions } from './actions/scenarioMembershipActions'
 import { createScenarioPolicyActions } from './actions/scenarioPolicyActions'
 import { createTransaction } from './transaction'
 import { createUndoActions } from './actions/undoActions'
 import { readPreferences } from './preferences'
-import type { AppPreferencesV22 } from './preferences'
+import type { AppPreferencesV23 } from './preferences'
 import type { AppsClient } from '../../entities/app'
 import type { AppState } from './types'
 
-function initialState(preferences: AppPreferencesV22) {
+function initialState(preferences: AppPreferencesV23) {
 	return {
 		apps: [],
 		query: '',
@@ -50,6 +51,7 @@ function initialState(preferences: AppPreferencesV22) {
 		scenarios: preferences.scenarios,
 		favoriteScenarioIds: preferences.favoriteScenarioIds,
 		firstSeenAt: preferences.firstSeenAt,
+		firstSeenVolumes: preferences.firstSeenVolumes,
 		savedFilters: preferences.savedFilters,
 		activeSavedFilterId: null,
 		legacyCanonicalPreferences: preferences.legacyCanonicalPreferences,
@@ -99,6 +101,7 @@ export function createAppStore(
 				transact,
 				idFactory,
 			}),
+			...createScenarioMembershipActions({ set, get, transact }),
 			...createScenarioPolicyActions({ set, get, transact }),
 			...createSavedFilterActions({ set, get, transact, idFactory }),
 			...createPreferenceTransferActions({ set, get, persist, storage }),

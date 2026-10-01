@@ -1,7 +1,7 @@
 import { toAppClientError } from '../../../shared/api/tauri/errors'
 import { reconcileScenarios } from '../../../entities/scenario'
 import { reconcileDriveCategories } from '../driveCategories'
-import { identityRekeys, rekeyRecord } from '../identityRekey'
+import { identityRekeys } from '../identityRekey'
 import {
 	catalogGenerationOrder,
 	keepHeldRecords,
@@ -10,8 +10,9 @@ import {
 import {
 	pruneFirstSeen,
 	reconcileFirstSeen,
-	reconcileMarks,
-} from '../reconciliation'
+	rekeyFirstSeen,
+} from '../firstSeen'
+import { reconcileMarks } from '../reconciliation'
 import type { AppsClient, CatalogScanResult } from '../../../entities/app'
 import type {
 	AppState,
@@ -74,10 +75,15 @@ export function createCatalogActions({
 	function adoptCatalog(apps: AppState['apps']) {
 		const state = get()
 		const rekeys = identityRekeys(state.apps, apps)
-		const previousFirstSeen = rekeyRecord(state.firstSeenAt, rekeys)
-		const firstSeenAt = reconcileFirstSeen(
+		const firstSeen = reconcileFirstSeen(
 			apps,
-			previousFirstSeen,
+			rekeyFirstSeen(
+				{
+					firstSeenAt: state.firstSeenAt,
+					firstSeenVolumes: state.firstSeenVolumes,
+				},
+				rekeys,
+			),
 			Date.now(),
 		)
 		const marks = reconcileMarks(state, apps)
@@ -89,13 +95,14 @@ export function createCatalogActions({
 		return {
 			patch: {
 				apps,
-				firstSeenAt,
+				...firstSeen,
 				...marks,
 				...(scenarios ? { scenarios } : {}),
 				...(drives ?? {}),
 			},
 			changed:
-				firstSeenAt !== state.firstSeenAt ||
+				firstSeen.firstSeenAt !== state.firstSeenAt ||
+				firstSeen.firstSeenVolumes !== state.firstSeenVolumes ||
 				Boolean(marks || scenarios || drives),
 		}
 	}
@@ -108,14 +115,20 @@ export function createCatalogActions({
 		if (order === 'stale') return
 		const apps = keepHeldRecords(get().apps, scan.apps, order)
 		const adopted = adoptCatalog(apps)
-		const firstSeenAt = pruneFirstSeen(apps, adopted.patch.firstSeenAt)
+		const firstSeen = pruneFirstSeen(apps, {
+			firstSeenAt: adopted.patch.firstSeenAt,
+			firstSeenVolumes: adopted.patch.firstSeenVolumes,
+		})
 		set({
 			...adopted.patch,
-			firstSeenAt,
+			...firstSeen,
 			hasCache: true,
 			catalogGeneration: scan.generation,
 		})
-		if (adopted.changed || firstSeenAt !== adopted.patch.firstSeenAt)
+		if (
+			adopted.changed ||
+			firstSeen.firstSeenAt !== adopted.patch.firstSeenAt
+		)
 			persist()
 	}
 

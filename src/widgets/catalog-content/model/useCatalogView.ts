@@ -33,6 +33,7 @@ interface CatalogViewState extends CategorizedAppsState {
 	hiddenAppIdentities: string[]
 	query: string
 	scenarios: Scenario[]
+	favoriteScenarioIds: string[]
 	savedFilters?: SavedFilter[]
 	activeSavedFilterId?: string | null
 }
@@ -149,16 +150,29 @@ export function useCatalogView(state: CatalogViewState) {
 		],
 	)
 	const scenarioApps = useMemo(() => {
-		if (state.activeView !== 'scenarios' && state.activeView !== 'more')
-			return []
+		const shown =
+			state.activeView === 'favorites'
+				? state.scenarios.filter(scenario =>
+						state.favoriteScenarioIds.includes(scenario.id),
+					)
+				: state.activeView === 'scenarios' ||
+					  state.activeView === 'more'
+					? state.scenarios
+					: []
+		if (!shown.length) return []
 		const identities = new Set(
-			state.scenarios.flatMap(scenario => [
+			shown.flatMap(scenario => [
 				...scenario.launchIdentities,
 				...scenario.closeIdentities,
 			]),
 		)
 		return resolveScenarioApps([...identities], catalogApps).apps
-	}, [catalogApps, state.activeView, state.scenarios])
+	}, [
+		catalogApps,
+		state.activeView,
+		state.favoriteScenarioIds,
+		state.scenarios,
+	])
 	const hydrationApps = useMemo(() => {
 		if (state.activeView === 'scenarios') return scenarioApps
 		if (state.activeView === 'more')
@@ -170,6 +184,8 @@ export function useCatalogView(state: CatalogViewState) {
 				.map(entry => entry.app)
 				.concat(scenarioApps)
 		if (!isCatalogView(state.activeView)) return []
+		if (state.activeView === 'favorites')
+			return filteredApps.concat(scenarioApps)
 		return filteredApps
 	}, [filteredApps, morePreview, scenarioApps, state.activeView])
 	const visibleHydrationIds = useMemo(

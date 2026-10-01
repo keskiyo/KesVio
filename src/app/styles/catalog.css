@@ -114,6 +114,8 @@
 	top: var(--app-card-action-inset);
 	width: var(--app-card-action-size);
 	height: var(--app-card-action-size);
+	opacity: 0;
+	transition: opacity 150ms ease;
 }
 
 .app-card-tile .app-card-action-menu {
@@ -122,6 +124,20 @@
 
 .app-card-tile .app-card-action-favorite {
 	right: var(--app-card-action-inset);
+}
+
+.app-card-tile:is(:hover, :focus-within, [data-menu-open]) .app-card-action {
+	opacity: 1;
+}
+
+.app-card-tile .app-card-action-favorite[aria-pressed='true'] {
+	opacity: 1;
+}
+
+@media (hover: none) {
+	.app-card-tile .app-card-action {
+		opacity: 1;
+	}
 }
 
 .app-card {

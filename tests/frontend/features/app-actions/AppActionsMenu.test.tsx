@@ -334,6 +334,22 @@ describe('AppActionsMenu category cascade', () => {
 		).toHaveFocus()
 	})
 
+	it('jumps to the first and last enabled item with Home and End', async () => {
+		const user = userEvent.setup()
+		renderMovableMenu()
+		const menu = screen.getByRole('menu', {
+			name: 'Visual Studio Code actions',
+		})
+		const enabled = within(menu)
+			.getAllByRole('menuitem')
+			.filter(item => !item.hasAttribute('disabled'))
+
+		await user.keyboard('{End}')
+		expect(enabled[enabled.length - 1]).toHaveFocus()
+		await user.keyboard('{Home}')
+		expect(enabled[0]).toHaveFocus()
+	})
+
 	it('bounds a category list that outgrows the window so the last entries stay reachable', async () => {
 		const user = userEvent.setup()
 		const manyCategories: CategoryDefinition[] = Array.from(

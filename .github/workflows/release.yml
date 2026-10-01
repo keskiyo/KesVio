@@ -8,6 +8,13 @@ on:
 permissions:
     contents: write
 
+# Two runs for one tag (a re-run racing the original) would both delete and recreate the draft and
+# upload latest.json over each other. Runs for the same tag queue instead; a publishing run is never
+# cancelled halfway, because that can leave a draft without its manifest.
+concurrency:
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
+
 jobs:
     build-release:
         name: Build & publish Windows x64 installer
@@ -191,6 +198,17 @@ jobs:
                   $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath "release-assets/$setupName").Hash.ToLowerInvariant()
                   Set-Content -LiteralPath "release-assets/SHA256SUMS.txt" -Value "$hash  $setupName" -Encoding utf8NoBOM
 
+            # CycloneDX inventory of the npm packages and crates the installer ships, generated
+            # from the same graphs as THIRD_PARTY_LICENSES.txt.
+            - name: Generate SBOM
+              shell: pwsh
+              env:
+                RELEASE_TAG: ${{ github.ref_name }}
+              run: |
+                  $version = $env:RELEASE_TAG.TrimStart('v')
+                  powershell -NoProfile -File scripts/generate-sbom.ps1 `
+                    -OutputPath "release-assets/KesVio_${version}_sbom.cdx.json"
+
             - name: Verify updater signature
               shell: pwsh
               env:
@@ -230,8 +248,10 @@ jobs:
             - name: Replace manifest and publish release
               shell: pwsh
               run: |
+                  $version = $env:RELEASE_TAG.TrimStart('v')
                   gh release upload $env:RELEASE_TAG release-assets/latest.json --clobber
                   gh release upload $env:RELEASE_TAG release-assets/SHA256SUMS.txt --clobber
+                  gh release upload $env:RELEASE_TAG "release-assets/KesVio_${version}_sbom.cdx.json" --clobber
                   gh release edit $env:RELEASE_TAG --draft=false
               env:
                   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

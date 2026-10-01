@@ -140,7 +140,13 @@ a `portable` snapshot, a visible `KesVio` window that `WM_CLOSE` hides while
 the process lives, a second launch that exits and is forwarded to the first
 (`Second instance forwarded to this process`), a warm restart that reuses the
 cache (`previous generation=N`) with a stable scan, and unchanged per-user
-and installed stores (the WebView2 profile under `EBWebView` excepted).
+and installed stores, the WebView2 profile under `EBWebView` included. Every
+build shares the `keskiyo.kesvio` identifier, so the smoke process would
+otherwise open the installed copy's WebView2 profile — the `localStorage` that
+holds the user's preferences — and prune them against the fixture catalog; the
+harness launches it with `WEBVIEW2_USER_DATA_FOLDER` pointing inside its
+workspace, which the WebView2 runtime uses in place of the folder the
+application passes, and records that the profile was created there.
 Evidence is written to `.1localDocuments/native-smoke-<stamp>.json`. It stops
 only the process it started, after checking its path lies in the workspace,
 and deletes only that workspace; `scripts/test-run-native-smoke.ps1` holds it
@@ -199,6 +205,11 @@ clean Windows acceptance matrix.
 Runtime `npm audit --omit=dev --audit-level=high` admits no exceptions. High or
 critical development-only advisories require dated entries in
 `.github/npm-audit-exceptions.json`; stale or undocumented exceptions fail CI.
+The Rust side follows the same rule: every advisory ignored in
+`src-tauri/.cargo/audit.toml` sits under a `reviewBy` date, and
+`scripts/verify-cargo-audit-ignores.ps1` fails the `contracts` job and the weekly
+security audit once that date has passed or an entry has none
+(`scripts/test-verify-cargo-audit-ignores.ps1` pins the gate).
 
 Release is tag-only: a `v*` tag on the exact `master` SHA triggers
 `release.yml`. Version values must agree across npm/Cargo manifests, lockfiles
@@ -208,6 +219,14 @@ the third-party license check, because that file is bundled into the installer
 and a tag can be pushed from a commit `verify.yml` never covered — builds and
 signs the NSIS bundle, verifies its detached updater signature against the
 configured public key, creates/verifies `latest.json`, then publishes the draft.
+It also publishes `KesVio_<version>_sbom.cdx.json`, a CycloneDX 1.5 inventory of
+the npm packages and crates the installer ships, written by
+`scripts/generate-sbom.ps1` from the same `npm ls --omit=dev` and `cargo tree`
+graphs as the bundled license texts (`npm sbom --omit=dev` drops react, which the
+lockfile also reaches through development tooling); `verify-release-assets.ps1`
+refuses a release without it and `scripts/test-generate-sbom.ps1` pins its
+content in the `contracts` job. Runs for one tag are serialized by a
+`concurrency` group that never cancels a run already publishing.
 Published tags are immutable; corrections use a new patch version. The project
 source is MIT-licensed; third-party notices are recorded in
 `THIRD_PARTY_NOTICES.md`.

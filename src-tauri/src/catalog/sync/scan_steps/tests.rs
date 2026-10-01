@@ -1,3 +1,4 @@
+use super::cadence::LOGGED_BURST;
 use super::*;
 fn step_of(detail: &str, reported: Option<Duration>) -> Step {
     Step {
@@ -5,6 +6,7 @@ fn step_of(detail: &str, reported: Option<Duration>) -> Step {
         detail: detail.into(),
         since: Instant::now(),
         reported,
+        cadence: LogCadence::default(),
     }
 }
 
@@ -125,6 +127,39 @@ fn a_live_tracker_logs_steps_without_command_line_flags() {
         assert!(crate::diagnostics::test_log::lines()
             .iter()
             .any(|line| { line.starts_with("Scan step start-apps: package registry thread=") }));
+    });
+}
+
+#[test]
+fn a_burst_of_steps_in_one_stage_is_throttled_but_the_watchdog_sees_every_step() {
+    crate::diagnostics::test_log::capture(|| {
+        let watchdog = ScanWatchdog::start();
+        let tracker = watchdog.tracker();
+        let started = Instant::now();
+        for index in 0..3720 {
+            tracker.mark("installer-cache", &format!(r"C:\Cache\file{index}.png"));
+        }
+        let allowed =
+            LOGGED_BURST + usize::try_from(started.elapsed().as_secs()).unwrap_or(usize::MAX);
+        tracker.mark("portable", r"D:\Tools");
+
+        let lines = crate::diagnostics::test_log::lines();
+        let cache_lines = lines
+            .iter()
+            .filter(|line| line.starts_with("Scan step installer-cache:"))
+            .count();
+        assert!(
+            (LOGGED_BURST..=allowed).contains(&cache_lines),
+            "{cache_lines} lines"
+        );
+        assert!(lines
+            .iter()
+            .any(|line| line.starts_with(r"Scan step portable: D:\Tools")));
+        assert_eq!(
+            watchdog.step.lock().unwrap().stage,
+            "portable",
+            "the stall watchdog still follows the latest step"
+        );
     });
 }
 

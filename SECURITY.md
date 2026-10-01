@@ -8,7 +8,7 @@ That opens a private advisory visible only to you and the maintainer.
 
 Please include the KesVio version, your Windows build, what you did, what happened, and what you
 expected. A crash needs the steps that reproduce it; a data-handling issue needs the file or
-registry path involved. Diagnostics from **Settings → Advanced → Diagnostics log** help, but read
+registry path involved. Diagnostics from **More → Catalog Health → Advanced → Diagnostics log** help, but read
 the export first and remove anything you do not want to share.
 
 Expect a first reply within a week. If a report is confirmed, the fix ships in a new patch release,

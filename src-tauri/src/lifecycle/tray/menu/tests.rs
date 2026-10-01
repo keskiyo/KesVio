@@ -1,3 +1,5 @@
+use super::super::model::TrayFavorite;
+use super::labels::{FALLBACK_LABEL, FAVORITE_MARK, MAX_LABEL_CHARS};
 use super::*;
 
 #[test]

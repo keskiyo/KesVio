@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react'
+import { restoreFocus } from '../lib/focus'
 import { isTopmostModal } from '../lib/modalLayering'
 import { useBodyScrollLock } from './useBodyScrollLock'
 import { useFocusTrap } from './useFocusTrap'
@@ -28,11 +29,7 @@ export function useModalDialog({
 			initialFocusRef?.current ??
 			ref.current?.querySelector<HTMLElement>('button')
 		target?.focus()
-		return () => {
-			const restored = requested ?? opener
-			if (restored instanceof HTMLElement && restored.isConnected)
-				restored.focus()
-		}
+		return () => restoreFocus(requested ?? opener)
 	}, [initialFocusRef, ref, restoreFocusTo])
 
 	useEffect(() => {

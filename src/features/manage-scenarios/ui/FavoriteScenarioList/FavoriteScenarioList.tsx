@@ -1,5 +1,4 @@
-﻿import { ListChecks } from 'lucide-react'
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { sortScenariosByNewest } from '../../../../entities/scenario'
 import { SectionHeading } from '../../../../shared/ui/SectionHeading'
 import { ShortcutHint } from '../../../../shared/ui/ShortcutHint'
@@ -28,21 +27,21 @@ export function FavoriteScenarioList({
 	}
 
 	return (
-		<section aria-labelledby="favorite-scenarios-title" className="mb-7">
+		<section
+			aria-labelledby="favorite-scenarios-title"
+			className="mb-6 sm:max-w-[61rem]"
+		>
 			<SectionHeading
-				icon={ListChecks}
 				title="Scenarios"
 				titleId="favorite-scenarios-title"
-				count={scenarios.length}
-				noun="scenario"
-				description="Run your configured scenarios"
+				aside={
+					<ShortcutHint
+						label="Run from anywhere with"
+						keys={LAUNCHER_SHORTCUT}
+					/>
+				}
 			/>
-			<ShortcutHint
-				label="Run any scenario from anywhere with"
-				keys={LAUNCHER_SHORTCUT}
-				className="mb-3"
-			/>
-			<ul className="grid grid-cols-1 items-start gap-3 min-[781px]:grid-cols-2 min-[1601px]:grid-cols-3">
+			<ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))] items-start gap-2 sm:grid-cols-[repeat(auto-fill,minmax(18rem,20rem))]">
 				{sortScenariosByNewest(scenarios).map(scenario => (
 					<FavoriteScenarioCard
 						key={scenario.id}

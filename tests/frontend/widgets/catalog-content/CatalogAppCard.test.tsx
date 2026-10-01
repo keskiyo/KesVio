@@ -1,4 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { CatalogAppCard } from '../../../../src/widgets/catalog-content/ui/CatalogAppCard/CatalogAppCard'
 import type { AppInfo } from '../../../../src/entities/app'
@@ -168,6 +170,55 @@ describe('CatalogAppCard', () => {
 			}),
 		).not.toBeInTheDocument()
 		expect(screen.getByTitle('Portable')).toBeInTheDocument()
+	})
+
+	// Hiding an app removed its card together with the menu button focus was meant to return to,
+	// so a keyboard user landed on <body> and had to tab through the whole window again.
+	it('keeps keyboard focus in the grid when a menu action removes the card', async () => {
+		const user = userEvent.setup()
+		function Grid() {
+			const [apps, setApps] = useState<AppInfo[]>([
+				app,
+				{ ...app, id: 'editor', name: 'Editor' },
+			])
+			return (
+				<div className="app-card-grid">
+					{apps.map(entry => (
+						<CatalogAppCard
+							key={entry.id}
+							app={entry}
+							isFavorite={false}
+							categories={[development]}
+							categoryOrder={['development'] as AppCategory[]}
+							onToggleFavorite={vi.fn()}
+							onLaunch={vi.fn().mockResolvedValue(undefined)}
+							onMove={vi.fn()}
+							onInfo={vi.fn()}
+							onManageInWindows={vi.fn()}
+							onHide={id =>
+								setApps(current =>
+									current.filter(item => item.id !== id),
+								)
+							}
+							onRestore={vi.fn()}
+							onDemote={vi.fn()}
+						/>
+					))}
+				</div>
+			)
+		}
+		render(<Grid />)
+
+		screen.getByRole('button', { name: 'Manage Claude' }).focus()
+		await user.keyboard('{Enter}')
+		screen.getByRole('menuitem', { name: 'Hide from catalog' }).focus()
+		await user.keyboard('{Enter}')
+
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: 'Launch Editor' }),
+			).toHaveFocus(),
+		)
 	})
 
 	it('omits the platform badge for an ordinary Windows entry', () => {

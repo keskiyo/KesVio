@@ -10,19 +10,9 @@ use serde::Serialize;
 use std::path::Path;
 use std::sync::Arc;
 use tauri::Manager;
-use tauri_plugin_dialog::DialogExt;
 
-const MAX_PREFERENCES_BACKUP_BYTES: usize = 1_048_576;
-
-fn validate_preferences_backup_contents(contents: &str) -> Result<(), AppError> {
-    if contents.is_empty()
-        || contents.len() > MAX_PREFERENCES_BACKUP_BYTES
-        || !serde_json::from_str::<serde_json::Value>(contents).is_ok_and(|value| value.is_object())
-    {
-        return Err(AppError::SavePreferencesBackup(String::new()));
-    }
-    Ok(())
-}
+const MAX_SCAN_PATHS: usize = 256;
+const MAX_SCAN_PATH_CHARS: usize = 32_767;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -59,11 +49,17 @@ fn normalize_scan_settings(
     stored: &catalog::scan_settings::ScanSettings,
 ) -> Result<catalog::scan_settings::ScanSettings, AppError> {
     let normalize = |values: Vec<String>| -> Result<Vec<String>, AppError> {
+        if values.len() > MAX_SCAN_PATHS {
+            return Err(AppError::ScanSettingsTooLarge);
+        }
         let mut normalized = Vec::<String>::new();
         for value in values {
             let value = value.trim().trim_matches('"').to_string();
             if value.is_empty() {
                 continue;
+            }
+            if value.chars().count() > MAX_SCAN_PATH_CHARS {
+                return Err(AppError::ScanSettingsTooLarge);
             }
             if !Path::new(&value).is_absolute() {
                 return Err(AppError::ScanPathNotAbsolute(value));
@@ -178,47 +174,9 @@ pub(crate) fn cancel_scan(state: tauri::State<'_, AppState>) {
     state.scan_coordinator.cancel_all();
 }
 
-#[tauri::command]
-pub(crate) async fn save_preferences_backup(
-    app: tauri::AppHandle,
-    contents: String,
-) -> Result<bool, AppError> {
-    validate_preferences_backup_contents(&contents)?;
-    let Some(file) = app
-        .dialog()
-        .file()
-        .set_title("Export settings")
-        .set_file_name("kesvio-settings.json")
-        .add_filter("JSON files", &["json"])
-        .blocking_save_file()
-    else {
-        return Ok(false);
-    };
-    let path = file
-        .into_path()
-        .map_err(|error| AppError::SavePreferencesBackup(error.to_string()))?;
-    run_blocking("Preferences backup export", move || {
-        std::fs::write(path, contents)
-            .map_err(|error| AppError::SavePreferencesBackup(error.to_string()))
-    })
-    .await??;
-    Ok(true)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn preference_backup_contents_must_be_a_bounded_json_object() {
-        assert!(validate_preferences_backup_contents(r#"{"version":14}"#).is_ok());
-        assert!(validate_preferences_backup_contents("").is_err());
-        assert!(validate_preferences_backup_contents("[]").is_err());
-        assert!(validate_preferences_backup_contents(
-            &"x".repeat(MAX_PREFERENCES_BACKUP_BYTES + 1)
-        )
-        .is_err());
-    }
 
     #[test]
     fn normalizes_scan_paths_and_accepts_any_absolute_location() {
@@ -249,6 +207,39 @@ mod tests {
             catalog_portable_fingerprint_v1: true,
         };
         assert!(normalize_scan_settings(invalid, &stored).is_err());
+    }
+
+    #[test]
+    fn refuses_an_unbounded_path_list_or_an_impossible_path_before_writing() {
+        let stored = catalog::scan_settings::ScanSettings::default();
+        let with = |included_paths: Vec<String>| catalog::scan_settings::ScanSettings {
+            included_paths,
+            ..catalog::scan_settings::ScanSettings::default()
+        };
+
+        let at_limit = (0..MAX_SCAN_PATHS)
+            .map(|index| format!(r"D:\Folder{index}"))
+            .collect::<Vec<_>>();
+        assert_eq!(
+            normalize_scan_settings(with(at_limit.clone()), &stored)
+                .unwrap()
+                .included_paths
+                .len(),
+            MAX_SCAN_PATHS
+        );
+
+        let mut too_many = at_limit;
+        too_many.push(r"D:\One more".into());
+        assert!(matches!(
+            normalize_scan_settings(with(too_many), &stored),
+            Err(AppError::ScanSettingsTooLarge)
+        ));
+
+        let too_long = format!(r"D:\{}", "я".repeat(MAX_SCAN_PATH_CHARS));
+        assert!(matches!(
+            normalize_scan_settings(with(vec![too_long]), &stored),
+            Err(AppError::ScanSettingsTooLarge)
+        ));
     }
 
     #[test]

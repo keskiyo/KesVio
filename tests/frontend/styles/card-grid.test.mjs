@@ -96,7 +96,7 @@ describe('catalog card grid', () => {
 
 	it('keeps Favorites applications on the shared auto-fitting grid', () => {
 		const favorites = readFileSync(
-			'src/widgets/catalog-content/ui/FavoritesGrid.tsx',
+			'src/widgets/catalog-content/ui/FavoritesGrid/FavoritesGrid.tsx',
 			'utf8',
 		)
 
@@ -104,14 +104,58 @@ describe('catalog card grid', () => {
 		expect(favorites).not.toContain('favorites-app-card-grid')
 	})
 
-	it('lays out favorite scenarios in one, two, then three columns', () => {
+	// The scenario cards used to stay one per row until 781 px, so on a narrow window two starred
+	// scenarios filled the screen before the first application. A compact card is narrow enough
+	// for two in a row at the 446 px minimum, and the column count follows the width from there.
+	it('fits two favorite scenarios in a row at the minimum window width', () => {
 		const scenarios = readFileSync(
 			'src/features/manage-scenarios/ui/FavoriteScenarioList/FavoriteScenarioList.tsx',
 			'utf8',
 		)
 
-		expect(scenarios).toContain('min-[781px]:grid-cols-2')
-		expect(scenarios).toContain('min-[1601px]:grid-cols-3')
+		expect(scenarios).toContain(
+			'grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))]',
+		)
 		expect(scenarios).toContain('items-start')
+	})
+
+	it('bounds favorite scenarios to three substantial desktop columns', () => {
+		const scenarios = readFileSync(
+			'src/features/manage-scenarios/ui/FavoriteScenarioList/FavoriteScenarioList.tsx',
+			'utf8',
+		)
+
+		expect(scenarios).toContain('sm:max-w-[61rem]')
+		expect(scenarios).toContain(
+			'sm:grid-cols-[repeat(auto-fill,minmax(18rem,20rem))]',
+		)
+	})
+
+	it('keeps the scenario disclosure target large and its details display-only', () => {
+		const card = readFileSync(
+			'src/features/manage-scenarios/ui/FavoriteScenarioList/FavoriteScenarioCard.tsx',
+			'utf8',
+		)
+
+		expect(card).toContain('self-stretch')
+		expect(card).toContain("from './FavoriteScenarioAppList'")
+		expect(card).not.toContain('ScenarioRunList')
+	})
+
+	it('renders favorite scenario contents as compact icon-only tiles', () => {
+		const details = readFileSync(
+			'src/features/manage-scenarios/ui/FavoriteScenarioList/FavoriteScenarioAppList.tsx',
+			'utf8',
+		)
+
+		expect(details).toContain('flex min-w-0 flex-wrap gap-1.5')
+		expect(details).toContain('size-8 shrink-0')
+		expect(details).not.toContain('truncate text-xs')
+	})
+
+	it('keeps section hints near their headings on desktop', () => {
+		const heading = readFileSync('src/shared/ui/SectionHeading.tsx', 'utf8')
+
+		expect(heading).toContain('sm:justify-start')
 	})
 })

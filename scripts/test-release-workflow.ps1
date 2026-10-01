@@ -185,6 +185,23 @@ if ($verifyAssetsIndex -lt 0 -or $attestIndex -lt $verifyAssetsIndex -or $publis
   throw "Release workflow must attest verified assets before it publishes the release"
 }
 
+if ($workflowText -notmatch '(?m)^concurrency:\s*$' -or
+    $workflowText -notmatch '(?m)^\s+group:\s*release-\$\{\{ github\.ref \}\}\s*$' -or
+    $workflowText -notmatch '(?m)^\s+cancel-in-progress:\s*false\s*$') {
+  throw "Release workflow must serialize runs per tag without cancelling a publishing run"
+}
+
+$sbomIndex = $workflowText.IndexOf("scripts/generate-sbom.ps1", [StringComparison]::Ordinal)
+if ($sbomIndex -lt 0 -or $sbomIndex -gt $verifyAssetsIndex) {
+  throw "Release workflow must generate the SBOM before it verifies the release assets"
+}
+$uploadsSbom = $runBlocks | Where-Object {
+  $_.Body -match 'gh release upload' -and $_.Body -match '_sbom\.cdx\.json'
+}
+if (-not $uploadsSbom) {
+  throw "Release workflow never uploads the SBOM to the release"
+}
+
 $uploadsChecksum = $runBlocks | Where-Object {
   $_.Body -match 'gh release upload' -and $_.Body -match 'SHA256SUMS\.txt'
 }

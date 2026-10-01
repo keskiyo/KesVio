@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useModalDialog } from '../../../../shared/hooks/useModalDialog'
 import { useScenarioFilters } from '../../model/useScenarioFilters'
-import { DIALOG_LABEL, LIST_ID } from './data'
+import { DIALOG_LABEL, LIST_ID, SCENARIO_LAUNCHER_SHORTCUT_OWNER } from './data'
 import { createLauncherKeyHandler } from './launcherKeys'
 import { ScenarioLauncherHeader } from './ScenarioLauncherHeader'
 import { ScenarioLauncherEmpty } from './ScenarioLauncherEmpty'
@@ -65,6 +65,7 @@ export function ScenarioRunDialog({
 				role="dialog"
 				aria-modal="true"
 				aria-label={DIALOG_LABEL}
+				data-shortcut={SCENARIO_LAUNCHER_SHORTCUT_OWNER}
 				tabIndex={-1}
 				onKeyDown={onKeyDown}
 				className="motion-panel flex max-h-[min(48rem,calc(100vh-4rem))] w-[min(52rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-(--border-neutral) bg-(--surface-panel) shadow-(--shadow-palette)"

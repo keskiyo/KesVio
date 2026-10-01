@@ -57,6 +57,19 @@ describe('catalog density presets', () => {
 		}
 	})
 
+	// A fixed smaller tile for Favorites was tried and read as too small beside the rest of the
+	// catalog; the view keeps the tile size the user picked under Catalog density.
+	it('lets Favorites follow the chosen density instead of its own tile size', () => {
+		const overrides = [
+			...stylesheet.matchAll(/\.favorites-dock[^{]*\{([^}]*)\}/g),
+		].map(match => match[1])
+		for (const body of overrides) {
+			for (const token of TILE_TOKENS) {
+				expect(body).not.toContain(`${token}:`)
+			}
+		}
+	})
+
 	it('shrinks the tile monotonically from comfortable to dense', () => {
 		const width = preset =>
 			Number(
@@ -123,6 +136,24 @@ describe('catalog density presets', () => {
 		expect(rule('.app-card-tile .app-card-action-favorite')).toContain(
 			'right: var(--app-card-action-inset)',
 		)
+	})
+
+	it('reveals both card actions together while keeping a selected star visible', () => {
+		const actions = rule('.app-card-tile .app-card-action')
+		expect(actions).toContain('opacity: 0')
+		expect(stylesheet).toMatch(
+			/\.app-card-tile:is\(:hover, :focus-within, \[data-menu-open\]\)\s+\.app-card-action\s*\{[^}]*opacity:\s*1/,
+		)
+		expect(
+			rule(
+				".app-card-tile .app-card-action-favorite[aria-pressed='true']",
+			),
+		).toContain('opacity: 1')
+	})
+
+	it('does not paint launch numbers on favorite cards', () => {
+		expect(stylesheet).not.toContain('favorite-launch')
+		expect(stylesheet).not.toContain('counter(favorite-launch)')
 	})
 
 	/**

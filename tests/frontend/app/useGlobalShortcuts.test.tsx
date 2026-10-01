@@ -1,6 +1,8 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useGlobalShortcuts } from '../../../src/app/model/useGlobalShortcuts'
+import { QUICK_LAUNCH_SHORTCUT_OWNER } from '../../../src/features/command-palette'
+import { SCENARIO_LAUNCHER_SHORTCUT_OWNER } from '../../../src/features/manage-scenarios'
 
 function mount(extra: { onUndo?: () => void } = {}) {
 	const handlers = {
@@ -163,6 +165,46 @@ describe('useGlobalShortcuts', () => {
 		const event = press('z', { ctrlKey: true })
 
 		expect(event.defaultPrevented).toBe(false)
+	})
+
+	// A shortcut acts on the page, so a dialog on top of it used to be bypassed: Ctrl+K stacked
+	// Quick launch over a confirmation and Ctrl+Z undid a change hidden behind the open dialog.
+	it('leaves the page alone while a dialog it does not own is open', () => {
+		const onUndo = vi.fn()
+		const view = mount({ onUndo })
+		const dialog = document.createElement('section')
+		dialog.setAttribute('aria-modal', 'true')
+		document.body.append(dialog)
+
+		press('k', { ctrlKey: true })
+		press('K', { ctrlKey: true, shiftKey: true })
+		const search = press('f', { ctrlKey: true })
+		press('z', { ctrlKey: true })
+		press('/')
+
+		expect(view.onToggleQuickLaunch).not.toHaveBeenCalled()
+		expect(view.onToggleScenarios).not.toHaveBeenCalled()
+		expect(view.onSearchFromShortcut).not.toHaveBeenCalled()
+		expect(search.defaultPrevented).toBe(true)
+		expect(onUndo).not.toHaveBeenCalled()
+		expect(view.onFocusSearch).not.toHaveBeenCalled()
+	})
+
+	it('still lets an open launcher close itself with its own shortcut', () => {
+		const view = mount()
+		const palette = document.createElement('div')
+		palette.setAttribute('aria-modal', 'true')
+		palette.dataset.shortcut = QUICK_LAUNCH_SHORTCUT_OWNER
+		document.body.append(palette)
+
+		press('k', { ctrlKey: true })
+		press('K', { ctrlKey: true, shiftKey: true })
+		expect(view.onToggleQuickLaunch).toHaveBeenCalledOnce()
+		expect(view.onToggleScenarios).not.toHaveBeenCalled()
+
+		palette.dataset.shortcut = SCENARIO_LAUNCHER_SHORTCUT_OWNER
+		press('K', { ctrlKey: true, shiftKey: true })
+		expect(view.onToggleScenarios).toHaveBeenCalledOnce()
 	})
 
 	it('stops listening once unmounted', () => {

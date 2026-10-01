@@ -23,7 +23,9 @@ const updateInstall = readFileSync(
 describe('Tauri capabilities', () => {
 	it('grants only the process and updater operations the frontend calls', () => {
 		expect(capabilities.permissions).toEqual([
-			'core:default',
+			'core:event:default',
+			'core:window:default',
+			'core:resources:default',
 			'core:window:allow-start-dragging',
 			'core:window:allow-minimize',
 			'core:window:allow-toggle-maximize',
@@ -44,6 +46,42 @@ describe('Tauri capabilities', () => {
 		)
 
 		expect(bundles).toEqual([])
+	})
+
+	// `core:default` also expands to `core:tray`, `core:menu`, `core:image` (including
+	// `from-path`), `core:path` and `core:webview`: a compromised webview could create its own tray
+	// icon, decode any image file on disk or resolve profile folders. The frontend calls none of them.
+	it('grants only the core areas the frontend uses', () => {
+		const core = capabilities.permissions.filter(permission =>
+			permission.startsWith('core:'),
+		)
+		expect(core).not.toContain('core:default')
+		for (const permission of core)
+			expect(permission).toMatch(/^core:(event|window|resources):/)
+	})
+
+	it('keeps every direct Tauri import inside the areas the capability grants', () => {
+		const sources = [
+			'src/shared/api/tauri/client.ts',
+			'src/shared/platform/window/useWindowControls.ts',
+			'src/features/update-app/model/useUpdater.ts',
+			'src/entities/system/api/systemClient.ts',
+		].map(path => readFileSync(path, 'utf8'))
+		const imported = sources.flatMap(source =>
+			[...source.matchAll(/from '(@tauri-apps\/[^']+)'/g)].map(
+				([, module]) => module,
+			),
+		)
+		expect(new Set(imported)).toEqual(
+			new Set([
+				'@tauri-apps/api/core',
+				'@tauri-apps/api/event',
+				'@tauri-apps/api/window',
+				'@tauri-apps/plugin-dialog',
+				'@tauri-apps/plugin-process',
+				'@tauri-apps/plugin-updater',
+			]),
+		)
 	})
 
 	// The grant and the call site have to move together: dropping a plugin call without dropping

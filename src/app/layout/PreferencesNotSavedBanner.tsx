@@ -17,9 +17,9 @@ export function PreferencesNotSavedBanner() {
 				</span>
 				<span className="text-slate-400">
 					{' '}
-					— browser storage is full or unavailable, so favorites,
-					hidden apps and custom categories will be lost when Windows
-					Apps restarts.
+					— preference storage is full or unavailable, or a newer
+					KesVio version owns it, so favorites, hidden apps and custom
+					categories will be lost when KesVio restarts.
 				</span>
 			</span>
 		</div>

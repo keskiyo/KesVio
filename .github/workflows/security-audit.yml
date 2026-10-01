@@ -60,3 +60,7 @@ jobs:
             - name: Audit Rust dependencies
               working-directory: src-tauri
               run: cargo audit
+
+            - name: Check cargo-audit ignore review dates
+              shell: pwsh
+              run: pwsh -NoProfile -File scripts/verify-cargo-audit-ignores.ps1

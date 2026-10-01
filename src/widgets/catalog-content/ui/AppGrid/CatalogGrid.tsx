@@ -1,5 +1,5 @@
 import { AuxiliaryGrid } from '../AuxiliaryGrid'
-import { FavoritesGrid } from '../FavoritesGrid'
+import { FavoritesGrid } from '../FavoritesGrid/FavoritesGrid'
 import { HiddenGrid } from '../HiddenGrid'
 import { InstallersDocsGrid } from '../InstallersDocsGrid/InstallersDocsGrid'
 import { CategoryList } from './CategoryList'

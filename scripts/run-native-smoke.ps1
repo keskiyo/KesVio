@@ -60,6 +60,7 @@ $dataRoot = Join-Path $appDirectory "KesVioData"
 $dataDirectory = Join-Path $dataRoot "data"
 $logDirectory = Join-Path $dataRoot "logs"
 $fixtureDirectory = Join-Path $workspace "Fixtures\Portable"
+$webViewProfile = Join-Path $workspace "WebView2"
 $results = [Collections.Generic.List[object]]::new()
 $smokeProcess = $null
 
@@ -134,9 +135,19 @@ function Wait-LogLine {
   throw "The log did not report '$Pattern' within $TimeoutSeconds seconds"
 }
 
+# Every build shares the `keskiyo.kesvio` identifier, so without an override WebView2 would open the
+# installed copy's profile — the same `localStorage` origin that holds the user's real preferences —
+# and a scan over the fixture catalog would prune them. The runtime reads WEBVIEW2_USER_DATA_FOLDER
+# in place of the folder the application passes, so the smoke process gets a profile of its own.
 function Start-Smoke {
   param([string]$Executable)
-  return Start-Process -FilePath $Executable -WorkingDirectory $appDirectory -PassThru
+  $previousProfile = $env:WEBVIEW2_USER_DATA_FOLDER
+  try {
+    $env:WEBVIEW2_USER_DATA_FOLDER = $webViewProfile
+    return Start-Process -FilePath $Executable -WorkingDirectory $appDirectory -PassThru
+  } finally {
+    $env:WEBVIEW2_USER_DATA_FOLDER = $previousProfile
+  }
 }
 
 function Stop-Smoke {
@@ -161,10 +172,9 @@ function Get-FolderStamp {
   if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
     return "absent"
   }
-  # WebView2 keeps its own profile under the per-user folder (`EBWebView`) whatever the data root
-  # is; that is the browser runtime, not KesVio data, so it is not part of the isolation proof.
+  # The per-user folder includes `EBWebView`, the WebView2 profile whose localStorage holds the
+  # installed copy's preferences; the smoke process runs on its own profile, so it is checked too.
   $newest = Get-ChildItem -LiteralPath $Path -Recurse -File -ErrorAction SilentlyContinue |
-    Where-Object { $_.FullName -notmatch '\\EBWebView\\' } |
     Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
   if ($newest) {
     return $newest.LastWriteTimeUtc.ToString("o")
@@ -238,6 +248,8 @@ try {
   Add-Result -Step "data folder beside the executable" -Passed ($dataLine.Success -and $dataLine.Groups[1].Value.Trim().Equals($dataDirectory, [StringComparison]::OrdinalIgnoreCase)) -Detail ($(if ($dataLine.Success) { $dataLine.Groups[1].Value.Trim() } else { "no Data folder line" }))
   Add-Result -Step "tray icon created" -Passed ($text -match "Tray icon created: id=kesvio") -Detail "log reports the tray icon"
   Add-Result -Step "volume watcher started" -Passed ($text -match "Volume watcher started") -Detail "log reports the watcher"
+  $profileFiles = @(Get-ChildItem -LiteralPath $webViewProfile -Recurse -File -ErrorAction SilentlyContinue).Count
+  Add-Result -Step "WebView2 profile inside the workspace" -Passed ($profileFiles -gt 0) -Detail "$profileFiles files under $webViewProfile"
 
   $cachePath = Join-Path $dataDirectory "apps-cache.json"
   Add-Result -Step "catalog cache written" -Passed (Test-Path -LiteralPath $cachePath -PathType Leaf) -Detail $cachePath

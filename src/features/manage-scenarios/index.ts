@@ -4,4 +4,7 @@ export { ScenarioFilterBar } from './ui/ScenarioFilterBar/ScenarioFilterBar'
 export { ScenarioNameEditor } from './ui/ScenarioNameEditor'
 export { ScenarioRunDialog } from './ui/ScenarioRunDialog/ScenarioRunDialog'
 export { useScenarioFilters } from './model/useScenarioFilters'
-export { LAUNCHER_SHORTCUT } from './ui/ScenarioRunDialog/data'
+export {
+	LAUNCHER_SHORTCUT,
+	SCENARIO_LAUNCHER_SHORTCUT_OWNER,
+} from './ui/ScenarioRunDialog/data'

@@ -14,7 +14,7 @@ writes, and falls back to your Windows user profile when it does not.
 | Application catalog cache: names, executable and shortcut paths, icons, categories, your marks | `KesVioData\data\apps-cache.json`, or `%APPDATA%\keskiyo.kesvio` |
 | Window size and position                                                                       | `KesVioData\data\`, or `%APPDATA%\keskiyo.kesvio`                |
 | Interface preferences: theme, card density, sorting, scenarios, update preferences             | WebView2 local storage for the application                       |
-| Diagnostics log                                                                                | `KesVioData\logs\`, or `%LOCALAPPDATA%\keskiyo.kesvio`           |
+| Diagnostics log                                                                                | `KesVioData\logs\`, or `%LOCALAPPDATA%\keskiyo.kesvio\logs`      |
 
 The catalog describes software installed on the machine. It is ordinary personal data in the sense
 that it says something about you, which is why it stays on the machine.
@@ -34,9 +34,11 @@ Three things, all of them visible in the interface before they happen:
   catalog data, no machine identifier, and no account.
 - **The WebView2 runtime.** If Microsoft Edge WebView2 is missing during installation, the
   installer downloads it from Microsoft.
-- **Diagnostics you export yourself.** **Settings → Advanced → Diagnostics log** writes a file
-  where you choose. Nothing is uploaded; the file goes wherever you send it. It contains
-  application names and local file paths, so read it before sharing.
+- **Diagnostics you export yourself.** **More → Catalog Health → Advanced → Diagnostics log**
+  writes a file where you choose, and **Preview redacted log** shows it first. Nothing is uploaded;
+  the file goes wherever you send it. File paths, URLs and your account and computer names are
+  replaced by placeholders, but application names remain and the replacement is best-effort, so
+  read it before sharing.
 
 Automatic update checks can be turned off in **Settings → Updates**. With them off, KesVio makes no
 network request at all until you check manually.

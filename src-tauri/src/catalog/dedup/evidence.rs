@@ -1,11 +1,14 @@
 use super::candidate::AppCandidate;
 
+use super::portable_signals::{
+    both_unversioned_portable_copies, distinct_portable_launchers, same_portable_root,
+    same_version_portable_copy, versioned_portable_copy,
+};
 use super::signals::{
-    both_unversioned_portable_copies, conflicting_install_roots, conflicting_versions,
-    distinct_portable_launchers, nested_install_root_and_family, publishers_conflict,
-    registry_install_contains_exe, same_folder_and_family, same_folder_helper_variant,
-    same_package_family, same_portable_root, same_version_portable_copy, shared,
-    shortcut_same_family, shortcut_targets_executable, versioned_portable_copy,
+    conflicting_install_roots, conflicting_versions, nested_install_root_and_family,
+    publishers_conflict, registry_install_contains_exe, same_folder_and_family,
+    same_folder_helper_variant, same_package_family, shared, shortcut_same_family,
+    shortcut_targets_executable,
 };
 use super::target::system_tool_alias;
 

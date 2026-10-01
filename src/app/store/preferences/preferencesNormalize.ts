@@ -4,11 +4,12 @@ import {
 	normalizeOverrideMap,
 	normalizeSavedFilters,
 	normalizeTimestampMap,
+	normalizeVolumeMap,
 	uniqueStrings,
 } from './preferencesFields'
 import { normalizeScenarios } from './preferencesScenarios'
 import {
-	type AppPreferencesV22,
+	type AppPreferencesV23,
 	DEFAULT_PREFERENCES,
 	type LegacyCanonicalPreferences,
 } from './preferencesSchema'
@@ -34,6 +35,7 @@ const KNOWN_PREFERENCE_FIELDS = new Set([
 	'scenarios',
 	'favoriteScenarioIds',
 	'firstSeenAt',
+	'firstSeenVolumes',
 	'savedFilters',
 	'legacyCanonicalPreferences',
 ])
@@ -73,7 +75,7 @@ function readLegacy(
 	}
 }
 
-export function normalizePreferences(value: unknown): AppPreferencesV22 {
+export function normalizePreferences(value: unknown): AppPreferencesV23 {
 	if (!value || typeof value !== 'object')
 		return structuredClone(DEFAULT_PREFERENCES)
 	const raw = value as Record<string, unknown>
@@ -96,14 +98,18 @@ export function normalizePreferences(value: unknown): AppPreferencesV22 {
 	const hasFirstSeen = version >= 10
 	const hasScenarios = version >= 11
 	const hasSavedFilters = version >= 20
+	const hasFirstSeenVolumes = version >= 23
 	const scenarios = hasScenarios ? normalizeScenarios(raw.scenarios) : []
+	const firstSeenAt = hasFirstSeen
+		? normalizeTimestampMap(raw.firstSeenAt)
+		: {}
 	const unknownFields = Object.fromEntries(
 		Object.entries(raw).filter(
 			([key]) => !KNOWN_PREFERENCE_FIELDS.has(key),
 		),
 	)
 	return {
-		version: 22,
+		version: 23,
 		catalogDensity: normalizeDensity(raw.catalogDensity),
 		categories,
 		categoryOrder,
@@ -142,7 +148,10 @@ export function normalizePreferences(value: unknown): AppPreferencesV22 {
 		favoriteScenarioIds: uniqueStrings(raw.favoriteScenarioIds).filter(id =>
 			scenarios.some(scenario => scenario.id === id),
 		),
-		firstSeenAt: hasFirstSeen ? normalizeTimestampMap(raw.firstSeenAt) : {},
+		firstSeenAt,
+		firstSeenVolumes: hasFirstSeenVolumes
+			? normalizeVolumeMap(raw.firstSeenVolumes, firstSeenAt)
+			: {},
 		savedFilters: hasSavedFilters
 			? normalizeSavedFilters(raw.savedFilters)
 			: [],

@@ -166,7 +166,7 @@ describe('app store', () => {
 			importedField: 'kept',
 		})
 		expect(JSON.parse(store.getState().exportPreferences())).toMatchObject({
-			version: 22,
+			version: 23,
 			favoriteAppIds: ['code'],
 			hiddenAppIds: ['chrome'],
 			importedField: 'kept',
@@ -284,7 +284,7 @@ describe('app store', () => {
 
 	it('refuses import and restore when local preferences use a newer schema', () => {
 		const future = JSON.stringify({
-			version: 23,
+			version: 24,
 			favoriteAppIds: ['keep'],
 		})
 		const values = new Map<string, string>([
@@ -315,6 +315,24 @@ describe('app store', () => {
 		expect(store.getState().favoriteAppIds).toEqual(['keep'])
 		expect(store.getState().restorePreferencesBackup()).toEqual(expected)
 		expect(store.getState().favoriteAppIds).toEqual(['keep'])
+		expect(values.get(PREFERENCES_KEY)).toBe(future)
+	})
+
+	// After a downgrade the newer document is protected from being overwritten, but the store kept
+	// reporting every change as saved, so nothing warned the user that it would be gone on restart.
+	it('reports changes as unsaved while a newer document owns the preferences', () => {
+		const future = JSON.stringify({ version: 24, favoriteAppIds: ['keep'] })
+		const values = new Map<string, string>([[PREFERENCES_KEY, future]])
+		const storage = {
+			getItem: (key: string) => values.get(key) ?? null,
+			setItem: (key: string, value: string) =>
+				void values.set(key, value),
+		} as unknown as Storage
+		const store = createAppStore(client(), storage)
+
+		store.getState().setCatalogDensity('dense')
+
+		expect(store.getState().preferencesPersisted).toBe(false)
 		expect(values.get(PREFERENCES_KEY)).toBe(future)
 	})
 

@@ -1,8 +1,8 @@
-import { ChevronRight, Play } from 'lucide-react'
+import { ChevronRight, LoaderCircle, Play } from 'lucide-react'
 import { resolveScenarioApps } from '../../../../entities/scenario'
 import { CollapsiblePanel } from '../../../../shared/ui/CollapsiblePanel'
 import { FavoriteStar } from '../../../../shared/ui/FavoriteStar'
-import { ScenarioRunList } from '../ScenarioRunDialog/ScenarioRunList'
+import { FavoriteScenarioAppList } from './FavoriteScenarioAppList'
 import type { FavoriteScenarioCardProps } from './types'
 
 export function FavoriteScenarioCard({
@@ -27,34 +27,55 @@ export function FavoriteScenarioCard({
 		scenario.closeAppSnapshots,
 	)
 	const blocked = isScenarioRunning && !running
-	const runLabel = blocked
-		? `Run ${scenario.name} unavailable while another scenario is running`
-		: `Run ${scenario.name}`
+	const runLabel = running
+		? `${scenario.name} is running`
+		: blocked
+			? `Run ${scenario.name} unavailable while another scenario is running`
+			: `Run ${scenario.name}`
 
 	return (
-		<li className="flex min-w-0 flex-col rounded-2xl border border-(--border-neutral) bg-(--surface-panel) shadow-(--shadow-summary)">
-			<div className="flex min-w-0 items-center gap-2 px-3 py-2.5">
+		<li className="flex min-w-0 flex-col rounded-2xl border border-(--border-neutral) bg-(--surface-raised) shadow-(--shadow-summary)">
+			<div className="flex min-w-0 items-center gap-2 p-2">
 				<button
 					type="button"
+					aria-label={runLabel}
+					aria-busy={running}
+					disabled={isScenarioRunning}
+					onClick={() => onRun(scenario.id)}
+					className={`grid size-9 shrink-0 place-items-center rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) ${blocked ? 'cursor-not-allowed border-(--border-neutral) bg-(--surface-inset) text-(--text-muted)' : 'border-(--accent) bg-(--utility-accent) text-(--text-primary) hover:bg-(--utility-accent-hover) disabled:cursor-progress'}`}
+				>
+					{running ? (
+						<LoaderCircle
+							size={16}
+							aria-hidden="true"
+							className="animate-spin motion-reduce:animate-none"
+						/>
+					) : (
+						<Play size={16} aria-hidden="true" />
+					)}
+				</button>
+				<button
+					type="button"
+					aria-label={`${scenario.name} ${scenario.launchIdentities.length} launch · ${scenario.closeIdentities.length} close`}
 					aria-expanded={expanded}
 					aria-controls={panelId}
 					onClick={() => onToggle(scenario.id)}
-					className="flex min-w-0 flex-1 items-center gap-2 rounded-lg py-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
+					className="flex min-w-0 flex-1 items-center gap-2 self-stretch rounded-lg px-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
 				>
-					<ChevronRight
-						size={16}
-						aria-hidden="true"
-						className={`shrink-0 transition-transform motion-reduce:transition-none ${expanded ? 'rotate-90' : ''}`}
-					/>
 					<span className="min-w-0 flex-1">
-						<span className="block truncate text-sm font-medium text-(--text-primary)">
+						<span className="block truncate text-[0.8125rem] font-medium text-(--text-primary)">
 							{scenario.name}
 						</span>
-						<span className="block truncate text-xs text-(--text-muted)">
+						<span className="block truncate text-[0.6875rem] text-(--text-muted)">
 							{scenario.launchIdentities.length} launch ·{' '}
 							{scenario.closeIdentities.length} close
 						</span>
 					</span>
+					<ChevronRight
+						size={14}
+						aria-hidden="true"
+						className={`shrink-0 text-(--text-muted) transition-transform motion-reduce:transition-none ${expanded ? 'rotate-90' : ''}`}
+					/>
 				</button>
 				<FavoriteStar
 					label={`Remove ${scenario.name} from favorites`}
@@ -62,32 +83,20 @@ export function FavoriteScenarioCard({
 					onToggle={() => onToggleFavorite(scenario.id)}
 					className="shrink-0"
 				/>
-				<button
-					type="button"
-					aria-label={runLabel}
-					disabled={isScenarioRunning}
-					onClick={() => onRun(scenario.id)}
-					className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) ${blocked ? 'cursor-not-allowed border-(--border-neutral) bg-(--surface-inset) text-(--text-muted)' : 'border-(--accent) bg-(--utility-accent) text-(--text-primary) hover:bg-(--utility-accent-hover) disabled:cursor-progress disabled:opacity-60'}`}
-				>
-					<Play size={14} aria-hidden="true" />
-					{running ? 'Running…' : 'Run'}
-				</button>
 			</div>
 			<CollapsiblePanel open={expanded} id={panelId}>
 				<div className="flex flex-col gap-3 border-t border-(--border-neutral) px-3 py-3">
-					<ScenarioRunList
+					<FavoriteScenarioAppList
 						label="Launch"
 						scenarioName={scenario.name}
 						apps={launch.apps}
 						unavailable={launch.unavailable}
-						collapsible
 					/>
-					<ScenarioRunList
+					<FavoriteScenarioAppList
 						label="Close"
 						scenarioName={scenario.name}
 						apps={close.apps}
 						unavailable={close.unavailable}
-						collapsible
 					/>
 				</div>
 			</CollapsiblePanel>

@@ -19,9 +19,10 @@ $setupName = "KesVio_${version}_x64-setup.exe"
 $setupPath = Join-Path $AssetsDir $setupName
 $signaturePath = "$setupPath.sig"
 $checksumPath = Join-Path $AssetsDir "SHA256SUMS.txt"
+$sbomPath = Join-Path $AssetsDir "KesVio_${version}_sbom.cdx.json"
 $publishedSetupName = $setupName.Replace(" ", ".")
 
-foreach ($path in @($latestPath, $setupPath, $signaturePath, $checksumPath)) {
+foreach ($path in @($latestPath, $setupPath, $signaturePath, $checksumPath, $sbomPath)) {
   if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
     $errors.Add("Required release asset is missing: $([IO.Path]::GetFileName($path))")
   }
@@ -64,6 +65,17 @@ if ((Test-Path -LiteralPath $checksumPath -PathType Leaf) -and (Test-Path -Liter
         $errors.Add("SHA256SUMS.txt does not match the installer it names")
       }
     }
+  }
+}
+
+if (Test-Path -LiteralPath $sbomPath -PathType Leaf) {
+  try {
+    $sbom = [IO.File]::ReadAllText($sbomPath) | ConvertFrom-Json
+    if ($sbom.bomFormat -ne "CycloneDX" -or $sbom.metadata.component.version -ne $version -or @($sbom.components).Count -eq 0) {
+      $errors.Add("SBOM does not describe KesVio $version with its components")
+    }
+  } catch {
+    $errors.Add("SBOM is not valid JSON: $($_.Exception.Message)")
   }
 }
 

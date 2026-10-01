@@ -83,7 +83,15 @@ describe('BackupRestorePage', () => {
 			'Catalog density',
 		])
 			expect(within(intro).getByText(item)).toBeInTheDocument()
-		expect(intro).toHaveTextContent(/not part of the file/)
+		expect(intro).toHaveTextContent(/none of them are part of the file/)
+		// Scan folders and tray behaviour live in KesVio's own settings files, not in Windows; the
+		// old copy sent people moving to a new PC to look for them in the wrong place.
+		expect(intro).toHaveTextContent(
+			/Scan folders and tray behaviour stay in KesVio on this PC/,
+		)
+		expect(intro).not.toHaveTextContent(
+			/tray behaviour are stored by Windows/,
+		)
 		expect(screen.queryByText(/Last backup/)).not.toBeInTheDocument()
 	})
 

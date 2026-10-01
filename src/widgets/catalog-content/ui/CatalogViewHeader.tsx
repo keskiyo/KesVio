@@ -8,6 +8,7 @@ export function CatalogViewHeader({
 	titleId,
 	count,
 	noun = 'app',
+	secondaryCount,
 	description,
 	back,
 	action,
@@ -36,6 +37,8 @@ export function CatalogViewHeader({
 					{count !== undefined && (
 						<span className="shrink-0 text-sm text-(--text-muted)">
 							{countLabel(count, noun)}
+							{secondaryCount &&
+								` · ${countLabel(secondaryCount.count, secondaryCount.noun)}`}
 						</span>
 					)}
 				</div>

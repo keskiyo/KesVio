@@ -2,7 +2,7 @@ import { Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useModalDialog } from '../../../../shared/hooks/useModalDialog'
 import { useSearchIndex } from '../../../../entities/app'
-import { MAX_RESULTS } from './data'
+import { MAX_RESULTS, QUICK_LAUNCH_SHORTCUT_OWNER } from './data'
 import { ResultItem } from './ResultItem'
 import type { CommandPaletteProps } from './types'
 
@@ -68,7 +68,7 @@ export function CommandPalette({
 
 	return (
 		<div
-			className="motion-overlay fixed inset-0 z-500 grid place-items-start justify-center bg-slate-700/40 px-4 pt-[14vh] backdrop-blur-[2px]"
+			className="motion-overlay fixed inset-0 z-500 grid grid-cols-[minmax(0,36rem)] place-items-start justify-center bg-slate-700/40 px-4 pt-[14vh] backdrop-blur-[2px]"
 			onMouseDown={event => {
 				if (event.currentTarget === event.target) onClose()
 			}}
@@ -78,6 +78,7 @@ export function CommandPalette({
 				role="dialog"
 				aria-modal="true"
 				aria-label="Quick launch"
+				data-shortcut={QUICK_LAUNCH_SHORTCUT_OWNER}
 				onKeyDown={onKeyDown}
 				className="motion-panel flex h-[min(22rem,calc(100vh-7rem))] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-white/90 bg-slate-50 shadow-(--shadow-palette)"
 			>

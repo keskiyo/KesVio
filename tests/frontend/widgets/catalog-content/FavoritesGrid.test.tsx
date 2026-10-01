@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { FavoritesGrid } from '../../../../src/widgets/catalog-content/ui/FavoritesGrid'
+import { FavoritesGrid } from '../../../../src/widgets/catalog-content/ui/FavoritesGrid/FavoritesGrid'
 import type { AppInfo } from '../../../../src/entities/app'
 import type {
 	AppCategory,
@@ -111,18 +111,16 @@ describe('FavoritesGrid', () => {
 			/>,
 		)
 
-		const scenarios = screen.getByRole('region', { name: 'Scenarios' })
-		expect(scenarios).toHaveTextContent('1 scenario')
-		expect(scenarios).toHaveTextContent('Run your configured scenarios')
 		expect(
-			screen.getByRole('heading', { level: 2, name: 'Applications' }),
+			screen.getByRole('region', { name: 'Scenarios' }),
 		).toBeInTheDocument()
 		expect(
-			screen.getByText('Your installed applications'),
+			screen.getByRole('region', { name: 'Applications' }),
 		).toBeInTheDocument()
 		expect(
-			screen.getByRole('region', { name: 'Favorites' }),
-		).toHaveTextContent('1 application')
+			screen.getByRole('heading', { level: 1, name: 'Favorites' })
+				.parentElement,
+		).toHaveTextContent('1 application · 1 scenario')
 	})
 
 	it('says application in the singular for one favorite', () => {
@@ -142,21 +140,29 @@ describe('FavoritesGrid', () => {
 		).not.toBeInTheDocument()
 	})
 
-	it('lists favorite scenarios collapsed and expands one on its name', async () => {
+	it('lists favorite scenarios collapsed and expands one from its disclosure control', async () => {
 		const steam = favorite('steam', 'Steam')
 		render(<FavoritesGrid {...props([steam], [gaming])} />)
 
 		const section = screen.getByRole('region', { name: 'Scenarios' })
-		expect(section).toHaveTextContent('1 scenario')
 		expect(
 			screen.queryByRole('list', { name: 'Launch list of Gaming' }),
 		).not.toBeInTheDocument()
 
-		await userEvent.click(within(section).getByText('Gaming'))
+		await userEvent.click(
+			within(section).getByRole('button', {
+				name: 'Gaming 1 launch · 0 close',
+			}),
+		)
 
+		const launch = screen.getByRole('list', {
+			name: 'Launch list of Gaming',
+		})
 		expect(
-			screen.getByRole('list', { name: 'Launch list of Gaming' }),
-		).toHaveTextContent('Steam')
+			within(launch).getByRole('listitem', { name: 'Steam' }),
+		).toHaveAttribute('title', 'Steam')
+		expect(launch).not.toHaveTextContent('Steam')
+		expect(within(launch).queryByRole('button')).toBeNull()
 	})
 
 	it('shows the scenarios section even when no app is starred', () => {
@@ -174,15 +180,28 @@ describe('FavoritesGrid', () => {
 		render(<FavoritesGrid {...props([], [gaming])} />)
 
 		const section = screen.getByRole('region', { name: 'Scenarios' })
-		expect(section).toHaveTextContent(
-			'Run any scenario from anywhere with Ctrl+Shift+K',
-		)
+		expect(section).toHaveTextContent('Run from anywhere with Ctrl+Shift+K')
 	})
 
 	it('names no shortcut when no scenario is starred', () => {
 		render(<FavoritesGrid {...props([favorite('steam', 'Steam')], [])} />)
 
 		expect(screen.queryByText(/Ctrl\+Shift\+K/)).toBeNull()
+	})
+
+	it('does not advertise number-key application launching', () => {
+		render(<FavoritesGrid {...props([favorite('steam', 'Steam')])} />)
+
+		expect(screen.queryByText(/Launch with/)).toBeNull()
+	})
+
+	it('does not launch a favorite application from a number key', async () => {
+		const view = props([favorite('steam', 'Steam')])
+		render(<FavoritesGrid {...view} />)
+
+		await userEvent.keyboard('1')
+
+		expect(view.onLaunch).not.toHaveBeenCalled()
 	})
 
 	it('unstars a scenario from its own card', async () => {
@@ -214,13 +233,13 @@ describe('FavoritesGrid', () => {
 			/>,
 		)
 
-		const run = screen.getByRole('button', { name: 'Run Gaming' })
+		const run = screen.getByRole('button', { name: 'Gaming is running' })
 		expect(run).toBeDisabled()
+		expect(run).toHaveAttribute('aria-busy', 'true')
 		expect(
 			screen.getByRole('button', {
 				name: 'Run Work unavailable while another scenario is running',
 			}),
 		).toBeDisabled()
-		expect(run).toHaveTextContent('Running…')
 	})
 })

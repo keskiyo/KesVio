@@ -60,6 +60,21 @@ describe('tauri app client browser fallback', () => {
 		).rejects.toMatchObject({
 			code: 'DESKTOP_RUNTIME_UNAVAILABLE',
 		})
+		// A browser preview used to answer every scan with an empty result, which the store
+		// announced as "Application list refreshed" over an empty catalog.
+		for (const scan of [
+			() => tauriAppsClient.refreshApps(),
+			() => tauriAppsClient.forceFullScan?.(),
+			() => tauriAppsClient.resetCatalogCache?.(),
+		])
+			await expect(scan()).rejects.toMatchObject({
+				code: 'DESKTOP_RUNTIME_UNAVAILABLE',
+			})
+		const { tauriSystemClient } =
+			await import('../../../../src/entities/system/api/systemClient')
+		await expect(tauriSystemClient.getSettings()).rejects.toMatchObject({
+			code: 'DESKTOP_RUNTIME_UNAVAILABLE',
+		})
 
 		expect(invokeMock).not.toHaveBeenCalled()
 		expect(listenMock).not.toHaveBeenCalled()

@@ -47,6 +47,7 @@ export interface AppState {
 	scenarios: Scenario[]
 	favoriteScenarioIds: string[]
 	firstSeenAt: Record<string, number>
+	firstSeenVolumes: Record<string, string>
 	savedFilters: SavedFilter[]
 	activeSavedFilterId: string | null
 	legacyCanonicalPreferences: LegacyCanonicalPreferences

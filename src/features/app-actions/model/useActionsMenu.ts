@@ -12,6 +12,8 @@ import {
 	requiredMenuScroll,
 } from '../../../shared/lib/positioning'
 
+const MENU_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End'])
+
 interface Options {
 	anchorRef: RefObject<HTMLButtonElement | null>
 	onClose(): void
@@ -133,7 +135,7 @@ export function useActionsMenu({
 	}, [])
 
 	function onMenuKeyDown(event: ReactKeyboardEvent) {
-		if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+		if (!MENU_KEYS.has(event.key)) return
 		const menuItems = Array.from(
 			menuRef.current?.querySelectorAll<HTMLElement>(
 				'[role="menuitem"]:not([disabled])',
@@ -149,6 +151,10 @@ export function useActionsMenu({
 			: menuItems
 		if (items.length === 0) return
 		event.preventDefault()
+		if (event.key === 'Home' || event.key === 'End') {
+			items[event.key === 'Home' ? 0 : items.length - 1].focus()
+			return
+		}
 		const current = items.indexOf(document.activeElement as HTMLElement)
 		const delta = event.key === 'ArrowDown' ? 1 : -1
 		const next = (current + delta + items.length) % items.length

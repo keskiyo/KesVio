@@ -18,25 +18,15 @@ import {
 	listenIfTauri,
 } from '../../../shared/api/tauri/client'
 
-const EMPTY_SCAN: CatalogScanResult = { apps: [], generation: 0 }
-
 export const tauriAppsClient: AppsClient = {
 	getApps: () =>
 		isTauriRuntime()
 			? invokeTauri<CatalogSnapshot>('get_apps')
 			: Promise.resolve({ apps: [], hasCache: false }),
-	refreshApps: () =>
-		isTauriRuntime()
-			? invokeTauri<CatalogScanResult>('refresh_apps')
-			: Promise.resolve(EMPTY_SCAN),
-	forceFullScan: () =>
-		isTauriRuntime()
-			? invokeTauri<CatalogScanResult>('force_full_scan')
-			: Promise.resolve(EMPTY_SCAN),
+	refreshApps: () => invokeIfTauri<CatalogScanResult>('refresh_apps'),
+	forceFullScan: () => invokeIfTauri<CatalogScanResult>('force_full_scan'),
 	resetCatalogCache: () =>
-		isTauriRuntime()
-			? invokeTauri<CatalogScanResult>('reset_catalog_cache')
-			: Promise.resolve(EMPTY_SCAN),
+		invokeIfTauri<CatalogScanResult>('reset_catalog_cache'),
 	clearIconCache: () =>
 		isTauriRuntime()
 			? invokeTauri<void>('clear_icon_cache')

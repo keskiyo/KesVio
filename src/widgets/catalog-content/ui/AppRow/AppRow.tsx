@@ -5,6 +5,7 @@ import { memo, useCallback, useRef, useState } from 'react'
 import { useIsLaunching } from '../../../../features/launch-app'
 import { AppActionsMenu } from '../../../../features/app-actions'
 import { CardIcon, isCatalogArtifact } from '../../../../entities/app'
+import { keepFocusNearRemovedItem } from '../../../../shared/lib/focus'
 import { middleEllipsis } from '../../../../shared/lib/text'
 import { rowMenuButtonClass } from './data'
 import type { AppRowProps } from './types'
@@ -32,7 +33,9 @@ function AppRowComponent({
 	const manageRef = useRef<HTMLButtonElement | null>(null)
 	const closeMenu = useCallback(() => {
 		setMenuOpen(false)
-		manageRef.current?.focus()
+		const trigger = manageRef.current
+		trigger?.focus()
+		keepFocusNearRemovedItem(trigger?.closest('article'))
 	}, [])
 	const artifact = isCatalogArtifact(app)
 	const draggable = useDraggable({

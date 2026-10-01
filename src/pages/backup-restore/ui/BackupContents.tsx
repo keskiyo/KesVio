@@ -25,8 +25,9 @@ export function BackupContents() {
 				))}
 			</ul>
 			<p className="mt-3 text-xs leading-5 text-(--text-muted)">
-				Scan folders, startup and tray behaviour are stored by Windows
-				and are not part of the file.
+				Scan folders and tray behaviour stay in KesVio on this PC, and
+				Windows keeps the startup setting; none of them are part of the
+				file.
 			</p>
 		</section>
 	)

@@ -13,7 +13,7 @@ import type { Scenario } from '../../../entities/scenario'
 
 export const PREFERENCES_KEY = 'kesvio.preferences.v1'
 
-export const CURRENT_PREFERENCES_VERSION = 22
+export const CURRENT_PREFERENCES_VERSION = 23
 
 export const PREFERENCES_BACKUP_KEY = 'kesvio.preferences.v1.bak'
 
@@ -26,8 +26,8 @@ export interface LegacyCanonicalPreferences {
 	categoryOverrides: Record<string, AppCategory>
 }
 
-export interface AppPreferencesV22 {
-	version: 22
+export interface AppPreferencesV23 {
+	version: 23
 	catalogDensity: CatalogDensity
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
@@ -47,6 +47,7 @@ export interface AppPreferencesV22 {
 	scenarios: Scenario[]
 	favoriteScenarioIds: string[]
 	firstSeenAt: Record<string, number>
+	firstSeenVolumes: Record<string, string>
 	savedFilters: SavedFilter[]
 	legacyCanonicalPreferences: LegacyCanonicalPreferences
 	unknownFields?: Record<string, unknown>
@@ -56,10 +57,10 @@ export type PreferenceTransferResult =
 	{ ok: true } | { ok: false; error: string }
 
 export type PreferenceImportResult =
-	{ ok: true; preferences: AppPreferencesV22 } | { ok: false; error: string }
+	{ ok: true; preferences: AppPreferencesV23 } | { ok: false; error: string }
 
-export const DEFAULT_PREFERENCES: AppPreferencesV22 = {
-	version: 22,
+export const DEFAULT_PREFERENCES: AppPreferencesV23 = {
+	version: 23,
 	catalogDensity: DEFAULT_CATALOG_DENSITY,
 	categories: DEFAULT_CATEGORIES.map(category => ({ ...category })),
 	categoryOrder: [...CATEGORY_ORDER],
@@ -79,6 +80,7 @@ export const DEFAULT_PREFERENCES: AppPreferencesV22 = {
 	scenarios: [],
 	favoriteScenarioIds: [],
 	firstSeenAt: {},
+	firstSeenVolumes: {},
 	savedFilters: [],
 	legacyCanonicalPreferences: {
 		favorite: [],

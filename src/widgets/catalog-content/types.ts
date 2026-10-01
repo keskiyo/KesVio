@@ -22,6 +22,7 @@ export interface CatalogViewHeaderProps {
 	titleId: string
 	count?: number
 	noun?: string
+	secondaryCount?: { count: number; noun: string }
 	description?: string
 	back?: { label: string; onBack(): void }
 	action?: ReactNode

@@ -1,6 +1,9 @@
+use cadence::LogCadence;
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant};
+
+mod cadence;
 
 const POLL_INTERVAL: Duration = Duration::from_secs(1);
 const STALL_AFTER: Duration = Duration::from_secs(10);
@@ -11,6 +14,7 @@ struct Step {
     detail: String,
     since: Instant,
     reported: Option<Duration>,
+    cadence: LogCadence,
 }
 
 impl Step {
@@ -20,6 +24,7 @@ impl Step {
             detail: String::new(),
             since: Instant::now(),
             reported: None,
+            cadence: LogCadence::default(),
         }
     }
 }
@@ -60,29 +65,40 @@ pub(crate) struct StepTracker {
 
 impl StepTracker {
     pub(crate) fn mark(&self, stage: &'static str, detail: &str) {
-        if self.verbose {
-            log::info!(
-                "Scan step {stage}: {} thread={:?}",
-                detail
-                    .chars()
-                    .filter(|c| !c.is_control())
-                    .take(512)
-                    .collect::<String>(),
-                std::thread::current().id()
-            );
-        }
         let Some(slot) = &self.step else {
             return;
         };
-        let Ok(mut step) = slot.lock() else {
+        let now = Instant::now();
+        let log_turn = {
+            let Ok(mut step) = slot.lock() else {
+                return;
+            };
+            step.stage = stage;
+            step.detail.clear();
+            step.detail
+                .extend(detail.chars().filter(|c| !c.is_control()).take(512));
+            step.since = now;
+            step.reported = None;
+            if self.verbose {
+                step.cadence.turn(stage, now)
+            } else {
+                None
+            }
+        };
+        let Some(skipped) = log_turn else {
             return;
         };
-        step.stage = stage;
-        step.detail.clear();
-        step.detail
-            .extend(detail.chars().filter(|c| !c.is_control()).take(512));
-        step.since = Instant::now();
-        step.reported = None;
+        let detail = detail
+            .chars()
+            .filter(|c| !c.is_control())
+            .take(512)
+            .collect::<String>();
+        let thread = std::thread::current().id();
+        if skipped == 0 {
+            log::info!("Scan step {stage}: {detail} thread={thread:?}");
+        } else {
+            log::info!("Scan step {stage}: {detail} thread={thread:?} skipped={skipped}");
+        }
     }
 
     #[cfg(test)]

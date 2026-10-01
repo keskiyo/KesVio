@@ -1,5 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppRow } from '../../../../src/widgets/catalog-content/ui/AppRow/AppRow'
 import type { AppInfo } from '../../../../src/entities/app'
@@ -255,6 +256,43 @@ describe('AppRow', () => {
 		expect(
 			screen.queryByRole('menuitem', { name: 'Open folder' }),
 		).not.toBeInTheDocument()
+	})
+
+	it('moves keyboard focus to the neighbouring row when Restore removes this one', async () => {
+		const user = userEvent.setup()
+		function List() {
+			const [rows, setRows] = useState<AppInfo[]>([
+				app,
+				{ ...app, id: 'git', name: 'Git' },
+			])
+			return (
+				<div>
+					{rows.map(row => (
+						<AppRow
+							key={row.id}
+							{...props(row)}
+							onRestore={id =>
+								setRows(current =>
+									current.filter(item => item.id !== id),
+								)
+							}
+						/>
+					))}
+				</div>
+			)
+		}
+		render(<List />)
+
+		screen.getByRole('button', { name: 'Manage Claude Code' }).focus()
+		await user.keyboard('{Enter}')
+		screen.getByRole('menuitem', { name: 'Restore to catalog' }).focus()
+		await user.keyboard('{Enter}')
+
+		await waitFor(() =>
+			expect(
+				screen.getByRole('button', { name: 'Launch Git' }),
+			).toHaveFocus(),
+		)
 	})
 
 	it('launches the selected tool', async () => {

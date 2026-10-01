@@ -1,6 +1,7 @@
 import { EllipsisVertical } from 'lucide-react'
 import { useCallback, useRef, useState } from 'react'
 import { useSpotlight } from '../../../../shared/hooks/useSpotlight'
+import { keepFocusNearRemovedItem } from '../../../../shared/lib/focus'
 import { isCatalogArtifact } from '../../lib/catalogArtifacts'
 import { launchSourceLabel } from '../../lib/appPlatform'
 import { SpotlightLayer } from '../../../../shared/ui/SpotlightLayer'
@@ -23,7 +24,9 @@ export function AppCard({
 	const menuTriggerRef = useRef<HTMLButtonElement | null>(null)
 	const closeMenu = useCallback(() => {
 		setMenuOpen(false)
-		menuTriggerRef.current?.focus()
+		const trigger = menuTriggerRef.current
+		trigger?.focus()
+		keepFocusNearRemovedItem(trigger?.closest('article'))
 	}, [])
 	const spotlight = useSpotlight()
 	const artifact = isCatalogArtifact(app)
@@ -71,7 +74,7 @@ export function AppCard({
 					event.stopPropagation()
 					setMenuOpen(value => !value)
 				}}
-				className="app-card-action app-card-action-menu absolute z-2 grid place-items-center rounded-lg border border-white/85 bg-white/72 text-slate-500 opacity-75 shadow-sm transition hover:text-violet-700 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-violet-500"
+				className="app-card-action app-card-action-menu absolute z-2 grid place-items-center rounded-lg border border-white/85 bg-white/72 text-slate-500 shadow-sm transition hover:text-violet-700 focus-visible:outline-2 focus-visible:outline-violet-500"
 			>
 				<EllipsisVertical size={16} aria-hidden="true" />
 			</button>

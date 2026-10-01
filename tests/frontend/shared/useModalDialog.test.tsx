@@ -94,6 +94,51 @@ describe('useModalDialog', () => {
 		expect(opener).toHaveFocus()
 	})
 
+	// Narrowing the window below the navigation breakpoint while a dialog is open unmounts the
+	// sidebar button that opened it, and focus fell to <body> when the dialog closed.
+	it('falls back to a control of the same name, then to the page, when the opener is gone', () => {
+		const sidebar = render(
+			<button type="button" aria-label="New filter">
+				+
+			</button>,
+		)
+		sidebar.getByRole('button', { name: 'New filter' }).focus()
+		const drawerCopy = render(
+			<nav>
+				<button type="button" aria-label="New filter">
+					+
+				</button>
+			</nav>,
+		)
+		const view = render(<Harness />)
+		sidebar.unmount()
+
+		view.unmount()
+		expect(
+			drawerCopy.getByRole('button', { name: 'New filter' }),
+		).toHaveFocus()
+
+		const page = render(
+			<main>
+				<button type="button">Scan for apps</button>
+			</main>,
+		)
+		const opener = render(
+			<button type="button" aria-label="Rename filter">
+				r
+			</button>,
+		)
+		opener.getByRole('button', { name: 'Rename filter' }).focus()
+		const second = render(<Harness />)
+		opener.unmount()
+		drawerCopy.unmount()
+
+		second.unmount()
+		expect(
+			page.getByRole('button', { name: 'Scan for apps' }),
+		).toHaveFocus()
+	})
+
 	it('dismisses on Escape only while the dialog allows it', () => {
 		const onDismiss = vi.fn()
 		const view = render(<Harness onDismiss={onDismiss} />)

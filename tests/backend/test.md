@@ -28,8 +28,9 @@ src-tauri/Cargo.toml` is the count, and the script at the end prints the
   `catalog/sources/start_apps/`, `catalog/sync/portable/`,
   `catalog/sync/scan_sources/portable_sources/` (root selection, with the
   fixed-drive rules under `roots/`), `catalog/sync/scan_steps/` (the stall
-  watchdog: the threshold, the repeat interval, the reused detail buffer, and a
-  thread that stops before its next poll rather than after it) and
+  watchdog: the threshold, the repeat interval, the reused detail buffer, a
+  thread that stops before its next poll rather than after it, and a throttled
+  burst that still reaches the watchdog; `cadence.rs` pins the log cadence) and
   `platform/windows/apps_folder/`. `catalog/scan/settings.rs` and
   `lifecycle/window_state/store.rs` each prove that rewriting the stored value is a
   no-op while a malformed or unsupported document is still replaced.
@@ -269,6 +270,7 @@ corpus entry can pin down on its own.
 - [`catalog/sync/scan_sources/portable_sources/roots/tests.rs`](../../src-tauri/src/catalog/sync/scan_sources/portable_sources/roots/tests.rs)
 - [`catalog/sync/scan_sources/portable_sources/tests.rs`](../../src-tauri/src/catalog/sync/scan_sources/portable_sources/tests.rs)
 - [`catalog/sync/scan_sources/selection.rs`](../../src-tauri/src/catalog/sync/scan_sources/selection.rs)
+- [`catalog/sync/scan_steps/cadence.rs`](../../src-tauri/src/catalog/sync/scan_steps/cadence.rs)
 - [`catalog/sync/scan_steps/tests.rs`](../../src-tauri/src/catalog/sync/scan_steps/tests.rs)
 - [`catalog/sync/retry.rs`](../../src-tauri/src/catalog/sync/retry.rs)
 - [`catalog/sync/volumes.rs`](../../src-tauri/src/catalog/sync/volumes.rs)
@@ -350,11 +352,13 @@ declined by the rules `paths/` names.
 - [`app_state/catalog_generation.rs`](../../src-tauri/src/app_state/catalog_generation.rs)
 - [`app_state/launch_waits.rs`](../../src-tauri/src/app_state/launch_waits.rs)
 - [`app_state/mod.rs`](../../src-tauri/src/app_state/mod.rs)
+- [`commands/backup.rs`](../../src-tauri/src/commands/backup.rs)
 - [`commands/catalog.rs`](../../src-tauri/src/commands/catalog.rs)
 - [`commands/close.rs`](../../src-tauri/src/commands/close.rs)
 - [`commands/contract.rs`](../../src-tauri/src/commands/contract.rs)
 - [`commands/details.rs`](../../src-tauri/src/commands/details.rs)
 - [`commands/diagnostics.rs`](../../src-tauri/src/commands/diagnostics.rs)
+- [`commands/icons.rs`](../../src-tauri/src/commands/icons.rs)
 - [`commands/launch.rs`](../../src-tauri/src/commands/launch.rs)
 - [`commands/mod.rs`](../../src-tauri/src/commands/mod.rs)
 - [`commands/settings.rs`](../../src-tauri/src/commands/settings.rs)

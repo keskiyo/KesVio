@@ -42,6 +42,8 @@ function view(state: {
 	activeView?: AppView
 	apps?: AppInfo[]
 	scenarios?: Scenario[]
+	favoriteAppIds?: string[]
+	favoriteScenarioIds?: string[]
 }) {
 	return renderHook(() =>
 		useCatalogView({
@@ -50,10 +52,11 @@ function view(state: {
 			categories: DEFAULT_CATEGORIES,
 			categoryOverrideIdentities: {},
 			categoryOverrides: {},
-			favoriteAppIds: [],
+			favoriteAppIds: state.favoriteAppIds ?? [],
 			favoriteAppIdentities: [],
 			firstSeenAt: {},
 			scenarios: state.scenarios ?? [],
+			favoriteScenarioIds: state.favoriteScenarioIds ?? [],
 			hiddenAppIds: [],
 			hiddenAppIdentities: [],
 			promotedAppIdentities: [],
@@ -146,6 +149,25 @@ describe('useCatalogView', () => {
 			expect(
 				splitHydrationIds(result.current.visibleHydrationIds).sort(),
 			).toEqual(['Editor', 'Setup'])
+		})
+
+		// Favorites shows each starred scenario as a stack of app icons. Opening the app straight
+		// into Favorites skipped All Apps, so those icons stayed on the fallback glyph.
+		it('covers the apps of starred scenarios while Favorites is open', () => {
+			const { result } = view({
+				activeView: 'favorites',
+				apps: [app('Editor'), app('Chat'), app('Music')],
+				favoriteAppIds: ['Editor'],
+				favoriteScenarioIds: ['work'],
+				scenarios: [
+					scenario({ id: 'work', launchIdentities: ['Chat'] }),
+					scenario({ id: 'other', launchIdentities: ['Music'] }),
+				],
+			})
+
+			expect(
+				splitHydrationIds(result.current.visibleHydrationIds).sort(),
+			).toEqual(['Chat', 'Editor'])
 		})
 
 		it('asks for nothing on a page that shows no apps', () => {

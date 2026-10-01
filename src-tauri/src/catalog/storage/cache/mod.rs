@@ -153,19 +153,24 @@ pub(crate) fn write_document(app_data_dir: &Path, document: &CatalogCache) -> io
         file.write_all(&bytes)?;
         file.sync_all()?;
     }
-    if cache.exists() {
-        if backup.exists() {
-            fs::remove_file(&backup)?;
-        }
+    let rotated = is_readable_document(&cache);
+    if rotated {
         fs::rename(&cache, &backup)?;
     }
     if let Err(error) = fs::rename(&temporary, &cache) {
-        if backup.exists() {
+        if rotated {
             let _ = fs::rename(&backup, &cache);
         }
         return Err(error);
     }
     Ok(())
+}
+
+fn is_readable_document(path: &Path) -> bool {
+    fs::read(path)
+        .ok()
+        .and_then(|bytes| parse_document(&bytes, false))
+        .is_some()
 }
 
 pub(crate) fn reset(app_data_dir: &Path) -> io::Result<()> {
@@ -374,6 +379,40 @@ mod tests {
 
         assert_eq!(read_document(dir.path()).unwrap().generation, 2);
         assert_eq!(parse_document(&backup, true).unwrap().generation, 1);
+    }
+
+    #[test]
+    fn a_corrupt_primary_never_replaces_the_only_good_backup() {
+        let dir = tempfile::tempdir().unwrap();
+        let generation = |value| CatalogCache {
+            generation: value,
+            ..CatalogCache::default()
+        };
+        let backup_path = dir.path().join("apps-cache.json.bak");
+        write_document(dir.path(), &generation(1)).unwrap();
+        write_document(dir.path(), &generation(2)).unwrap();
+        assert_eq!(
+            parse_document(&fs::read(&backup_path).unwrap(), true)
+                .unwrap()
+                .generation,
+            1
+        );
+
+        fs::write(dir.path().join(CACHE_FILE), "{broken").unwrap();
+        assert_eq!(read_document(dir.path()).unwrap().generation, 1);
+
+        write_document(dir.path(), &generation(3)).unwrap();
+
+        assert_eq!(read_document(dir.path()).unwrap().generation, 3);
+        assert_eq!(
+            parse_document(&fs::read(&backup_path).unwrap(), true)
+                .unwrap()
+                .generation,
+            1
+        );
+
+        fs::remove_file(dir.path().join(CACHE_FILE)).unwrap();
+        assert_eq!(read_document(dir.path()).unwrap().generation, 1);
     }
 
     #[test]

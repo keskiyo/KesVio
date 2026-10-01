@@ -1,15 +1,15 @@
-use super::model::{TrayFavorite, TrayModel, TrayScenario, MAX_SCENARIO_ID_CHARS};
+use super::model::{TrayModel, TrayScenario, MAX_SCENARIO_ID_CHARS};
 use tauri::menu::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::AppHandle;
+
+mod labels;
+pub(super) use labels::sanitize_label;
+use labels::{favorite_labels, menu_label};
 
 const SCENARIO_PREFIX: &str = "scenario:";
 const FAVORITE_PREFIX: &str = "favorite:";
 pub(super) const SEARCH_ID: &str = "search";
 pub(super) const SHOW_FAVORITES_ID: &str = "show-favorites";
-const MAX_LABEL_CHARS: usize = 40;
-const FALLBACK_LABEL: &str = "Scenario";
-const FAVORITE_MARK: &str = "★ ";
-const PLAIN_MARK: &str = "☆ ";
 pub(super) const OPEN_LABEL: &str = "Open KesVio";
 pub(super) const SEARCH_LABEL: &str = "Search";
 pub(super) const FAVORITES_LABEL: &str = "Favorite apps";
@@ -47,65 +47,6 @@ pub(super) fn tray_action(id: &str) -> Option<TrayAction> {
 
 fn usable_id(id: &str) -> Option<&str> {
     (!id.is_empty() && id.chars().count() <= MAX_SCENARIO_ID_CHARS).then_some(id)
-}
-
-pub(super) fn sanitize_label(name: &str) -> String {
-    let collapsed = name
-        .split_whitespace()
-        .collect::<Vec<_>>()
-        .join(" ")
-        .chars()
-        .filter(|character| !character.is_control())
-        .collect::<String>();
-    let trimmed = if collapsed.chars().count() > MAX_LABEL_CHARS {
-        let kept = collapsed
-            .chars()
-            .take(MAX_LABEL_CHARS - 1)
-            .collect::<String>();
-        format!("{}…", kept.trim_end())
-    } else {
-        collapsed
-    };
-    if trimmed.is_empty() {
-        return FALLBACK_LABEL.to_owned();
-    }
-    trimmed.replace('&', "&&")
-}
-
-fn menu_label(scenario: &TrayScenario, marked: bool) -> String {
-    let label = sanitize_label(&scenario.label);
-    if !marked {
-        return label;
-    }
-    let mark = if scenario.favorite {
-        FAVORITE_MARK
-    } else {
-        PLAIN_MARK
-    };
-    format!("{mark}{label}")
-}
-
-pub(super) fn favorite_labels(favorites: &[TrayFavorite]) -> Vec<String> {
-    let labels = favorites
-        .iter()
-        .map(|favorite| sanitize_label(&favorite.label))
-        .collect::<Vec<_>>();
-    labels
-        .iter()
-        .enumerate()
-        .map(|(index, label)| {
-            let duplicates = labels.iter().filter(|other| *other == label).count();
-            if duplicates == 1 {
-                return label.clone();
-            }
-            let position = labels[..index]
-                .iter()
-                .filter(|other| *other == label)
-                .count()
-                + 1;
-            format!("{label} ({position})")
-        })
-        .collect()
 }
 
 pub(super) fn build_menu(

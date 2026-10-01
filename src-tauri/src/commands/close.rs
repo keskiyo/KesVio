@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use tauri::{Emitter, Manager};
 
 const MAX_CLOSE_BATCH: usize = 32;
+const MAX_CLOSE_REQUEST: usize = 256;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -80,9 +81,13 @@ fn resolve_close_targets(state: &AppState, ids: Vec<String>) -> Result<CloseRequ
         .close_targets
         .lock()
         .map_err(|_| AppError::CloseDataUnavailable)?;
-    let mut seen = HashSet::with_capacity(ids.len());
-    let mut request = CloseRequest::default();
-    for id in ids {
+    let examined = ids.len().min(MAX_CLOSE_REQUEST);
+    let mut seen = HashSet::with_capacity(examined);
+    let mut request = CloseRequest {
+        unavailable: ids.len().saturating_sub(examined),
+        ..CloseRequest::default()
+    };
+    for id in ids.into_iter().take(examined) {
         if !seen.insert(id.clone()) {
             continue;
         }
@@ -212,6 +217,18 @@ mod tests {
 
         assert_eq!(request.targets.len(), MAX_CLOSE_BATCH);
         assert_eq!(request.unavailable, 3);
+    }
+
+    #[test]
+    fn an_oversized_request_is_counted_without_examining_every_id() {
+        let state = state_with(&["editor"]);
+        let mut ids = vec!["editor".to_string()];
+        ids.extend((0..MAX_CLOSE_REQUEST * 4).map(|index| format!("missing-{index}")));
+
+        let request = resolve_close_targets(&state, ids).unwrap();
+
+        assert_eq!(executables(&request), vec![PathBuf::from(r"C:\editor.exe")]);
+        assert_eq!(request.unavailable, MAX_CLOSE_REQUEST * 4);
     }
 
     #[test]

@@ -197,6 +197,14 @@ jobs:
               shell: pwsh
               run: powershell -NoProfile -File scripts/test-verify-npm-audit.ps1
 
+            - name: Test SBOM generation
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/test-generate-sbom.ps1
+
+            - name: Test cargo-audit ignore expiry gate
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/test-verify-cargo-audit-ignores.ps1
+
             - name: Test third-party license gate
               shell: pwsh
               run: powershell -NoProfile -File scripts/test-third-party-licenses.ps1
@@ -214,3 +222,9 @@ jobs:
             - name: Triage development dependency advisories
               shell: pwsh
               run: powershell -NoProfile -File scripts/verify-npm-audit.ps1
+
+            # cargo-audit keeps an ignored advisory silent forever; the review date in audit.toml is
+            # what turns an accepted risk back into a decision, as the npm exceptions already do.
+            - name: Check cargo-audit ignore review dates
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/verify-cargo-audit-ignores.ps1

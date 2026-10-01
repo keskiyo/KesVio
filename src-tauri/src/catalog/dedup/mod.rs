@@ -9,6 +9,7 @@ mod evidence;
 mod family;
 mod identity;
 mod merge;
+mod portable_signals;
 mod report;
 mod signals;
 mod target;

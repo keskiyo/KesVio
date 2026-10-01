@@ -155,6 +155,20 @@ describe('NSIS data-root cleanup', () => {
 		expect(hookBody).toContain('RMDir /r "$INSTDIR\\KesVioData\\logs"')
 	})
 
+	// A copy that cannot write beside its executable logs under the per-user folder instead, and
+	// Tauri clears that folder only when "Delete app data" is ticked, so PRIVACY.md's promise that
+	// uninstalling removes the logs did not hold there.
+	it('also removes the per-user fallback log folder on every uninstall', () => {
+		const guard = hookBody.indexOf('$UpdateMode <> 1')
+		const removal = hookBody.indexOf(
+			'RMDir /r "$LOCALAPPDATA\\${BUNDLEID}\\logs"',
+		)
+		expect(removal).toBeGreaterThan(guard)
+		expect(hookBody.indexOf('$DeleteAppDataCheckboxState')).toBeGreaterThan(
+			removal,
+		)
+	})
+
 	it('leaves no empty install directory behind', () => {
 		expect(hookBody).toContain('RMDir "$INSTDIR"')
 	})
@@ -168,7 +182,15 @@ describe('NSIS data-root cleanup', () => {
 	it('refuses to recurse from an empty install directory', () => {
 		expect(hookBody).toContain('$INSTDIR != ""')
 		expect(hookBody.indexOf('$INSTDIR != ""')).toBeLessThan(
-			hookBody.indexOf('RMDir /r'),
+			hookBody.indexOf('RMDir /r "$INSTDIR'),
 		)
+		const recursive = [...hookBody.matchAll(/RMDir \/r "([^"]+)"/g)].map(
+			([, target]) => target,
+		)
+		expect(recursive.length).toBeGreaterThan(0)
+		for (const target of recursive)
+			expect(target).toMatch(
+				/^\$(INSTDIR|LOCALAPPDATA\\\$\{BUNDLEID\})\\/,
+			)
 	})
 })

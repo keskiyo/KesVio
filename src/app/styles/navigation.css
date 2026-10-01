@@ -222,5 +222,9 @@
 		var(--navigation-category-accent) 16%,
 		var(--surface-inset)
 	);
-	color: var(--navigation-category-accent);
+	color: color-mix(
+		in oklab,
+		var(--navigation-category-accent) 60%,
+		var(--text-primary)
+	);
 }

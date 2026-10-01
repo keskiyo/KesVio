@@ -1,7 +1,8 @@
 import { reconcileDriveCategories } from '../driveCategories'
-import { identityRekeys, rekeyRecord } from '../identityRekey'
+import { identityRekeys } from '../identityRekey'
 import { catalogGenerationOrder, mergeIcon } from '../catalogGeneration'
-import { reconcileFirstSeen, reconcileMarks } from '../reconciliation'
+import { reconcileFirstSeen, rekeyFirstSeen } from '../firstSeen'
+import { reconcileMarks } from '../reconciliation'
 import type {
 	AppState,
 	GetAppState,
@@ -42,21 +43,33 @@ export function createCatalogSyncActions({
 				apps.set(app.id, mergeIcon(apps.get(app.id), app))
 			const merged = [...apps.values()]
 			const rekeys = identityRekeys(state.apps, merged)
-			const firstSeenAt = reconcileFirstSeen(
+			const firstSeen = reconcileFirstSeen(
 				merged,
-				rekeyRecord(state.firstSeenAt, rekeys),
+				rekeyFirstSeen(
+					{
+						firstSeenAt: state.firstSeenAt,
+						firstSeenVolumes: state.firstSeenVolumes,
+					},
+					rekeys,
+				),
 				Date.now(),
 			)
 			set({
 				apps: merged,
 				catalogGeneration: delta.generation,
-				firstSeenAt,
+				...firstSeen,
 			})
 			const marks = reconcileMarks(get(), get().apps)
 			if (marks) set(marks)
 			const drives = reconcileDriveCategories(get(), get().apps)
 			if (drives) set(drives)
-			if (firstSeenAt !== state.firstSeenAt || marks || drives) persist()
+			if (
+				firstSeen.firstSeenAt !== state.firstSeenAt ||
+				firstSeen.firstSeenVolumes !== state.firstSeenVolumes ||
+				marks ||
+				drives
+			)
+				persist()
 		},
 		applyPatches(patches) {
 			const generation = get().catalogGeneration

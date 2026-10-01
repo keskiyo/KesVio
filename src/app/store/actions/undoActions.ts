@@ -1,4 +1,4 @@
-import { applyUndoPatch, restoredCategoryCollision } from '../undo'
+import { applyUndoPatch, restoredCategoryCollision } from '../undoApply'
 import type {
 	AppState,
 	GetAppState,

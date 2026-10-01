@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createAppStore } from '../../../../src/app/store/appStore'
 import { PREFERENCES_KEY } from '../../../../src/app/store/preferences'
+import { applyUndoPatch } from '../../../../src/app/store/undoApply'
 import {
-	applyUndoPatch,
 	snapshotForUndo,
 	undoPatch,
 	type UndoSnapshot,

@@ -19,11 +19,20 @@ foreach ($requiredPattern in @(
   'perUserData = Join-Path \$env:APPDATA "keskiyo\.kesvio"',
   'installedCopy = Join-Path \$env:LOCALAPPDATA "KesVio"',
   'Add-Result -Step "per-user and installed stores untouched"',
+  '\$webViewProfile = Join-Path \$workspace "WebView2"',
+  '\$env:WEBVIEW2_USER_DATA_FOLDER = \$webViewProfile',
+  'Add-Result -Step "WebView2 profile inside the workspace"',
   'throw "Another KesVio process is running'
 )) {
   if ($source -notmatch $requiredPattern) {
     throw "Native smoke harness is missing $requiredPattern"
   }
+}
+
+# The installed copy's preferences live in the WebView2 profile, so the proof that the per-user
+# folder was left alone must not skip it.
+if ($source -match 'notmatch\s+''\\\\EBWebView\\\\''') {
+  throw "Native smoke harness must not exclude the WebView2 profile from the untouched-store check"
 }
 
 $stopCalls = [regex]::Matches($source, 'Stop-Process[^\r\n]*')

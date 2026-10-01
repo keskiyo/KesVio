@@ -1,15 +1,4 @@
-import {
-	appIdentity,
-	closeBlockedMessage,
-	isCloseBlocked,
-} from '../../../entities/app'
-import {
-	MAX_SCENARIO_ENTRIES,
-	MAX_SCENARIOS,
-	scenarioAppSnapshot,
-	type Scenario,
-	type ScenarioList,
-} from '../../../entities/scenario'
+import { MAX_SCENARIOS, type Scenario } from '../../../entities/scenario'
 import type {
 	AppState,
 	GetAppState,
@@ -17,6 +6,7 @@ import type {
 	RunTransaction,
 	SetAppState,
 } from '../types'
+import { scenarioNameOf, updateScenario } from './scenarioUpdates'
 
 interface ScenarioActionOptions {
 	set: SetAppState
@@ -31,8 +21,6 @@ type ScenarioActions = Pick<
 	| 'createScenario'
 	| 'renameScenario'
 	| 'deleteScenario'
-	| 'addScenarioApp'
-	| 'removeScenarioApp'
 	| 'toggleFavoriteScenario'
 	| 'markScenarioRun'
 >
@@ -49,22 +37,6 @@ function nameTaken(
 	)
 }
 
-function listKey(list: ScenarioList): 'launchIdentities' | 'closeIdentities' {
-	return list === 'launch' ? 'launchIdentities' : 'closeIdentities'
-}
-
-function oppositeListKey(
-	list: ScenarioList,
-): 'launchIdentities' | 'closeIdentities' {
-	return list === 'launch' ? 'closeIdentities' : 'launchIdentities'
-}
-
-function snapshotKey(
-	list: ScenarioList,
-): 'launchAppSnapshots' | 'closeAppSnapshots' {
-	return list === 'launch' ? 'launchAppSnapshots' : 'closeAppSnapshots'
-}
-
 export function createScenarioActions({
 	set,
 	get,
@@ -72,24 +44,6 @@ export function createScenarioActions({
 	transact,
 	idFactory,
 }: ScenarioActionOptions): ScenarioActions {
-	function changeScenario(
-		id: string,
-		change: (scenario: Scenario) => Scenario,
-	) {
-		set(state => ({
-			scenarios: state.scenarios.map(scenario =>
-				scenario.id === id ? change(scenario) : scenario,
-			),
-		}))
-	}
-
-	function scenarioName(id: string): string {
-		return (
-			get().scenarios.find(scenario => scenario.id === id)?.name ??
-			'scenario'
-		)
-	}
-
 	return {
 		createScenario(name) {
 			const value = name.trim()
@@ -127,25 +81,30 @@ export function createScenarioActions({
 			if (!get().scenarios.some(scenario => scenario.id === id))
 				return { ok: false, error: 'Scenario not found' }
 			transact(`Renamed scenario to ${value}`, () =>
-				changeScenario(id, scenario => ({ ...scenario, name: value })),
+				updateScenario(set, id, scenario => ({
+					...scenario,
+					name: value,
+				})),
 			)
 			return { ok: true }
 		},
 		deleteScenario(id) {
-			transact(`Deleted scenario ${scenarioName(id)}`, () =>
-				set(state => ({
-					scenarios: state.scenarios.filter(
-						scenario => scenario.id !== id,
-					),
-					favoriteScenarioIds: state.favoriteScenarioIds.filter(
-						entry => entry !== id,
-					),
-				})),
+			transact(
+				`Deleted scenario ${scenarioNameOf(get().scenarios, id)}`,
+				() =>
+					set(state => ({
+						scenarios: state.scenarios.filter(
+							scenario => scenario.id !== id,
+						),
+						favoriteScenarioIds: state.favoriteScenarioIds.filter(
+							entry => entry !== id,
+						),
+					})),
 			)
 		},
 		markScenarioRun(id) {
 			if (!get().scenarios.some(scenario => scenario.id === id)) return
-			changeScenario(id, scenario => ({
+			updateScenario(set, id, scenario => ({
 				...scenario,
 				lastRunAt: Date.now(),
 			}))
@@ -159,62 +118,6 @@ export function createScenarioActions({
 					: [...state.favoriteScenarioIds, id],
 			}))
 			persist()
-		},
-		addScenarioApp(id, list, identity) {
-			const key = listKey(list)
-			const oppositeKey = oppositeListKey(list)
-			const snapshotsKey = snapshotKey(list)
-			const app = get().apps.find(
-				entry => appIdentity(entry) === identity,
-			)
-			const scenario = get().scenarios.find(entry => entry.id === id)
-			if (!scenario) return { ok: false, error: 'Scenario not found' }
-			if (scenario[key].includes(identity))
-				return { ok: false, error: 'Already in this list' }
-			if (scenario[oppositeKey].includes(identity))
-				return {
-					ok: false,
-					error: 'An app cannot both launch and close',
-				}
-			if (scenario[key].length >= MAX_SCENARIO_ENTRIES)
-				return {
-					ok: false,
-					error: `A list holds at most ${MAX_SCENARIO_ENTRIES} apps`,
-				}
-			if (list === 'close') {
-				if (app && isCloseBlocked(app))
-					return { ok: false, error: closeBlockedMessage(app) }
-			}
-			transact(`Added ${app?.name ?? 'app'} to ${scenario.name}`, () =>
-				changeScenario(id, entry => ({
-					...entry,
-					[key]: [...entry[key], identity],
-					...(app
-						? {
-								[snapshotsKey]: {
-									...(entry[snapshotsKey] ?? {}),
-									[identity]: scenarioAppSnapshot(app),
-								},
-							}
-						: {}),
-				})),
-			)
-			return { ok: true }
-		},
-		removeScenarioApp(id, list, identity) {
-			const key = listKey(list)
-			const snapshotsKey = snapshotKey(list)
-			transact(`Removed an app from ${scenarioName(id)}`, () =>
-				changeScenario(id, scenario => ({
-					...scenario,
-					[key]: scenario[key].filter(entry => entry !== identity),
-					[snapshotsKey]: Object.fromEntries(
-						Object.entries(scenario[snapshotsKey] ?? {}).filter(
-							([entry]) => entry !== identity,
-						),
-					),
-				})),
-			)
 		},
 	}
 }

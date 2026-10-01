@@ -40,7 +40,9 @@
 ; beside the executable, everything KesVio writes lives in `$INSTDIR\KesVioData`. Tauri's
 ; "Delete app data" branch only clears $APPDATA\${BUNDLEID} and $LOCALAPPDATA\${BUNDLEID}, and its
 ; `RMDir "$INSTDIR"` is not recursive. Logs are diagnostics, not user data, so they go on every
-; normal uninstall; the rest goes only when the user ticked the box that promised it.
+; normal uninstall; the rest goes only when the user ticked the box that promised it. A copy that
+; could not write beside its executable logged to $LOCALAPPDATA\${BUNDLEID}\logs instead, and that
+; folder goes on every normal uninstall too — Tauri clears it only with the box ticked.
 ;
 ; The running program records where it lives under HKCU\Software\<publisher>\<product>, from
 ; `platform::windows::registry::install_registry::sync_install_dir`. Nothing in Tauri's uninstall
@@ -104,6 +106,7 @@ FunctionEnd
     ${EndIf}
     DeleteRegKey HKCU "Software\${MANUFACTURER}\${PRODUCTNAME}"
     DeleteRegKey /ifempty HKCU "Software\${MANUFACTURER}"
+    RMDir /r "$LOCALAPPDATA\${BUNDLEID}\logs"
     ${If} $INSTDIR != ""
       RMDir /r "$INSTDIR\KesVioData\logs"
       ${If} $DeleteAppDataCheckboxState = 1

@@ -108,6 +108,24 @@ export function normalizeSavedFilters(value: unknown): SavedFilter[] {
 	return filters
 }
 
+const MAX_VOLUME_ID_LENGTH = 64
+
+export function normalizeVolumeMap(
+	value: unknown,
+	stamped: Record<string, number>,
+): Record<string, string> {
+	if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+	return Object.fromEntries(
+		Object.entries(value as Record<string, unknown>).filter(
+			([identity, volume]) =>
+				identity in stamped &&
+				typeof volume === 'string' &&
+				volume.trim().length > 0 &&
+				volume.length <= MAX_VOLUME_ID_LENGTH,
+		),
+	) as Record<string, string>
+}
+
 export function normalizeTimestampMap(value: unknown): Record<string, number> {
 	if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
 	return Object.fromEntries(

@@ -130,7 +130,8 @@ KesVio installers are currently not Authenticode-signed. Each release instead in
 
 - a SHA-256 checksum;
 - a Tauri updater signature;
-- GitHub build provenance.
+- GitHub build provenance;
+- a CycloneDX software bill of materials.
 
 See [Verifying a downloaded installer](docs/development.md#verifying-a-downloaded-installer) for the manual verification commands. These checks verify release integrity but do not suppress SmartScreen.
 

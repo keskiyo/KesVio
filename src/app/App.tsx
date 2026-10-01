@@ -18,6 +18,7 @@ import { useAppDerivations } from './model/useAppDerivations'
 import { useCatalogDialogs } from './model/useCatalogDialogs'
 import { useNavigationIdentity } from './model/useNavigationIdentity'
 import { useNavigationProps } from './model/useNavigationProps'
+import { useRememberedView } from './model/useRememberedView'
 import { AppDialogs } from './layout/AppDialogs'
 import { AppViews } from './layout/AppViews'
 import { useCatalogBootstrap } from './model/useCatalogBootstrap'
@@ -83,6 +84,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		closeDrawer: drawer.close,
 		isCatalogReady: !isLoading && activeView === 'all',
 	})
+	useRememberedView({ activeView, setActiveView: state.setActiveView })
 
 	useCatalogBootstrap({
 		initialize,

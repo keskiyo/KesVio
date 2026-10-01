@@ -37,12 +37,19 @@ For reporting vulnerabilities, see [SECURITY.md](../SECURITY.md). For the user p
 
 - Catalog discovery, classification and preferences are local; no telemetry,
   catalog upload or online metadata lookup is configured.
-- CSP and Tauri capabilities are least-privilege. Do not widen capabilities,
+- CSP and Tauri capabilities are least-privilege: the capability lists the
+  individual `core:` permissions the frontend calls rather than `core:default`,
+  which would also let the webview create tray icons and menus, decode images
+  from arbitrary paths and resolve profile folders. Do not widen capabilities,
   CSP, updater keys/endpoints, bundle identifier or publisher without explicit
   approval.
 - Inbound IDs and payload sizes are validated before lookup, filesystem work or
   memory allocation. The backend resolves display data separately from command
-  targets.
+  targets. Scan settings accept at most 256 paths per list and 32 767 characters
+  per path, the Windows path limit, and refuse anything larger with
+  `SCAN_SETTINGS_TOO_LARGE` before writing or restarting the watcher. A close
+  request examines at most 256 ids and counts the rest as unavailable without
+  looking them up.
 - Folder actions accept only existing trusted local folders. UNC, device,
   relative and packaged-app paths are refused.
 - Native process execution uses a fixed executable plus argument vector, never

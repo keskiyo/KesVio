@@ -8,7 +8,7 @@ import {
 } from '../../../shared/api/tauri/client'
 
 export const tauriSystemClient: SystemClient = {
-	getSettings: () => invokeTauri('get_system_settings'),
+	getSettings: () => invokeIfTauri('get_system_settings'),
 	setScanSettings: settings => invokeTauri('set_scan_settings', { settings }),
 	setCloseBehavior: hideToTray =>
 		invokeTauri('set_close_behavior', { hideToTray }),

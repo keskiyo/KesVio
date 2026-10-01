@@ -157,7 +157,10 @@ the control that opened it, so closing one never drops the keyboard at the top
 of the catalog. The application information dialog goes through the same shared
 modal lifecycle as the rest, and a regression test opens it from a control and
 asserts the control has focus again after it closes. The navigation drawer restores focus to its
-menu button explicitly, because the burger outlives the panel.
+menu button explicitly, because the burger outlives the panel. A card or row menu action that
+removes the item from the view — Hide, Restore, Move back — takes the menu button with it, so
+`src/shared/lib/focus.ts` moves focus to the neighbouring item's first control once the item has
+left the DOM, and leaves it alone when the user has already moved on.
 
 The catalog is a continuous canvas rather than a raised panel. Its header is a
 fixed sibling above the catalog scroll root, so the narrow violet scrollbar
@@ -271,6 +274,30 @@ count beside its list sizes.
 Arrow keys move between the run buttons so Enter runs the scenario that has
 focus, and typing while a row is focused returns to the search field.
 
+## Favorites
+
+Favorites is the short list someone opens to start the same programs again, so
+it spends as little height as possible before the first one. The title carries
+both counts (`4 applications · 2 scenarios`); the two blocks below it have a
+quiet label each instead of a heading with a description. A starred scenario is
+a compact card — a run button, the name, and the icons of the apps it launches —
+narrow enough for two in a row at the 446 px minimum; the name expands the full
+launch and close lists in place. Expanded lists use icon-only 32 px tiles; the
+full app name remains available as a tooltip and accessible name, and unresolved
+apps use a muted dashed tile. Applications keep the tile size chosen under
+**Catalog density** (a fixed smaller dock was tried and read as too small).
+
+Across catalog grids, hover, keyboard focus or an open card menu reveals both
+corner actions together. A selected yellow star stays visible at rest, and a
+touch device keeps both actions visible.
+
+Opening the window straight into Favorites also loads the icons of the starred
+scenarios' apps, which a start on All Apps used to load as a side effect.
+
+The window reopens on the view that was open when it closed instead of always on
+All Apps (`src/app/model/useRememberedView.ts`); a stored value that is not a
+current view starts on All Apps.
+
 ## Application information
 
 The application information dialog presents discovery source, effective placement, launch-target status, and the evidence exposed by the classifier. The meaning and precedence of that evidence belong to [Classification](classification.md#explainable-decisions).
@@ -370,7 +397,12 @@ modal — the last `aria-modal` element in document order, which is the last one
 opened because dialogs portal to `body` — traps Tab or answers Escape
 (`shared/lib/modalLayering.ts`), so a filter editor opened over the drawer keeps
 Shift+Tab inside itself and one Escape closes only the editor, returning focus
-to the drawer's **New filter** button. In the sidebar, **Enter** opens a
+to the drawer's **New filter** button. The same rule governs the window-wide
+shortcuts in `src/app/model/useGlobalShortcuts.ts`: while a modal is open,
+**Ctrl+F**, **/** and **Ctrl+Z** do nothing, and **Ctrl+K** or
+**Ctrl+Shift+K** only close the launcher that owns them (its `data-shortcut`),
+so Quick launch never stacks over a confirmation and Undo never reverts a
+change hidden behind an open dialog. In the sidebar, **Enter** opens a
 category and **Space** picks it up for keyboard reordering (arrow keys move,
 Space or Enter drops, Escape cancels); dnd-kit's default, where Enter also
 picked the row up, left keyboard users unable to open a category. Decorative

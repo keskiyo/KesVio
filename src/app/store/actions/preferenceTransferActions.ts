@@ -4,7 +4,7 @@ import {
 	parsePreferenceImport,
 	readPreferenceBackup,
 	serializePreferences,
-	type AppPreferencesV22,
+	type AppPreferencesV23,
 	type PreferenceTransferResult,
 } from '../preferences'
 import { reconcileMarks } from '../reconciliation'
@@ -31,9 +31,9 @@ type PreferenceTransferActions = Pick<
 	| 'hasPreferencesBackup'
 >
 
-function preferencesFromState(state: AppState): AppPreferencesV22 {
+function preferencesFromState(state: AppState): AppPreferencesV23 {
 	return {
-		version: 22,
+		version: 23,
 		catalogDensity: state.catalogDensity,
 		categories: state.categories,
 		categoryOrder: state.categoryOrder,
@@ -53,13 +53,14 @@ function preferencesFromState(state: AppState): AppPreferencesV22 {
 		scenarios: state.scenarios,
 		favoriteScenarioIds: state.favoriteScenarioIds,
 		firstSeenAt: state.firstSeenAt,
+		firstSeenVolumes: state.firstSeenVolumes,
 		savedFilters: state.savedFilters,
 		legacyCanonicalPreferences: state.legacyCanonicalPreferences,
 		unknownFields: state.unknownPreferenceFields,
 	}
 }
 
-function preferenceState(preferences: AppPreferencesV22) {
+function preferenceState(preferences: AppPreferencesV23) {
 	return {
 		catalogDensity: preferences.catalogDensity,
 		categories: preferences.categories,
@@ -80,6 +81,7 @@ function preferenceState(preferences: AppPreferencesV22) {
 		scenarios: preferences.scenarios,
 		favoriteScenarioIds: preferences.favoriteScenarioIds,
 		firstSeenAt: preferences.firstSeenAt,
+		firstSeenVolumes: preferences.firstSeenVolumes,
 		savedFilters: preferences.savedFilters,
 		legacyCanonicalPreferences: preferences.legacyCanonicalPreferences,
 		unknownPreferenceFields: preferences.unknownFields ?? {},
@@ -93,7 +95,7 @@ export function createPreferenceTransferActions({
 	storage,
 }: PreferenceTransferOptions): PreferenceTransferActions {
 	function applyPreferences(
-		preferences: AppPreferencesV22,
+		preferences: AppPreferencesV23,
 	): PreferenceTransferResult {
 		if (hasNewerStoredPreferences(storage)) {
 			return {

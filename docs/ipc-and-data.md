@@ -206,7 +206,7 @@ Three stores contain user data:
 | Store         | Owner                          | Rules                                                                                                                                |
 | ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Catalog cache | `catalog/storage/cache/`       | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                |
-| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 22) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
+| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 23) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
 | Window state  | `lifecycle/window_state/`      | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                           |
 
 Window state is presentation-only and deliberately disposable: a missing,
@@ -215,6 +215,11 @@ configured 446×740, centered, and closing hides to the tray. It is the one
 store whose loss costs the user nothing, so it never falls back to a backup copy
 and never blocks startup. Geometry is optional inside the document, because the
 close setting has to survive a session in which the window was never moved.
+
+The last open view is the same kind of presentation-only value: one view name
+under the `localStorage` key `kesvio.last-view`, outside the versioned
+preferences document so it needs no schema version or migration. An unknown or
+unreadable value starts the window on All Apps and costs nothing else.
 
 `firstSeenAt` maps a preference identity to the moment the catalog first
 carried it, and **Recently added** reads nothing else, so a stamp is written
@@ -226,6 +231,19 @@ back — every start moved dozens of long-installed applications into Recently
 added. Only a completed scan prunes the map, because its output is the catalog
 rather than a moment in the middle of one, and that keeps the document bounded
 by the catalog size.
+
+Schema 23 adds `firstSeenVolumes`, the volume id (`volumeId`) of every stamped
+identity that came from a tracked removable volume. A folder on an unmounted
+drive is neither scanned nor retained, so the first completed scan after a stick
+was unplugged used to prune its stamps, and plugging it back in listed every app
+on it as recently added. Pruning now keeps the stamp of an identity whose volume
+has no record in the finished catalog — the volume is away, not the app — and
+prunes it normally once the volume is back and the app is gone from it. The
+mapping lives in the preference document because the catalog cache does not keep
+records of an unmounted volume, so the answer has to survive a restart.
+`src/app/store/firstSeen.ts` owns stamping and pruning; documents written before
+schema 23 upgrade with an empty map, and an entry without a stamp, a non-string
+id or an id over 64 characters is dropped on read.
 
 Schema 19 adds `lastRunAt` to a scenario. Documents written before it upgrade
 unstamped rather than being stamped with the migration time, which would claim
@@ -289,12 +307,14 @@ has to reach it either way: Tauri's own uninstall section clears
 `%LOCALAPPDATA%\keskiyo.kesvio` when the user ticks **Delete app data**,
 and finishes with a `RMDir "$INSTDIR"` that is not recursive. Neither touches
 `KesVioData`, so `nsis/autostart-shortcut.nsh` does. On a normal uninstall it
-always removes `KesVioData\logs`, which is diagnostics rather than user data;
+always removes `KesVioData\logs`, which is diagnostics rather than user data,
+together with the per-user fallback log folder `%LOCALAPPDATA%\keskiyo.kesvio\logs`
+that Tauri would otherwise clear only with the box ticked;
 with the box ticked it removes the whole `KesVioData` folder, and then the
 install directory itself once nothing is left in it. Every branch is guarded on
 `$UpdateMode <> 1`, because an update runs the previous uninstaller before the
 new installer: without that guard a version bump would delete the catalog,
-the scan settings and the catalog. `tests/frontend/config/installerHooks.test.mjs`
+the scan settings and the window state. `tests/frontend/config/installerHooks.test.mjs`
 holds that contract.
 
 A small store also refuses to rewrite itself with the value it already holds.
@@ -342,7 +362,12 @@ back cannot pin files forever. A line whose prefix does not parse is exported as
 a bare `<line>` and lives as long as its segment.
 
 Detailed scan steps are enabled by default, including normal launches and
-autostart. The former `--verbose-scan` flag is no longer needed. Source outcomes,
+autostart. The former `--verbose-scan` flag is no longer needed. Every step
+still reaches the stall watchdog, but the file receives the first sixteen steps
+of a stage and after that at most one line a second, carrying `skipped=N` for
+the steps it did not write: a routine scan had written one line per file of
+the installer cache — thousands of profile paths per scan — while a stall report
+already names the exact step it stopped on. Source outcomes,
 counts, portable roots, and assembly steps remain recorded. Per-step lines carry
 the worker thread id; untrusted detail is limited to 512 characters and control
 characters are removed from these lines. Existing scan paths identify the
@@ -539,7 +564,10 @@ rewriting them to another category. The affected applications return to the
 category the classifier detected for them.
 
 Catalog writes retain the previous known-good cache as `apps-cache.json.bak` after
-an atomic replacement. In-memory catalog state updates only after the replacement
+an atomic replacement. Only a primary that still parses rotates into the backup: a
+corrupt primary is replaced in place, so the backup it fell back to on load stays
+the one good copy, and the backup is never deleted ahead of the rename that
+replaces it. In-memory catalog state updates only after the replacement
 write succeeds. A cache file written by a newer schema version is never
 overwritten by an older build: the catalog treats it as absent, scans into
 memory, and skips the write so the file survives intact for the newer build.
