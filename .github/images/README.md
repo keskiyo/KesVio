@@ -6,7 +6,10 @@ include them in the application bundle.
 ## Current capture
 
 Captured on 2026-09-23 from the running KesVio 0.5.4 application, built from the
-release change set that introduces these images on top of revision `63dde23`. The window
+release change set that introduces these images on top of revision `63dde23`;
+`settings.png` was recaptured on 0.5.4 for its gear-and-title header and
+`favorites.png` on 2026-10-02 from 0.5.5 for the compact Favorites view, so the
+version under the logo differs between them. The window
 was rendered at a 1600 × 900 viewport through the WebView2 debugging protocol, so
 the images are native size rather than downscaled. The catalog counts, categories
 and application names come from a real Windows installation rather than fixtures.
