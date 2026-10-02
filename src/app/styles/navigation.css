@@ -112,6 +112,7 @@
 	}
 
 	.lucide-star,
+	.lucide-folder,
 	.lucide-folder-open {
 		color: var(--category-yellow);
 	}

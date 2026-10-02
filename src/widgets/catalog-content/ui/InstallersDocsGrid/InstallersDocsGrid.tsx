@@ -1,4 +1,7 @@
 import { Box, FileText, Package, SearchX } from 'lucide-react'
+import { useMemo } from 'react'
+import { newerInstalledVersions } from '../../../../entities/app'
+import { APP_ROW_PAGE } from '../AppRow/data'
 import { ArtifactSection } from './ArtifactSection'
 import { CatalogViewHeader } from '../CatalogViewHeader'
 import { ViewEmptyState } from '../ViewEmptyState'
@@ -6,19 +9,27 @@ import type { InstallersDocsGridProps } from './types'
 
 export function InstallersDocsGrid({
 	apps,
+	installedApps,
 	hasQuery,
 	onBack,
 	...actions
 }: InstallersDocsGridProps) {
-	const installers = []
-	const docs = []
-	for (const app of apps) {
-		if (app.artifactKind === 'installer') installers.push(app)
-		if (app.artifactKind === 'documentation') docs.push(app)
-	}
+	const installers = apps.filter(app => app.artifactKind === 'installer')
+	const docs = apps.filter(app => app.artifactKind === 'documentation')
+	const newerInstalled = useMemo(
+		() =>
+			newerInstalledVersions(
+				apps.filter(app => app.artifactKind === 'installer'),
+				installedApps,
+			),
+		[apps, installedApps],
+	)
 	const back = { label: 'Back to More', onBack }
 	return (
-		<section aria-labelledby="installers-docs-title">
+		<section
+			aria-labelledby="installers-docs-title"
+			className={APP_ROW_PAGE}
+		>
 			<CatalogViewHeader
 				icon={Box}
 				title="Installers & Docs"
@@ -29,12 +40,13 @@ export function InstallersDocsGrid({
 				back={back}
 			/>
 			{apps.length ? (
-				<div className="mx-auto max-w-3xl space-y-8 min-[1900px]:max-w-[80rem]">
+				<div className="space-y-8">
 					{installers.length > 0 && (
 						<ArtifactSection
 							icon={Package}
 							title="Installers"
 							apps={installers}
+							newerInstalled={newerInstalled}
 							{...actions}
 						/>
 					)}
@@ -43,6 +55,7 @@ export function InstallersDocsGrid({
 							icon={FileText}
 							title="Documentation"
 							apps={docs}
+							newerInstalled={newerInstalled}
 							{...actions}
 						/>
 					)}

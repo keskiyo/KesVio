@@ -28,6 +28,7 @@ function app(id: string, artifactKind: 'installer' | 'documentation'): AppInfo {
 }
 
 const callbacks = {
+	installedApps: [],
 	categoryOrder: ['installers_docs'],
 	categories: [
 		{

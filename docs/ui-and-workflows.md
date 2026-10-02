@@ -119,7 +119,9 @@ filled — launch or close — and for which scenario, since both lists open the
 same dialog. It offers exactly the applications the All apps
 view shows: hidden records, installers and auxiliary tools stay out, while an
 entry already stored in a scenario still resolves against the whole catalog so
-it keeps its name and icon. If an older release changed an application's
+it keeps its name and icon. The Scenarios page loads the icons of everything the
+picker can offer, after the apps its scenarios already hold, so a window opened
+straight on Scenarios does not show the picker on fallback glyphs. If an older release changed an application's
 preference identity during an update, the saved snapshot restores the entry by
 exact name only when the current catalog has one unambiguous match. Candidates
 are ordered by name, case-insensitively
@@ -238,17 +240,35 @@ the button). All three render `AppRow`, whose surface is neutral at rest —
 token border, panel background, neutral icon ring, menu button at reduced
 opacity — and takes the accent border only on hover, focus-within or while its
 menu is open, so seventy rows do not read as seventy violet outlines.
-**Auxiliary tools**, **Hidden** and **Installers & Docs** keep the dense
-one-to-three column grid of `AppRow` cards; Installers & Docs splits into
+**Auxiliary tools**, **Hidden** and **Installers & Docs** keep the title and
+the grid in one frame (`APP_ROW_PAGE`, up to 80 rem) so their left edges meet,
+and the grid fills it with as many 22 rem columns as fit (`APP_ROW_GRID`)
+instead of a fixed narrow column. Each row carries the page's main action in the
+same slot beside ⋮ — **Restore** on Hidden and Auxiliary tools, **Folder** on
+Installers & Docs — and the menu does not repeat it; pressing it keeps keyboard
+focus on the neighbouring row when the row disappears. Hidden puts **Restore
+all** under its description, where Auxiliary tools has its reason filter, when
+more than one app is hidden; it asks first in the shared `ConfirmDialog`, naming
+the apps, and then restores them as one undoable step (`restoreApps`). Versions of
+one product (same name without setup wording, architecture or version, and the
+same publisher) fold behind a `+N` toggle with the newest in front
+(`src/entities/app/lib/versionGroups.ts`); the older rows open and close through
+the shared `CollapsiblePanel`, like every other disclosure in the app.
+Auxiliary tools label each row with the reason it is a helper (the first
+auxiliary `visibilityReasons` entry) and offer chips that narrow the list to one
+reason, a single select below the `sm` width. Installers & Docs splits into
 **Installers** and **Documentation** sections whose headings carry an icon, a
-rule and the count, and each artifact row shows its middle-ellipsed path as a
-tertiary line. A hidden card's menu offers _App info_ and _Restore to catalog_
-and nothing that hides or uninstalls. "Nothing is hidden" replaces the grid when it is empty. A
-menu opened from a trigger in the right half of the window
-hangs from the trigger's right edge (`floatingMenuPosition`), so a row's ⋮
-never gets a panel floating off to its side. An artifact row's menu replaces
-_Uninstall_ — which Windows cannot do for a file that was never installed —
-with **Open folder**, the same `openAppFolder` command the App info dialog
+rule and the count; each artifact row names its folder and keeps the full path
+in the tooltip — size and date live in `AppDetails`, which a list may not fetch
+per row — and an installer older than an installed program of the same product
+and publisher says **Installed X is newer**. A hidden or auxiliary card's menu
+offers _App info_ alone — Restore is on the row, and nothing there hides or
+uninstalls. "Nothing is hidden" replaces the grid when it is empty. A menu
+opened from a trigger in the right half of the window hangs from the trigger's
+right edge (`floatingMenuPosition`), so a row's ⋮ never gets a panel floating
+off to its side. An artifact row's menu has no _Uninstall_ — Windows cannot do
+it for a file that was never installed — and no _Open folder_ either: the row's
+**Folder** button runs the same `openAppFolder` command the App info dialog
 uses, so the installer can be run or deleted by hand from where it lies; a
 failure is reported as a toast without the path.
 

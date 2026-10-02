@@ -1,4 +1,4 @@
-import { TriangleAlert, Trash2, X } from 'lucide-react'
+import { type LucideIcon, TriangleAlert, Trash2, X } from 'lucide-react'
 import { useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useModalDialog } from '../hooks/useModalDialog'
@@ -8,6 +8,7 @@ interface ConfirmDialogProps {
 	title: string
 	description: string
 	confirmLabel: string
+	confirmIcon?: LucideIcon
 	closeLabel: string
 	pending?: boolean
 	confirmDisabled?: boolean
@@ -21,6 +22,7 @@ export function ConfirmDialog({
 	title,
 	description,
 	confirmLabel,
+	confirmIcon: ConfirmIcon = Trash2,
 	closeLabel,
 	pending = false,
 	confirmDisabled = false,
@@ -84,7 +86,7 @@ export function ConfirmDialog({
 						onClick={onConfirm}
 						className="danger-button inline-flex h-9 items-center gap-2 rounded-lg border border-(--category-red) bg-(--surface-inset) px-4 text-sm font-medium text-(--category-red) transition-colors hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--category-red) disabled:opacity-50"
 					>
-						<Trash2 size={15} aria-hidden="true" />
+						<ConfirmIcon size={15} aria-hidden="true" />
 						{confirmLabel}
 					</button>
 				</div>

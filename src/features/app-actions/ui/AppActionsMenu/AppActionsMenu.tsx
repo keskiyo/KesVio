@@ -2,7 +2,6 @@ import {
 	ArrowRight,
 	ExternalLink,
 	EyeOff,
-	FolderOpen,
 	Info,
 	RotateCcw,
 	Wrench,
@@ -26,7 +25,6 @@ export function AppActionsMenu({
 	onClose,
 	onMove,
 	onInfo,
-	onOpenFolder,
 	onManageInWindows,
 	isHidden = false,
 	isUserPromoted = false,
@@ -97,43 +95,39 @@ export function AppActionsMenu({
 						Grouped by scan drive. Category changes are unavailable.
 					</p>
 				)}
-				<MenuItem
-					icon={
-						isHidden ? RotateCcw : isUserPromoted ? Wrench : EyeOff
-					}
-					label={
-						isHidden ? (
-							'Restore to catalog'
-						) : isUserPromoted ? (
-							<>
-								<span aria-hidden="true">Move back</span>
-								<span className="sr-only">
-									Move back to Auxiliary tools
-								</span>
-							</>
-						) : (
-							'Hide from catalog'
-						)
-					}
-					onClick={() => {
-						if (isHidden) onRestore(app.id)
-						else if (isUserPromoted) onDemote(app.id)
-						else onHide(app.id)
-						onClose()
-					}}
-				/>
-				{!isHidden && (
-					<div className="mx-1 my-1 border-t border-slate-200/55" />
-				)}
-				{!isHidden && filedArtifact && onOpenFolder && (
+				{(!isHidden || onRestore) && (
 					<MenuItem
-						icon={FolderOpen}
-						label="Open folder"
+						icon={
+							isHidden
+								? RotateCcw
+								: isUserPromoted
+									? Wrench
+									: EyeOff
+						}
+						label={
+							isHidden ? (
+								'Restore to catalog'
+							) : isUserPromoted ? (
+								<>
+									<span aria-hidden="true">Move back</span>
+									<span className="sr-only">
+										Move back to Auxiliary tools
+									</span>
+								</>
+							) : (
+								'Hide from catalog'
+							)
+						}
 						onClick={() => {
-							void onOpenFolder(app)
+							if (isHidden) onRestore?.(app.id)
+							else if (isUserPromoted) onDemote(app.id)
+							else onHide(app.id)
 							onClose()
 						}}
 					/>
+				)}
+				{!isHidden && !filedArtifact && (
+					<div className="mx-1 my-1 border-t border-slate-200/55" />
 				)}
 				{!isHidden && !filedArtifact && app.canUninstall && (
 					<MenuItem

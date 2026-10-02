@@ -7,6 +7,7 @@ import type {
 
 export interface InstallersDocsGridProps {
 	apps: AppInfo[]
+	installedApps: AppInfo[]
 	hasQuery: boolean
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
@@ -17,15 +18,15 @@ export interface InstallersDocsGridProps {
 	onOpenFolder(app: AppInfo): Promise<void>
 	onManageInWindows(): Promise<void>
 	onHide(id: string): void
-	onRestore(id: string): void
 	onDemoteAuxiliary(id: string): void
 }
 
 export interface ArtifactSectionProps extends Omit<
 	InstallersDocsGridProps,
-	'apps' | 'hasQuery' | 'onBack'
+	'apps' | 'installedApps' | 'hasQuery' | 'onBack'
 > {
 	icon: LucideIcon
 	title: string
 	apps: AppInfo[]
+	newerInstalled: ReadonlyMap<string, string>
 }

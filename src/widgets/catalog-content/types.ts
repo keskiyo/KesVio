@@ -81,6 +81,7 @@ export interface FavoritesGridProps extends CatalogGridProps {
 
 export interface HiddenGridProps extends CatalogGridProps {
 	onBack(): void
+	onRestoreAll(ids: string[]): void
 }
 
 export interface CategoryHeaderProps {

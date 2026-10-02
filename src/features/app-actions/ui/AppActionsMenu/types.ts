@@ -22,12 +22,11 @@ export interface AppActionsMenuProps {
 		artifact?: CatalogArtifactKind,
 	): void
 	onInfo(app: AppInfo): void
-	onOpenFolder?(app: AppInfo): Promise<void>
 	onManageInWindows(): Promise<void>
 	isHidden?: boolean
 	isUserPromoted?: boolean
 	onHide(id: string): void
-	onRestore(id: string): void
+	onRestore?(id: string): void
 	onDemote(id: string): void
 	anchorRef: RefObject<HTMLButtonElement | null>
 }

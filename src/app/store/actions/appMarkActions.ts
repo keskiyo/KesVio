@@ -24,6 +24,7 @@ type AppMarkActions = Pick<
 	| 'toggleFavorite'
 	| 'hideApp'
 	| 'restoreApp'
+	| 'restoreApps'
 	| 'promoteAuxiliary'
 	| 'demoteAuxiliary'
 >
@@ -87,6 +88,28 @@ export function createAppMarkActions({
 						),
 						hiddenAppIdentities: state.hiddenAppIdentities.filter(
 							item => item !== identity,
+						),
+					}
+				}),
+			)
+		},
+		restoreApps(ids) {
+			if (!ids.length) return
+			transact(`Restored ${ids.length} apps`, () =>
+				set(state => {
+					const restoring = new Set(ids)
+					const identities = new Set(
+						state.apps
+							.filter(app => restoring.has(app.id))
+							.map(app => identityOf(app)),
+					)
+					return {
+						hiddenAppIds: state.hiddenAppIds.filter(
+							appId => !restoring.has(appId),
+						),
+						hiddenAppIdentities: state.hiddenAppIdentities.filter(
+							item =>
+								!identities.has(item) && !restoring.has(item),
 						),
 					}
 				}),

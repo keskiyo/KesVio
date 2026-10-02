@@ -2,7 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { RotateCcw } from 'lucide-react'
 import { AppRow } from '../../../../src/widgets/catalog-content/ui/AppRow/AppRow'
+import { RowAction } from '../../../../src/widgets/catalog-content/ui/AppRow/RowAction'
 import type { AppInfo } from '../../../../src/entities/app'
 import type {
 	AppCategory,
@@ -64,7 +66,6 @@ function props(appOverride: AppInfo = app) {
 		onMove: vi.fn(),
 		onInfo: vi.fn(),
 		onManageInWindows: vi.fn(),
-		onRestore: vi.fn(),
 		onDemote: vi.fn(),
 	}
 }
@@ -100,16 +101,16 @@ describe('AppRow', () => {
 		expect(screen.queryByText('Unknown publisher')).not.toBeInTheDocument()
 	})
 
-	it('offers Restore for an auxiliary tool and Hide for a catalog artifact', async () => {
-		const auxiliary = props()
-		const { unmount } = render(<AppRow {...auxiliary} />)
+	// Hidden and Auxiliary rows carry Restore as a visible button, so their menu no longer
+	// repeats it and keeps App info alone; a catalog artifact still hides from the menu.
+	it('keeps a hidden or auxiliary menu to App info and offers Hide for a catalog artifact', async () => {
+		const { unmount } = render(<AppRow {...props()} />)
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Manage Claude Code' }),
 		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Restore to catalog' }),
-		)
-		expect(auxiliary.onRestore).toHaveBeenCalledWith('claude-code')
+		expect(
+			screen.getAllByRole('menuitem').map(item => item.textContent),
+		).toEqual(['App info'])
 		unmount()
 
 		const onHide = vi.fn()
@@ -137,7 +138,8 @@ describe('AppRow', () => {
 	})
 
 	// Several downloads of one product carry the same name and version; only the file's own
-	// location tells them apart, so an artifact row shows where it lives.
+	// location tells them apart, so an artifact row shows its folder and keeps the full path in
+	// the tooltip (the whole path in the row was the loudest line on the page).
 	it('shows where an installer lives and keeps an application row free of paths', () => {
 		const { unmount } = render(<AppRow {...props()} />)
 		expect(screen.queryByText(/C:\\Tools/)).not.toBeInTheDocument()
@@ -157,8 +159,9 @@ describe('AppRow', () => {
 		)
 
 		expect(
-			screen.getByText('D:\\Downloads\\vs_Community.exe'),
-		).toHaveAttribute('title', 'D:\\Downloads\\vs_Community.exe')
+			screen.getByTitle('D:\\Downloads\\vs_Community.exe'),
+		).toHaveTextContent('Downloads')
+		expect(screen.queryByText(/vs_Community\.exe/)).not.toBeInTheDocument()
 	})
 
 	it('drags an auxiliary tool but never an installer, whose move would be a no-op', () => {
@@ -207,35 +210,30 @@ describe('AppRow', () => {
 		).toMatch(/\bopacity-60\b/)
 	})
 
-	// An installer is a file, not an installed program: Windows cannot uninstall it, but the
-	// folder it sits in is the place a user goes to delete or run it by hand.
-	it('opens the folder of an artifact instead of offering Uninstall', async () => {
-		const onOpenFolder = vi.fn().mockResolvedValue(undefined)
-		const installer = {
-			...props({
-				...app,
-				id: 'setup',
-				name: 'Setup',
-				artifactKind: 'installer' as const,
-				canUninstall: true,
-			}),
-			isHidden: false,
-			onOpenFolder,
-		}
-		render(<AppRow {...installer} />)
+	// An installer is a file, not an installed program: Windows cannot uninstall it. Its folder
+	// is a visible Folder button on the row, so the menu does not repeat it either.
+	it('offers neither Uninstall nor Open folder in an artifact menu', async () => {
+		render(
+			<AppRow
+				{...props({
+					...app,
+					id: 'setup',
+					name: 'Setup',
+					artifactKind: 'installer' as const,
+					canUninstall: true,
+				})}
+				isHidden={false}
+			/>,
+		)
 
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Manage Setup' }),
 		)
-		expect(
-			screen.queryByRole('menuitem', { name: /Uninstall/ }),
-		).not.toBeInTheDocument()
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Open folder' }),
-		)
 
-		expect(onOpenFolder).toHaveBeenCalledWith(installer.app)
-		expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+		expect(
+			screen.getAllByRole('menuitem').map(item => item.textContent),
+		).toEqual(['App info', 'Hide from catalog'])
+		expect(screen.queryByRole('separator')).not.toBeInTheDocument()
 	})
 
 	it('keeps Uninstall for an installed program and never shows Open folder there', async () => {
@@ -243,7 +241,6 @@ describe('AppRow', () => {
 			<AppRow
 				{...props({ ...app, canUninstall: true })}
 				isHidden={false}
-				onOpenFolder={vi.fn()}
 			/>,
 		)
 
@@ -271,10 +268,19 @@ describe('AppRow', () => {
 						<AppRow
 							key={row.id}
 							{...props(row)}
-							onRestore={id =>
-								setRows(current =>
-									current.filter(item => item.id !== id),
-								)
+							actions={
+								<RowAction
+									icon={RotateCcw}
+									label="Restore"
+									accessibleLabel={`Restore ${row.name} to catalog`}
+									onClick={() =>
+										setRows(current =>
+											current.filter(
+												item => item.id !== row.id,
+											),
+										)
+									}
+								/>
 							}
 						/>
 					))}
@@ -283,9 +289,9 @@ describe('AppRow', () => {
 		}
 		render(<List />)
 
-		screen.getByRole('button', { name: 'Manage Claude Code' }).focus()
-		await user.keyboard('{Enter}')
-		screen.getByRole('menuitem', { name: 'Restore to catalog' }).focus()
+		screen
+			.getByRole('button', { name: 'Restore Claude Code to catalog' })
+			.focus()
 		await user.keyboard('{Enter}')
 
 		await waitFor(() =>

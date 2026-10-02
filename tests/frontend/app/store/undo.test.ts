@@ -290,6 +290,25 @@ describe('undo in the store', () => {
 		})
 	})
 
+	// Restore all on the Hidden page used to be one transaction per app, so Ctrl+Z brought back
+	// only the last one; restoring a batch is one step and one undo.
+	it('restores several hidden apps as one undoable step', async () => {
+		const { store } = await ready()
+		store.getState().hideApp('code')
+		store.getState().hideApp('chrome')
+
+		store.getState().restoreApps(['code', 'chrome'])
+		expect(store.getState().hiddenAppIds).toEqual([])
+		expect(store.getState().hiddenAppIdentities).toEqual([])
+		expect(store.getState().undoable?.label).toBe('Restored 2 apps')
+
+		expect(store.getState().undo()).toEqual({ ok: true })
+		expect([...store.getState().hiddenAppIds].sort()).toEqual([
+			'chrome',
+			'code',
+		])
+	})
+
 	it('records no undo for favorites, run marks or a change that changed nothing', async () => {
 		const { store } = await ready()
 		store.getState().toggleFavorite('code')

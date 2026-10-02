@@ -107,6 +107,7 @@ export interface AppState {
 	toggleFavorite(id: string): void
 	hideApp(id: string): void
 	restoreApp(id: string): void
+	restoreApps(ids: string[]): void
 	promoteAuxiliary(id: string): void
 	demoteAuxiliary(id: string): void
 	reorderCategory(active: AppCategory, over: AppCategory): void

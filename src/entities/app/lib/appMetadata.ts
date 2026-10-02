@@ -47,6 +47,10 @@ export function classificationReasonsLabel(
 	return reasons.map(reason => VISIBILITY_REASON_LABELS[reason]).join(', ')
 }
 
+export function visibilityReasonLabel(reason: AppVisibilityReason): string {
+	return VISIBILITY_REASON_LABELS[reason]
+}
+
 const VISIBILITY_REASON_LABELS = {
 	start_menu_registration: 'Start Menu registration',
 	windows_app_registration: 'Windows app registration',

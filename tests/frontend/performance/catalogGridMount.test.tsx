@@ -60,6 +60,7 @@ function renderGrid(size: number) {
 		<AppStoreProvider store={createAppStore(emptyClient(), localStorage)}>
 			<AppGrid
 				apps={Array.from({ length: size }, (_, index) => app(index))}
+				installedApps={[]}
 				isLoading={false}
 				hasQuery={false}
 				activeView="all"
@@ -92,6 +93,7 @@ function renderGrid(size: number) {
 				onManageInWindows={vi.fn()}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
+				onRestoreAll={vi.fn()}
 				onPromoteAuxiliary={vi.fn()}
 				onDemoteAuxiliary={vi.fn()}
 				onRenameCategory={vi.fn().mockReturnValue({ ok: true })}

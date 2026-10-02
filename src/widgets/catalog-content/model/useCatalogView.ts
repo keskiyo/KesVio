@@ -174,7 +174,8 @@ export function useCatalogView(state: CatalogViewState) {
 		state.scenarios,
 	])
 	const hydrationApps = useMemo(() => {
-		if (state.activeView === 'scenarios') return scenarioApps
+		if (state.activeView === 'scenarios')
+			return scenarioApps.concat(primaryApps)
 		if (state.activeView === 'more')
 			return [
 				...morePreview.auxiliary,
@@ -187,7 +188,7 @@ export function useCatalogView(state: CatalogViewState) {
 		if (state.activeView === 'favorites')
 			return filteredApps.concat(scenarioApps)
 		return filteredApps
-	}, [filteredApps, morePreview, scenarioApps, state.activeView])
+	}, [filteredApps, morePreview, primaryApps, scenarioApps, state.activeView])
 	const visibleHydrationIds = useMemo(
 		() => joinHydrationIds(hydrationApps.map(app => app.id)),
 		[hydrationApps],

@@ -1,10 +1,16 @@
+import { FolderOpen } from 'lucide-react'
+import { groupAppVersions } from '../../../../entities/app'
 import { AppRow } from '../AppRow/AppRow'
+import { APP_ROW_GRID, ROW_CHIP } from '../AppRow/data'
+import { RowAction } from '../AppRow/RowAction'
+import { VersionedRows } from '../AppRow/VersionedRows'
 import type { ArtifactSectionProps } from './types'
 
 export function ArtifactSection({
 	icon: Icon,
 	title,
 	apps,
+	newerInstalled,
 	...actions
 }: ArtifactSectionProps) {
 	return (
@@ -23,24 +29,50 @@ export function ArtifactSection({
 					{apps.length}
 				</span>
 			</h2>
-			<div className="grid min-w-0 grid-cols-1 gap-2.5 min-[769px]:grid-cols-2 min-[1601px]:grid-cols-3">
-				{apps.map(app => (
-					<AppRow
-						key={app.id}
-						app={app}
-						categories={actions.categories}
-						categoryOrder={actions.categoryOrder}
-						isHidden={false}
-						onLaunch={actions.onLaunch}
-						onMove={actions.onMoveApp}
-						onInfo={actions.onInfo}
-						onOpenFolder={actions.onOpenFolder}
-						onManageInWindows={actions.onManageInWindows}
-						onHide={actions.onHide}
-						onRestore={actions.onRestore}
-						onDemote={actions.onDemoteAuxiliary}
-					/>
-				))}
+			<div className={APP_ROW_GRID}>
+				<VersionedRows
+					groups={groupAppVersions(apps)}
+					renderRow={(app, versionToggle) => {
+						const installed = newerInstalled.get(app.id)
+						return (
+							<AppRow
+								app={app}
+								categories={actions.categories}
+								categoryOrder={actions.categoryOrder}
+								isHidden={false}
+								onLaunch={actions.onLaunch}
+								onMove={actions.onMoveApp}
+								onInfo={actions.onInfo}
+								onManageInWindows={actions.onManageInWindows}
+								onHide={actions.onHide}
+								onDemote={actions.onDemoteAuxiliary}
+								chips={
+									installed && (
+										<span
+											className={ROW_CHIP}
+											title="A newer version of this program is already installed"
+										>
+											Installed {installed} is newer
+										</span>
+									)
+								}
+								actions={
+									<>
+										{versionToggle}
+										<RowAction
+											icon={FolderOpen}
+											label="Folder"
+											accessibleLabel={`Open the folder of ${app.name}`}
+											onClick={() =>
+												void actions.onOpenFolder(app)
+											}
+										/>
+									</>
+								}
+							/>
+						)
+					}}
+				/>
 			</div>
 		</section>
 	)

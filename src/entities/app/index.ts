@@ -10,6 +10,7 @@ export type {
 	AppSourceKind,
 	AppsClient,
 	AppView,
+	AppVisibilityReason,
 	CatalogArtifactKind,
 	CatalogChangeSummary,
 	CatalogDelta,
@@ -46,7 +47,14 @@ export {
 	metadataRows,
 	SOURCE_LABELS,
 	targetAvailabilityLabel,
+	visibilityReasonLabel,
 } from './lib/appMetadata'
+export { auxiliaryReason } from './lib/auxiliaryReason'
+export {
+	type AppVersionGroup,
+	groupAppVersions,
+	newerInstalledVersions,
+} from './lib/versionGroups'
 export {
 	buildAppReport,
 	formatFileDate,

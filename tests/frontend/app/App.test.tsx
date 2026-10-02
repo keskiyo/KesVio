@@ -1036,10 +1036,7 @@ describe('App', () => {
 			await screen.findByRole('button', { name: 'Launch Steam' }),
 		).toBeInTheDocument()
 		await userEvent.click(
-			screen.getByRole('button', { name: 'Manage Steam' }),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Restore to catalog' }),
+			screen.getByRole('button', { name: 'Restore Steam to catalog' }),
 		)
 		expect(store.getState().hiddenAppIds).not.toContain('steam')
 		expect(store.getState().favoriteAppIds).toContain('steam')
@@ -1079,10 +1076,9 @@ describe('App', () => {
 			}),
 		).not.toBeInTheDocument()
 		await userEvent.click(
-			screen.getByRole('button', { name: 'Manage Runtime Helper' }),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Restore to catalog' }),
+			screen.getByRole('button', {
+				name: 'Restore Runtime Helper to catalog',
+			}),
 		)
 		store.getState().setActiveView('all')
 		expect(

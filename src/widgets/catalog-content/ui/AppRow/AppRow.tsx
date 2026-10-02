@@ -1,16 +1,14 @@
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
-import { EllipsisVertical } from 'lucide-react'
+import { EllipsisVertical, Folder } from 'lucide-react'
 import { memo, useCallback, useRef, useState } from 'react'
 import { useIsLaunching } from '../../../../features/launch-app'
 import { AppActionsMenu } from '../../../../features/app-actions'
 import { CardIcon, isCatalogArtifact } from '../../../../entities/app'
 import { keepFocusNearRemovedItem } from '../../../../shared/lib/focus'
-import { middleEllipsis } from '../../../../shared/lib/text'
+import { parentFolderName } from '../../../../shared/lib/paths'
 import { rowMenuButtonClass } from './data'
 import type { AppRowProps } from './types'
-
-const LOCATION_MAX_CHARS = 64
 
 function ignoreHide() {}
 
@@ -22,11 +20,11 @@ function AppRowComponent({
 	onLaunch,
 	onMove,
 	onInfo,
-	onOpenFolder,
 	onManageInWindows,
 	onHide = ignoreHide,
-	onRestore,
 	onDemote,
+	chips,
+	actions,
 }: AppRowProps) {
 	const [menuOpen, setMenuOpen] = useState(false)
 	const launching = useIsLaunching(app.id)
@@ -47,6 +45,7 @@ function AppRowComponent({
 		.filter(Boolean)
 		.join(' · ')
 	const location = artifact ? app.path.trim() : ''
+	const folder = location ? parentFolderName(location) : null
 
 	return (
 		<article
@@ -84,17 +83,28 @@ function AppRowComponent({
 							{metadata}
 						</span>
 					)}
-					{location && (
+					{folder && (
 						<span
-							className="mt-1 block truncate font-mono text-[11px] leading-4 text-(--text-subtle)"
+							className="mt-0.5 flex min-w-0 items-center gap-1 text-xs leading-4 text-(--text-subtle)"
 							title={location}
 						>
-							{middleEllipsis(location, LOCATION_MAX_CHARS)}
+							<Folder
+								size={12}
+								aria-hidden="true"
+								className="shrink-0"
+							/>
+							<span className="truncate">{folder}</span>
+						</span>
+					)}
+					{chips && (
+						<span className="mt-1 flex min-w-0 flex-wrap gap-1">
+							{chips}
 						</span>
 					)}
 				</span>
 			</button>
-			<span className="relative z-2 mr-2 flex items-center self-center">
+			<span className="relative z-2 mr-2 flex items-center gap-1.5 self-center">
+				{actions}
 				<button
 					type="button"
 					ref={node => {
@@ -123,12 +133,10 @@ function AppRowComponent({
 					onClose={closeMenu}
 					onMove={onMove}
 					onInfo={onInfo}
-					onOpenFolder={onOpenFolder}
 					onManageInWindows={onManageInWindows}
 					isHidden={isHidden}
 					isUserPromoted={app.userPromoted}
 					onHide={onHide}
-					onRestore={onRestore}
 					onDemote={onDemote}
 					anchorRef={manageRef}
 				/>

@@ -11,6 +11,7 @@ import type { FavoriteScenariosPanel } from '../../types'
 
 export interface AppGridProps {
 	apps: AppInfo[]
+	installedApps: AppInfo[]
 	isLoading: boolean
 	hasQuery: boolean
 	activeView: AppView
@@ -36,6 +37,7 @@ export interface AppGridProps {
 	onManageInWindows(): Promise<void>
 	onHide(id: string): void
 	onRestore(id: string): void
+	onRestoreAll(ids: string[]): void
 	onPromoteAuxiliary(id: string): void
 	onDemoteAuxiliary(id: string): void
 }

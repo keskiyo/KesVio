@@ -1,4 +1,4 @@
-import { AuxiliaryGrid } from '../AuxiliaryGrid'
+import { AuxiliaryGrid } from '../AuxiliaryGrid/AuxiliaryGrid'
 import { FavoritesGrid } from '../FavoritesGrid/FavoritesGrid'
 import { HiddenGrid } from '../HiddenGrid'
 import { InstallersDocsGrid } from '../InstallersDocsGrid/InstallersDocsGrid'
@@ -42,6 +42,7 @@ export function CatalogGrid(props: AppGridProps) {
 				onManageInWindows={props.onManageInWindows}
 				onHide={props.onHide}
 				onRestore={props.onRestore}
+				onRestoreAll={props.onRestoreAll}
 				onDemote={props.onDemoteAuxiliary}
 			/>
 		)

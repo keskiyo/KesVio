@@ -122,6 +122,7 @@ export function AppViews({
 					}}
 					grid={{
 						apps: filteredApps,
+						installedApps: catalog.primaryApps,
 						isLoading: state.isLoading,
 						hasQuery: deferredQuery.trim().length > 0,
 						activeView: state.activeView,
@@ -149,6 +150,7 @@ export function AppViews({
 						onManageInWindows: systemClient.openAppsSettings,
 						onHide: state.hideApp,
 						onRestore: state.restoreApp,
+						onRestoreAll: state.restoreApps,
 						onPromoteAuxiliary: state.promoteAuxiliary,
 						onDemoteAuxiliary: state.demoteAuxiliary,
 						onRenameCategory: state.renameCategory,

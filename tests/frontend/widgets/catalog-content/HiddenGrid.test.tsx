@@ -56,6 +56,7 @@ function props(apps: AppInfo[], onBack = vi.fn()) {
 		onManageInWindows: vi.fn(),
 		onHide: vi.fn(),
 		onRestore: vi.fn(),
+		onRestoreAll: vi.fn(),
 		onDemote: vi.fn(),
 	}
 }
@@ -78,10 +79,11 @@ describe('HiddenGrid', () => {
 		)
 	})
 
-	// Hidden shows the same AppRow cards as Auxiliary tools (a one-surface list was tried and
-	// dropped on 18 September 2026): publisher and version under the name, Restore in the
-	// card's menu like every other row action, no second visible button.
-	it('shows hidden apps as the auxiliary-style card grid and restores from the menu', async () => {
+	// Hidden shows the same AppRow cards as Auxiliary tools (a one-surface list was dropped on
+	// 18 September 2026). Restoring is the reason the page exists, so the row carries it as a
+	// visible action — in the same slot Auxiliary tools and Installers & Docs use — and the
+	// menu no longer repeats it.
+	it('shows hidden apps as the shared card grid and restores from the row', async () => {
 		const hiddenProps = props([
 			hidden('a', 'SQL Shell (psql)', {
 				publisher: 'PostgreSQL Global Development Group',
@@ -102,18 +104,10 @@ describe('HiddenGrid', () => {
 		expect(cards[1]).toHaveTextContent(
 			'Microsoft Corporation · 2608.1001.17.0',
 		)
-		expect(cards[0]?.parentElement).toHaveClass('min-[1601px]:grid-cols-3')
-		expect(cards[0]?.parentElement?.parentElement).toHaveClass('max-w-3xl')
 		expect(screen.queryByRole('list')).not.toBeInTheDocument()
 
-		expect(
-			screen.queryByRole('button', { name: /^Restore / }),
-		).not.toBeInTheDocument()
 		await userEvent.click(
-			screen.getByRole('button', { name: 'Manage Xbox' }),
-		)
-		await userEvent.click(
-			screen.getByRole('menuitem', { name: 'Restore to catalog' }),
+			screen.getByRole('button', { name: 'Restore Xbox to catalog' }),
 		)
 		expect(hiddenProps.onRestore).toHaveBeenCalledWith('z')
 	})
@@ -127,7 +121,7 @@ describe('HiddenGrid', () => {
 		expect(row).not.toHaveTextContent('Unknown')
 	})
 
-	it('offers App info and Restore in the menu and nothing that hides or uninstalls', async () => {
+	it('offers App info alone in the menu, nothing that hides, uninstalls or repeats Restore', async () => {
 		const hiddenProps = props([hidden('a', 'Alpha')])
 		render(<HiddenGrid {...hiddenProps} />)
 
@@ -140,8 +134,10 @@ describe('HiddenGrid', () => {
 			within(menu).getByRole('menuitem', { name: 'App info' }),
 		).toBeInTheDocument()
 		expect(
-			within(menu).getByRole('menuitem', { name: 'Restore to catalog' }),
-		).toBeInTheDocument()
+			within(menu).queryByRole('menuitem', {
+				name: 'Restore to catalog',
+			}),
+		).not.toBeInTheDocument()
 		expect(
 			within(menu).queryByRole('menuitem', { name: /Hide/ }),
 		).not.toBeInTheDocument()
@@ -217,5 +213,47 @@ describe('HiddenGrid', () => {
 		expect(
 			screen.getAllByRole('button', { name: 'Back to More' }),
 		).toHaveLength(1)
+	})
+
+	// One click on Restore all used to empty the page at once; it asks first, in the same
+	// confirmation dialog every other bulk or destructive action uses.
+	it('restores every shown app at once after a confirmation, and offers it only for more than one', async () => {
+		const hiddenProps = props([hidden('a', 'Alpha'), hidden('z', 'Zeta')])
+		const { rerender } = render(<HiddenGrid {...hiddenProps} />)
+
+		const restoreAll = () =>
+			screen.getByRole('button', {
+				name: 'Restore all 2 apps to catalog',
+			})
+		await userEvent.click(restoreAll())
+		const dialog = screen.getByRole('alertdialog', {
+			name: 'Restore all hidden apps',
+		})
+		expect(dialog).toHaveTextContent('Restore all 2 apps?')
+		expect(dialog).toHaveTextContent('Alpha, Zeta')
+		expect(hiddenProps.onRestoreAll).not.toHaveBeenCalled()
+
+		await userEvent.click(
+			within(dialog).getByRole('button', { name: 'Cancel' }),
+		)
+		expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+		expect(hiddenProps.onRestoreAll).not.toHaveBeenCalled()
+
+		await userEvent.click(restoreAll())
+		await userEvent.click(
+			within(screen.getByRole('alertdialog')).getByRole('button', {
+				name: 'Restore all',
+			}),
+		)
+		expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+		expect(hiddenProps.onRestoreAll).toHaveBeenCalledExactlyOnceWith([
+			'a',
+			'z',
+		])
+
+		rerender(<HiddenGrid {...props([hidden('a', 'Alpha')])} />)
+		expect(
+			screen.queryByRole('button', { name: /^Restore all/ }),
+		).not.toBeInTheDocument()
 	})
 })

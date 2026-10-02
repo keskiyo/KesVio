@@ -98,8 +98,10 @@ describe('useCatalogView', () => {
 		})
 
 		// Scenario rows show each app by its icon, and that page renders no catalog grid — without
-		// its own hydration the tiles would sit on the fallback glyph.
-		it('covers the apps a scenario holds while the scenarios page is open', () => {
+		// its own hydration the tiles would sit on the fallback glyph. The app picker on the same
+		// page lists the whole catalog, and since the window can open straight on Scenarios the
+		// picker showed every app on the fallback glyph until All Apps had been visited.
+		it('covers the apps a scenario holds first, then the catalog the picker lists', () => {
 			const { result } = view({
 				activeView: 'scenarios',
 				apps: [app('Editor'), app('Chat'), app('Music')],
@@ -112,9 +114,10 @@ describe('useCatalogView', () => {
 				],
 			})
 
-			expect(
-				splitHydrationIds(result.current.visibleHydrationIds).sort(),
-			).toEqual(['Chat', 'Editor'])
+			const ids = splitHydrationIds(result.current.visibleHydrationIds)
+			expect(ids.slice(0, 2).sort()).toEqual(['Chat', 'Editor'])
+			expect(ids).toContain('Music')
+			expect(ids).toHaveLength(3)
 		})
 
 		it('asks for one app once when both lists hold it', () => {

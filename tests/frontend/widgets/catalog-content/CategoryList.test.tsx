@@ -60,6 +60,7 @@ function renderList(apps: AppInfo[]) {
 		<AppStoreProvider store={createAppStore(emptyClient(), localStorage)}>
 			<CategoryList
 				apps={apps}
+				installedApps={[]}
 				isLoading={false}
 				hasQuery={false}
 				activeView="all"
@@ -92,6 +93,7 @@ function renderList(apps: AppInfo[]) {
 				onManageInWindows={vi.fn()}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
+				onRestoreAll={vi.fn()}
 				onPromoteAuxiliary={vi.fn()}
 				onDemoteAuxiliary={vi.fn()}
 				onRenameCategory={vi.fn().mockReturnValue({ ok: true })}

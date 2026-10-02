@@ -134,7 +134,7 @@ Domain documents describe current behavior. This document retains only history t
 
 **Reason:** The three catalog utility views represent the same kind of record and should scan and respond consistently.
 
-**Current consequence:** Hidden rows offer App info and Restore to catalog; destructive or inapplicable actions stay absent. See [More and catalog utility pages](ui-and-workflows.md#more-and-catalog-utility-pages).
+**Current consequence:** Since 2 October 2026 each of the three views shows its main action on the row through one shared `AppRow` slot (Restore, Restore, Folder) and the ⋮ menu no longer repeats it, so the rows stay alike while the action that justifies each page is one click away; Hidden and Auxiliary menus keep App info, and destructive or inapplicable actions stay absent. See [More and catalog utility pages](ui-and-workflows.md#more-and-catalog-utility-pages).
 
 ## Scenario import is part of full backup recovery
 
