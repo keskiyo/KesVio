@@ -132,8 +132,31 @@ describe('saved filter predicates', () => {
 			publishers: ['Example'],
 			availability: ['present'],
 			addedWithinDays: null,
+			unusedForDays: null,
 		})
 		expect(normalizeSavedFilter({ id: 'invalid', name: 'Work' })).toBeNull()
+	})
+	it('reads the unused period of filters saved before it existed as unset', () => {
+		expect(
+			normalizeCriteria({ addedWithinDays: 7 }).unusedForDays,
+		).toBeNull()
+		expect(normalizeCriteria({ unusedForDays: 90 }).unusedForDays).toBe(90)
+		expect(normalizeCriteria({ unusedForDays: 0 }).unusedForDays).toBeNull()
+		expect(
+			normalizeCriteria({ unusedForDays: 2.5 }).unusedForDays,
+		).toBeNull()
+	})
+	it('never calls an app unused without a moment to count from', () => {
+		const criteria = { ...EMPTY_CRITERIA, unusedForDays: 30 }
+		expect(matchesSavedFilter(editor, criteria, undefined, 1e12)).toBe(
+			false,
+		)
+		expect(matchesSavedFilter(editor, criteria, undefined, 1e12, 1)).toBe(
+			true,
+		)
+		expect(
+			matchesSavedFilter(editor, criteria, undefined, 1e12, 1e12 + 5),
+		).toBe(false)
 	})
 	it('does not treat an unknown target state as verified', () => {
 		expect(

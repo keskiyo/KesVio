@@ -23,6 +23,8 @@ pub(crate) use hydration::enqueue_hydration;
 pub(crate) use retry::{cancel_pending as cancel_pending_retry, RetryBudget, RetryGuard};
 pub(crate) use scan::{run_coordinated_scan, ScanCommit};
 pub(crate) use volumes::start_volume_watcher;
+#[cfg(test)]
+pub(crate) use volumes::{volumes_arrived_sample, VOLUMES_ARRIVED_EVENT};
 pub(super) use watch_paths::{default_portable_exclusions, watcher_paths};
 pub(crate) use watch_scope::WatchScope;
 pub(crate) use watcher::restart_change_watcher;

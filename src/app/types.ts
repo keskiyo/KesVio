@@ -3,6 +3,7 @@ import type { AppInfo, AppsClient, SavedFilterCriteria } from '../entities/app'
 import type { CategoryDefinition } from '../entities/category'
 import type { Scenario } from '../entities/scenario'
 import type { StaleCopyInfo, SystemClient } from '../entities/system'
+import type { AppFileActions } from '../features/app-actions'
 import type { SaveFilterResult } from '../features/manage-filters'
 import type { useScenarioRunner } from '../features/run-scenario'
 import type { useUpdater } from '../features/update-app'
@@ -17,7 +18,12 @@ export interface AppProps {
 	systemClient: SystemClient
 	appsClient: Pick<
 		AppsClient,
-		'getAppDetails' | 'openAppFolder' | 'onCloseProgress'
+		| 'getAppDetails'
+		| 'openAppFolder'
+		| 'launchAppElevated'
+		| 'canLaunchElevated'
+		| 'measureAppFolder'
+		| 'onCloseProgress'
 	>
 }
 
@@ -53,7 +59,7 @@ export interface SavedFilterEditorControl {
 }
 
 export interface AppDialogsProps {
-	appsClient: Pick<AppsClient, 'getAppDetails' | 'openAppFolder'>
+	appsClient: Pick<AppsClient, 'getAppDetails' | 'measureAppFolder'>
 	categories: CategoryDefinition[]
 	dialogs: ReturnType<typeof useCatalogDialogs>
 	paletteApps: AppInfo[]
@@ -75,6 +81,7 @@ export interface AppViewsProps {
 	onFirstScan(): Promise<void>
 	onRefreshCatalog(): Promise<void>
 	onOpenFolder(app: AppInfo): Promise<void>
+	fileActions: AppFileActions
 }
 
 export interface GlobalActivityBarProps {

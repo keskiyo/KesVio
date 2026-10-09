@@ -1,5 +1,6 @@
 import { ListChecks, Plus } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { driveTriggerChoices } from '../../../../entities/scenario'
 import {
 	ScenarioCard,
 	ScenarioNameEditor,
@@ -24,6 +25,7 @@ export function ScenariosPage({
 	onCreate,
 	onRename,
 	onSetForceClose,
+	onSetDriveTrigger,
 	onDelete,
 	onAddApp,
 	onRemoveApp,
@@ -31,6 +33,7 @@ export function ScenariosPage({
 	onToggleFavorite,
 }: ScenariosPageProps) {
 	const [creating, setCreating] = useState(false)
+	const drives = useMemo(() => driveTriggerChoices(apps), [apps])
 	const searchRef = useRef<HTMLInputElement>(null)
 	const filters = useScenarioFilters({ scenarios, apps, favoriteScenarioIds })
 	const runningStatus = scenarioRunStatus(runProgress ?? null)
@@ -106,6 +109,8 @@ export function ScenariosPage({
 								onToggleFavorite={onToggleFavorite}
 								onRename={onRename}
 								onSetForceClose={onSetForceClose}
+								drives={drives}
+								onSetDriveTrigger={onSetDriveTrigger}
 								onDelete={onDelete}
 								onAddApp={onAddApp}
 								onRemoveApp={onRemoveApp}

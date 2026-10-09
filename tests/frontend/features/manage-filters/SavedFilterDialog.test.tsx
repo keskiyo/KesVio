@@ -125,6 +125,7 @@ describe('saved filter editor', () => {
 						publishers: [],
 						availability: [],
 						addedWithinDays: null,
+						unusedForDays: null,
 					},
 				}}
 				publishers={[]}

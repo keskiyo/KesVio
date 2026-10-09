@@ -7,6 +7,7 @@ import { ConfirmDialog } from '../../../../shared/ui/ConfirmDialog'
 import { AppPickerDialog } from '../AppPickerDialog/AppPickerDialog'
 import { ScenarioCloseWarning } from '../ScenarioCloseWarning'
 import { ScenarioClosePolicy } from '../ScenarioClosePolicy'
+import { ScenarioDriveTrigger } from '../ScenarioDriveTrigger'
 import { ScenarioListRow } from '../ScenarioListRow'
 import { ScenarioCardHeader } from './ScenarioCardHeader'
 
@@ -22,6 +23,8 @@ export function ScenarioCard({
 	onToggleFavorite,
 	onRename,
 	onSetForceClose,
+	drives = [],
+	onSetDriveTrigger,
 	onDelete,
 	onAddApp,
 	onRemoveApp,
@@ -88,6 +91,14 @@ export function ScenarioCard({
 					scenario={scenario}
 					disabled={running || isScenarioRunning}
 					onChange={onSetForceClose}
+				/>
+			)}
+			{onSetDriveTrigger && (
+				<ScenarioDriveTrigger
+					scenario={scenario}
+					drives={drives}
+					disabled={running}
+					onChange={onSetDriveTrigger}
 				/>
 			)}
 			{picker.confirming && (

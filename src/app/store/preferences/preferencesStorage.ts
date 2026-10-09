@@ -1,14 +1,14 @@
 import { normalizePreferences } from './preferencesNormalize'
 import { parseStoredPreferences } from './preferencesDocument'
 import {
-	type AppPreferencesV23,
+	type AppPreferencesV24,
 	CURRENT_PREFERENCES_VERSION,
 	PREFERENCES_BACKUP_KEY,
 	PREFERENCES_KEY,
 	type PreferenceImportResult,
 } from './preferencesSchema'
 
-export function serializePreferences(preferences: AppPreferencesV23): string {
+export function serializePreferences(preferences: AppPreferencesV24): string {
 	const { unknownFields = {}, ...knownFields } = preferences
 	return JSON.stringify({ ...unknownFields, ...knownFields })
 }
@@ -63,7 +63,7 @@ export function hasPreferenceBackup(storage: Storage): boolean {
 	return readPreferenceBackup(storage).ok
 }
 
-export function readPreferences(storage: Storage): AppPreferencesV23 {
+export function readPreferences(storage: Storage): AppPreferencesV24 {
 	return (
 		readSlot(storage, PREFERENCES_KEY) ??
 		readSlot(storage, PREFERENCES_BACKUP_KEY) ??
@@ -71,7 +71,7 @@ export function readPreferences(storage: Storage): AppPreferencesV23 {
 	)
 }
 
-function readSlot(storage: Storage, key: string): AppPreferencesV23 | null {
+function readSlot(storage: Storage, key: string): AppPreferencesV24 | null {
 	try {
 		const value = storage.getItem(key)
 		const document = value ? parseStoredPreferences(value) : null
@@ -83,7 +83,7 @@ function readSlot(storage: Storage, key: string): AppPreferencesV23 | null {
 
 export function writePreferences(
 	storage: Storage,
-	preferences: AppPreferencesV23,
+	preferences: AppPreferencesV24,
 ): boolean {
 	try {
 		const current = storage.getItem(PREFERENCES_KEY)

@@ -100,9 +100,16 @@ export function useActionsMenu({
 			}
 		}
 		placeMenu()
+		const observer =
+			typeof ResizeObserver === 'undefined'
+				? null
+				: new ResizeObserver(placeMenu)
+		if (menuRef.current) observer?.observe(menuRef.current)
+		if (categoryMenuRef.current) observer?.observe(categoryMenuRef.current)
 		window.addEventListener('resize', placeMenu)
 		window.addEventListener('scroll', placeMenu, true)
 		return () => {
+			observer?.disconnect()
 			window.removeEventListener('resize', placeMenu)
 			window.removeEventListener('scroll', placeMenu, true)
 		}

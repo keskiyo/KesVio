@@ -44,6 +44,7 @@ export function ArtifactSection({
 								onMove={actions.onMoveApp}
 								onInfo={actions.onInfo}
 								onManageInWindows={actions.onManageInWindows}
+								fileActions={actions.fileActions}
 								onHide={actions.onHide}
 								onDemote={actions.onDemoteAuxiliary}
 								chips={

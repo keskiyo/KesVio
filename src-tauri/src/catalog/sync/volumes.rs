@@ -7,9 +7,25 @@ use crate::catalog::volumes::{folder_letter, volume_key, TrackedVolume};
 use crate::paths;
 use crate::platform::windows::volume_watcher::{self, VolumeChange};
 use crate::platform::windows::volumes::VolumeIdentity;
+use serde::Serialize;
 use std::path::Path;
 use std::sync::Arc;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
+
+pub(crate) const VOLUMES_ARRIVED_EVENT: &str = "volumes://arrived";
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct VolumesArrivedPayload {
+    volume_ids: Vec<String>,
+}
+
+#[cfg(test)]
+pub(crate) fn volumes_arrived_sample() -> VolumesArrivedPayload {
+    VolumesArrivedPayload {
+        volume_ids: vec!["1a2b3c4d".into()],
+    }
+}
 
 pub(crate) fn start_volume_watcher(app: tauri::AppHandle) {
     let callback_handle = app.clone();
@@ -40,9 +56,10 @@ fn follow_volume_change(app: &tauri::AppHandle, change: VolumeChange) {
     };
     let settings = scan_settings::read(&app_data_dir);
     let tracked = tracked_volumes(app.state::<AppState>().inner());
-    let relevant = concerns_catalog(&settings, &tracked, &change, |letter| {
+    let identity_of = |letter: char| {
         crate::platform::windows::volumes::volume_identity(Path::new(&format!(r"{letter}:\")))
-    });
+    };
+    let relevant = concerns_catalog(&settings, &tracked, &change, identity_of);
     if !relevant {
         return;
     }
@@ -50,7 +67,40 @@ fn follow_volume_change(app: &tauri::AppHandle, change: VolumeChange) {
     if matches!(change, VolumeChange::Arrived(_)) {
         restart_change_watcher(app.clone(), &settings);
     }
+    let arrived = arrived_tracked_volumes(&tracked, &change, identity_of);
     let _ = run_coordinated_scan(app, SyncRequest::Refresh, false);
+    if !arrived.is_empty() {
+        let _ = app.emit(
+            VOLUMES_ARRIVED_EVENT,
+            VolumesArrivedPayload {
+                volume_ids: arrived,
+            },
+        );
+    }
+}
+
+fn arrived_tracked_volumes(
+    tracked: &[TrackedVolume],
+    change: &VolumeChange,
+    identity_of: impl Fn(char) -> Option<VolumeIdentity>,
+) -> Vec<String> {
+    let VolumeChange::Arrived(letters) = change else {
+        return Vec::new();
+    };
+    let mut arrived: Vec<String> = Vec::new();
+    for letter in letters {
+        let Some(identity) = identity_of(*letter) else {
+            continue;
+        };
+        let key = volume_key(&identity);
+        let is_tracked = tracked
+            .iter()
+            .any(|entry| entry.serial.eq_ignore_ascii_case(&key));
+        if is_tracked && !arrived.iter().any(|known| known.eq_ignore_ascii_case(&key)) {
+            arrived.push(key);
+        }
+    }
+    arrived
 }
 
 fn concerns_catalog(
@@ -173,6 +223,40 @@ mod tests {
             identity_of,
         ));
         assert!(reads.get() >= 2);
+    }
+
+    #[test]
+    fn only_tracked_volumes_that_arrived_are_announced_once_each() {
+        let entries = [tracked(r"F:\", "1a2b3c4d", None)];
+        let identity_of = |letter: char| match letter {
+            'G' | 'H' => Some(identity(0x1a2b3c4d)),
+            'K' => Some(identity(0x99999999)),
+            _ => None,
+        };
+
+        assert_eq!(
+            arrived_tracked_volumes(
+                &entries,
+                &VolumeChange::Arrived(vec!['G', 'H', 'K', 'Z']),
+                identity_of
+            ),
+            vec!["1a2b3c4d".to_string()]
+        );
+        assert!(
+            arrived_tracked_volumes(&entries, &VolumeChange::Removed(vec!['G']), identity_of)
+                .is_empty()
+        );
+        assert!(
+            arrived_tracked_volumes(&[], &VolumeChange::Arrived(vec!['G']), identity_of).is_empty()
+        );
+    }
+
+    #[test]
+    fn the_arrival_payload_names_volume_ids_only() {
+        assert_eq!(
+            serde_json::to_value(volumes_arrived_sample()).unwrap(),
+            serde_json::json!({ "volumeIds": ["1a2b3c4d"] })
+        );
     }
 
     #[test]

@@ -11,6 +11,7 @@ import type { ScenarioRunProgress } from '../../../../features/run-scenario'
 
 export interface ScenariosPageProps {
 	onSetForceClose?(id: string, forceClose: boolean): boolean
+	onSetDriveTrigger?(id: string, volumeId: string | null): boolean
 	scenarios: Scenario[]
 	apps: AppInfo[]
 	selectableApps: AppInfo[]

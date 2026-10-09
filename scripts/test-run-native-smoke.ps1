@@ -21,6 +21,8 @@ foreach ($requiredPattern in @(
   'Add-Result -Step "per-user and installed stores untouched"',
   '\$webViewProfile = Join-Path \$workspace "WebView2"',
   '\$env:WEBVIEW2_USER_DATA_FOLDER = \$webViewProfile',
+  '\$isolatedLocalAppData = Join-Path \$workspace "LocalAppData"',
+  '\$env:LOCALAPPDATA = \$isolatedLocalAppData',
   'Add-Result -Step "WebView2 profile inside the workspace"',
   'throw "Another KesVio process is running'
 )) {

@@ -5,6 +5,7 @@ import {
 } from '../../../features/edit-settings'
 import { CatalogSettings } from './sections/CatalogSettings'
 import { GeneralSettings } from './sections/GeneralSettings'
+import { KeyboardShortcuts } from './sections/KeyboardShortcuts'
 import { UnclassifiedApps } from './sections/UnclassifiedApps/UnclassifiedApps'
 import type { SettingsPageProps } from '../types'
 
@@ -31,6 +32,7 @@ export function SettingsPage({
 		resetting,
 		saveScanSettings,
 		setCloseBehavior,
+		setGlobalShortcut,
 		setStartupEnabled,
 		addPath,
 		removePath,
@@ -73,6 +75,11 @@ export function SettingsPage({
 				onSetStartupEnabled={setStartupEnabled}
 			/>
 			{areaError('settings')}
+			<KeyboardShortcuts
+				shortcut={settings?.shortcut ?? null}
+				saving={saving}
+				onSetGlobalShortcut={setGlobalShortcut}
+			/>
 			<CatalogSettings
 				discovery={{
 					settings,

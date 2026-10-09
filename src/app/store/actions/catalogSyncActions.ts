@@ -1,5 +1,5 @@
 import { reconcileDriveCategories } from '../driveCategories'
-import { identityRekeys } from '../identityRekey'
+import { identityRekeys, rekeyRecord } from '../identityRekey'
 import { catalogGenerationOrder, mergeIcon } from '../catalogGeneration'
 import { reconcileFirstSeen, rekeyFirstSeen } from '../firstSeen'
 import { reconcileMarks } from '../reconciliation'
@@ -54,10 +54,12 @@ export function createCatalogSyncActions({
 				),
 				Date.now(),
 			)
+			const appLaunchStats = rekeyRecord(state.appLaunchStats, rekeys)
 			set({
 				apps: merged,
 				catalogGeneration: delta.generation,
 				...firstSeen,
+				appLaunchStats,
 			})
 			const marks = reconcileMarks(get(), get().apps)
 			if (marks) set(marks)
@@ -66,6 +68,7 @@ export function createCatalogSyncActions({
 			if (
 				firstSeen.firstSeenAt !== state.firstSeenAt ||
 				firstSeen.firstSeenVolumes !== state.firstSeenVolumes ||
+				appLaunchStats !== state.appLaunchStats ||
 				marks ||
 				drives
 			)

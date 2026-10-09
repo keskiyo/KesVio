@@ -1,7 +1,7 @@
 import { toAppClientError } from '../../../shared/api/tauri/errors'
 import { reconcileScenarios } from '../../../entities/scenario'
 import { reconcileDriveCategories } from '../driveCategories'
-import { identityRekeys } from '../identityRekey'
+import { identityRekeys, rekeyRecord } from '../identityRekey'
 import {
 	catalogGenerationOrder,
 	keepHeldRecords,
@@ -86,6 +86,7 @@ export function createCatalogActions({
 			),
 			Date.now(),
 		)
+		const appLaunchStats = rekeyRecord(state.appLaunchStats, rekeys)
 		const marks = reconcileMarks(state, apps)
 		const scenarios = reconcileScenarios(state.scenarios, apps)
 		const drives = reconcileDriveCategories(
@@ -96,6 +97,7 @@ export function createCatalogActions({
 			patch: {
 				apps,
 				...firstSeen,
+				appLaunchStats,
 				...marks,
 				...(scenarios ? { scenarios } : {}),
 				...(drives ?? {}),
@@ -103,6 +105,7 @@ export function createCatalogActions({
 			changed:
 				firstSeen.firstSeenAt !== state.firstSeenAt ||
 				firstSeen.firstSeenVolumes !== state.firstSeenVolumes ||
+				appLaunchStats !== state.appLaunchStats ||
 				Boolean(marks || scenarios || drives),
 		}
 	}

@@ -67,6 +67,7 @@ export function AuxiliaryGrid(props: AuxiliaryGridProps) {
 										onManageInWindows={
 											props.onManageInWindows
 										}
+										fileActions={props.fileActions}
 										onDemote={props.onDemote}
 										chips={
 											reason && (

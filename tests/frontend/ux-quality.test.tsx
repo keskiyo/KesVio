@@ -88,6 +88,13 @@ function renderApp(
 		}),
 		setScanSettings: vi.fn().mockImplementation(async s => s),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
+		setGlobalShortcut:
+			systemOverrides.setGlobalShortcut ??
+			vi.fn().mockResolvedValue({
+				available: true,
+				label: 'Win+Shift+Q',
+				error: null,
+			}),
 		setStartupEnabled: vi.fn().mockResolvedValue('disabled'),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),

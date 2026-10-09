@@ -35,11 +35,43 @@ const state = {
 		},
 	],
 	firstSeenAt: { [appIdentity(editor)]: now - 86_400_000 + 30_000 },
+	appLaunchStats: {},
 }
 
 afterEach(() => vi.useRealTimers())
 
 describe('saved filter live scope', () => {
+	it('finds apps not launched for the chosen time, counting from when tracking began', () => {
+		vi.useFakeTimers()
+		vi.setSystemTime(now)
+		const day = 86_400_000
+		const idle = { ...editor, id: 'idle' }
+		const busy = { ...editor, id: 'busy' }
+		const untracked = { ...editor, id: 'untracked' }
+		const scope = {
+			...state,
+			savedFilters: [
+				{
+					id: 'filter:recent',
+					name: 'Unused',
+					criteria: { ...EMPTY_CRITERIA, unusedForDays: 30 },
+				},
+			],
+			firstSeenAt: { idle: now - 400 * day, busy: now - 400 * day },
+			appLaunchStats: {
+				idle: { count: 3, lastLaunchedAt: now - 45 * day },
+				busy: { count: 3, lastLaunchedAt: now - 2 * day },
+			},
+			launchHistorySince: now - 10 * day,
+		}
+
+		const { result } = renderHook(() =>
+			useSavedFilterScope(scope, [idle, busy, untracked]),
+		)
+
+		expect(result.current.scopedApps.map(app => app.id)).toEqual(['idle'])
+	})
+
 	it('expires records as time advances and stops its clock outside the catalog', () => {
 		vi.useFakeTimers()
 		vi.setSystemTime(now)

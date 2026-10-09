@@ -14,6 +14,7 @@ function CatalogAppCardComponent({
 	onMove,
 	onInfo,
 	onManageInWindows,
+	fileActions,
 	isHidden = false,
 	isAuxiliary = false,
 	onHide,
@@ -38,6 +39,7 @@ function CatalogAppCardComponent({
 					onMove={onMove}
 					onInfo={onInfo}
 					onManageInWindows={onManageInWindows}
+					fileActions={fileActions}
 					isHidden={isHidden}
 					isUserPromoted={app.userPromoted}
 					onHide={onHide}

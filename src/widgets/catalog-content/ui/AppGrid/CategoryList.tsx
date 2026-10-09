@@ -57,6 +57,7 @@ export function CategoryList(props: AppGridProps) {
 						onMoveApp={props.onMoveApp}
 						onInfo={props.onInfo}
 						onManageInWindows={props.onManageInWindows}
+						fileActions={props.fileActions}
 						onHide={props.onHide}
 						onRestore={props.onRestore}
 						onDemote={props.onDemoteAuxiliary}

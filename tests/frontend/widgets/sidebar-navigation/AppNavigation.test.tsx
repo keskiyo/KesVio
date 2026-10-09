@@ -40,6 +40,7 @@ function savedFilter(index: number): SavedFilter {
 			publishers: [],
 			availability: [],
 			addedWithinDays: null,
+			unusedForDays: null,
 		},
 	}
 }
@@ -195,6 +196,7 @@ describe('AppNavigation', () => {
 								publishers: [],
 								availability: [],
 								addedWithinDays: null,
+								unusedForDays: null,
 							},
 						},
 					],
@@ -324,6 +326,7 @@ describe('AppNavigation', () => {
 								publishers: [],
 								availability: [],
 								addedWithinDays: null,
+								unusedForDays: null,
 							},
 						},
 					],

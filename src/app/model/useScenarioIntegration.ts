@@ -7,6 +7,7 @@ import {
 } from '../../features/run-scenario'
 import type { AppState } from '../store/appStore'
 import type { ScenarioLauncherControl } from '../types'
+import { useDriveScenarioTriggers } from './useDriveScenarioTriggers'
 import { useTrayScenarios } from './useTrayScenarios'
 
 interface ScenarioIntegrationOptions {
@@ -23,7 +24,10 @@ interface ScenarioIntegrationOptions {
 	appsClient: Pick<AppsClient, 'onCloseProgress'>
 	systemClient: Pick<
 		SystemClient,
-		'setTrayScenarios' | 'setTrayRunning' | 'onTrayScenarioRun'
+		| 'setTrayScenarios'
+		| 'setTrayRunning'
+		| 'onTrayScenarioRun'
+		| 'onVolumesArrived'
 	>
 	onFinished(summary: ScenarioRunSummary): void
 }
@@ -49,6 +53,11 @@ export function useScenarioIntegration({
 		scenarios: state.scenarios,
 		favoriteScenarioIds: state.favoriteScenarioIds,
 		runningName: runner.runningName,
+		onRun: runner.runById,
+	})
+	useDriveScenarioTriggers({
+		systemClient,
+		scenarios: state.scenarios,
 		onRun: runner.runById,
 	})
 	const launcher: ScenarioLauncherControl = {

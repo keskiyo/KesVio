@@ -60,6 +60,7 @@ pub fn run() {
                     if window_lifecycle.should_hide_on_close() {
                         api.prevent_close();
                         let _ = window.hide();
+                        lifecycle::enter_background(window.app_handle());
                     }
                 }
                 _ => {}
@@ -109,6 +110,7 @@ pub fn run() {
                 process_priority::set_own_priority(process_priority::OwnPriority::BelowNormal);
                 log::info!("Quiet start: hidden autostart, startup scan deferred");
             }
+            lifecycle::apply_backdrop(app.handle(), &setup_lifecycle);
             lifecycle::prepare_main_window(app, &setup_lifecycle, stay_hidden);
             lifecycle::start_background_initialization(app.handle().clone());
             Ok(())
@@ -123,12 +125,16 @@ pub fn run() {
             commands::catalog::start_background_sync,
             commands::settings::cancel_scan,
             commands::launch::launch_app,
+            commands::launch::launch_app_elevated,
+            commands::launch::can_launch_elevated,
             commands::close::close_apps,
             commands::details::get_app_details,
             commands::details::open_app_folder,
+            commands::details::measure_app_folder,
             commands::settings::get_system_settings,
             commands::settings::set_scan_settings,
             commands::settings::set_close_behavior,
+            commands::shortcut::set_global_shortcut,
             commands::settings::set_startup_enabled,
             commands::backup::save_preferences_backup,
             commands::links::open_telegram,
@@ -144,7 +150,8 @@ pub fn run() {
             commands::tray::set_tray_favorites,
             commands::tray::set_tray_running,
             commands::tray::set_tray_scan_state,
-            commands::tray::take_tray_search_intent
+            commands::tray::take_tray_search_intent,
+            commands::window::get_window_backdrop
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

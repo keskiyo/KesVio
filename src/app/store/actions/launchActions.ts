@@ -1,5 +1,14 @@
-import type { AppsClient } from '../../../entities/app'
-import type { AppState, GetAppState, SetAppState } from '../types'
+import {
+	type AppsClient,
+	appIdentity,
+	recordLaunchStat,
+} from '../../../entities/app'
+import type {
+	AppState,
+	GetAppState,
+	PersistPreferences,
+	SetAppState,
+} from '../types'
 
 const LAUNCH_CEILING_MS = 12000
 
@@ -7,19 +16,35 @@ interface LaunchActionOptions {
 	set: SetAppState
 	get: GetAppState
 	client: AppsClient
+	persist: PersistPreferences
 }
 
 type LaunchActions = Pick<
 	AppState,
-	'markLaunching' | 'clearLaunching' | 'launch' | 'closeApps'
+	| 'markLaunching'
+	| 'clearLaunching'
+	| 'launch'
+	| 'launchElevated'
+	| 'closeApps'
 >
 
 export function createLaunchActions({
 	set,
 	get,
 	client,
+	persist,
 }: LaunchActionOptions): LaunchActions {
 	const launchTimers = new Map<string, ReturnType<typeof setTimeout>>()
+	function recordSuccessfulLaunch(app: Parameters<AppState['launch']>[0]) {
+		set(state => ({
+			appLaunchStats: recordLaunchStat(
+				state.appLaunchStats,
+				appIdentity(app),
+				Date.now(),
+			),
+		}))
+		persist()
+	}
 
 	return {
 		markLaunching(id) {
@@ -63,6 +88,13 @@ export function createLaunchActions({
 				get().clearLaunching(app.id)
 				throw error
 			}
+			recordSuccessfulLaunch(app)
+		},
+		async launchElevated(app) {
+			if (!client.launchAppElevated)
+				throw new Error('Elevated launch is unavailable.')
+			await client.launchAppElevated({ id: app.id })
+			recordSuccessfulLaunch(app)
 		},
 		async closeApps(ids, allowForce = false) {
 			set({ error: null })

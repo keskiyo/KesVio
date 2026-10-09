@@ -35,8 +35,8 @@ pub(crate) use close::{
     attach_close_risk, close_scope_of, close_target_of, demote_console_applications,
 };
 pub(crate) use details::{
-    can_open_folder, details_fingerprint, folder_target, read_cached_details, read_details,
-    AppDetailsTarget,
+    can_open_folder, details_fingerprint, folder_target, measure_folder, read_cached_details,
+    read_details, AppDetailsTarget, FolderSize,
 };
 pub(crate) use display::CatalogAppDto;
 use hydration::icon_source_candidates;

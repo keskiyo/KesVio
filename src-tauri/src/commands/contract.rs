@@ -56,10 +56,18 @@ fn commands(app: &AppInfo) -> Value {
             install_location_exists: Some(true),
             can_open_folder: true,
         }),
+        "launch_app_elevated": wire(()),
+        "can_launch_elevated": wire(true),
+        "measure_app_folder": wire(crate::catalog::FolderSize {
+            bytes: 1_300,
+            files: 3,
+            complete: true,
+        }),
         "close_apps": wire(super::close::response_sample()),
         "get_system_settings": wire(super::settings::settings_sample()),
         "set_scan_settings": wire(crate::catalog::scan_settings::ScanSettings::default()),
         "set_close_behavior": wire(true),
+        "set_global_shortcut": wire(crate::platform::windows::global_shortcut::Status::default()),
         "set_startup_enabled": wire(crate::platform::windows::startup_approval::StartupEntry::Disabled),
         "stale_copy_status": wire(super::links::stale_copy_sample()),
         "save_preferences_backup": wire(true),
@@ -70,6 +78,7 @@ fn commands(app: &AppInfo) -> Value {
         "set_tray_running": wire(()),
         "set_tray_scan_state": wire(()),
         "take_tray_search_intent": wire(false),
+        "get_window_backdrop": wire(crate::lifecycle::WindowBackdrop::Mica),
     })
 }
 
@@ -98,6 +107,7 @@ fn events(app: &AppInfo) -> Value {
             total_roots: 3,
         }),
         "launch://status": wire(super::launch::status_sample()),
+        crate::catalog::sync::VOLUMES_ARRIVED_EVENT: wire(crate::catalog::sync::volumes_arrived_sample()),
         "close://progress": super::close::progress_sample(),
         "tray://run-scenario": crate::lifecycle::tray_run_scenario_sample(),
         crate::lifecycle::LAUNCH_APP_EVENT: crate::lifecycle::tray_launch_app_sample(),

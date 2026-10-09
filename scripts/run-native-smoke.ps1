@@ -61,6 +61,7 @@ $dataDirectory = Join-Path $dataRoot "data"
 $logDirectory = Join-Path $dataRoot "logs"
 $fixtureDirectory = Join-Path $workspace "Fixtures\Portable"
 $webViewProfile = Join-Path $workspace "WebView2"
+$isolatedLocalAppData = Join-Path $workspace "LocalAppData"
 $results = [Collections.Generic.List[object]]::new()
 $smokeProcess = $null
 
@@ -142,11 +143,14 @@ function Wait-LogLine {
 function Start-Smoke {
   param([string]$Executable)
   $previousProfile = $env:WEBVIEW2_USER_DATA_FOLDER
+  $previousLocalAppData = $env:LOCALAPPDATA
   try {
     $env:WEBVIEW2_USER_DATA_FOLDER = $webViewProfile
+    $env:LOCALAPPDATA = $isolatedLocalAppData
     return Start-Process -FilePath $Executable -WorkingDirectory $appDirectory -PassThru
   } finally {
     $env:WEBVIEW2_USER_DATA_FOLDER = $previousProfile
+    $env:LOCALAPPDATA = $previousLocalAppData
   }
 }
 

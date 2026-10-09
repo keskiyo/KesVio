@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import {
 	applySavedFilter,
 	type AppInfo,
+	type AppLaunchStats,
 	type AppView,
 	type SavedFilter,
 } from '../../../entities/app'
@@ -12,6 +13,8 @@ interface FilterScope {
 	activeSavedFilterId?: string | null
 	savedFilters?: SavedFilter[]
 	firstSeenAt: Record<string, number>
+	appLaunchStats: AppLaunchStats
+	launchHistorySince?: number | null
 }
 
 export function useSavedFilterScope(
@@ -30,9 +33,11 @@ export function useSavedFilterScope(
 	)
 	const now = useNow(
 		activeFilter !== null &&
-			activeFilter.criteria.addedWithinDays !== null &&
+			(activeFilter.criteria.addedWithinDays !== null ||
+				activeFilter.criteria.unusedForDays !== null) &&
 			catalogScreen,
 	)
+	const launchHistorySince = state.launchHistorySince ?? null
 	const scopedApps = useMemo(
 		() =>
 			activeFilter
@@ -41,9 +46,20 @@ export function useSavedFilterScope(
 						activeFilter.criteria,
 						state.firstSeenAt,
 						now,
+						{
+							appLaunchStats: state.appLaunchStats,
+							launchHistorySince,
+						},
 					)
 				: visibleApps,
-		[activeFilter, now, state.firstSeenAt, visibleApps],
+		[
+			activeFilter,
+			now,
+			state.firstSeenAt,
+			state.appLaunchStats,
+			launchHistorySince,
+			visibleApps,
+		],
 	)
 	return { activeFilter, scopedApps }
 }

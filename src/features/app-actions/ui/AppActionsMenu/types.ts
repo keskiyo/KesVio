@@ -11,6 +11,30 @@ import type {
 	CategoryDefinition,
 } from '../../../../entities/category'
 
+export interface AppFileActions {
+	openFolder(app: AppInfo): Promise<void>
+	copyPath(app: AppInfo): Promise<void>
+	launchElevated?(app: AppInfo): Promise<void>
+	canLaunchElevated?(app: AppInfo): Promise<boolean>
+}
+
+export interface FileActionItemsProps {
+	app: AppInfo
+	isHidden: boolean
+	fileActions: AppFileActions
+	onClose(): void
+}
+
+export interface PlacementItemProps {
+	app: AppInfo
+	isHidden: boolean
+	isUserPromoted: boolean
+	onHide(id: string): void
+	onRestore?(id: string): void
+	onDemote(id: string): void
+	onClose(): void
+}
+
 export interface AppActionsMenuProps {
 	app: AppInfo
 	categories: CategoryDefinition[]
@@ -23,6 +47,7 @@ export interface AppActionsMenuProps {
 	): void
 	onInfo(app: AppInfo): void
 	onManageInWindows(): Promise<void>
+	fileActions: AppFileActions
 	isHidden?: boolean
 	isUserPromoted?: boolean
 	onHide(id: string): void

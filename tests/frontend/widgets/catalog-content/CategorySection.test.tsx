@@ -33,6 +33,7 @@ function props(
 		onMoveApp: vi.fn(),
 		onInfo: vi.fn(),
 		onManageInWindows: vi.fn(),
+		fileActions: { openFolder: vi.fn(), copyPath: vi.fn() },
 		onHide: vi.fn(),
 		onRestore: vi.fn(),
 		onDemote: vi.fn(),
@@ -95,6 +96,24 @@ describe('CategorySection', () => {
 		expect(
 			screen.queryByRole('button', { name: 'Delete Work category' }),
 		).toBeNull()
+	})
+
+	it('dims the toggle of an empty category', () => {
+		render(<CategorySection {...props()} />)
+
+		const toggle = screen.getByRole('button', { name: 'Collapse Work' })
+		expect(toggle).toHaveAttribute('aria-disabled', 'true')
+		expect(toggle.className.split(/\s+/)).toContain(
+			'aria-disabled:opacity-60',
+		)
+	})
+
+	it('marks the rename control as a header action revealed on hover or focus', () => {
+		render(<CategorySection {...props()} />)
+
+		expect(
+			screen.getByRole('button', { name: 'Rename Work category' }),
+		).toHaveClass('category-header-action')
 	})
 
 	it('never offers to delete a built-in category', () => {

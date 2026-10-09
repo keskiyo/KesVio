@@ -13,6 +13,14 @@ function normalizeMoment(value: unknown): number | null {
 		: null
 }
 
+const VOLUME_ID = /^[0-9a-f]{8}$/i
+
+function triggerVolume(value: unknown): { triggerVolumeId?: string } {
+	if (typeof value !== 'string') return {}
+	const volumeId = value.trim().toLowerCase()
+	return VOLUME_ID.test(volumeId) ? { triggerVolumeId: volumeId } : {}
+}
+
 function normalizeScenarioSnapshots(
 	value: unknown,
 	identities: string[],
@@ -57,6 +65,7 @@ export function normalizeScenarios(value: unknown): Scenario[] {
 			...('forceClose' in raw
 				? { forceClose: raw.forceClose === true }
 				: {}),
+			...triggerVolume(raw.triggerVolumeId),
 			id,
 			name,
 			launchIdentities,

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
@@ -6,6 +6,7 @@ import '../../../../src/app/styles/index.css'
 import { AppActionsMenu } from '../../../../src/features/app-actions/ui/AppActionsMenu/AppActionsMenu'
 import type { AppInfo } from '../../../../src/entities/app'
 import type { CategoryDefinition } from '../../../../src/entities/category'
+import type { AppFileActions } from '../../../../src/features/app-actions'
 
 const visualStudioCode: AppInfo = {
 	id: 'code',
@@ -21,6 +22,47 @@ const visualStudioCode: AppInfo = {
 	publisher: null,
 	installLocation: null,
 	canUninstall: false,
+}
+
+function fileActions() {
+	return {
+		openFolder: vi.fn().mockResolvedValue(undefined),
+		copyPath: vi.fn().mockResolvedValue(undefined),
+		launchElevated: vi.fn().mockResolvedValue(undefined),
+	}
+}
+
+function renderWithFileActions(
+	app: AppInfo,
+	extra: {
+		isHidden?: boolean
+		actions?: AppFileActions
+	} = {},
+) {
+	const actions = extra.actions ?? fileActions()
+	const onClose = vi.fn()
+	const anchorRef = createRef<HTMLButtonElement>()
+	render(
+		<>
+			<button ref={anchorRef} type="button" aria-label="anchor" />
+			<AppActionsMenu
+				app={app}
+				categories={threeCategories}
+				categoryOrder={threeCategories.map(category => category.id)}
+				onClose={onClose}
+				onMove={vi.fn()}
+				onInfo={vi.fn()}
+				onManageInWindows={vi.fn()}
+				onHide={vi.fn()}
+				onRestore={vi.fn()}
+				onDemote={vi.fn()}
+				fileActions={actions}
+				isHidden={extra.isHidden}
+				anchorRef={anchorRef}
+			/>
+		</>,
+	)
+	return { actions, onClose }
 }
 
 function rect(left: number, top: number, width: number, height: number) {
@@ -70,6 +112,7 @@ function renderMovableMenu(
 				onMove={onMove}
 				onInfo={vi.fn()}
 				onManageInWindows={vi.fn()}
+				fileActions={fileActions()}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
 				onDemote={vi.fn()}
@@ -99,6 +142,7 @@ describe('AppActionsMenu removal handover', () => {
 					onMove={vi.fn()}
 					onInfo={vi.fn()}
 					onManageInWindows={onManageInWindows}
+					fileActions={fileActions()}
 					onHide={vi.fn()}
 					onRestore={vi.fn()}
 					onDemote={vi.fn()}
@@ -158,6 +202,7 @@ describe('AppActionsMenu artifacts', () => {
 				onMove={vi.fn()}
 				onInfo={vi.fn()}
 				onManageInWindows={vi.fn()}
+				fileActions={fileActions()}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
 				onDemote={vi.fn()}
@@ -173,6 +218,71 @@ describe('AppActionsMenu artifacts', () => {
 })
 
 describe('AppActionsMenu category cascade', () => {
+	it('uses compact sizing below the small-screen breakpoint', () => {
+		renderMovableMenu()
+		const menu = screen.getByRole('menu', {
+			name: 'Visual Studio Code actions',
+		})
+		const info = screen.getByRole('menuitem', { name: 'App info' })
+
+		expect(menu).toHaveClass('w-52', 'p-1.5', 'sm:w-56', 'sm:p-2')
+		expect(info).toHaveClass(
+			'py-2',
+			'text-[13px]',
+			'sm:py-2.5',
+			'sm:text-sm',
+		)
+	})
+
+	it('repositions when its rendered height changes', () => {
+		let resize: ResizeObserverCallback | undefined
+		class TestResizeObserver {
+			constructor(callback: ResizeObserverCallback) {
+				resize = callback
+			}
+			observe() {}
+			disconnect() {}
+			unobserve() {}
+		}
+		vi.stubGlobal('ResizeObserver', TestResizeObserver)
+		const viewport = Object.getOwnPropertyDescriptor(window, 'innerHeight')
+		let menuHeight = 240
+		const bounds = vi
+			.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'Actions menu anchor')
+					return rect(120, 40, 32, 32)
+				if (
+					this.getAttribute('aria-label') ===
+					'Visual Studio Code actions'
+				)
+					return rect(120, 76, 208, menuHeight)
+				return rect(0, 0, 0, 0)
+			})
+		Object.defineProperty(window, 'innerHeight', {
+			configurable: true,
+			value: 360,
+		})
+
+		try {
+			renderMovableMenu()
+			const menu = screen.getByRole('menu', {
+				name: 'Visual Studio Code actions',
+			})
+			expect(menu).toHaveStyle({ top: '76px' })
+			expect(resize).toBeDefined()
+
+			menuHeight = 300
+			act(() => resize?.([], {} as ResizeObserver))
+
+			expect(menu).toHaveStyle({ top: '48px' })
+		} finally {
+			bounds.mockRestore()
+			if (viewport) Object.defineProperty(window, 'innerHeight', viewport)
+			vi.unstubAllGlobals()
+		}
+	})
+
 	it('explains drive grouping and does not offer an ignored category move', () => {
 		renderMovableMenu(undefined, undefined, {
 			app: { ...visualStudioCode, scanFolder: 'F:\\' },
@@ -228,6 +338,24 @@ describe('AppActionsMenu category cascade', () => {
 		})
 		expect(visible).toBeInTheDocument()
 		expect(demote.querySelector('svg')).toHaveClass('lucide-wrench')
+	})
+
+	it('shows the Move back destination in a visual tooltip', () => {
+		renderMovableMenu(createRef<HTMLButtonElement>(), threeCategories, {
+			isUserPromoted: true,
+		})
+
+		const demote = screen.getByRole('menuitem', {
+			name: 'Move back to Auxiliary tools',
+		})
+		const tooltip = demote.querySelector('[data-destination-tooltip]')
+		expect(tooltip).toHaveTextContent('Moves to Auxiliary tools')
+		expect(tooltip).toHaveAttribute('aria-hidden', 'true')
+		expect(tooltip?.className).toContain('group-hover:opacity-100')
+		expect(tooltip?.className).toContain('group-focus-visible:opacity-100')
+		expect(tooltip?.className).toContain('motion-reduce:transition-none')
+		expect(tooltip?.className).not.toContain('truncate')
+		expect(demote.querySelector('[data-destination-hint]')).toBeNull()
 	})
 
 	// A third floating panel had nowhere to go in a narrow window and was clamped over the
@@ -370,7 +498,10 @@ describe('AppActionsMenu category cascade', () => {
 		})
 
 		expect(within(categories).getAllByRole('menuitem')).toHaveLength(16)
-		expect(categories).toHaveClass('max-h-[calc(100vh-1.5rem)]')
+		expect(categories).toHaveClass(
+			'max-h-[calc(100vh-1rem)]',
+			'sm:max-h-[calc(100vh-1.5rem)]',
+		)
 		expect(categories).toHaveClass('overflow-y-auto')
 	})
 
@@ -536,5 +667,139 @@ describe('AppActionsMenu category cascade', () => {
 			Object.defineProperty(window, 'innerWidth', viewport.width!)
 			Object.defineProperty(window, 'innerHeight', viewport.height!)
 		}
+	})
+})
+
+describe('AppActionsMenu file actions', () => {
+	it('runs, opens and copies an installed executable from the menu', async () => {
+		const user = userEvent.setup()
+		const { actions, onClose } = renderWithFileActions(visualStudioCode)
+
+		await user.click(
+			screen.getByRole('menuitem', { name: 'Run as administrator' }),
+		)
+		expect(actions.launchElevated).toHaveBeenCalledWith(visualStudioCode)
+		expect(onClose).toHaveBeenCalledTimes(1)
+
+		await user.click(screen.getByRole('menuitem', { name: 'Open folder' }))
+		expect(actions.openFolder).toHaveBeenCalledWith(visualStudioCode)
+
+		await user.click(screen.getByRole('menuitem', { name: 'Copy path' }))
+		expect(actions.copyPath).toHaveBeenCalledWith(visualStudioCode)
+	})
+
+	it('asks Windows before offering to elevate an app id and shows it on yes', async () => {
+		const actions = {
+			...fileActions(),
+			canLaunchElevated: vi.fn().mockResolvedValue(true),
+		}
+		const terminal = {
+			...visualStudioCode,
+			launchKind: 'app_user_model_id' as const,
+			sourceKind: 'msix' as const,
+			path: 'Microsoft.WindowsTerminal_8wekyb3d8bbwe!App',
+		}
+		renderWithFileActions(terminal, { actions })
+
+		expect(
+			await screen.findByRole('menuitem', {
+				name: 'Run as administrator',
+			}),
+		).toBeVisible()
+		expect(actions.canLaunchElevated).toHaveBeenCalledWith(terminal)
+		expect(
+			screen.queryByRole('menuitem', { name: 'Open folder' }),
+		).not.toBeInTheDocument()
+	})
+
+	it('keeps an app id without a Windows elevation verb to Copy path', async () => {
+		const actions = {
+			...fileActions(),
+			canLaunchElevated: vi.fn().mockResolvedValue(false),
+		}
+		renderWithFileActions(
+			{
+				...visualStudioCode,
+				launchKind: 'app_user_model_id',
+				path: 'Contoso.App_abc!App',
+			},
+			{ actions },
+		)
+
+		await vi.waitFor(() =>
+			expect(actions.canLaunchElevated).toHaveBeenCalled(),
+		)
+		expect(
+			screen.queryByRole('menuitem', { name: 'Run as administrator' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('menuitem', { name: 'Copy path' }),
+		).toBeVisible()
+	})
+
+	it('never asks Windows about a plain executable', () => {
+		const actions = { ...fileActions(), canLaunchElevated: vi.fn() }
+		renderWithFileActions(visualStudioCode, { actions })
+
+		expect(
+			screen.getByRole('menuitem', { name: 'Run as administrator' }),
+		).toBeVisible()
+		expect(actions.canLaunchElevated).not.toHaveBeenCalled()
+	})
+
+	it('offers folder and elevation for a Windows tool listed as an app id', async () => {
+		const actions = {
+			...fileActions(),
+			canLaunchElevated: vi.fn().mockResolvedValue(true),
+		}
+		renderWithFileActions(
+			{
+				...visualStudioCode,
+				launchKind: 'app_user_model_id',
+				sourceKind: 'start_apps',
+				path: '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\cmd.exe',
+			},
+			{ actions },
+		)
+		expect(
+			screen.getByRole('menuitem', { name: 'Open folder' }),
+		).toBeVisible()
+		expect(
+			await screen.findByRole('menuitem', {
+				name: 'Run as administrator',
+			}),
+		).toBeVisible()
+	})
+
+	it('does not elevate a hidden app but still locates it', () => {
+		renderWithFileActions(visualStudioCode, { isHidden: true })
+		expect(
+			screen.queryByRole('menuitem', { name: 'Run as administrator' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('menuitem', { name: 'Open folder' }),
+		).toBeVisible()
+	})
+
+	it('leaves installer and documentation menus without file actions', () => {
+		renderWithFileActions({
+			...visualStudioCode,
+			artifactKind: 'installer',
+			category: 'installers_docs',
+		})
+		for (const name of ['Run as administrator', 'Open folder', 'Copy path'])
+			expect(
+				screen.queryByRole('menuitem', { name }),
+			).not.toBeInTheDocument()
+	})
+
+	it('hides Run as administrator when the client cannot elevate', () => {
+		const { openFolder, copyPath } = fileActions()
+		renderWithFileActions(visualStudioCode, {
+			actions: { openFolder, copyPath },
+		})
+		expect(
+			screen.queryByRole('menuitem', { name: 'Run as administrator' }),
+		).not.toBeInTheDocument()
 	})
 })

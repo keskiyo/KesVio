@@ -1,6 +1,7 @@
 import type { AppInfo, CloseRiskBadge } from '../../entities/app'
 import type { CategoryDefinition } from '../../entities/category'
 import type {
+	DriveTriggerChoice,
 	Scenario,
 	ScenarioList,
 	UnavailableScenarioApp,
@@ -44,6 +45,8 @@ export interface UnavailableScenarioAppTileProps {
 
 export interface ScenarioCardProps {
 	onSetForceClose?(id: string, forceClose: boolean): boolean
+	drives?: DriveTriggerChoice[]
+	onSetDriveTrigger?(id: string, volumeId: string | null): boolean
 	scenario: Scenario
 	apps: AppInfo[]
 	selectableApps: AppInfo[]

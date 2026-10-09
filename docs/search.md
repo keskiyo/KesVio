@@ -74,8 +74,11 @@ instead of ending at an empty grid. Each count equals what the destination will
 show once opened, so the number never disagrees with the view it leads to.
 Typing into search from Settings, More or Scenarios switches to the catalog.
 Empty user categories are not rendered while a query is active. The command
-palette opened with an empty query lists favorites first, then recently added
-applications.
+palette opened with an empty query lists favorites first, then the apps
+launched most through KesVio — launch count weighted by how recent the last
+launch was — then recently added applications
+(`src/widgets/catalog-content/lib/paletteSuggestions.ts`). Launch history never
+changes how a typed query ranks.
 
 ## Aliases
 

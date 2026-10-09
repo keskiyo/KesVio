@@ -1,27 +1,27 @@
 import { useDeferredValue, useMemo } from 'react'
 import {
-	appIdentity,
+	type AppLaunchStats,
 	type AppView,
 	type CategorizedAppsState,
-	createMarkLookup,
 	filterVisibleApps,
 	isCatalogArtifact,
-	isCatalogView,
 	joinHydrationIds,
 	type SavedFilter,
 	selectCatalogCounts,
-	selectCategorizedApps,
-	selectRecentApps,
 	useSearchIndex,
 } from '../../../entities/app'
 import type { CategoryDefinition } from '../../../entities/category'
-import { resolveScenarioApps, type Scenario } from '../../../entities/scenario'
+import type { Scenario } from '../../../entities/scenario'
+import { useCategorizedCatalog } from './useCategorizedCatalog'
 import { useSavedFilterScope } from './useSavedFilterScope'
+import {
+	selectHydrationApps,
+	selectShownScenarioApps,
+} from '../lib/hydrationTargets'
 import { buildMorePreview } from '../lib/morePreview'
+import { buildPaletteSuggestions } from '../lib/paletteSuggestions'
 
 export type { MorePreview, MorePreviewItem } from '../lib/morePreview'
-
-const PALETTE_SUGGESTIONS = 12
 
 interface CatalogViewState extends CategorizedAppsState {
 	activeView: AppView
@@ -29,6 +29,8 @@ interface CatalogViewState extends CategorizedAppsState {
 	favoriteAppIds: string[]
 	favoriteAppIdentities: string[]
 	firstSeenAt: Record<string, number>
+	appLaunchStats: AppLaunchStats
+	launchHistorySince?: number | null
 	hiddenAppIds: string[]
 	hiddenAppIdentities: string[]
 	query: string
@@ -39,40 +41,8 @@ interface CatalogViewState extends CategorizedAppsState {
 }
 
 export function useCatalogView(state: CatalogViewState) {
-	const categorizedApps = useMemo(
-		() =>
-			selectCategorizedApps({
-				apps: state.apps,
-				categoryOverrides: state.categoryOverrides,
-				categoryOverrideIdentities: state.categoryOverrideIdentities,
-				promotedAppIds: state.promotedAppIds,
-				promotedAppIdentities: state.promotedAppIdentities,
-				installerAppIds: state.installerAppIds,
-				installerAppIdentities: state.installerAppIdentities,
-				documentAppIds: state.documentAppIds,
-				documentAppIdentities: state.documentAppIdentities,
-			}),
-		[
-			state.apps,
-			state.categoryOverrides,
-			state.categoryOverrideIdentities,
-			state.promotedAppIds,
-			state.promotedAppIdentities,
-			state.installerAppIds,
-			state.installerAppIdentities,
-			state.documentAppIds,
-			state.documentAppIdentities,
-		],
-	)
-	const isHidden = useMemo(
-		() => createMarkLookup(state.hiddenAppIds, state.hiddenAppIdentities),
-		[state.hiddenAppIds, state.hiddenAppIdentities],
-	)
-	const isFavorite = useMemo(
-		() =>
-			createMarkLookup(state.favoriteAppIds, state.favoriteAppIdentities),
-		[state.favoriteAppIds, state.favoriteAppIdentities],
-	)
+	const { categorizedApps, isHidden, isFavorite } =
+		useCategorizedCatalog(state)
 	const visibleApps = useMemo(
 		() =>
 			filterVisibleApps(
@@ -94,19 +64,22 @@ export function useCatalogView(state: CatalogViewState) {
 		() => catalogApps.filter(app => app.visibilityClass !== 'auxiliary'),
 		[catalogApps],
 	)
-	const paletteSuggestions = useMemo(() => {
-		const favorites = new Set(state.favoriteAppIds)
-		const starred = primaryApps.filter(app => favorites.has(app.id))
-		const rest = primaryApps.filter(app => !favorites.has(app.id))
-		return [
-			...starred,
-			...selectRecentApps(
-				rest,
-				app => state.firstSeenAt[appIdentity(app)] ?? 0,
-				PALETTE_SUGGESTIONS,
-			),
-		].slice(0, PALETTE_SUGGESTIONS)
-	}, [primaryApps, state.favoriteAppIds, state.firstSeenAt])
+	const paletteSuggestions = useMemo(
+		() =>
+			buildPaletteSuggestions({
+				apps: primaryApps,
+				favoriteAppIds: state.favoriteAppIds,
+				firstSeenAt: state.firstSeenAt,
+				appLaunchStats: state.appLaunchStats,
+				now: Date.now(),
+			}),
+		[
+			primaryApps,
+			state.favoriteAppIds,
+			state.firstSeenAt,
+			state.appLaunchStats,
+		],
+	)
 	const deferredQuery = useDeferredValue(state.query)
 	const search = useSearchIndex()
 	const { activeFilter, scopedApps } = useSavedFilterScope(state, visibleApps)
@@ -149,46 +122,38 @@ export function useCatalogView(state: CatalogViewState) {
 			state.scenarios,
 		],
 	)
-	const scenarioApps = useMemo(() => {
-		const shown =
-			state.activeView === 'favorites'
-				? state.scenarios.filter(scenario =>
-						state.favoriteScenarioIds.includes(scenario.id),
-					)
-				: state.activeView === 'scenarios' ||
-					  state.activeView === 'more'
-					? state.scenarios
-					: []
-		if (!shown.length) return []
-		const identities = new Set(
-			shown.flatMap(scenario => [
-				...scenario.launchIdentities,
-				...scenario.closeIdentities,
-			]),
-		)
-		return resolveScenarioApps([...identities], catalogApps).apps
-	}, [
-		catalogApps,
-		state.activeView,
-		state.favoriteScenarioIds,
-		state.scenarios,
-	])
-	const hydrationApps = useMemo(() => {
-		if (state.activeView === 'scenarios')
-			return scenarioApps.concat(primaryApps)
-		if (state.activeView === 'more')
-			return [
-				...morePreview.auxiliary,
-				...morePreview.hidden,
-				...morePreview.installersDocs,
-			]
-				.map(entry => entry.app)
-				.concat(scenarioApps)
-		if (!isCatalogView(state.activeView)) return []
-		if (state.activeView === 'favorites')
-			return filteredApps.concat(scenarioApps)
-		return filteredApps
-	}, [filteredApps, morePreview, primaryApps, scenarioApps, state.activeView])
+	const scenarioApps = useMemo(
+		() =>
+			selectShownScenarioApps({
+				activeView: state.activeView,
+				scenarios: state.scenarios,
+				favoriteScenarioIds: state.favoriteScenarioIds,
+				catalogApps,
+			}),
+		[
+			catalogApps,
+			state.activeView,
+			state.favoriteScenarioIds,
+			state.scenarios,
+		],
+	)
+	const hydrationApps = useMemo(
+		() =>
+			selectHydrationApps({
+				activeView: state.activeView,
+				filteredApps,
+				morePreview,
+				primaryApps,
+				scenarioApps,
+			}),
+		[
+			filteredApps,
+			morePreview,
+			primaryApps,
+			scenarioApps,
+			state.activeView,
+		],
+	)
 	const visibleHydrationIds = useMemo(
 		() => joinHydrationIds(hydrationApps.map(app => app.id)),
 		[hydrationApps],

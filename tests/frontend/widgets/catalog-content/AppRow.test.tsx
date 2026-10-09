@@ -66,6 +66,7 @@ function props(appOverride: AppInfo = app) {
 		onMove: vi.fn(),
 		onInfo: vi.fn(),
 		onManageInWindows: vi.fn(),
+		fileActions: { openFolder: vi.fn(), copyPath: vi.fn() },
 		onDemote: vi.fn(),
 	}
 }
@@ -101,16 +102,14 @@ describe('AppRow', () => {
 		expect(screen.queryByText('Unknown publisher')).not.toBeInTheDocument()
 	})
 
-	// Hidden and Auxiliary rows carry Restore as a visible button, so their menu no longer
-	// repeats it and keeps App info alone; a catalog artifact still hides from the menu.
-	it('keeps a hidden or auxiliary menu to App info and offers Hide for a catalog artifact', async () => {
+	it('keeps a hidden or auxiliary menu to information and location, and offers Hide for a catalog artifact', async () => {
 		const { unmount } = render(<AppRow {...props()} />)
 		await userEvent.click(
 			screen.getByRole('button', { name: 'Manage Claude Code' }),
 		)
 		expect(
 			screen.getAllByRole('menuitem').map(item => item.textContent),
-		).toEqual(['App info'])
+		).toEqual(['App info', 'Open folder', 'Copy path'])
 		unmount()
 
 		const onHide = vi.fn()
@@ -236,7 +235,7 @@ describe('AppRow', () => {
 		expect(screen.queryByRole('separator')).not.toBeInTheDocument()
 	})
 
-	it('keeps Uninstall for an installed program and never shows Open folder there', async () => {
+	it('keeps Uninstall for an installed program beside its file actions', async () => {
 		render(
 			<AppRow
 				{...props({ ...app, canUninstall: true })}
@@ -251,8 +250,8 @@ describe('AppRow', () => {
 			screen.getByRole('menuitem', { name: 'Uninstall' }),
 		).toBeInTheDocument()
 		expect(
-			screen.queryByRole('menuitem', { name: 'Open folder' }),
-		).not.toBeInTheDocument()
+			screen.getByRole('menuitem', { name: 'Open folder' }),
+		).toBeInTheDocument()
 	})
 
 	it('moves keyboard focus to the neighbouring row when Restore removes this one', async () => {

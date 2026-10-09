@@ -6,6 +6,8 @@ import {
 	FIELD_LABEL_CLASS,
 	SOURCE_CHOICES,
 	SOURCE_HINT,
+	UNUSED_FOR_HINT,
+	UNUSED_FOR_OPTIONS,
 } from './data'
 import { FilterChoice } from './FilterChoice'
 import { FilterDisclosure } from './FilterDisclosure'
@@ -104,6 +106,28 @@ export function CriteriaFieldset({
 						</FilterChoice>
 					))}
 				</div>
+			</fieldset>
+			<fieldset className="grid min-w-0 gap-1.5">
+				<legend className={FIELD_LABEL_CLASS}>Not launched for</legend>
+				<div className="grid grid-cols-2 gap-x-3 gap-y-1 min-[460px]:grid-cols-3">
+					{UNUSED_FOR_OPTIONS.map(option => (
+						<FilterChoice
+							key={option.label}
+							type="radio"
+							name="unused-for"
+							checked={criteria.unusedForDays === option.value}
+							onChange={() =>
+								onChange({
+									...criteria,
+									unusedForDays: option.value,
+								})
+							}
+						>
+							{option.label}
+						</FilterChoice>
+					))}
+				</div>
+				<p className="text-xs text-(--text-muted)">{UNUSED_FOR_HINT}</p>
 			</fieldset>
 		</div>
 	)

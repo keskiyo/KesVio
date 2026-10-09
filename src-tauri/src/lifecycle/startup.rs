@@ -18,8 +18,15 @@ pub(crate) fn spawn(app: AppHandle) {
 }
 
 fn register_global_shortcut(app: &AppHandle) {
-    let registered = global_shortcut::register(app.clone());
+    let binding = paths::data_dir(app)
+        .ok()
+        .map(|directory| global_shortcut::read(&directory))
+        .unwrap_or_default();
     let state = app.state::<AppState>();
+    if let Ok(mut status) = state.shortcut_status.lock() {
+        *status = global_shortcut::Status::pending(&binding);
+    }
+    let registered = global_shortcut::register(app.clone(), binding);
     if let Ok(mut status) = state.shortcut_status.lock() {
         *status = registered.status;
     }

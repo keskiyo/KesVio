@@ -94,9 +94,26 @@ redealt across the full range on first read. The accent is derived from the
 category id rather than drawn at random, so the colour a category lands on
 survives every later start.
 
+A category heading keeps its **Edit** button out of sight until the section is
+hovered or holds focus, the same rule the card corner controls follow, and
+always shows it where nothing can hover (`.category-header-action` in
+`src/app/styles/catalog.css`); the button stays in the tab order, so focusing
+it reveals it. An empty category's toggle is dimmed and `aria-disabled`.
+Sidebar destinations keep their bordered panel rows: a flat, borderless
+variant was tried on 8 October 2026 and withdrawn because the rows lost their
+shape against the shell.
+
 ## Catalog Health and Settings
 
-Settings contains two open groups: General and Catalog. Catalog contains Application discovery and Catalog maintenance; unclassified records follow when present.
+Settings contains two open groups: General and Catalog. General separates appearance, startup and window behavior, keyboard shortcuts, system links, and updates. Catalog contains Application discovery and Catalog maintenance; unclassified records follow when present.
+
+Keyboard shortcuts lists **Show KesVio**, **Search**, **Quick launcher** and
+**Scenario launcher**. Only Show KesVio is editable because it is registered
+across Windows and may conflict with another application. Activating its key
+button captures one letter, digit or F1-F12 with Win, Ctrl or Alt; Escape
+cancels and Backspace or the reset button restores **Win+Shift+Q**. Search,
+Quick launcher and Scenario launcher remain fixed at **Ctrl+F**, **Ctrl+K** and
+**Ctrl+Shift+K**.
 
 **Catalog Health** lives under More. Its summary owns the primary **Refresh catalog** action plus Applications, Sources, Last scan, and Duration. Catalog sources show a compact labelled list at narrow widths and a table at wider widths; Source details opens automatically when a source needs attention. Last scan owns added, updated, removed, duration, and optional technical detail without repeating the total application count.
 
@@ -262,25 +279,39 @@ rule and the count; each artifact row names its folder and keeps the full path
 in the tooltip — size and date live in `AppDetails`, which a list may not fetch
 per row — and an installer older than an installed program of the same product
 and publisher says **Installed X is newer**. A hidden or auxiliary card's menu
-offers _App info_ alone — Restore is on the row, and nothing there hides or
-uninstalls. "Nothing is hidden" replaces the grid when it is empty. A menu
+offers _App info_, _Open folder_ and _Copy path_ — Restore is on the row, and
+nothing there hides, elevates or uninstalls. "Nothing is hidden" replaces the grid when it is empty. A menu
 opened from a trigger in the right half of the window hangs from the trigger's
 right edge (`floatingMenuPosition`), so a row's ⋮ never gets a panel floating
 off to its side. An artifact row's menu has no _Uninstall_ — Windows cannot do
 it for a file that was never installed — and no _Open folder_ either: the row's
-**Folder** button runs the same `openAppFolder` command the App info dialog
-uses, so the installer can be run or deleted by hand from where it lies; a
-failure is reported as a toast without the path.
+**Folder** button runs the same `openAppFolder` command as the card menu's
+_Open folder_, so the installer can be run or deleted by hand from where it
+lies; a failure is reported as a toast without the path.
+
+The ⋮ menu of an installed application is where its file actions live:
+**App info**, **Run as administrator**, **Open folder**, **Copy path**, then
+hide or restore and **Uninstall**. _Run as administrator_ appears at once for
+an executable or a shortcut, never for a `steam:` URI or a hidden app, and for
+an AppUserModelId only after Windows confirms that its Start menu entry offers
+the same command: the menu asks `can_launch_elevated` when it opens and caches
+the answer for the session, so Command Prompt, PowerShell, Task Manager or
+Windows Terminal show it and Calculator or File Explorer do not. Dismissing the
+Windows consent prompt is reported as **Launch cancelled**, not as a failure.
+**Move back** keeps its compact visible label; hover or keyboard focus shows the
+full tooltip **Moves to Auxiliary tools**, and its accessible name always says
+**Move back to Auxiliary tools**. _Open folder_ is absent
+for packaged Microsoft Store apps, whose folder Windows does not hand out, and
+present for Windows Start Apps that resolve to a system file
+(`src/entities/app/lib/elevation.ts`). Artifact menus show none of the three.
+The App info dialog keeps only **Copy report**, so no action has two homes.
 
 ## Scenario launcher
 
 The scenario launcher is a root-level dialog rather than a page detail, reachable
-with Ctrl+Shift+K from any view and from that "View all" row. A shortcut nothing
-names is a shortcut nobody presses, so the two places that already hold scenarios
-name it: the Scenarios page above its list, and the Favorites view beside starred
-scenarios, which is the only one of the two a user reaches without going looking
-for scenarios in the first place. Neither hint renders when there is no scenario
-to run. It searches by
+with Ctrl+Shift+K from any view and from that "View all" row. Settings names it
+beside the other three keyboard shortcuts, while the scenario page keeps its
+content focused on scenarios rather than repeating the hint. It searches by
 scenario name and by the apps a scenario holds, so an entry the catalog no longer
 resolves stays findable by the name stored with it. Filters cover favorites and
 scenarios that have run; ordering is by last run, name or creation date, either
@@ -322,12 +353,19 @@ current view starts on All Apps.
 
 The application information dialog presents discovery source, effective placement, launch-target status, and the evidence exposed by the classifier. The meaning and precedence of that evidence belong to [Classification](classification.md#explainable-decisions).
 
+Beside **Copy report**, an app with a folder to open offers **Measure folder**. The size is never fetched on its own: one press walks the folder once and shows "3 MB in 12 files", or "At least …" when the walk stopped at its bounds ([IPC and data](ipc-and-data.md#ipc)). An answer that arrives after the dialog moved to another app is dropped.
+
 ## Saved catalog filters
 
-Preferences schema 21 adds `savedFilters`; existing documents upgrade with an empty
+Preferences schema 20 adds `savedFilters`; existing documents upgrade with an empty
 list and retain unknown data. Up to 20 named filters store
-source, publisher, target availability and added-within criteria, never catalog
-IDs or executable expressions. Fields combine with AND; values within a field
+source, publisher, target availability, added-within and not-launched-for
+criteria, never catalog IDs or executable expressions. **Not launched for**
+(30, 90 or 180 days, or over a year) counts from an app's last launch through
+KesVio; an app never launched counts from when KesVio first saw it or from when
+launch tracking began, whichever is later, so the filter is empty on the day
+tracking starts rather than full of every app. Filters saved before the
+criterion existed read it as unset. Fields combine with AND; values within a field
 combine with OR. Empty criteria preserve the existing view scope. Search remains
 an additional condition; hidden apps and artifacts follow the selected view.
 
@@ -390,6 +428,17 @@ it enumerates matching processes and reports closed, idle or failed targets.
 Force mode retains the existing process identity checks and bounded termination
 rechecks. Progress events retain their payload; waiting text applies to either
 policy. There is no new cancellation API, results screen or execution preview.
+
+## Drive-triggered scenarios
+
+A scenario card offers **Offer to run when a drive connects** once at least one
+tracked removable drive has apps in the catalog; each choice names the drive by
+its scan folder and app count (`driveTriggerChoices`), and a bound drive that is
+unplugged stays listed as "A drive not connected now". When that drive arrives,
+the catalog refreshes first and then a toast asks **Drive connected: run …?**
+with a **Run** action — the scenario never starts on its own, because plugging
+in a stick is not consent to launch or close anything. The binding is an
+undoable change like the close policy.
 
 Manual verification still required in an isolated Windows profile: accepting and
 refusing WM_CLOSE, unsaved-document prompts, both policy settings, forced close,

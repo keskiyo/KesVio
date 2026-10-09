@@ -118,14 +118,12 @@ describe('ScenariosPage', () => {
 		expect(view.onBack).toHaveBeenCalled()
 	})
 
-	// The shortcut opens the launcher from every view, so the page that is about scenarios is
-	// where someone is most likely to read it.
-	it('names the launcher shortcut over the list', () => {
+	it('leaves the launcher shortcut unadvertised over the list', () => {
 		render(<ScenariosPage {...props([gaming])} />)
 
 		expect(
 			screen.getByRole('region', { name: 'Scenarios' }),
-		).toHaveTextContent('Open this list from anywhere with Ctrl+Shift+K')
+		).not.toHaveTextContent('Ctrl+Shift+K')
 	})
 
 	it('names no shortcut before the first scenario exists', () => {

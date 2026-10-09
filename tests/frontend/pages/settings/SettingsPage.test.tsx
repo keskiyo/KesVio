@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SettingsPage } from '../../../../src/pages/settings/ui/SettingsPage'
@@ -23,6 +23,11 @@ describe('SettingsPage', () => {
 		getSettings: vi.fn().mockResolvedValue(settings),
 		setScanSettings: vi.fn().mockImplementation(async value => value),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
+		setGlobalShortcut: vi.fn().mockResolvedValue({
+			available: true,
+			label: 'Win+Shift+Q',
+			error: null,
+		}),
 		setStartupEnabled: vi
 			.fn()
 			.mockImplementation(async enabled =>
@@ -53,6 +58,159 @@ describe('SettingsPage', () => {
 		install: vi.fn().mockResolvedValue(undefined),
 		setAutomaticChecks: vi.fn(),
 		...overrides,
+	})
+
+	it('lists the editable global shortcut and the three fixed shortcuts', async () => {
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcuts = await screen.findByRole('region', {
+			name: 'Keyboard shortcuts',
+		})
+		const catalog = screen.getByRole('region', { name: 'Catalog' })
+		expect(within(shortcuts).getByText('Win+Shift+Q')).toBeVisible()
+		expect(within(shortcuts).getByText('Show KesVio')).toBeVisible()
+		expect(within(shortcuts).getByText('Search')).toBeVisible()
+		expect(within(shortcuts).getByText('Ctrl+F')).toBeVisible()
+		expect(within(shortcuts).getByText('Quick launcher')).toBeVisible()
+		expect(within(shortcuts).getByText('Ctrl+K')).toBeVisible()
+		expect(within(shortcuts).getByText('Scenario launcher')).toBeVisible()
+		expect(within(shortcuts).getByText('Ctrl+Shift+K')).toBeVisible()
+		expect(
+			within(shortcuts).getByRole('button', {
+				name: 'Change global shortcut, currently Win+Shift+Q',
+			}),
+		).toHaveTextContent('Change')
+		const globalShortcut = within(shortcuts).getByRole('group', {
+			name: 'Global shortcut',
+		})
+		expect(within(globalShortcut).getByText('Win+Shift+Q')).toBeVisible()
+		expect(
+			within(globalShortcut).getByRole('button', {
+				name: 'Change global shortcut, currently Win+Shift+Q',
+			}),
+		).toBeVisible()
+		expect(shortcuts.compareDocumentPosition(catalog)).toBe(
+			Node.DOCUMENT_POSITION_FOLLOWING,
+		)
+	})
+
+	it('captures and saves a valid global shortcut', async () => {
+		const setGlobalShortcut = vi.fn().mockResolvedValue({
+			available: true,
+			label: 'Ctrl+Alt+P',
+			error: null,
+		})
+		const client = { ...systemClient(), setGlobalShortcut }
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, {
+			key: 'p',
+			code: 'KeyP',
+			ctrlKey: true,
+			altKey: true,
+		})
+
+		expect(setGlobalShortcut).toHaveBeenCalledWith({
+			win: false,
+			ctrl: true,
+			alt: true,
+			shift: false,
+			key: 'KeyP',
+		})
+		expect(await screen.findByText('Ctrl+Alt+P')).toBeVisible()
+	})
+
+	it('keeps reserved in-app shortcuts out of the global binding', async () => {
+		const setGlobalShortcut = vi.fn()
+		const client = { ...systemClient(), setGlobalShortcut }
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, {
+			key: 'k',
+			code: 'KeyK',
+			ctrlKey: true,
+		})
+
+		expect(setGlobalShortcut).not.toHaveBeenCalled()
+		expect(
+			screen.getByText('Use A-Z, 0-9 or F1-F12 with Win, Ctrl or Alt.'),
+		).toBeVisible()
+	})
+
+	it('cancels capture and restores the default shortcut', async () => {
+		const setGlobalShortcut = vi.fn().mockResolvedValue({
+			available: true,
+			label: 'Win+Shift+Q',
+			error: null,
+		})
+		const client = {
+			...systemClient(),
+			getSettings: vi.fn().mockResolvedValue({
+				...settings,
+				shortcut: {
+					available: true,
+					label: 'Ctrl+Alt+P',
+					error: null,
+				},
+			}),
+			setGlobalShortcut,
+		}
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Ctrl+Alt+P',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, { key: 'Escape', code: 'Escape' })
+		expect(setGlobalShortcut).not.toHaveBeenCalled()
+
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Restore default shortcut' }),
+		)
+
+		expect(setGlobalShortcut).toHaveBeenCalledWith({
+			win: true,
+			ctrl: false,
+			alt: false,
+			shift: true,
+			key: 'KeyQ',
+		})
 	})
 
 	it('opens the Windows installed apps settings page', async () => {
@@ -147,7 +305,7 @@ describe('SettingsPage', () => {
 		await screen.findByText('Win+Shift+Q')
 
 		for (const description of [
-			'Works in any keyboard layout.',
+			'Works from anywhere in Windows.',
 			'Open Windows Settings.',
 		]) {
 			expect(screen.getByText(description)).toBeInTheDocument()
@@ -593,6 +751,11 @@ describe('SettingsPage', () => {
 				.fn()
 				.mockImplementation(async settings => settings),
 			setCloseBehavior: vi.fn().mockImplementation(async value => value),
+			setGlobalShortcut: vi.fn().mockResolvedValue({
+				available: true,
+				label: 'Win+Shift+Q',
+				error: null,
+			}),
 			savePreferencesBackup: vi.fn().mockResolvedValue(true),
 			exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 			previewDiagnosticsLog: vi
@@ -664,6 +827,11 @@ describe('SettingsPage', () => {
 				.fn()
 				.mockImplementation(async settings => settings),
 			setCloseBehavior: vi.fn().mockImplementation(async value => value),
+			setGlobalShortcut: vi.fn().mockResolvedValue({
+				available: true,
+				label: 'Win+Shift+Q',
+				error: null,
+			}),
 			savePreferencesBackup: vi.fn().mockResolvedValue(true),
 			exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
 			previewDiagnosticsLog: vi

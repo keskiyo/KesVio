@@ -183,10 +183,24 @@ describe('IPC wire contract', () => {
 			expectWireShape(settings, declared, 'SystemSettings')
 			expectWireShape(settings.scanSettings, scanSettings, 'ScanSettings')
 			expectWireShape(
+				contract.commands.set_global_shortcut,
+				{ ...declared.shortcut },
+				'GlobalShortcutStatus',
+			)
+			expectWireShape(
 				contract.commands.set_scan_settings,
 				scanSettings,
 				'ScanSettings',
 			)
+		})
+
+		it('records global shortcut failures as stable error codes', () => {
+			for (const code of [
+				'INVALID_GLOBAL_SHORTCUT',
+				'GLOBAL_SHORTCUT_UNAVAILABLE',
+				'SAVE_GLOBAL_SHORTCUT_FAILED',
+			])
+				expect(contract.errorCodes).toContain(code)
 		})
 
 		it('answers the startup switch with the state Windows now holds', () => {

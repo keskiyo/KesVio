@@ -7,6 +7,7 @@ import type { UndoEntry } from './undo'
 import type {
 	AppHydrationPatch,
 	AppInfo,
+	AppLaunchStats,
 	AppView,
 	CatalogArtifactKind,
 	CatalogDelta,
@@ -49,6 +50,8 @@ export interface AppState {
 	firstSeenAt: Record<string, number>
 	firstSeenVolumes: Record<string, string>
 	savedFilters: SavedFilter[]
+	appLaunchStats: AppLaunchStats
+	launchHistorySince: number
 	activeSavedFilterId: string | null
 	legacyCanonicalPreferences: LegacyCanonicalPreferences
 	unknownPreferenceFields: Record<string, unknown>
@@ -78,11 +81,13 @@ export interface AppState {
 	hydrateVisibleIcons(ids: string[]): Promise<void>
 	cancelScan(): Promise<void>
 	launch(app: AppInfo): Promise<void>
+	launchElevated(app: AppInfo): Promise<void>
 	closeApps(ids: string[], allowForce?: boolean): Promise<CloseAppsResult>
 	createScenario(
 		name: string,
 	): { ok: true; id: string } | { ok: false; error: string }
 	setScenarioForceClose(id: string, forceClose: boolean): boolean
+	setScenarioDriveTrigger(id: string, volumeId: string | null): boolean
 	renameScenario(
 		id: string,
 		name: string,

@@ -7,6 +7,7 @@ import { DialogActions } from './DialogActions'
 import type { AppInfoDialogProps } from './types'
 import { useAppDetails } from '../../model/useAppDetails'
 import { useAppInfoActions } from '../../model/useAppInfoActions'
+import { useFolderSize } from '../../model/useFolderSize'
 
 export function AppInfoDialog({
 	app,
@@ -25,7 +26,8 @@ export function AppInfoDialog({
 		app.id,
 		appsClient,
 	)
-	const actions = useAppInfoActions({ app, details, appsClient })
+	const actions = useAppInfoActions({ app, details })
+	const folder = useFolderSize(app.id, appsClient)
 	const hasKnownPackageInstallLocation =
 		app.sourceKind === 'msix' && Boolean(app.installLocation?.trim())
 	const hasPackageLaunchTarget = app.launchKind === 'app_user_model_id'
@@ -52,12 +54,16 @@ export function AppInfoDialog({
 				/>
 				<div className="mt-5 space-y-4">
 					<DialogActions
-						canOpenFolder={details?.canOpenFolder ?? false}
-						isOpeningFolder={actions.isOpeningFolder}
 						message={actions.message}
-						onCopyPath={actions.copyPath}
 						onCopyReport={actions.copyReport}
-						onOpenFolder={actions.openFolder}
+						folder={{
+							offered:
+								folder.available &&
+								details?.canOpenFolder === true,
+							measuring: folder.measuring,
+							label: folder.label,
+							onMeasure: folder.measure,
+						}}
 					/>
 					{error ? (
 						<div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-(--border-neutral) bg-(--surface-inset) px-4 py-3 text-sm text-(--text-muted)">

@@ -8,6 +8,7 @@ import type {
 	CatalogSnapshot,
 	CloseAppsResult,
 	CloseProgress,
+	FolderSize,
 	LaunchStatus,
 	ScanProgress,
 } from '../model/app.types'
@@ -42,10 +43,18 @@ export const tauriAppsClient: AppsClient = {
 	cancelScan: () =>
 		isTauriRuntime() ? invokeTauri<void>('cancel_scan') : Promise.resolve(),
 	launchApp: app => invokeIfTauri<void>('launch_app', { id: app.id }),
+	launchAppElevated: app =>
+		invokeIfTauri<void>('launch_app_elevated', { id: app.id }),
+	canLaunchElevated: app =>
+		isTauriRuntime()
+			? invokeTauri<boolean>('can_launch_elevated', { id: app.id })
+			: Promise.resolve(false),
 	closeApps: (ids, allowForce = false) =>
 		invokeIfTauri<CloseAppsResult>('close_apps', { ids, allowForce }),
 	getAppDetails: id => invokeIfTauri<AppDetails>('get_app_details', { id }),
 	openAppFolder: id => invokeIfTauri<void>('open_app_folder', { id }),
+	measureAppFolder: id =>
+		invokeIfTauri<FolderSize>('measure_app_folder', { id }),
 	async onCatalogDelta(handler) {
 		return listenIfTauri<CatalogDelta>('catalog://delta', handler)
 	},

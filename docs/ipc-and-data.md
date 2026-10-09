@@ -40,6 +40,38 @@ and bounded interface-failure reporting. Commands return
 safe messages. Internal paths, commands, registry values and upstream errors
 never reach the webview.
 
+`launch_app_elevated` takes one catalog id and starts the stored target through
+the shell's `runas` verb, so Windows shows its consent prompt. An executable or
+shortcut on disk is started directly; an AppUserModelId is started as
+`shell:AppsFolder\<id>`, the item the Start menu itself elevates. A URI target,
+or an item whose shell entry has no `runas` verb, is answered with
+`LAUNCH_UNAVAILABLE`, a dismissed prompt with `LAUNCH_CANCELLED`, and any other
+shell failure with `OPERATION_FAILED`. `can_launch_elevated` takes the same id
+and answers whether that verb exists — true for files on disk, and for an
+AppUserModelId only when the shell item's context menu lists canonical `runas`
+(`src-tauri/src/platform/windows/execution/launcher/elevation.rs`). Nothing
+about the target crosses back to the webview.
+
+`volumes://arrived` carries `{ volumeIds }` — the 8-hex-digit serials of
+tracked removable volumes that just arrived — and is emitted after the catalog
+refresh that the arrival started, so the apps on the drive are already in the
+catalog when a scenario bound to it runs. Untracked drives are never named. A
+scenario's optional `triggerVolumeId` (schema 24) holds one such serial; a value
+that is not eight hex digits is dropped on read.
+
+`get_window_backdrop` takes nothing and answers `mica` or `solid`, whichever
+the backend applied to the main window at setup.
+
+`set_global_shortcut` accepts booleans for Win, Ctrl, Alt and Shift plus one
+physical key code from `KeyA`-`KeyZ`, `Digit0`-`Digit9` or `F1`-`F12`. At least
+one of Win, Ctrl or Alt is required; `Ctrl+F`, `Ctrl+K` and `Ctrl+Shift+K` are
+reserved for fixed in-app actions. The backend validates the bounded payload,
+registers the candidate before releasing the active shortcut, persists it, and
+returns the same `GlobalShortcutStatus` shape as `get_system_settings`.
+Validation, Windows conflicts and write failures use
+`INVALID_GLOBAL_SHORTCUT`, `GLOBAL_SHORTCUT_UNAVAILABLE` and
+`SAVE_GLOBAL_SHORTCUT_FAILED`.
+
 `set_startup_enabled` takes one boolean and answers with the startup state
 Windows now holds (`enabled`, `disabled` or `missing`), which
 `get_system_settings` also reports as `startupEntry`. It flips only the
@@ -201,13 +233,14 @@ or a second ordinary launch.
 
 ## Persisted stores
 
-Three stores contain user data:
+Four stores contain user data:
 
-| Store         | Owner                          | Rules                                                                                                                                |
-| ------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Catalog cache | `catalog/storage/cache/`       | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                |
-| Preferences   | `src/app/store/preferences.ts` | Versioned `localStorage` document (schema 23) for categories, marks, scenarios, first-seen data, catalog density and unknown fields. |
-| Window state  | `lifecycle/window_state/`      | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                           |
+| Store           | Owner                                         | Rules                                                                                                                                                |
+| --------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog cache   | `catalog/storage/cache/`                      | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                                |
+| Preferences     | `src/app/store/preferences.ts`                | Versioned `localStorage` document (schema 24) for categories, marks, scenarios, first-seen data, launch history, catalog density and unknown fields. |
+| Window state    | `lifecycle/window_state/`                     | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                                           |
+| Global shortcut | `platform/windows/shortcuts/global_shortcut/` | Versioned `global-shortcut.json`; one validated physical-key binding, written through a temporary file and replaced only after Windows accepts it.   |
 
 Window state is presentation-only and deliberately disposable: a missing,
 malformed or newer-versioned document restores nothing, the window opens at the
@@ -245,6 +278,23 @@ records of an unmounted volume, so the answer has to survive a restart.
 schema 23 upgrade with an empty map, and an entry without a stamp, a non-string
 id or an id over 64 characters is dropped on read.
 
+Schema 24 adds `appLaunchStats` — per identity, how many times an app was
+launched through KesVio and when last — and `launchHistorySince`, the moment
+tracking began. A successful ordinary or administrator launch from a card, the
+palette or the tray records it (`src/app/store/actions/launchActions.ts`); a
+failed launch never does. The map follows identity rekeys like `firstSeenAt`, keeps the 500 most
+recently launched entries, and drops an entry whose count is not a positive
+integer or whose date is not a positive finite number. Documents written before
+schema 24 upgrade with an empty map and no start date; the store stamps the
+start on load, so "not launched for N days" never counts time before tracking
+existed. Both travel with export, import and the local backup.
+
+`measure_app_folder(id)` answers `{ bytes, files, complete }` for the folder
+`open_app_folder` would open, walked off the async runtime without following
+links and stopped after 200 000 entries or ten seconds; `complete: false`
+reports a total that stopped early or skipped unreadable entries. An unknown id
+or an app without a folder is `OPEN_FOLDER_UNAVAILABLE`.
+
 Schema 19 adds `lastRunAt` to a scenario. Documents written before it upgrade
 unstamped rather than being stamped with the migration time, which would claim
 every scenario ran at once and reorder the tray and the Recent filter around a
@@ -262,8 +312,8 @@ same rather than throwing.
 
 Everything KesVio writes itself lives beside the executable. `paths/` resolves
 `<install folder>\KesVioData` once per process: when that directory accepts a
-write, `KesVioData\data` holds the catalog cache, scan settings and window
-state, and `KesVioData\logs` holds the diagnostics log. A root that already
+write, `KesVioData\data` holds the catalog cache, scan settings, global shortcut
+and window state, and `KesVioData\logs` holds the diagnostics log. A root that already
 contains `data` or `logs` is one this copy has written before, so it is adopted on
 sight without any probe. A binary that repeatedly writes and deletes a file inside
 its own install directory is a dropper pattern, and the answer to "may I write
@@ -318,7 +368,7 @@ the scan settings and the window state. `tests/frontend/config/installerHooks.te
 holds that contract.
 
 A small store also refuses to rewrite itself with the value it already holds.
-`scan-settings.json` and `window-state.json` compare the parsed document against
+`scan-settings.json`, `window-state.json` and `global-shortcut.json` compare the parsed document against
 what is about to be written and return early when they match, so toggling a
 setting back and forth, or closing a window that never moved, leaves the file and
 its timestamp alone. A document that is missing, malformed or written at an

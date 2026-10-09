@@ -5,6 +5,7 @@ export interface ScenarioAppSnapshot {
 
 export interface Scenario {
 	forceClose?: boolean
+	triggerVolumeId?: string
 	id: string
 	name: string
 	launchIdentities: string[]

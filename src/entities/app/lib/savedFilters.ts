@@ -1,9 +1,9 @@
-import { appIdentity } from './appIdentity'
 import type { AppInfo, AppSourceKind } from '../model/app.types'
 
 export const MAX_SAVED_FILTERS = 20
 export const MAX_SAVED_FILTER_NAME_LENGTH = 64
 const MAX_ADDED_WITHIN_DAYS = 365
+const MAX_UNUSED_FOR_DAYS = 3650
 
 export const SAVED_FILTER_SOURCES: readonly AppSourceKind[] = [
 	'registry',
@@ -30,11 +30,14 @@ export const AVAILABILITY_BUCKET_LABELS: Record<AvailabilityBucket, string> = {
 
 export const ADDED_WITHIN_CHOICES = [1, 7, 30, 90] as const
 
+export const UNUSED_FOR_CHOICES = [30, 90, 180, 365] as const
+
 export interface SavedFilterCriteria {
 	sources: AppSourceKind[]
 	publishers: string[]
 	availability: AvailabilityBucket[]
 	addedWithinDays: number | null
+	unusedForDays: number | null
 }
 
 export interface SavedFilter {
@@ -48,9 +51,17 @@ export const EMPTY_CRITERIA: SavedFilterCriteria = {
 	publishers: [],
 	availability: [],
 	addedWithinDays: null,
+	unusedForDays: null,
 }
 
-const DAY_MS = 86_400_000
+function dayCount(value: unknown, max: number): number | null {
+	return typeof value === 'number' &&
+		Number.isInteger(value) &&
+		value >= 1 &&
+		value <= max
+		? value
+		: null
+}
 
 function uniqueStrings(value: unknown, keep: (item: string) => boolean) {
 	if (!Array.isArray(value)) return []
@@ -72,7 +83,6 @@ export function normalizeCriteria(value: unknown): SavedFilterCriteria {
 		value && typeof value === 'object' && !Array.isArray(value)
 			? (value as Record<string, unknown>)
 			: {}
-	const days = raw.addedWithinDays
 	return {
 		sources: uniqueStrings(raw.sources, item =>
 			SAVED_FILTER_SOURCES.includes(item as AppSourceKind),
@@ -81,13 +91,8 @@ export function normalizeCriteria(value: unknown): SavedFilterCriteria {
 		availability: uniqueStrings(raw.availability, item =>
 			AVAILABILITY_BUCKETS.includes(item as AvailabilityBucket),
 		) as AvailabilityBucket[],
-		addedWithinDays:
-			typeof days === 'number' &&
-			Number.isInteger(days) &&
-			days >= 1 &&
-			days <= MAX_ADDED_WITHIN_DAYS
-				? days
-				: null,
+		addedWithinDays: dayCount(raw.addedWithinDays, MAX_ADDED_WITHIN_DAYS),
+		unusedForDays: dayCount(raw.unusedForDays, MAX_UNUSED_FOR_DAYS),
 	}
 }
 
@@ -110,70 +115,8 @@ export function isEmptyCriteria(criteria: SavedFilterCriteria): boolean {
 		criteria.sources.length === 0 &&
 		criteria.publishers.length === 0 &&
 		criteria.availability.length === 0 &&
-		criteria.addedWithinDays === null
-	)
-}
-
-export function savedFilterSources(app: AppInfo): AppSourceKind[] {
-	return app.platformKind === 'steam' && app.sourceKind !== 'steam'
-		? [app.sourceKind, 'steam']
-		: [app.sourceKind]
-}
-
-export function availabilityBucket(app: AppInfo): AvailabilityBucket | null {
-	const reason = app.targetAvailability ?? ''
-	if (reason === 'target.present') return 'present'
-	if (reason.startsWith('target.not_applicable.')) return 'not_applicable'
-	if (reason.startsWith('target.unverifiable.')) return 'unverifiable'
-	return null
-}
-
-export function matchesSavedFilter(
-	app: AppInfo,
-	criteria: SavedFilterCriteria,
-	firstSeenAt: number | undefined,
-	now: number,
-): boolean {
-	if (criteria.sources.length) {
-		const sources = savedFilterSources(app)
-		if (!criteria.sources.some(source => sources.includes(source)))
-			return false
-	}
-	if (criteria.publishers.length) {
-		const publisher = (app.publisher ?? '').trim().toLocaleLowerCase()
-		if (
-			!publisher ||
-			!criteria.publishers.some(
-				entry => entry.toLocaleLowerCase() === publisher,
-			)
-		)
-			return false
-	}
-	if (criteria.availability.length) {
-		const bucket = availabilityBucket(app)
-		if (!bucket || !criteria.availability.includes(bucket)) return false
-	}
-	if (criteria.addedWithinDays !== null) {
-		if (
-			firstSeenAt === undefined ||
-			!Number.isFinite(firstSeenAt) ||
-			firstSeenAt > now
-		)
-			return false
-		if (now - firstSeenAt > criteria.addedWithinDays * DAY_MS) return false
-	}
-	return true
-}
-
-export function applySavedFilter(
-	apps: AppInfo[],
-	criteria: SavedFilterCriteria,
-	firstSeenAt: Record<string, number>,
-	now: number,
-): AppInfo[] {
-	if (isEmptyCriteria(criteria)) return apps
-	return apps.filter(app =>
-		matchesSavedFilter(app, criteria, firstSeenAt[appIdentity(app)], now),
+		criteria.addedWithinDays === null &&
+		criteria.unusedForDays === null
 	)
 }
 

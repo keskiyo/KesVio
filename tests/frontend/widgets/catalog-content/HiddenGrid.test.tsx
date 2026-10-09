@@ -54,6 +54,7 @@ function props(apps: AppInfo[], onBack = vi.fn()) {
 		onMoveApp: vi.fn(),
 		onInfo: vi.fn(),
 		onManageInWindows: vi.fn(),
+		fileActions: { openFolder: vi.fn(), copyPath: vi.fn() },
 		onHide: vi.fn(),
 		onRestore: vi.fn(),
 		onRestoreAll: vi.fn(),

@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { AppInfo, AppView, SearchScopeCounts } from '../../entities/app'
 import type { AppCategory, CategoryDefinition } from '../../entities/category'
 import type { Scenario } from '../../entities/scenario'
+import type { AppFileActions } from '../../features/app-actions'
 
 export interface SearchScopeArea {
 	key: keyof SearchScopeCounts
@@ -46,6 +47,7 @@ export interface AuxiliaryGridProps {
 	onMoveApp(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void
 	onManageInWindows(): Promise<void>
+	fileActions: AppFileActions
 	onPromote(id: string): void
 	onDemote(id: string): void
 }
@@ -61,6 +63,7 @@ export interface CatalogGridProps {
 	onMoveApp(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void
 	onManageInWindows(): Promise<void>
+	fileActions: AppFileActions
 	onHide(id: string): void
 	onRestore(id: string): void
 	onDemote(id: string): void

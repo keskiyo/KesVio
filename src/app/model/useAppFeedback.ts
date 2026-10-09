@@ -1,7 +1,9 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { toast } from 'sonner'
 import { toAppClientError } from '../../shared/api/tauri/errors'
+import { copyToClipboard } from '../../shared/lib/clipboard'
 import type { AppInfo } from '../../entities/app'
+import type { AppFileActions } from '../../features/app-actions'
 import {
 	scenarioRunSummaryMessage,
 	type ScenarioRunSummary,
@@ -10,6 +12,8 @@ import {
 interface AppFeedbackOptions {
 	onLaunch(app: AppInfo): Promise<void>
 	onOpenFolder(id: string): Promise<void>
+	onLaunchElevated?(app: AppInfo): Promise<void>
+	onCanLaunchElevated?(app: AppInfo): Promise<boolean>
 	onRefresh(): Promise<void>
 	onFullScan(): Promise<void>
 	onUndo(): { ok: true } | { ok: false; error: string }
@@ -32,6 +36,8 @@ async function reportScan(run: () => Promise<void>) {
 export function useAppFeedback({
 	onLaunch,
 	onOpenFolder,
+	onLaunchElevated,
+	onCanLaunchElevated,
 	onRefresh,
 	onFullScan,
 	onUndo,
@@ -64,6 +70,66 @@ export function useAppFeedback({
 		[onOpenFolder],
 	)
 
+	const copyPath = useCallback(async (app: AppInfo) => {
+		try {
+			await copyToClipboard(app.path)
+			toast.success('Path copied')
+		} catch {
+			toast.error('Could not copy the path')
+		}
+	}, [])
+
+	const launchElevated = useCallback(
+		async (app: AppInfo) => {
+			if (!onLaunchElevated) return
+			try {
+				await onLaunchElevated(app)
+				toast.success(`${app.name} launched as administrator`)
+			} catch (error) {
+				if (toAppClientError(error).code === 'LAUNCH_CANCELLED')
+					toast.info('Launch cancelled')
+				else
+					toast.error(`Could not launch ${app.name} as administrator`)
+			}
+		},
+		[onLaunchElevated],
+	)
+
+	const elevationAnswers = useRef(new Map<string, Promise<boolean>>())
+	const canLaunchElevated = useCallback(
+		(app: AppInfo) => {
+			if (!onCanLaunchElevated) return Promise.resolve(false)
+			const known = elevationAnswers.current.get(app.id)
+			if (known) return known
+			const answer = onCanLaunchElevated(app).catch(() => {
+				elevationAnswers.current.delete(app.id)
+				return false
+			})
+			elevationAnswers.current.set(app.id, answer)
+			return answer
+		},
+		[onCanLaunchElevated],
+	)
+
+	const fileActions = useMemo<AppFileActions>(
+		() => ({
+			openFolder,
+			copyPath,
+			launchElevated: onLaunchElevated ? launchElevated : undefined,
+			canLaunchElevated: onCanLaunchElevated
+				? canLaunchElevated
+				: undefined,
+		}),
+		[
+			openFolder,
+			copyPath,
+			launchElevated,
+			onLaunchElevated,
+			canLaunchElevated,
+			onCanLaunchElevated,
+		],
+	)
+
 	const refresh = useCallback(() => reportScan(onRefresh), [onRefresh])
 	const fullScan = useCallback(() => reportScan(onFullScan), [onFullScan])
 
@@ -85,5 +151,13 @@ export function useAppFeedback({
 		else toast.success(message)
 	}, [])
 
-	return { launch, openFolder, refresh, fullScan, reportScenarioRun, undo }
+	return {
+		launch,
+		openFolder,
+		fileActions,
+		refresh,
+		fullScan,
+		reportScenarioRun,
+		undo,
+	}
 }

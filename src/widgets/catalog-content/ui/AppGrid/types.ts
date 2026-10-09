@@ -7,6 +7,7 @@ import type {
 	AppCategory,
 	CategoryDefinition,
 } from '../../../../entities/category'
+import type { AppFileActions } from '../../../../features/app-actions'
 import type { FavoriteScenariosPanel } from '../../types'
 
 export interface AppGridProps {
@@ -35,6 +36,7 @@ export interface AppGridProps {
 	onInfo(app: AppInfo): void
 	onOpenFolder(app: AppInfo): Promise<void>
 	onManageInWindows(): Promise<void>
+	fileActions: AppFileActions
 	onHide(id: string): void
 	onRestore(id: string): void
 	onRestoreAll(ids: string[]): void

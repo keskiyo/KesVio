@@ -103,11 +103,14 @@ cargo test --manifest-path src-tauri/Cargo.toml
 
 `CI Verify` (`verify.yml`) runs on pull requests and `master`:
 
-- frontend: `npm ci`, lint, formatting check, typecheck, coverage test run and
-  production build;
+- frontend: `npm ci`, lint, formatting check, typecheck, coverage test run,
+  production build and the entry bundle budget (`npm run verify:bundle`: the
+  module entry named in `dist/index.html` must stay within 600 kB; lazy page
+  chunks and the search package corpus are not counted);
 - backend: tests on `windows-latest` and `windows-2022`, plus format and Clippy;
 - MSRV: compile at the `rust-version` declared in `src-tauri/Cargo.toml`;
-- contracts: frontend/platform boundaries, the documentation gate, release-script
+- contracts: frontend/platform boundaries, the `// SAFETY:` rationale beside
+  every `unsafe` (`scripts/verify-unsafe-safety.ps1`), the documentation gate, release-script
   tests, dependency audit gates and the third-party license gate, including
   updater-signature fixtures, and the safety contract of the native smoke
   harness.
@@ -144,9 +147,10 @@ and installed stores, the WebView2 profile under `EBWebView` included. Every
 build shares the `keskiyo.kesvio` identifier, so the smoke process would
 otherwise open the installed copy's WebView2 profile — the `localStorage` that
 holds the user's preferences — and prune them against the fixture catalog; the
-harness launches it with `WEBVIEW2_USER_DATA_FOLDER` pointing inside its
-workspace, which the WebView2 runtime uses in place of the folder the
-application passes, and records that the profile was created there.
+harness launches it with `WEBVIEW2_USER_DATA_FOLDER` and `LOCALAPPDATA`
+pointing inside its workspace. This isolates the WebView2 profile and keeps
+the fixture folder outside the portable scanner's standard profile exclusions;
+the harness records that the profile was created there.
 Evidence is written to `.1localDocuments/native-smoke-<stamp>.json`. It stops
 only the process it started, after checking its path lies in the workspace,
 and deletes only that workspace; `scripts/test-run-native-smoke.ps1` holds it
@@ -230,6 +234,10 @@ content in the `contracts` job. Runs for one tag are serialized by a
 Published tags are immutable; corrections use a new patch version. The project
 source is MIT-licensed; third-party notices are recorded in
 `THIRD_PARTY_NOTICES.md`.
+
+## Runtime measurement
+
+`scripts/measure-runtime.ps1` prints one JSON line with the private memory and working set of KesVio plus its own `msedgewebview2` processes; applications KesVio launched are its children too and are excluded. Pass `-ProcessName app` for a dev build and `-LogDirectory <folder>` to add the last `Frontend ready: Nms` value from the log. The numbers are reported in change notes and compared before and after a change; tests never assert timings or memory.
 
 ## Search-alias maintenance
 

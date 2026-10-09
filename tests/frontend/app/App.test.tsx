@@ -102,6 +102,13 @@ function renderApp(
 		}),
 		setScanSettings: vi.fn().mockImplementation(async settings => settings),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
+		setGlobalShortcut:
+			systemOverrides.setGlobalShortcut ??
+			vi.fn().mockResolvedValue({
+				available: true,
+				label: 'Win+Shift+Q',
+				error: null,
+			}),
 		setStartupEnabled: vi.fn().mockResolvedValue('disabled'),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),
@@ -612,7 +619,7 @@ describe('App', () => {
 		)
 		expect(store.getState().activeView).toBe('catalog_health')
 		expect(
-			screen.getByRole('heading', { name: 'Catalog Health' }),
+			await screen.findByRole('heading', { name: 'Catalog Health' }),
 		).toBeInTheDocument()
 		expect(
 			screen.queryByRole('button', { name: 'Launch Steam' }),
@@ -634,7 +641,7 @@ describe('App', () => {
 		)
 		expect(store.getState().activeView).toBe('backup_restore')
 		expect(
-			screen.getByRole('heading', { name: 'Backup & Restore' }),
+			await screen.findByRole('heading', { name: 'Backup & Restore' }),
 		).toBeInTheDocument()
 		expect(
 			screen.queryByRole('button', { name: 'Launch Steam' }),

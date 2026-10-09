@@ -28,6 +28,11 @@ const client: SystemClient = {
 	}),
 	setScanSettings: vi.fn(),
 	setCloseBehavior: vi.fn().mockImplementation(async value => value),
+	setGlobalShortcut: vi.fn().mockResolvedValue({
+		available: true,
+		label: 'Win+Shift+Q',
+		error: null,
+	}),
 	setStartupEnabled: vi
 		.fn()
 		.mockImplementation(async enabled =>
@@ -121,6 +126,64 @@ describe('useSystemSettings', () => {
 
 		expect(setStartupEnabled).toHaveBeenCalledWith(true)
 		expect(result.current.settings?.startupEntry).toBe('disabled')
+	})
+
+	it('stores the global shortcut status the backend answers', async () => {
+		const setGlobalShortcut = vi.fn().mockResolvedValue({
+			available: true,
+			label: 'Ctrl+Alt+P',
+			error: null,
+		})
+		const shortcutClient = { ...client, setGlobalShortcut }
+		const { result } = renderHook(() =>
+			useSystemSettings({ client: shortcutClient }),
+		)
+		await waitFor(() => expect(result.current.settings).not.toBeNull())
+
+		await act(() =>
+			result.current.setGlobalShortcut({
+				win: false,
+				ctrl: true,
+				alt: true,
+				shift: false,
+				key: 'KeyP',
+			}),
+		)
+
+		expect(result.current.settings?.shortcut.label).toBe('Ctrl+Alt+P')
+	})
+
+	it('keeps the old global shortcut when registration fails', async () => {
+		const shortcutClient = {
+			...client,
+			setGlobalShortcut: vi
+				.fn()
+				.mockRejectedValue(
+					new AppClientError(
+						'GLOBAL_SHORTCUT_UNAVAILABLE',
+						'That shortcut is already in use. Choose another one.',
+					),
+				),
+		}
+		const { result } = renderHook(() =>
+			useSystemSettings({ client: shortcutClient }),
+		)
+		await waitFor(() => expect(result.current.settings).not.toBeNull())
+
+		await act(() =>
+			result.current.setGlobalShortcut({
+				win: true,
+				ctrl: false,
+				alt: false,
+				shift: false,
+				key: 'KeyP',
+			}),
+		)
+
+		expect(result.current.settings?.shortcut.label).toBe('Win+Shift+Q')
+		expect(result.current.error).toBe(
+			'That shortcut is already in use. Choose another one.',
+		)
 	})
 
 	it('reports a startup toggle failure under the settings area and keeps the old state', async () => {

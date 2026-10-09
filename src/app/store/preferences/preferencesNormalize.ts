@@ -1,3 +1,4 @@
+import { normalizeLaunchStats } from '../../../entities/app'
 import {
 	normalizeDefinitions,
 	normalizeDensity,
@@ -9,7 +10,7 @@ import {
 } from './preferencesFields'
 import { normalizeScenarios } from './preferencesScenarios'
 import {
-	type AppPreferencesV23,
+	type AppPreferencesV24,
 	DEFAULT_PREFERENCES,
 	type LegacyCanonicalPreferences,
 } from './preferencesSchema'
@@ -37,8 +38,16 @@ const KNOWN_PREFERENCE_FIELDS = new Set([
 	'firstSeenAt',
 	'firstSeenVolumes',
 	'savedFilters',
+	'appLaunchStats',
+	'launchHistorySince',
 	'legacyCanonicalPreferences',
 ])
+
+function normalizeMoment(value: unknown): number | null {
+	return typeof value === 'number' && Number.isFinite(value) && value > 0
+		? value
+		: null
+}
 
 function readLegacy(
 	raw: Record<string, unknown>,
@@ -75,7 +84,7 @@ function readLegacy(
 	}
 }
 
-export function normalizePreferences(value: unknown): AppPreferencesV23 {
+export function normalizePreferences(value: unknown): AppPreferencesV24 {
 	if (!value || typeof value !== 'object')
 		return structuredClone(DEFAULT_PREFERENCES)
 	const raw = value as Record<string, unknown>
@@ -99,6 +108,7 @@ export function normalizePreferences(value: unknown): AppPreferencesV23 {
 	const hasScenarios = version >= 11
 	const hasSavedFilters = version >= 20
 	const hasFirstSeenVolumes = version >= 23
+	const hasLaunchHistory = version >= 24
 	const scenarios = hasScenarios ? normalizeScenarios(raw.scenarios) : []
 	const firstSeenAt = hasFirstSeen
 		? normalizeTimestampMap(raw.firstSeenAt)
@@ -109,7 +119,7 @@ export function normalizePreferences(value: unknown): AppPreferencesV23 {
 		),
 	)
 	return {
-		version: 23,
+		version: 24,
 		catalogDensity: normalizeDensity(raw.catalogDensity),
 		categories,
 		categoryOrder,
@@ -155,6 +165,12 @@ export function normalizePreferences(value: unknown): AppPreferencesV23 {
 		savedFilters: hasSavedFilters
 			? normalizeSavedFilters(raw.savedFilters)
 			: [],
+		appLaunchStats: hasLaunchHistory
+			? normalizeLaunchStats(raw.appLaunchStats)
+			: {},
+		launchHistorySince: hasLaunchHistory
+			? normalizeMoment(raw.launchHistorySince)
+			: null,
 		legacyCanonicalPreferences: readLegacy(
 			raw,
 			hasDurableIdentities,

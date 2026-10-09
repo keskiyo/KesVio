@@ -1,5 +1,6 @@
 {
   "commands": {
+    "can_launch_elevated": true,
     "close_apps": {
       "blocked": 1,
       "closed": 2,
@@ -114,6 +115,13 @@
       "startupEntry": "disabled",
       "version": "0.0.0-sample"
     },
+    "get_window_backdrop": "mica",
+    "launch_app_elevated": null,
+    "measure_app_folder": {
+      "bytes": 1300,
+      "complete": true,
+      "files": 3
+    },
     "preview_diagnostics_log": "<diagnostics redacted=\"true\" />",
     "refresh_apps": {
       "apps": [
@@ -191,6 +199,11 @@
     },
     "save_preferences_backup": true,
     "set_close_behavior": true,
+    "set_global_shortcut": {
+      "available": false,
+      "error": "The shortcut has not been registered yet.",
+      "label": "Win+Shift+Q"
+    },
     "set_scan_settings": {
       "autoScanFixedDrives": true,
       "catalogPortableFingerprintV1": true,
@@ -219,8 +232,11 @@
     "CLEAR_ICON_CACHE_FAILED",
     "CLOSE_DATA_UNAVAILABLE",
     "EXPORT_DIAGNOSTICS_FAILED",
+    "GLOBAL_SHORTCUT_UNAVAILABLE",
+    "INVALID_GLOBAL_SHORTCUT",
     "INVALID_HYDRATION_REQUEST",
     "INVALID_RELEASE_VERSION",
+    "LAUNCH_CANCELLED",
     "LAUNCH_DATA_UNAVAILABLE",
     "LAUNCH_UNAVAILABLE",
     "NO_NEWER_COPY",
@@ -230,6 +246,7 @@
     "PRODUCT_NAME_MISSING",
     "RESET_CATALOG_CACHE_FAILED",
     "RESET_ICON_CACHE_FAILED",
+    "SAVE_GLOBAL_SHORTCUT_FAILED",
     "SAVE_PREFERENCES_BACKUP_FAILED",
     "SAVE_SCAN_SETTINGS_FAILED",
     "SAVE_WINDOW_SETTINGS_FAILED",
@@ -339,6 +356,11 @@
       "id": "custom:1"
     },
     "tray://search": null,
-    "tray://show-favorites": null
+    "tray://show-favorites": null,
+    "volumes://arrived": {
+      "volumeIds": [
+        "1a2b3c4d"
+      ]
+    }
   }
 }

@@ -1,6 +1,6 @@
-import { AppWindow, Keyboard, Minimize2 } from 'lucide-react'
+import { AppWindow, Minimize2 } from 'lucide-react'
 import { ACTION_BUTTON_PRIMARY } from '../../../../shared/ui/buttonVariants'
-import { ROW_CHIP, SETTINGS_SECTION_LABEL, SETTINGS_SURFACE } from '../../data'
+import { SETTINGS_SECTION_LABEL, SETTINGS_SURFACE } from '../../data'
 import { CatalogDensityRow } from './CatalogDensityRow'
 import { SettingsRow } from '../components/SettingsRow'
 import { SettingsSectionHeader } from '../components/SettingsSectionHeader'
@@ -55,15 +55,6 @@ export function GeneralSettings({
 				</div>
 				<p className={SETTINGS_SECTION_LABEL}>System</p>
 				<SettingsRow
-					icon={Keyboard}
-					title="Global shortcut"
-					description="Works in any keyboard layout."
-				>
-					<kbd className={ROW_CHIP}>
-						{settings?.shortcut.label ?? 'Win+Shift+Q'}
-					</kbd>
-				</SettingsRow>
-				<SettingsRow
 					icon={AppWindow}
 					title="Windows installed apps"
 					description="Open Windows Settings."
@@ -84,11 +75,6 @@ export function GeneralSettings({
 					onOpenTelegram={onOpenTelegram}
 				/>
 			</div>
-			{settings?.shortcut.error && (
-				<p className="mt-4 text-sm text-amber-700">
-					{settings.shortcut.error}
-				</p>
-			)}
 		</>
 	)
 }

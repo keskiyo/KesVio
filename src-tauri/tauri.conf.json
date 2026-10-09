@@ -2,7 +2,7 @@
 	"$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
 	"productName": "KesVio",
 	"mainBinaryName": "KesVio",
-	"version": "0.5.5",
+	"version": "0.5.6",
 	"identifier": "keskiyo.kesvio",
 	"build": {
 		"frontendDist": "../dist",
@@ -23,7 +23,7 @@
 				"resizable": true,
 				"fullscreen": false,
 				"visible": false,
-				"backgroundColor": "#24262C"
+				"transparent": true
 			}
 		],
 		"security": {

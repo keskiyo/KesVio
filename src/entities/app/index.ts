@@ -19,6 +19,7 @@ export type {
 	CatalogSnapshot,
 	CloseAppsResult,
 	CloseProgress,
+	FolderSize,
 	LaunchStatus,
 	ScanProgress,
 	SourceErrorKind,
@@ -83,6 +84,11 @@ export {
 	isInstaller,
 } from './lib/catalogArtifacts'
 export {
+	canOpenFolderFromMenu,
+	type ElevationSupport,
+	elevationSupport,
+} from './lib/elevation'
+export {
 	CATALOG_DENSITIES,
 	type CatalogDensity,
 	DEFAULT_CATALOG_DENSITY,
@@ -94,19 +100,23 @@ export {
 	rankAppsByQueryTop,
 } from './lib/catalogSearch'
 export { loadKnownPackageIndex } from './lib/search/knownPackageIndex'
+export {
+	type AppLaunchStat,
+	type AppLaunchStats,
+	MAX_LAUNCH_STATS,
+	normalizeLaunchStats,
+	rankByFrecency,
+	recordLaunchStat,
+} from './lib/launchHistory'
 export { type SearchIndex, useSearchIndex } from './model/useSearchIndex'
 export {
 	ADDED_WITHIN_CHOICES,
-	applySavedFilter,
 	AVAILABILITY_BUCKET_LABELS,
 	AVAILABILITY_BUCKETS,
-	availabilityBucket,
 	type AvailabilityBucket,
 	catalogPublishers,
 	EMPTY_CRITERIA,
 	isEmptyCriteria,
-	matchesSavedFilter,
-	savedFilterSources,
 	MAX_SAVED_FILTER_NAME_LENGTH,
 	MAX_SAVED_FILTERS,
 	normalizeCriteria,
@@ -114,7 +124,15 @@ export {
 	SAVED_FILTER_SOURCES,
 	type SavedFilter,
 	type SavedFilterCriteria,
+	UNUSED_FOR_CHOICES,
 } from './lib/savedFilters'
+export {
+	applySavedFilter,
+	availabilityBucket,
+	matchesSavedFilter,
+	savedFilterSources,
+	type SavedFilterUsage,
+} from './lib/savedFilterMatch'
 export {
 	assessCatalogHealth,
 	type CatalogHealthState,

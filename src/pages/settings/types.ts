@@ -4,6 +4,8 @@ import type { UpdaterState } from '../../features/update-app'
 import type { AppInfo, CatalogDensity } from '../../entities/app'
 import type { AppCategory, CategoryDefinition } from '../../entities/category'
 import type {
+	GlobalShortcutBinding,
+	GlobalShortcutStatus,
 	ScanSettings,
 	StartupEntryState,
 	SystemClient,
@@ -61,6 +63,18 @@ export interface GeneralSettingsProps {
 	onOpenTelegram: SystemClient['openTelegram']
 	onOpenAppsSettings: SystemClient['openAppsSettings']
 	onSetStartupEnabled(enabled: boolean): Promise<void>
+}
+
+export interface KeyboardShortcutsProps {
+	shortcut: GlobalShortcutStatus | null
+	saving: boolean
+	onSetGlobalShortcut(binding: GlobalShortcutBinding): Promise<void>
+}
+
+export interface GlobalShortcutRowProps {
+	shortcut: GlobalShortcutStatus | null
+	saving: boolean
+	onSetGlobalShortcut(binding: GlobalShortcutBinding): Promise<void>
 }
 
 export interface StartupSettingsRowProps {

@@ -3,6 +3,7 @@ import type {
 	AppCategory,
 	CategoryDefinition,
 } from '../../../../entities/category'
+import type { AppFileActions } from '../../../../features/app-actions'
 
 export interface CategorySectionProps {
 	category: AppCategory
@@ -18,6 +19,7 @@ export interface CategorySectionProps {
 	onMoveApp(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void
 	onManageInWindows(): Promise<void>
+	fileActions: AppFileActions
 	onHide(id: string): void
 	onRestore(id: string): void
 	onDemote(id: string): void

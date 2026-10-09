@@ -5,7 +5,7 @@ import { categoryLabel } from '../../../../entities/category'
 import { CollapsiblePanel } from '../../../../shared/ui/CollapsiblePanel'
 import { SpotlightLayer } from '../../../../shared/ui/SpotlightLayer'
 import { ArtifactBranch } from './ArtifactBranch'
-import { SUBMENU_PANEL } from './data'
+import { MENU_PANEL } from './data'
 import type { CategorySubmenuProps } from './types'
 
 export function CategorySubmenu({
@@ -30,7 +30,7 @@ export function CategorySubmenu({
 			style={position}
 			role="menu"
 			aria-label={label}
-			className={SUBMENU_PANEL}
+			className={MENU_PANEL}
 		>
 			{categoryOrder.map(category => {
 				const expandable = category === INSTALLERS_DOCS_CATEGORY
@@ -52,7 +52,7 @@ export function CategorySubmenu({
 									: onSelect(category)
 							}
 							{...spotlight}
-							className={`relative flex w-full items-center rounded-lg px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-violet-500 ${category === activeCategory ? 'bg-violet-500/18 font-medium text-violet-300' : 'text-slate-600 hover:bg-slate-500/15'}`}
+							className={`relative flex w-full items-center rounded-lg px-2.5 py-1.5 text-[13px] focus-visible:outline-2 focus-visible:outline-violet-500 sm:px-3 sm:py-2 sm:text-sm ${category === activeCategory ? 'bg-violet-500/18 font-medium text-violet-300' : 'text-slate-600 hover:bg-slate-500/15'}`}
 						>
 							<SpotlightLayer size={60} />
 							<span className="min-w-0 flex-1 text-left">

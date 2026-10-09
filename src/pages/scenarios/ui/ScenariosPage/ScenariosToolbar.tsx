@@ -1,10 +1,6 @@
 import { Search } from 'lucide-react'
-import {
-	LAUNCHER_SHORTCUT,
-	ScenarioFilterBar,
-} from '../../../../features/manage-scenarios'
+import { ScenarioFilterBar } from '../../../../features/manage-scenarios'
 import { countLabel } from '../../../../shared/lib/countLabel'
-import { ShortcutHint } from '../../../../shared/ui/ShortcutHint'
 import type { ScenariosToolbarProps } from './types'
 
 export function ScenariosToolbar({
@@ -43,15 +39,9 @@ export function ScenariosToolbar({
 				onSortChange={onSortChange}
 				onToggleSortDirection={onToggleSortDirection}
 			/>
-			<div className="flex flex-wrap items-center justify-between gap-2">
-				<p aria-live="polite" className="text-xs text-(--text-muted)">
-					{countLabel(resultCount, 'scenario')} shown
-				</p>
-				<ShortcutHint
-					label="Open this list from anywhere with"
-					keys={LAUNCHER_SHORTCUT}
-				/>
-			</div>
+			<p aria-live="polite" className="text-xs text-(--text-muted)">
+				{countLabel(resultCount, 'scenario')} shown
+			</p>
 		</div>
 	)
 }

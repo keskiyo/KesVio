@@ -20,6 +20,11 @@ export {
 } from './lib/scenarioSnapshots'
 export { filterFavoriteScenarios } from './lib/scenarioFavorites'
 export {
+	type DriveTriggerChoice,
+	driveTriggerChoices,
+	scenariosTriggeredBy,
+} from './lib/scenarioDrives'
+export {
 	sortScenariosByName,
 	sortScenariosByNewest,
 	sortScenariosByRecency,

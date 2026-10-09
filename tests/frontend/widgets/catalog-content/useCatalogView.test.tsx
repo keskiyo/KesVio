@@ -4,6 +4,7 @@ import { useCatalogView } from '../../../../src/widgets/catalog-content/model/us
 import {
 	splitHydrationIds,
 	type AppInfo,
+	type AppLaunchStats,
 	type AppView,
 } from '../../../../src/entities/app'
 import { DEFAULT_CATEGORIES } from '../../../../src/entities/category'
@@ -44,6 +45,8 @@ function view(state: {
 	scenarios?: Scenario[]
 	favoriteAppIds?: string[]
 	favoriteScenarioIds?: string[]
+	appLaunchStats?: AppLaunchStats
+	firstSeenAt?: Record<string, number>
 }) {
 	return renderHook(() =>
 		useCatalogView({
@@ -54,7 +57,8 @@ function view(state: {
 			categoryOverrides: {},
 			favoriteAppIds: state.favoriteAppIds ?? [],
 			favoriteAppIdentities: [],
-			firstSeenAt: {},
+			firstSeenAt: state.firstSeenAt ?? {},
+			appLaunchStats: state.appLaunchStats ?? {},
 			scenarios: state.scenarios ?? [],
 			favoriteScenarioIds: state.favoriteScenarioIds ?? [],
 			hiddenAppIds: [],
@@ -82,6 +86,26 @@ describe('useCatalogView', () => {
 
 		expect(result.current.primaryApps.map(item => item.id)).toEqual([
 			'Editor',
+		])
+	})
+
+	it('suggests favorites, then the apps launched most, then the newest arrivals', () => {
+		const now = Date.now()
+		const { result } = view({
+			apps: [app('Fresh'), app('Habit'), app('Rare'), app('Starred')],
+			favoriteAppIds: ['Starred'],
+			firstSeenAt: { Fresh: now, Habit: 1, Rare: 2 },
+			appLaunchStats: {
+				Habit: { count: 12, lastLaunchedAt: now },
+				Rare: { count: 1, lastLaunchedAt: now - 200 * 86_400_000 },
+			},
+		})
+
+		expect(result.current.paletteSuggestions.map(item => item.id)).toEqual([
+			'Starred',
+			'Habit',
+			'Rare',
+			'Fresh',
 		])
 	})
 

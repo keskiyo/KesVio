@@ -75,6 +75,12 @@ export interface AppDetails {
 	canOpenFolder?: boolean
 }
 
+export interface FolderSize {
+	bytes: number
+	files: number
+	complete: boolean
+}
+
 export type AppView =
 	| 'all'
 	| 'favorites'
@@ -204,9 +210,12 @@ export interface AppsClient {
 	startBackgroundSync?(): Promise<void>
 	cancelScan(): Promise<void>
 	launchApp(app: Pick<AppInfo, 'id'>): Promise<void>
+	launchAppElevated?(app: Pick<AppInfo, 'id'>): Promise<void>
+	canLaunchElevated?(app: Pick<AppInfo, 'id'>): Promise<boolean>
 	closeApps(ids: string[], allowForce?: boolean): Promise<CloseAppsResult>
 	getAppDetails(id: string): Promise<AppDetails>
 	openAppFolder(id: string): Promise<void>
+	measureAppFolder?(id: string): Promise<FolderSize>
 	onCatalogDelta?(handler: (delta: CatalogDelta) => void): Promise<() => void>
 	onCatalogPatches?(
 		handler: (patches: AppHydrationPatch[]) => void,

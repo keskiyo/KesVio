@@ -4,8 +4,8 @@ use crate::app_state::{
 };
 use crate::catalog::cache;
 use crate::catalog::{
-    can_open_folder, details_fingerprint, folder_target, read_cached_details, read_details,
-    AppDetails, AppDetailsTarget,
+    can_open_folder, details_fingerprint, folder_target, measure_folder, read_cached_details,
+    read_details, AppDetails, AppDetailsTarget, FolderSize,
 };
 use crate::error::AppError;
 use crate::paths;
@@ -87,6 +87,19 @@ pub(crate) async fn open_app_folder(app: tauri::AppHandle, id: String) -> Result
     })
     .await?
     .map_err(|_| AppError::OpenFolderUnavailable)
+}
+
+#[tauri::command]
+pub(crate) async fn measure_app_folder(
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<FolderSize, AppError> {
+    let target = resolve_folder_target(&app.state::<AppState>(), &id)?;
+    run_blocking("Application folder size", move || {
+        folder_target(&target).map(|folder| measure_folder(&folder))
+    })
+    .await?
+    .ok_or(AppError::OpenFolderUnavailable)
 }
 
 #[cfg(test)]

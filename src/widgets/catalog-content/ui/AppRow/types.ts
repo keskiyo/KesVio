@@ -5,6 +5,7 @@ import type {
 	AppCategory,
 	CategoryDefinition,
 } from '../../../../entities/category'
+import type { AppFileActions } from '../../../../features/app-actions'
 
 export interface AppRowProps {
 	app: AppInfo
@@ -15,6 +16,7 @@ export interface AppRowProps {
 	onMove(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void
 	onManageInWindows(): Promise<void>
+	fileActions: AppFileActions
 	onHide?(id: string): void
 	onDemote(id: string): void
 	chips?: ReactNode

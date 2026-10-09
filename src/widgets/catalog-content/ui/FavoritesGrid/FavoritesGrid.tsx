@@ -19,6 +19,7 @@ export function FavoritesGrid({
 	onMoveApp,
 	onInfo,
 	onManageInWindows,
+	fileActions,
 	onHide,
 	onRestore,
 	onDemote,
@@ -88,6 +89,7 @@ export function FavoritesGrid({
 								onMove={onMoveApp}
 								onInfo={onInfo}
 								onManageInWindows={onManageInWindows}
+								fileActions={fileActions}
 								onHide={onHide}
 								onRestore={onRestore}
 								onDemote={onDemote}

@@ -80,6 +80,11 @@ function renderApp() {
 		}),
 		setScanSettings: vi.fn().mockImplementation(async s => s),
 		setCloseBehavior: vi.fn().mockImplementation(async value => value),
+		setGlobalShortcut: vi.fn().mockImplementation(async binding => ({
+			available: true,
+			label: binding.key,
+			error: null,
+		})),
 		setStartupEnabled: vi.fn().mockResolvedValue('disabled'),
 		savePreferencesBackup: vi.fn().mockResolvedValue(true),
 		exportDiagnosticsLog: vi.fn().mockResolvedValue(true),

@@ -61,10 +61,16 @@ For reporting vulnerabilities, see [SECURITY.md](../SECURITY.md). For the user p
   folder — Rufus dropped its `rufus.com` console companion there. Shortcuts keep
   the working directory recorded in the `.lnk`; AppUserModelIds and `steam://`
   URIs have no directory of their own and pass none.
+- **Run as administrator** never elevates on its own: the webview sends a
+  catalog id, the backend resolves the stored executable or shortcut and asks
+  the shell for the `runas` verb, and Windows' consent prompt decides. KesVio
+  itself stays unelevated, starts no child process of its own, and passes no
+  path, argument or verb from the webview.
 - Signature checks do not show Windows UI or fetch network data. Logs and
   diagnostics exclude credentials, file contents and unnecessary personal paths.
-- Unsafe Windows code is confined to `platform/windows`; every unsafe block has
-  an adjacent `// SAFETY:` rationale.
+- Unsafe Windows code is confined to `platform/windows`; every unsafe block,
+  function and impl has an adjacent `// SAFETY:` rationale, which
+  `scripts/verify-unsafe-safety.ps1` enforces in the `verify` workflow.
 - The installer is not Authenticode-signed and can show SmartScreen; updater
   package integrity is protected by its separate signature.
 - Because the binary is unsigned and every release starts at zero reputation,
@@ -111,7 +117,7 @@ file or a named test.
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Read the uninstall registry hives, Start Menu, AppsFolder, Steam | Startup, refresh, watcher, Force full scan                               | Read-only. Stage budgets and cancellation bound every loop.                                                                                                                                      |
 | Walk fixed drives for portable executables                       | Force full scan, plus the first routine scan without a portable snapshot | Requires the discovery toggle. Later startup, refresh and watcher scans retain fixed-drive results instead of walking those drives.                                                              |
-| `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry                                  | Target resolved from a catalog id held in trusted state, never from the webview.                                                                                                                 |
+| `ShellExecuteExW` / `ShellExecuteW`                              | Launching or opening a catalogued entry; `runas` on Run as administrator | Target resolved from a catalog id held in trusted state, never from the webview. Elevation only through Windows' consent prompt, only where the shell itself offers `runas`.                     |
 | `CreateToolhelp32Snapshot`, `OpenProcess`, `TerminateProcess`    | The explicit close action of a scenario                                  | `WM_CLOSE` first; terminate only on refusal; batch capped; protected processes and this process excluded.                                                                                        |
 | Remove installed software                                        | Never                                                                    | There is no such capability. No code path starts a removal; the card menu opens the Windows page instead.                                                                                        |
 | Write one `HKCU` value (`Software\keskiyo\KesVio`)               | Startup, only when the install directory changed                         | Read before write. Together with the row below, the only registry writes the running program performs.                                                                                           |

@@ -140,6 +140,21 @@
 	}
 }
 
+.category-header-action {
+	opacity: 0;
+	transition: opacity 150ms ease;
+}
+
+[data-category]:is(:hover, :focus-within) .category-header-action {
+	opacity: 1;
+}
+
+@media (hover: none) {
+	.category-header-action {
+		opacity: 1;
+	}
+}
+
 .app-card {
 	animation: card-enter 280ms var(--motion-ease-out) both;
 }

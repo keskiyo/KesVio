@@ -11,7 +11,9 @@ pub(crate) mod icons;
 pub(crate) mod launch;
 pub(crate) mod links;
 pub(crate) mod settings;
+pub(crate) mod shortcut;
 pub(crate) mod tray;
+pub(crate) mod window;
 
 pub(super) const MAX_CATALOG_ID_LENGTH: usize = 512;
 

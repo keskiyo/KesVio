@@ -21,6 +21,7 @@ function AppRowComponent({
 	onMove,
 	onInfo,
 	onManageInWindows,
+	fileActions,
 	onHide = ignoreHide,
 	onDemote,
 	chips,
@@ -134,6 +135,7 @@ function AppRowComponent({
 					onMove={onMove}
 					onInfo={onInfo}
 					onManageInWindows={onManageInWindows}
+					fileActions={fileActions}
 					isHidden={isHidden}
 					isUserPromoted={app.userPromoted}
 					onHide={onHide}

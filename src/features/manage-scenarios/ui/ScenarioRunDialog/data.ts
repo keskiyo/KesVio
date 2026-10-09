@@ -1,7 +1,5 @@
 export const DIALOG_LABEL = 'All scenarios'
 
-export const LAUNCHER_SHORTCUT = 'Ctrl+Shift+K'
-
 export const SCENARIO_LAUNCHER_SHORTCUT_OWNER = 'scenario-launcher'
 
 export const SEARCH_LABEL = 'Search scenarios'

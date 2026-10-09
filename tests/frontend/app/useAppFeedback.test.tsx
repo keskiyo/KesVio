@@ -1,6 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppFeedback } from '../../../src/app/model/useAppFeedback'
+import type { AppInfo } from '../../../src/entities/app'
 
 const { toastError, toastInfo, toastSuccess } = vi.hoisted(() => ({
 	toastError: vi.fn(),
@@ -20,6 +21,7 @@ function options(overrides: Partial<Parameters<typeof useAppFeedback>[0]>) {
 	return {
 		onLaunch: vi.fn().mockResolvedValue(undefined),
 		onOpenFolder: vi.fn().mockResolvedValue(undefined),
+		onLaunchElevated: vi.fn().mockResolvedValue(undefined),
 		onFullScan: vi.fn().mockResolvedValue(undefined),
 		onRefresh: vi.fn().mockResolvedValue(undefined),
 		onUndo: vi.fn().mockReturnValue({ ok: true as const }),
@@ -130,5 +132,89 @@ describe('useAppFeedback', () => {
 			'Could not open the folder of Setup',
 		)
 		expect(String(toastError.mock.calls[0])).not.toContain('Example')
+	})
+
+	const editor = {
+		id: 'editor',
+		name: 'Editor',
+		path: 'C:\\Editor\\editor.exe',
+	} as AppInfo
+
+	it('copies a path and confirms it', async () => {
+		const writeText = vi.fn().mockResolvedValue(undefined)
+		Object.defineProperty(navigator, 'clipboard', {
+			configurable: true,
+			value: { writeText },
+		})
+		const { result } = renderHook(() => useAppFeedback(options({})))
+
+		await act(() => result.current.fileActions.copyPath(editor))
+
+		expect(writeText).toHaveBeenCalledWith('C:\\Editor\\editor.exe')
+		expect(toastSuccess).toHaveBeenCalledWith('Path copied')
+		Object.defineProperty(navigator, 'clipboard', {
+			configurable: true,
+			value: undefined,
+		})
+	})
+
+	it('treats a dismissed consent prompt as information, not failure', async () => {
+		const { result } = renderHook(() =>
+			useAppFeedback(
+				options({
+					onLaunchElevated: vi.fn().mockRejectedValue({
+						code: 'LAUNCH_CANCELLED',
+						message: 'The launch was cancelled.',
+					}),
+				}),
+			),
+		)
+
+		await act(() => result.current.fileActions.launchElevated!(editor))
+
+		expect(toastInfo).toHaveBeenCalledWith('Launch cancelled')
+		expect(toastError).not.toHaveBeenCalled()
+	})
+
+	it('reports an elevated launch failure without the backend message', async () => {
+		const { result } = renderHook(() =>
+			useAppFeedback(
+				options({
+					onLaunchElevated: vi
+						.fn()
+						.mockRejectedValue(new Error('C:\\private\\path')),
+				}),
+			),
+		)
+
+		await act(() => result.current.fileActions.launchElevated!(editor))
+
+		expect(toastError).toHaveBeenCalledWith(
+			'Could not launch Editor as administrator',
+		)
+	})
+
+	it('asks Windows once per app and retries only after a failed answer', async () => {
+		const onCanLaunchElevated = vi
+			.fn()
+			.mockRejectedValueOnce(new Error('busy'))
+			.mockResolvedValue(true)
+		const { result } = renderHook(() =>
+			useAppFeedback(options({ onCanLaunchElevated })),
+		)
+		const ask = result.current.fileActions.canLaunchElevated!
+
+		await expect(ask(editor)).resolves.toBe(false)
+		await expect(ask(editor)).resolves.toBe(true)
+		await expect(ask(editor)).resolves.toBe(true)
+
+		expect(onCanLaunchElevated).toHaveBeenCalledTimes(2)
+	})
+
+	it('offers no elevated launch when the client has none', () => {
+		const { result } = renderHook(() =>
+			useAppFeedback(options({ onLaunchElevated: undefined })),
+		)
+		expect(result.current.fileActions.launchElevated).toBeUndefined()
 	})
 })

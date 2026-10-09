@@ -47,7 +47,7 @@ export function SearchField({
 						aria-hidden="true"
 						className="pointer-events-none absolute right-3 hidden rounded-md border border-(--border-neutral) bg-(--surface-raised) px-1.5 py-0.5 font-sans text-[0.7rem] font-medium text-(--text-muted) sm:block"
 					>
-						Ctrl+K
+						Ctrl+F
 					</kbd>
 				)}
 				{query.length > 0 && (

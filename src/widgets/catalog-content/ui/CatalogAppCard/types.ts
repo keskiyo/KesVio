@@ -3,6 +3,7 @@ import type {
 	AppCategory,
 	CategoryDefinition,
 } from '../../../../entities/category'
+import type { AppFileActions } from '../../../../features/app-actions'
 
 export interface CatalogAppCardProps {
 	app: AppInfo
@@ -14,6 +15,7 @@ export interface CatalogAppCardProps {
 	onMove(id: string, category: AppCategory): void
 	onInfo(app: AppInfo): void
 	onManageInWindows(): Promise<void>
+	fileActions: AppFileActions
 	isHidden?: boolean
 	isAuxiliary?: boolean
 	onHide(id: string): void

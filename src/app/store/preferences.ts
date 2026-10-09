@@ -1,6 +1,6 @@
 export { normalizePreferences } from './preferences/preferencesNormalize'
 export {
-	type AppPreferencesV23,
+	type AppPreferencesV24,
 	CURRENT_PREFERENCES_VERSION,
 	DEFAULT_PREFERENCES,
 	type LegacyCanonicalPreferences,

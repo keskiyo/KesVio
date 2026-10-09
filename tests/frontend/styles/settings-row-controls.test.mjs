@@ -11,6 +11,10 @@ import {
 const read = file => readFileSync(file, 'utf8')
 
 const general = read('src/pages/settings/ui/sections/GeneralSettings.tsx')
+const shortcuts = read('src/pages/settings/ui/sections/KeyboardShortcuts.tsx')
+const globalShortcut = read(
+	'src/pages/settings/ui/sections/GlobalShortcutRow.tsx',
+)
 const updates = read(
 	'src/pages/settings/ui/sections/SettingsUpdateControls.tsx',
 )
@@ -47,7 +51,9 @@ describe('settings row controls', () => {
 	})
 
 	it('gives each trailing control in a row that shape', () => {
-		expect(general).toContain('ROW_CHIP')
+		expect(shortcuts).toContain('ROW_CHIP')
+		expect(globalShortcut).toContain('<SettingsRow')
+		expect(globalShortcut).toContain('ACTION_BUTTON')
 		expect(general).toContain('ACTION_BUTTON_PRIMARY')
 		expect(updates).toContain('ACTION_BUTTON_PRIMARY')
 		expect(updates).toContain('ACTION_BUTTON_QUIET')
@@ -59,7 +65,7 @@ describe('settings row controls', () => {
 	})
 
 	it('leaves no hand-written button geometry in those rows', () => {
-		for (const source of [general, updates]) {
+		for (const source of [general, shortcuts, globalShortcut, updates]) {
 			expect(source).not.toMatch(/rounded-(lg|xl) px-[\d.]+ py-[\d.]+/)
 			expect(source).not.toMatch(/\bmin-h-\d/)
 		}

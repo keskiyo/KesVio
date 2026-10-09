@@ -1,7 +1,7 @@
 use super::is_valid_catalog_id;
 use crate::app_state::{AppState, LaunchTarget};
 use crate::error::AppError;
-use crate::platform::windows::launcher;
+use crate::platform::windows::launcher::{self, ElevatedLaunchError};
 use serde::Serialize;
 use tauri::{Emitter, Manager};
 
@@ -77,6 +77,48 @@ pub(crate) async fn launch_app(app: tauri::AppHandle, id: String) -> Result<(), 
     Ok(())
 }
 
+fn elevated_launch_error(error: ElevatedLaunchError) -> AppError {
+    match error {
+        ElevatedLaunchError::Unsupported => AppError::LaunchUnavailable,
+        ElevatedLaunchError::Cancelled => AppError::LaunchCancelled,
+        ElevatedLaunchError::Failed(message) => AppError::Other(message),
+    }
+}
+
+#[tauri::command]
+pub(crate) async fn can_launch_elevated(
+    app: tauri::AppHandle,
+    id: String,
+) -> Result<bool, AppError> {
+    let launch_target = resolve_launch_target(&app.state::<AppState>(), &id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        launcher::supports_elevated_launch(launch_target.kind, &launch_target.path)
+    })
+    .await
+    .map_err(|error| AppError::Interrupted {
+        context: "Elevation check",
+        source: error.to_string(),
+    })
+}
+
+#[tauri::command]
+pub(crate) async fn launch_app_elevated(app: tauri::AppHandle, id: String) -> Result<(), AppError> {
+    let launch_target = resolve_launch_target(&app.state::<AppState>(), &id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        launcher::launch_elevated(
+            launch_target.kind,
+            &launch_target.path,
+            launch_target.arguments.as_deref(),
+        )
+    })
+    .await
+    .map_err(|error| AppError::Interrupted {
+        context: "Elevated application launch",
+        source: error.to_string(),
+    })?
+    .map_err(elevated_launch_error)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,6 +168,22 @@ mod tests {
             resolve_launch_target(&state, "   "),
             Err(AppError::LaunchUnavailable)
         ));
+    }
+
+    #[test]
+    fn elevated_launch_outcomes_map_to_stable_codes() {
+        assert_eq!(
+            elevated_launch_error(ElevatedLaunchError::Unsupported),
+            AppError::LaunchUnavailable
+        );
+        assert_eq!(
+            elevated_launch_error(ElevatedLaunchError::Cancelled),
+            AppError::LaunchCancelled
+        );
+        assert_eq!(
+            elevated_launch_error(ElevatedLaunchError::Failed("x".into())).code(),
+            "OPERATION_FAILED"
+        );
     }
 
     #[test]

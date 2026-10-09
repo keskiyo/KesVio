@@ -73,6 +73,7 @@ export function HiddenGrid(props: HiddenGridProps) {
 							onMove={props.onMoveApp}
 							onInfo={props.onInfo}
 							onManageInWindows={props.onManageInWindows}
+							fileActions={props.fileActions}
 							onDemote={props.onDemote}
 							actions={
 								<RowAction

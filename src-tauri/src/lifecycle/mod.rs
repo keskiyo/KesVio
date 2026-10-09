@@ -1,10 +1,13 @@
+mod backdrop;
 mod presentation;
 mod quiet_start;
 mod startup;
 mod state;
 mod tray;
+mod webview_presence;
 pub(crate) mod window_state;
 
+pub(crate) use backdrop::{apply_backdrop, backdrop_for, WindowBackdrop};
 pub(crate) use presentation::prepare_main_window;
 pub(crate) use quiet_start::STARTUP_SCAN_DELAY;
 pub(crate) use startup::spawn as start_background_initialization;
@@ -21,6 +24,7 @@ pub(crate) use tray::{
 };
 #[cfg(test)]
 pub(crate) use tray::{FORCE_SCAN_EVENT, LAUNCH_APP_EVENT, SEARCH_EVENT, SHOW_FAVORITES_EVENT};
+pub(crate) use webview_presence::{enter_background, enter_foreground};
 
 use crate::platform::windows::process_priority::{set_own_priority, OwnPriority};
 use std::ffi::OsStr;
@@ -38,6 +42,7 @@ pub(crate) fn show_main_window(app: &AppHandle) {
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
+        enter_foreground(app);
     }
 }
 

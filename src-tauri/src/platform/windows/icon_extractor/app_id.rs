@@ -37,6 +37,9 @@ fn extract_app_id_icon_inner(app_id: &str) -> windows::core::Result<Option<Strin
     }
 }
 
+// SAFETY: callers must have initialized COM on the calling thread, because the shell parses the
+// display name and creates the item inside the caller's apartment. The function owns every
+// pointer it touches and frees the ID list it allocates before returning.
 unsafe fn apps_folder_factory(app_id: &str) -> windows::core::Result<IShellItemImageFactory> {
     let display_name = apps_folder_shell_name(app_id);
     let display_name_wide = wide(OsStr::new(&display_name));

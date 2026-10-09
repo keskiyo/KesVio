@@ -10,6 +10,8 @@ use windows::Win32::Graphics::Gdi::{
 };
 use windows::Win32::UI::WindowsAndMessaging::{GetIconInfo, ICONINFO};
 
+// SAFETY: callers must pass an icon handle that stays valid for the whole call. The function does
+// not take ownership of the icon; it owns and deletes the two bitmaps `GetIconInfo` hands back.
 pub(super) unsafe fn encode_hicon(
     icon: windows::Win32::UI::WindowsAndMessaging::HICON,
 ) -> Option<String> {
@@ -33,6 +35,8 @@ pub(super) unsafe fn encode_hicon(
     encoded
 }
 
+// SAFETY: callers must pass a bitmap handle that stays valid and is not selected into another
+// device context for the whole call. The function only reads it and never deletes it.
 pub(super) unsafe fn encode_hbitmap(
     bitmap_handle: windows::Win32::Graphics::Gdi::HBITMAP,
 ) -> Option<String> {
@@ -118,6 +122,8 @@ fn bgra_to_rgba(pixels: &mut [u8]) {
     }
 }
 
+// SAFETY: callers must pass the `ICONINFO` a successful `GetIconInfo` filled, must own its bitmaps
+// and must not use them afterwards: each non-null bitmap is deleted here exactly once.
 unsafe fn cleanup_icon_info(info: &ICONINFO) {
     if !info.hbmColor.0.is_null() {
         // SAFETY: non-null by the check, owned by us through `GetIconInfo`, and deleted once —

@@ -23,7 +23,7 @@ export function CategoryHeader({
 				aria-disabled={collapsible ? undefined : true}
 				aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${label}`}
 				onClick={collapsible ? onToggle : undefined}
-				className={`flex h-full min-w-0 flex-1 cursor-pointer items-center rounded-lg px-1 text-left focus-visible:z-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)${collapsible ? '' : 'opacity-60'}`}
+				className="flex h-full min-w-0 flex-1 cursor-pointer items-center rounded-lg px-1 text-left focus-visible:z-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) aria-disabled:opacity-60"
 			>
 				<span
 					aria-hidden="true"
@@ -50,7 +50,7 @@ export function CategoryHeader({
 				type="button"
 				aria-label={`Rename ${label} category`}
 				onClick={onEdit}
-				className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-(--border-neutral) bg-(--surface-panel) px-3 text-xs font-medium text-(--text-primary) transition-[background-color,border-color] duration-200 hover:border-(--accent) hover:bg-(--surface-raised) focus-visible:z-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
+				className="category-header-action inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-(--border-neutral) bg-(--surface-panel) px-3 text-xs font-medium text-(--text-primary) transition-[background-color,border-color] duration-200 hover:border-(--accent) hover:bg-(--surface-raised) focus-visible:z-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong)"
 			>
 				<Pencil size={15} aria-hidden="true" />
 				<span>Edit</span>

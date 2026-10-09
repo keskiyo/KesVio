@@ -80,6 +80,7 @@ function props(apps: AppInfo[], scenarios: Scenario[] = []) {
 		onMoveApp: vi.fn(),
 		onInfo: vi.fn(),
 		onManageInWindows: vi.fn(),
+		fileActions: { openFolder: vi.fn(), copyPath: vi.fn() },
 		onHide: vi.fn(),
 		onRestore: vi.fn(),
 		onDemote: vi.fn(),
@@ -174,13 +175,11 @@ describe('FavoritesGrid', () => {
 		expect(screen.queryByText('No favorites yet')).not.toBeInTheDocument()
 	})
 
-	// Nothing else in the interface names the launcher shortcut, so a starred scenario is where
-	// someone who has never pressed it is standing.
-	it('names the launcher shortcut beside the starred scenarios', () => {
+	it('leaves the launcher shortcut unadvertised beside the starred scenarios', () => {
 		render(<FavoritesGrid {...props([], [gaming])} />)
 
 		const section = screen.getByRole('region', { name: 'Scenarios' })
-		expect(section).toHaveTextContent('Run from anywhere with Ctrl+Shift+K')
+		expect(section).not.toHaveTextContent('Ctrl+Shift+K')
 	})
 
 	it('names no shortcut when no scenario is starred', () => {

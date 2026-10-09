@@ -140,6 +140,9 @@ fn finish_start(
     }
 }
 
+// SAFETY: only Windows calls this, as the subclass procedure `start` registers on its own hidden
+// window, on the thread that owns that window, with the reference data `start` supplied; the two
+// unsafe operations inside rely on nothing else.
 unsafe extern "system" fn subclass_proc(
     window: HWND,
     message: u32,

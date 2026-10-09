@@ -13,8 +13,27 @@ export function createScenarioPolicyActions({
 	get: GetAppState
 	set: SetAppState
 	transact: RunTransaction
-}): Pick<AppState, 'setScenarioForceClose'> {
+}): Pick<AppState, 'setScenarioForceClose' | 'setScenarioDriveTrigger'> {
 	return {
+		setScenarioDriveTrigger(id, volumeId) {
+			const { scenarios, undoable, preferencesRevision } = get()
+			const scenario = scenarios.find(item => item.id === id)
+			if (!scenario) return false
+			const next = volumeId?.trim().toLowerCase() || undefined
+			if (scenario.triggerVolumeId === next) return true
+			transact(`Changed drive trigger for ${scenario.name}`, () =>
+				set({
+					scenarios: scenarios.map(item => {
+						if (item.id !== id) return item
+						const { triggerVolumeId: _previous, ...rest } = item
+						return next ? { ...rest, triggerVolumeId: next } : rest
+					}),
+				}),
+			)
+			if (get().preferencesPersisted) return true
+			set({ scenarios, undoable, preferencesRevision })
+			return false
+		},
 		setScenarioForceClose(id, forceClose) {
 			const { scenarios, undoable, preferencesRevision } = get()
 			const scenario = scenarios.find(item => item.id === id)

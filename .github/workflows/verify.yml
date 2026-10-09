@@ -48,6 +48,9 @@ jobs:
             - name: Build
               run: npm run build
 
+            - name: Verify entry bundle budget
+              run: npm run verify:bundle
+
     backend:
         # The catalog reads the registry, walks the filesystem and drives PowerShell and COM, so a
         # green run on one Windows build is not evidence for the other supported one. Formatting and
@@ -146,6 +149,10 @@ jobs:
             - name: Verify Windows API ownership boundary
               shell: pwsh
               run: powershell -NoProfile -File scripts/verify-platform-boundaries.ps1
+
+            - name: Verify unsafe rationale
+              shell: pwsh
+              run: powershell -NoProfile -File scripts/verify-unsafe-safety.ps1
 
             - name: Verify documentation links and paths
               shell: pwsh

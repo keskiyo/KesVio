@@ -223,6 +223,7 @@ corpus entry can pin down on its own.
 - [`catalog/dedup/merge/tests.rs`](../../src-tauri/src/catalog/dedup/merge/tests.rs)
 - [`catalog/dedup/mod.rs`](../../src-tauri/src/catalog/dedup/mod.rs)
 - [`catalog/details/cache.rs`](../../src-tauri/src/catalog/details/cache.rs)
+- [`catalog/details/folder_size.rs`](../../src-tauri/src/catalog/details/folder_size.rs)
 - [`catalog/details/read.rs`](../../src-tauri/src/catalog/details/read.rs)
 - [`catalog/details/target.rs`](../../src-tauri/src/catalog/details/target.rs)
 - [`catalog/display.rs`](../../src-tauri/src/catalog/display.rs)
@@ -302,6 +303,7 @@ live, that the system drive reports a serial and a filesystem and appears in
 the mounted-volume enumeration.
 
 - [`platform/windows/apps_folder/tests.rs`](../../src-tauri/src/platform/windows/apps_folder/tests.rs)
+- [`platform/windows/backdrop.rs`](../../src-tauri/src/platform/windows/backdrop.rs)
 - [`platform/windows/change_watcher.rs`](../../src-tauri/src/platform/windows/change_watcher.rs)
 - [`platform/windows/drives.rs`](../../src-tauri/src/platform/windows/drives.rs)
 - [`platform/windows/execution/closer/finish.rs`](../../src-tauri/src/platform/windows/execution/closer/finish.rs)
@@ -313,7 +315,9 @@ the mounted-volume enumeration.
 - [`platform/windows/execution/exec_target.rs`](../../src-tauri/src/platform/windows/execution/exec_target.rs)
 - [`platform/windows/execution/executable_metadata.rs`](../../src-tauri/src/platform/windows/execution/executable_metadata.rs)
 - [`platform/windows/execution/folder.rs`](../../src-tauri/src/platform/windows/execution/folder.rs)
-- [`platform/windows/execution/launcher.rs`](../../src-tauri/src/platform/windows/execution/launcher.rs)
+- [`platform/windows/execution/launcher/elevation.rs`](../../src-tauri/src/platform/windows/execution/launcher/elevation.rs)
+- [`platform/windows/execution/launcher/mod.rs`](../../src-tauri/src/platform/windows/execution/launcher/mod.rs)
+- [`platform/windows/execution/launcher/shell.rs`](../../src-tauri/src/platform/windows/execution/launcher/shell.rs)
 - [`platform/windows/execution/pe.rs`](../../src-tauri/src/platform/windows/execution/pe.rs)
 - [`platform/windows/execution/protected.rs`](../../src-tauri/src/platform/windows/execution/protected.rs)
 - [`platform/windows/execution/signature.rs`](../../src-tauri/src/platform/windows/execution/signature.rs)
@@ -331,8 +335,13 @@ the mounted-volume enumeration.
 - [`platform/windows/registry/startup_approval.rs`](../../src-tauri/src/platform/windows/registry/startup_approval.rs)
 - [`platform/windows/registry/uninstall_registry.rs`](../../src-tauri/src/platform/windows/registry/uninstall_registry.rs)
 - [`platform/windows/shortcuts/global_shortcut.rs`](../../src-tauri/src/platform/windows/shortcuts/global_shortcut.rs)
+- [`platform/windows/shortcuts/global_shortcut/binding.rs`](../../src-tauri/src/platform/windows/shortcuts/global_shortcut/binding.rs)
+- [`platform/windows/shortcuts/global_shortcut/binding_tests.rs`](../../src-tauri/src/platform/windows/shortcuts/global_shortcut/binding_tests.rs)
+- [`platform/windows/shortcuts/global_shortcut/registration_tests.rs`](../../src-tauri/src/platform/windows/shortcuts/global_shortcut/registration_tests.rs)
+- [`platform/windows/shortcuts/global_shortcut/store.rs`](../../src-tauri/src/platform/windows/shortcuts/global_shortcut/store.rs)
 - [`platform/windows/volume_watcher.rs`](../../src-tauri/src/platform/windows/volume_watcher.rs)
 - [`platform/windows/volumes.rs`](../../src-tauri/src/platform/windows/volumes.rs)
+- [`platform/windows/webview_memory.rs`](../../src-tauri/src/platform/windows/webview_memory.rs)
 
 ## Core, IPC and lifecycle
 
@@ -374,6 +383,7 @@ declined by the rules `paths/` names.
 - [`diagnostics/retention_worker.rs`](../../src-tauri/src/diagnostics/retention_worker.rs)
 - [`diagnostics/segment_writer.rs`](../../src-tauri/src/diagnostics/segment_writer.rs)
 - [`error.rs`](../../src-tauri/src/error.rs)
+- [`lifecycle/backdrop.rs`](../../src-tauri/src/lifecycle/backdrop.rs)
 - [`lifecycle/mod.rs`](../../src-tauri/src/lifecycle/mod.rs)
 - [`lifecycle/presentation.rs`](../../src-tauri/src/lifecycle/presentation.rs)
 - [`lifecycle/quiet_start.rs`](../../src-tauri/src/lifecycle/quiet_start.rs)

@@ -159,14 +159,15 @@ describe('Header', () => {
 		expect(onCancelScan).toHaveBeenCalledOnce()
 	})
 
-	it('hints the palette shortcut until the field is in use', () => {
+	it('hints the search shortcut until the field is in use', () => {
 		const { rerender } = render(header())
-		const hint = screen.getByText('Ctrl+K')
+		const hint = screen.getByText('Ctrl+F')
 		expect(hint.tagName).toBe('KBD')
 		expect(hint).toHaveAttribute('aria-hidden', 'true')
+		expect(screen.queryByText('Ctrl+K')).not.toBeInTheDocument()
 
 		rerender(header('code'))
-		expect(screen.queryByText('Ctrl+K')).not.toBeInTheDocument()
+		expect(screen.queryByText('Ctrl+F')).not.toBeInTheDocument()
 		expect(
 			screen.getByRole('button', { name: 'Clear search' }),
 		).toBeInTheDocument()

@@ -21,6 +21,7 @@ fn presentation_mode(stay_hidden: bool) -> PresentationMode {
 pub(crate) fn prepare_main_window(app: &App, lifecycle: &LifecycleState, stay_hidden: bool) {
     window_state::restore_main_window(app.handle(), lifecycle);
     if presentation_mode(stay_hidden) == PresentationMode::StayHidden {
+        super::enter_background(app.handle());
         return;
     }
     let handle = app.handle().clone();

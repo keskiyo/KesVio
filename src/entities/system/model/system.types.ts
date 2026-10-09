@@ -6,7 +6,17 @@ export interface GlobalShortcutStatus {
 	error: string | null
 }
 
+export interface GlobalShortcutBinding {
+	win: boolean
+	ctrl: boolean
+	alt: boolean
+	shift: boolean
+	key: string
+}
+
 export type StartupEntryState = 'enabled' | 'disabled' | 'missing'
+
+export type WindowBackdrop = 'mica' | 'solid'
 
 export interface SystemSettings {
 	version: string
@@ -32,6 +42,9 @@ export interface SystemClient {
 	getSettings(): Promise<SystemSettings>
 	setScanSettings(settings: ScanSettings): Promise<ScanSettings>
 	setCloseBehavior(hideToTray: boolean): Promise<boolean>
+	setGlobalShortcut(
+		binding: GlobalShortcutBinding,
+	): Promise<GlobalShortcutStatus>
 	savePreferencesBackup(contents: string): Promise<boolean>
 	exportDiagnosticsLog(): Promise<boolean>
 	previewDiagnosticsLog(): Promise<string>
@@ -57,6 +70,10 @@ export interface SystemClient {
 	onTrayShowFavorites?(handler: () => void): Promise<() => void>
 	onTraySearch?(handler: () => void): Promise<() => void>
 	takeTraySearchIntent?(): Promise<boolean>
+	getWindowBackdrop?(): Promise<WindowBackdrop>
+	onVolumesArrived?(
+		handler: (volumeIds: string[]) => void,
+	): Promise<() => void>
 }
 
 export interface StaleCopyInfo {

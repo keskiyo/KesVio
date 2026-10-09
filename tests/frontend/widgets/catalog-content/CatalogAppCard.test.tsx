@@ -47,6 +47,7 @@ function renderCard(entry: AppInfo) {
 			onMove={vi.fn()}
 			onInfo={vi.fn()}
 			onManageInWindows={vi.fn()}
+			fileActions={{ openFolder: vi.fn(), copyPath: vi.fn() }}
 			onHide={vi.fn()}
 			onRestore={vi.fn()}
 			onDemote={vi.fn()}
@@ -77,6 +78,7 @@ describe('CatalogAppCard', () => {
 				onMove={vi.fn()}
 				onInfo={vi.fn()}
 				onManageInWindows={vi.fn()}
+				fileActions={{ openFolder: vi.fn(), copyPath: vi.fn() }}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
 				onDemote={vi.fn()}
@@ -105,6 +107,7 @@ describe('CatalogAppCard', () => {
 				onMove={vi.fn()}
 				onInfo={vi.fn()}
 				onManageInWindows={vi.fn()}
+				fileActions={{ openFolder: vi.fn(), copyPath: vi.fn() }}
 				onHide={vi.fn()}
 				onRestore={vi.fn()}
 				onDemote={vi.fn()}
@@ -195,6 +198,10 @@ describe('CatalogAppCard', () => {
 							onMove={vi.fn()}
 							onInfo={vi.fn()}
 							onManageInWindows={vi.fn()}
+							fileActions={{
+								openFolder: vi.fn(),
+								copyPath: vi.fn(),
+							}}
 							onHide={id =>
 								setApps(current =>
 									current.filter(item => item.id !== id),

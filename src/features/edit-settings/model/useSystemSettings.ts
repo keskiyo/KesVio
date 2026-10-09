@@ -4,6 +4,7 @@ import { useCatalogMaintenance } from './useCatalogMaintenance'
 import { useSettingsFeedback } from './useSettingsFeedback'
 import type { SettingsArea } from './useSettingsFeedback'
 import type {
+	GlobalShortcutBinding,
 	ScanSettings,
 	SystemClient,
 	SystemSettings,
@@ -78,6 +79,12 @@ export function useSystemSettings({
 		}))
 	}
 
+	async function setGlobalShortcut(binding: GlobalShortcutBinding) {
+		await persist('settings', async () => ({
+			shortcut: await client.setGlobalShortcut(binding),
+		}))
+	}
+
 	async function setStartupEnabled(enabled: boolean) {
 		await persist('settings', async () => ({
 			startupEntry: await client.setStartupEnabled(enabled),
@@ -114,6 +121,7 @@ export function useSystemSettings({
 		saving,
 		saveScanSettings,
 		setCloseBehavior,
+		setGlobalShortcut,
 		setStartupEnabled,
 		addPath,
 		removePath,

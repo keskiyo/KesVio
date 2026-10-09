@@ -43,6 +43,7 @@ const callbacks = {
 	onInfo: vi.fn(),
 	onOpenFolder: vi.fn().mockResolvedValue(undefined),
 	onManageInWindows: vi.fn(),
+	fileActions: { openFolder: vi.fn(), copyPath: vi.fn() },
 	onHide: vi.fn(),
 	onRestore: vi.fn(),
 	onDemoteAuxiliary: vi.fn(),

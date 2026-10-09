@@ -10,7 +10,7 @@ if (-not (Test-Path -LiteralPath $sourceRoot)) {
 # .NET regex supports the same lookbehinds, so the pattern is unchanged.
 $hits = @(
   Get-ChildItem -LiteralPath $sourceRoot -Recurse -File |
-    Select-String -Pattern '(?<!platform::)(?<!os::)\bwindows::|\bwinreg::' -CaseSensitive |
+    Select-String -Pattern '(?<!platform::)(?<!os::)\bwindows::|\bwinreg::|\bwebview2_com::' -CaseSensitive |
     ForEach-Object {
       [pscustomobject]@{
         Path = (Resolve-Path -LiteralPath $_.Path -Relative) -replace '\\', '/' -replace '^\./', ''

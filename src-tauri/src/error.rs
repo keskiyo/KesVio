@@ -22,6 +22,9 @@ pub(crate) enum AppError {
     ScanFailed,
     SaveScanSettings(String),
     SaveWindowSettings(String),
+    InvalidGlobalShortcut,
+    GlobalShortcutUnavailable,
+    SaveGlobalShortcut(String),
     UpdateStartupEntry(String),
     SavePreferencesBackup(String),
     ExportDiagnostics(String),
@@ -34,6 +37,7 @@ pub(crate) enum AppError {
     InvalidHydrationRequest,
     LaunchDataUnavailable,
     LaunchUnavailable,
+    LaunchCancelled,
     CloseDataUnavailable,
     AppDetailsUnavailable,
     OpenFolderUnavailable,
@@ -58,6 +62,9 @@ impl AppError {
             Self::ScanFailed => "SCAN_FAILED",
             Self::SaveScanSettings(_) => "SAVE_SCAN_SETTINGS_FAILED",
             Self::SaveWindowSettings(_) => "SAVE_WINDOW_SETTINGS_FAILED",
+            Self::InvalidGlobalShortcut => "INVALID_GLOBAL_SHORTCUT",
+            Self::GlobalShortcutUnavailable => "GLOBAL_SHORTCUT_UNAVAILABLE",
+            Self::SaveGlobalShortcut(_) => "SAVE_GLOBAL_SHORTCUT_FAILED",
             Self::UpdateStartupEntry(_) => "STARTUP_ENTRY_UPDATE_FAILED",
             Self::SavePreferencesBackup(_) => "SAVE_PREFERENCES_BACKUP_FAILED",
             Self::ExportDiagnostics(_) => "EXPORT_DIAGNOSTICS_FAILED",
@@ -70,6 +77,7 @@ impl AppError {
             Self::InvalidHydrationRequest => "INVALID_HYDRATION_REQUEST",
             Self::LaunchDataUnavailable => "LAUNCH_DATA_UNAVAILABLE",
             Self::LaunchUnavailable => "LAUNCH_UNAVAILABLE",
+            Self::LaunchCancelled => "LAUNCH_CANCELLED",
             Self::CloseDataUnavailable => "CLOSE_DATA_UNAVAILABLE",
             Self::AppDetailsUnavailable => "APP_DETAILS_UNAVAILABLE",
             Self::OpenFolderUnavailable => "OPEN_FOLDER_UNAVAILABLE",
@@ -91,6 +99,13 @@ impl AppError {
             Self::ScanFailed => "The application scan stopped unexpectedly. Try again.",
             Self::SaveScanSettings(_source) => "Could not save scan settings. Try again.",
             Self::SaveWindowSettings(_source) => "Could not save the window setting. Try again.",
+            Self::InvalidGlobalShortcut => {
+                "Use a letter, number or function key with Win, Ctrl or Alt."
+            }
+            Self::GlobalShortcutUnavailable => {
+                "That shortcut is already in use. Choose another one."
+            }
+            Self::SaveGlobalShortcut(_source) => "Could not save the shortcut. Try again.",
             Self::UpdateStartupEntry(_source) => "Could not change the startup setting. Try again.",
             Self::SavePreferencesBackup(_source) => "Could not save settings. Try again.",
             Self::ExportDiagnostics(_source) => "Could not save the diagnostics log. Try again.",
@@ -103,6 +118,7 @@ impl AppError {
             Self::InvalidHydrationRequest => "The icon hydration request is invalid.",
             Self::LaunchDataUnavailable => "Launch data is temporarily unavailable.",
             Self::LaunchUnavailable => "This application is not available for launch.",
+            Self::LaunchCancelled => "The launch was cancelled.",
             Self::CloseDataUnavailable => "Close data is temporarily unavailable.",
             Self::AppDetailsUnavailable => "Application details are unavailable.",
             Self::OpenFolderUnavailable => "The application folder is unavailable.",
@@ -128,6 +144,9 @@ pub(crate) fn every_variant() -> Vec<AppError> {
         AppError::ScanFailed,
         AppError::SaveScanSettings(String::new()),
         AppError::SaveWindowSettings(String::new()),
+        AppError::InvalidGlobalShortcut,
+        AppError::GlobalShortcutUnavailable,
+        AppError::SaveGlobalShortcut(String::new()),
         AppError::UpdateStartupEntry(String::new()),
         AppError::SavePreferencesBackup(String::new()),
         AppError::ExportDiagnostics(String::new()),
@@ -140,6 +159,7 @@ pub(crate) fn every_variant() -> Vec<AppError> {
         AppError::InvalidHydrationRequest,
         AppError::LaunchDataUnavailable,
         AppError::LaunchUnavailable,
+        AppError::LaunchCancelled,
         AppError::CloseDataUnavailable,
         AppError::AppDetailsUnavailable,
         AppError::OpenFolderUnavailable,
@@ -227,8 +247,11 @@ mod tests {
                 "CLEAR_ICON_CACHE_FAILED",
                 "CLOSE_DATA_UNAVAILABLE",
                 "EXPORT_DIAGNOSTICS_FAILED",
+                "GLOBAL_SHORTCUT_UNAVAILABLE",
+                "INVALID_GLOBAL_SHORTCUT",
                 "INVALID_HYDRATION_REQUEST",
                 "INVALID_RELEASE_VERSION",
+                "LAUNCH_CANCELLED",
                 "LAUNCH_DATA_UNAVAILABLE",
                 "LAUNCH_UNAVAILABLE",
                 "NO_NEWER_COPY",
@@ -238,6 +261,7 @@ mod tests {
                 "PRODUCT_NAME_MISSING",
                 "RESET_CATALOG_CACHE_FAILED",
                 "RESET_ICON_CACHE_FAILED",
+                "SAVE_GLOBAL_SHORTCUT_FAILED",
                 "SAVE_PREFERENCES_BACKUP_FAILED",
                 "SAVE_SCAN_SETTINGS_FAILED",
                 "SAVE_WINDOW_SETTINGS_FAILED",
@@ -314,12 +338,48 @@ mod tests {
     }
 
     #[test]
+    fn a_cancelled_elevation_has_a_stable_safe_envelope() {
+        assert_eq!(
+            serde_json::to_value(AppError::LaunchCancelled).unwrap(),
+            serde_json::json!({
+                "code": "LAUNCH_CANCELLED",
+                "message": "The launch was cancelled.",
+            })
+        );
+    }
+
+    #[test]
     fn invalid_hydration_requests_have_a_stable_safe_envelope() {
         assert_eq!(
             serde_json::to_value(AppError::InvalidHydrationRequest).unwrap(),
             serde_json::json!({
                 "code": "INVALID_HYDRATION_REQUEST",
                 "message": "The icon hydration request is invalid.",
+            })
+        );
+    }
+
+    #[test]
+    fn global_shortcut_failures_have_distinct_safe_envelopes() {
+        assert_eq!(
+            serde_json::to_value(AppError::InvalidGlobalShortcut).unwrap(),
+            serde_json::json!({
+                "code": "INVALID_GLOBAL_SHORTCUT",
+                "message": "Use a letter, number or function key with Win, Ctrl or Alt.",
+            })
+        );
+        assert_eq!(
+            serde_json::to_value(AppError::GlobalShortcutUnavailable).unwrap(),
+            serde_json::json!({
+                "code": "GLOBAL_SHORTCUT_UNAVAILABLE",
+                "message": "That shortcut is already in use. Choose another one.",
+            })
+        );
+        assert_eq!(
+            serde_json::to_value(AppError::SaveGlobalShortcut(String::new())).unwrap(),
+            serde_json::json!({
+                "code": "SAVE_GLOBAL_SHORTCUT_FAILED",
+                "message": "Could not save the shortcut. Try again.",
             })
         );
     }

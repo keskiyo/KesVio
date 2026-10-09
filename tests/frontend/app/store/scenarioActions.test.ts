@@ -67,6 +67,48 @@ describe('scenario actions', () => {
 		expect(store.getState().setScenarioForceClose(id, true)).toBe(false)
 		expect(store.getState().scenarios[0].forceClose).toBe(false)
 	})
+	it('binds a scenario to a drive, persists it and can undo or clear it', () => {
+		const { storage } = memoryStorage()
+		const store = createAppStore(client(), storage, idFactory)
+		store.getState().createScenario('Stick')
+		const id = store.getState().scenarios[0].id
+
+		expect(store.getState().setScenarioDriveTrigger(id, '1A2B3C4D')).toBe(
+			true,
+		)
+		expect(
+			createAppStore(client(), storage).getState().scenarios[0]
+				.triggerVolumeId,
+		).toBe('1a2b3c4d')
+		expect(store.getState().undo().ok).toBe(true)
+		expect(store.getState().scenarios[0].triggerVolumeId).toBeUndefined()
+
+		store.getState().setScenarioDriveTrigger(id, '1a2b3c4d')
+		store.getState().setScenarioDriveTrigger(id, null)
+		expect(store.getState().scenarios[0]).not.toHaveProperty(
+			'triggerVolumeId',
+		)
+	})
+
+	it('drops a drive binding that is not a volume id when reading preferences', () => {
+		const { storage, values } = memoryStorage()
+		values.set(
+			PREFERENCES_KEY,
+			JSON.stringify({
+				version: 24,
+				scenarios: [
+					{ id: 'a', name: 'A', triggerVolumeId: 'C:\\' },
+					{ id: 'b', name: 'B', triggerVolumeId: '1a2b3c4d' },
+				],
+			}),
+		)
+
+		const scenarios = createAppStore(client(), storage).getState().scenarios
+
+		expect(scenarios[0]).not.toHaveProperty('triggerVolumeId')
+		expect(scenarios[1].triggerVolumeId).toBe('1a2b3c4d')
+	})
+
 	it('creates, renames and deletes a scenario', () => {
 		const store = createAppStore(
 			client(),

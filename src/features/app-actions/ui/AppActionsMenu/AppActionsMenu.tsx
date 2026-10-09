@@ -1,11 +1,4 @@
-import {
-	ArrowRight,
-	ExternalLink,
-	EyeOff,
-	Info,
-	RotateCcw,
-	Wrench,
-} from 'lucide-react'
+import { ArrowRight, ExternalLink, Info } from 'lucide-react'
 import { useState, type CSSProperties } from 'react'
 import { driveCategoryFor } from '../../../../entities/category'
 import { createPortal } from 'react-dom'
@@ -14,7 +7,10 @@ import {
 	isCatalogArtifact,
 } from '../../../../entities/app'
 import { CategorySubmenu } from './CategorySubmenu'
+import { MENU_PANEL } from './data'
+import { FileActionItems } from './FileActionItems'
 import { MenuItem } from './MenuItem'
+import { PlacementItem } from './PlacementItem'
 import type { AppActionsMenuProps } from './types'
 import { useActionsMenu } from '../../model/useActionsMenu'
 
@@ -26,6 +22,7 @@ export function AppActionsMenu({
 	onMove,
 	onInfo,
 	onManageInWindows,
+	fileActions,
 	isHidden = false,
 	isUserPromoted = false,
 	onHide,
@@ -64,7 +61,7 @@ export function AppActionsMenu({
 				}
 				role="menu"
 				aria-label={`${app.name} actions`}
-				className="motion-panel fixed z-[600] flex max-h-[calc(100vh-1.5rem)] w-56 max-w-[calc(100vw-1.5rem)] flex-col gap-0.5 overflow-y-auto rounded-xl border border-slate-200/85 bg-slate-50 p-2 text-left text-slate-700 shadow-(--shadow-menu)"
+				className={MENU_PANEL}
 			>
 				{!isHidden && !artifact && !drive && (
 					<>
@@ -78,7 +75,7 @@ export function AppActionsMenu({
 						/>
 						<div
 							role="separator"
-							className="mx-1 my-1 border-t border-slate-200/55"
+							className="mx-1 my-0.5 border-t border-slate-200/55 sm:my-1"
 						/>
 					</>
 				)}
@@ -90,44 +87,30 @@ export function AppActionsMenu({
 						onInfo(app)
 					}}
 				/>
+				{!filedArtifact && (
+					<FileActionItems
+						app={app}
+						isHidden={isHidden}
+						fileActions={fileActions}
+						onClose={onClose}
+					/>
+				)}
 				{drive && (
-					<p className="px-3 py-2 text-xs text-(--text-muted)">
+					<p className="px-2.5 py-1.5 text-[11px] text-(--text-muted) sm:px-3 sm:py-2 sm:text-xs">
 						Grouped by scan drive. Category changes are unavailable.
 					</p>
 				)}
-				{(!isHidden || onRestore) && (
-					<MenuItem
-						icon={
-							isHidden
-								? RotateCcw
-								: isUserPromoted
-									? Wrench
-									: EyeOff
-						}
-						label={
-							isHidden ? (
-								'Restore to catalog'
-							) : isUserPromoted ? (
-								<>
-									<span aria-hidden="true">Move back</span>
-									<span className="sr-only">
-										Move back to Auxiliary tools
-									</span>
-								</>
-							) : (
-								'Hide from catalog'
-							)
-						}
-						onClick={() => {
-							if (isHidden) onRestore?.(app.id)
-							else if (isUserPromoted) onDemote(app.id)
-							else onHide(app.id)
-							onClose()
-						}}
-					/>
-				)}
+				<PlacementItem
+					app={app}
+					isHidden={isHidden}
+					isUserPromoted={isUserPromoted}
+					onHide={onHide}
+					onRestore={onRestore}
+					onDemote={onDemote}
+					onClose={onClose}
+				/>
 				{!isHidden && !filedArtifact && (
-					<div className="mx-1 my-1 border-t border-slate-200/55" />
+					<div className="mx-1 my-0.5 border-t border-slate-200/55 sm:my-1" />
 				)}
 				{!isHidden && !filedArtifact && app.canUninstall && (
 					<MenuItem

@@ -17,11 +17,11 @@ import { createScenarioPolicyActions } from './actions/scenarioPolicyActions'
 import { createTransaction } from './transaction'
 import { createUndoActions } from './actions/undoActions'
 import { readPreferences } from './preferences'
-import type { AppPreferencesV23 } from './preferences'
+import type { AppPreferencesV24 } from './preferences'
 import type { AppsClient } from '../../entities/app'
 import type { AppState } from './types'
 
-function initialState(preferences: AppPreferencesV23) {
+function initialState(preferences: AppPreferencesV24) {
 	return {
 		apps: [],
 		query: '',
@@ -53,6 +53,8 @@ function initialState(preferences: AppPreferencesV23) {
 		firstSeenAt: preferences.firstSeenAt,
 		firstSeenVolumes: preferences.firstSeenVolumes,
 		savedFilters: preferences.savedFilters,
+		appLaunchStats: preferences.appLaunchStats,
+		launchHistorySince: preferences.launchHistorySince ?? Date.now(),
 		activeSavedFilterId: null,
 		legacyCanonicalPreferences: preferences.legacyCanonicalPreferences,
 		unknownPreferenceFields: preferences.unknownFields ?? {},
@@ -83,7 +85,7 @@ export function createAppStore(
 			...createCatalogActions({ set, get, client, persist }),
 			...createCatalogSyncActions({ set, get, persist }),
 			...createIconActions({ get, client }),
-			...createLaunchActions({ set, get, client }),
+			...createLaunchActions({ set, get, client, persist }),
 			...createAppearanceActions({ set, persist }),
 			...createAppMarkActions({ set, get, persist, transact }),
 			...createAppPlacementActions({ set, get, transact }),

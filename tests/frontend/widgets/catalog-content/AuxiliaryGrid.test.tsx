@@ -59,6 +59,7 @@ function props(
 		onMoveApp: vi.fn(),
 		onInfo: vi.fn(),
 		onManageInWindows: vi.fn(),
+		fileActions: { openFolder: vi.fn(), copyPath: vi.fn() },
 		onPromote: vi.fn(),
 		onDemote: vi.fn(),
 	}

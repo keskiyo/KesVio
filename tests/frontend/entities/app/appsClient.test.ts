@@ -31,6 +31,16 @@ describe('tauri app client browser fallback', () => {
 			allowForce: true,
 		})
 	})
+	it('requests an elevated launch by catalog id only', async () => {
+		;(globalThis as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ =
+			{}
+		const { tauriAppsClient } =
+			await import('../../../../src/entities/app/api/appsClient')
+		await tauriAppsClient.launchAppElevated?.({ id: 'editor' })
+		expect(invokeMock).toHaveBeenLastCalledWith('launch_app_elevated', {
+			id: 'editor',
+		})
+	})
 	beforeEach(() => {
 		vi.resetModules()
 		invokeMock.mockReset()

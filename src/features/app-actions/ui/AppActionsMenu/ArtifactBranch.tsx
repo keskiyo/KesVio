@@ -19,7 +19,7 @@ export function ArtifactBranch({ label, onSelect }: ArtifactBranchProps) {
 					role="menuitem"
 					onClick={() => onSelect(destination.kind)}
 					{...spotlight}
-					className="relative flex w-full items-center rounded-lg px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-500/15 focus-visible:outline-2 focus-visible:outline-violet-500"
+					className="relative flex w-full items-center rounded-lg px-2.5 py-1 text-[13px] text-slate-600 hover:bg-slate-500/15 focus-visible:outline-2 focus-visible:outline-violet-500 sm:px-3 sm:py-1.5 sm:text-sm"
 				>
 					<SpotlightLayer size={60} />
 					{destination.label}

@@ -21,6 +21,7 @@ export function CatalogGrid(props: AppGridProps) {
 				onMoveApp={props.onMoveApp}
 				onInfo={props.onInfo}
 				onManageInWindows={props.onManageInWindows}
+				fileActions={props.fileActions}
 				onHide={props.onHide}
 				onRestore={props.onRestore}
 				onDemote={props.onDemoteAuxiliary}
@@ -40,6 +41,7 @@ export function CatalogGrid(props: AppGridProps) {
 				onMoveApp={props.onMoveApp}
 				onInfo={props.onInfo}
 				onManageInWindows={props.onManageInWindows}
+				fileActions={props.fileActions}
 				onHide={props.onHide}
 				onRestore={props.onRestore}
 				onRestoreAll={props.onRestoreAll}
@@ -59,6 +61,7 @@ export function CatalogGrid(props: AppGridProps) {
 				onMoveApp={props.onMoveApp}
 				onInfo={props.onInfo}
 				onManageInWindows={props.onManageInWindows}
+				fileActions={props.fileActions}
 				onPromote={props.onPromoteAuxiliary}
 				onDemote={props.onDemoteAuxiliary}
 			/>

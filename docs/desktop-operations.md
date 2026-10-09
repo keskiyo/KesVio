@@ -77,6 +77,19 @@ would have to reintroduce it deliberately.
   update reaches it through `tray_by_id` on the main thread. A failure there is
   logged and leaves the previous menu standing rather than surfacing an error the
   user cannot act on.
+- The global Show KesVio shortcut defaults to **Win+Shift+Q** and is user
+  configurable. A replacement is registered on its own owned message-loop
+  thread before the active guard is released. Registration or persistence
+  failure drops the candidate and leaves the previous shortcut active; startup
+  reads the saved binding before registration and reports a Windows conflict in
+  Settings without changing the saved choice.
+- The main window is transparent and, on Windows 11 (build 22000 or later, read
+  from `CurrentBuildNumber`), gets the dark Mica backdrop at setup
+  (`src-tauri/src/lifecycle/backdrop.rs`). `get_window_backdrop` tells the page
+  whether Mica was applied; only then does `:root[data-backdrop='mica']` let the
+  desktop tint show through the shell, and never under
+  `prefers-reduced-transparency`. Windows 10, a refused effect or an older
+  WebView2 keep the opaque surfaces, so the window never turns see-through.
 - A fresh direct installation registers startup and leaves it **switched off**.
   Windows lists nothing it has no entry for, so the installer creates
   `$SMSTARTUP\KesVio.lnk` and, in the same guarded block, writes a
@@ -160,7 +173,7 @@ would have to reintroduce it deliberately.
   does not hold is worse than a refused change. Quitting from the tray still
   quits whatever the setting says.
 - Startup does no discovery work on the main thread. Tray creation and the
-  window are the only things `setup` performs; global-shortcut registration,
+  window are the only things `setup` performs; saved global-shortcut registration,
   the cached catalog, the change watcher and the installed-copy registry sync
   run on one background task afterwards. Settings therefore reports the shortcut
   as unregistered for the moment before that task completes.
@@ -215,6 +228,8 @@ would have to reintroduce it deliberately.
 The backend owns the tray model and rebuilds the native menu only when its stored model changes. The stable layout is **Open KesVio**, **Search**, optional **Favorite apps**, optional **Scenarios**, **Force scan**, and **Quit**. Labels are presentation only; static or checked IDs decide actions.
 
 The frontend sends bounded, sanitized IDs and labels for favorites and scenarios, and native clicks return only IDs or fixed events. Search and force-scan intents survive listener registration races through one-shot backend intent state. Force scan reuses the ordinary store action and is disabled before listener readiness and while startup or scanning is busy. Tray startup stays hidden; the first explicit show restores normal priority and releases the deferred startup scan.
+
+While the window is hidden — closed to the tray or started quietly — the WebView2 controller is marked invisible and asked for its low memory target (`src-tauri/src/platform/windows/webview_memory.rs`, called from `src-tauri/src/lifecycle/webview_presence.rs`); every show restores both. The webview is deliberately not suspended, because tray favorites, scenarios and search are handled by its script while the window is hidden. On a 357-app catalog in a debug build this took the hidden working set from about 470 MB to 90 MB and private memory from 256 MB to 217 MB, measured with `scripts/measure-runtime.ps1`.
 
 Detailed tray payload and event contracts are recorded in [IPC and data](ipc-and-data.md#ipc). Interaction copy and scenario behavior are recorded in [UI and workflows](ui-and-workflows.md).
 

@@ -166,7 +166,7 @@ describe('app store', () => {
 			importedField: 'kept',
 		})
 		expect(JSON.parse(store.getState().exportPreferences())).toMatchObject({
-			version: 23,
+			version: 24,
 			favoriteAppIds: ['code'],
 			hiddenAppIds: ['chrome'],
 			importedField: 'kept',
@@ -284,7 +284,7 @@ describe('app store', () => {
 
 	it('refuses import and restore when local preferences use a newer schema', () => {
 		const future = JSON.stringify({
-			version: 24,
+			version: 25,
 			favoriteAppIds: ['keep'],
 		})
 		const values = new Map<string, string>([
@@ -321,7 +321,7 @@ describe('app store', () => {
 	// After a downgrade the newer document is protected from being overwritten, but the store kept
 	// reporting every change as saved, so nothing warned the user that it would be gone on restart.
 	it('reports changes as unsaved while a newer document owns the preferences', () => {
-		const future = JSON.stringify({ version: 24, favoriteAppIds: ['keep'] })
+		const future = JSON.stringify({ version: 25, favoriteAppIds: ['keep'] })
 		const values = new Map<string, string>([[PREFERENCES_KEY, future]])
 		const storage = {
 			getItem: (key: string) => values.get(key) ?? null,
@@ -1187,9 +1187,98 @@ describe('app store', () => {
 	it('clears launching immediately when a launch fails', async () => {
 		const store = createAppStore(
 			client({ launchApp: vi.fn().mockRejectedValue(new Error('nope')) }),
+			memoryStorage(),
 		)
 		await expect(store.getState().launch(apps[0])).rejects.toThrow()
 		expect(store.getState().launchingIds).not.toContain('code')
+		expect(store.getState().appLaunchStats).toEqual({})
+	})
+
+	it('records a successful launch in the persisted launch history', async () => {
+		const storage = memoryStorage()
+		const store = createAppStore(client(), storage)
+
+		await store.getState().launch(apps[0])
+		await store.getState().launch(apps[0])
+
+		expect(store.getState().appLaunchStats.code?.count).toBe(2)
+		const saved = JSON.parse(storage.getItem(PREFERENCES_KEY) ?? '{}')
+		expect(saved.version).toBe(24)
+		expect(saved.appLaunchStats.code.count).toBe(2)
+		expect(typeof saved.launchHistorySince).toBe('number')
+	})
+
+	it('records a successful elevated launch in the persisted launch history', async () => {
+		const storage = memoryStorage()
+		const store = createAppStore(
+			client({ launchAppElevated: vi.fn().mockResolvedValue(undefined) }),
+			storage,
+		)
+
+		await store.getState().launchElevated(apps[0])
+
+		expect(store.getState().appLaunchStats.code?.count).toBe(1)
+		const saved = JSON.parse(storage.getItem(PREFERENCES_KEY) ?? '{}')
+		expect(saved.appLaunchStats.code.count).toBe(1)
+	})
+
+	it('does not record a failed elevated launch', async () => {
+		const store = createAppStore(
+			client({
+				launchAppElevated: vi
+					.fn()
+					.mockRejectedValue(new Error('denied')),
+			}),
+			memoryStorage(),
+		)
+
+		await expect(store.getState().launchElevated(apps[0])).rejects.toThrow()
+
+		expect(store.getState().appLaunchStats).toEqual({})
+	})
+
+	it('moves launch history with an app whose identity changes in a rescan', async () => {
+		const before = app({
+			id: 'code',
+			name: 'Visual Studio Code',
+			path: 'C:\\Code.exe',
+			category: 'development',
+		})
+		const after = { ...before, preferenceIdentity: 'code-identity' }
+		const store = createAppStore(
+			client({
+				getApps: vi
+					.fn()
+					.mockResolvedValue({ apps: [before], hasCache: true }),
+				refreshApps: vi
+					.fn()
+					.mockResolvedValue({ apps: [after], generation: 1 }),
+			}),
+			memoryStorage(),
+		)
+		await store.getState().load()
+		await store.getState().launch(before)
+
+		await store.getState().refresh()
+
+		expect(store.getState().appLaunchStats).toEqual({
+			'code-identity': {
+				count: 1,
+				lastLaunchedAt: expect.any(Number),
+			},
+		})
+	})
+
+	it('starts the launch history clock when an older document is loaded', () => {
+		const storage = memoryStorage()
+		storage.setItem(PREFERENCES_KEY, JSON.stringify({ version: 23 }))
+		const before = Date.now()
+
+		const store = createAppStore(client(), storage)
+
+		expect(store.getState().launchHistorySince).toBeGreaterThanOrEqual(
+			before,
+		)
 	})
 
 	it('clearLaunching is idempotent', () => {

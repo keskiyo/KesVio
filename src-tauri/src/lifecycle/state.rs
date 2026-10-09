@@ -12,6 +12,7 @@ pub(crate) struct LifecycleState {
     geometry: Mutex<Option<WindowGeometry>>,
     geometry_changes: AtomicU64,
     persist_pending: AtomicBool,
+    mica_applied: AtomicBool,
 }
 
 impl Default for LifecycleState {
@@ -24,6 +25,7 @@ impl Default for LifecycleState {
             geometry: Mutex::new(None),
             geometry_changes: AtomicU64::new(0),
             persist_pending: AtomicBool::new(false),
+            mica_applied: AtomicBool::new(false),
         }
     }
 }
@@ -93,6 +95,14 @@ impl LifecycleState {
 
     pub(crate) fn release_persist(&self) {
         self.persist_pending.store(false, Ordering::SeqCst);
+    }
+
+    pub(crate) fn mark_mica_applied(&self) {
+        self.mica_applied.store(true, Ordering::SeqCst);
+    }
+
+    pub(crate) fn mica_applied(&self) -> bool {
+        self.mica_applied.load(Ordering::SeqCst)
     }
 }
 

@@ -108,6 +108,12 @@ preference schema, normalization and storage live in `preferences/`, behind the
 existing `preferences.ts` facade (`preferencesFields.ts` keeps `custom:*` and
 `drive:*` category ids as user-defined). Component-only props stay with their
 component.
+Settings, Scenarios, Catalog Health and Backup & Restore load as separate chunks
+through `src/app/layout/lazyPages.ts`, behind one `Suspense` boundary in
+`AppViews`; `usePreloadSecondaryPages` fetches them 1.5 s after the catalog is
+ready, so the first paint parses less script and a later visit does not wait.
+The catalog, Favorites and More stay in the entry chunk because they are what
+the first paint shows.
 The stylesheet entry `src/app/styles/index.css` imports tokens, navigation, base,
 notifications, surfaces, theme, catalog and motion in cascade order. Theme rules
 match whole class tokens rather than arbitrary substrings.

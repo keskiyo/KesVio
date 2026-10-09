@@ -23,6 +23,7 @@ export function CategorySection({
 	onMoveApp,
 	onInfo,
 	onManageInWindows,
+	fileActions,
 	onHide,
 	onRestore,
 	onDemote,
@@ -87,6 +88,7 @@ export function CategorySection({
 								onMove={onMoveApp}
 								onInfo={onInfo}
 								onManageInWindows={onManageInWindows}
+								fileActions={fileActions}
 								onHide={onHide}
 								onRestore={onRestore}
 								onDemote={onDemote}

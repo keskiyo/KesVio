@@ -4,7 +4,7 @@ import {
 	parsePreferenceImport,
 	readPreferenceBackup,
 	serializePreferences,
-	type AppPreferencesV23,
+	type AppPreferencesV24,
 	type PreferenceTransferResult,
 } from '../preferences'
 import { reconcileMarks } from '../reconciliation'
@@ -31,9 +31,9 @@ type PreferenceTransferActions = Pick<
 	| 'hasPreferencesBackup'
 >
 
-function preferencesFromState(state: AppState): AppPreferencesV23 {
+function preferencesFromState(state: AppState): AppPreferencesV24 {
 	return {
-		version: 23,
+		version: 24,
 		catalogDensity: state.catalogDensity,
 		categories: state.categories,
 		categoryOrder: state.categoryOrder,
@@ -55,12 +55,14 @@ function preferencesFromState(state: AppState): AppPreferencesV23 {
 		firstSeenAt: state.firstSeenAt,
 		firstSeenVolumes: state.firstSeenVolumes,
 		savedFilters: state.savedFilters,
+		appLaunchStats: state.appLaunchStats,
+		launchHistorySince: state.launchHistorySince,
 		legacyCanonicalPreferences: state.legacyCanonicalPreferences,
 		unknownFields: state.unknownPreferenceFields,
 	}
 }
 
-function preferenceState(preferences: AppPreferencesV23) {
+function preferenceState(preferences: AppPreferencesV24) {
 	return {
 		catalogDensity: preferences.catalogDensity,
 		categories: preferences.categories,
@@ -83,6 +85,8 @@ function preferenceState(preferences: AppPreferencesV23) {
 		firstSeenAt: preferences.firstSeenAt,
 		firstSeenVolumes: preferences.firstSeenVolumes,
 		savedFilters: preferences.savedFilters,
+		appLaunchStats: preferences.appLaunchStats,
+		launchHistorySince: preferences.launchHistorySince ?? Date.now(),
 		legacyCanonicalPreferences: preferences.legacyCanonicalPreferences,
 		unknownPreferenceFields: preferences.unknownFields ?? {},
 	}
@@ -95,7 +99,7 @@ export function createPreferenceTransferActions({
 	storage,
 }: PreferenceTransferOptions): PreferenceTransferActions {
 	function applyPreferences(
-		preferences: AppPreferencesV23,
+		preferences: AppPreferencesV24,
 	): PreferenceTransferResult {
 		if (hasNewerStoredPreferences(storage)) {
 			return {

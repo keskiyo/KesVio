@@ -87,17 +87,16 @@ function renderDialog(
 	const getAppDetails = overrides.loadFails
 		? vi.fn().mockRejectedValue(new Error('private path'))
 		: vi.fn().mockResolvedValue(overrides.details ?? details)
-	const openAppFolder = vi.fn().mockResolvedValue(undefined)
 	const onClose = vi.fn()
 	render(
 		<AppInfoDialog
 			app={overrides.app ?? app}
 			categories={categories}
-			appsClient={{ getAppDetails, openAppFolder }}
+			appsClient={{ getAppDetails }}
 			onClose={onClose}
 		/>,
 	)
-	return { getAppDetails, openAppFolder, onClose }
+	return { getAppDetails, onClose }
 }
 
 afterEach(() => {
@@ -115,7 +114,7 @@ describe('AppInfoDialog', () => {
 			configurable: true,
 			value: { writeText },
 		})
-		const { getAppDetails, openAppFolder } = renderDialog()
+		const { getAppDetails } = renderDialog()
 
 		await screen.findByText('Application')
 		expect(getAppDetails).toHaveBeenCalledWith(app.id)
@@ -132,16 +131,69 @@ describe('AppInfoDialog', () => {
 		expect(
 			screen.getByRole('button', { name: 'Additional information' }),
 		).toHaveAttribute('aria-expanded', 'false')
-		await user.click(screen.getByRole('button', { name: 'Open folder' }))
-		expect(openAppFolder).toHaveBeenCalledWith(app.id)
-		await user.click(screen.getByRole('button', { name: 'Copy path' }))
-		expect(writeText).toHaveBeenLastCalledWith(app.path)
+		expect(
+			screen.queryByRole('button', { name: 'Open folder' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.queryByRole('button', { name: 'Copy path' }),
+		).not.toBeInTheDocument()
 		await user.click(screen.getByRole('button', { name: 'Copy report' }))
 		expect(writeText).toHaveBeenCalledWith(
 			expect.not.stringContaining('private path'),
 		)
 		expect(
 			screen.queryByRole('button', { name: 'Launch Example Editor' }),
+		).not.toBeInTheDocument()
+	})
+
+	it('measures the application folder only when asked', async () => {
+		const user = userEvent.setup()
+		const measureAppFolder = vi.fn().mockResolvedValue({
+			bytes: 3 * 1024 * 1024,
+			files: 12,
+			complete: true,
+		})
+		render(
+			<AppInfoDialog
+				app={app}
+				categories={categories}
+				appsClient={{
+					getAppDetails: vi
+						.fn()
+						.mockResolvedValue({ ...details, canOpenFolder: true }),
+					measureAppFolder,
+				}}
+				onClose={vi.fn()}
+			/>,
+		)
+		await screen.findByText('Application')
+		expect(measureAppFolder).not.toHaveBeenCalled()
+
+		await user.click(screen.getByRole('button', { name: 'Measure folder' }))
+
+		expect(measureAppFolder).toHaveBeenCalledWith(app.id)
+		expect(await screen.findByText('3 MB in 12 files')).toBeVisible()
+	})
+
+	it('offers no folder measurement where there is no folder to open', async () => {
+		render(
+			<AppInfoDialog
+				app={app}
+				categories={categories}
+				appsClient={{
+					getAppDetails: vi.fn().mockResolvedValue({
+						...details,
+						canOpenFolder: false,
+					}),
+					measureAppFolder: vi.fn(),
+				}}
+				onClose={vi.fn()}
+			/>,
+		)
+		await screen.findByText('Application')
+
+		expect(
+			screen.queryByRole('button', { name: 'Measure folder' }),
 		).not.toBeInTheDocument()
 	})
 
@@ -183,7 +235,7 @@ describe('AppInfoDialog', () => {
 		expect(screen.getAllByText('Not available').length).toBeGreaterThan(0)
 	})
 
-	it('shows a Windows Start App package identity and enables its folder action', async () => {
+	it('shows a Windows Start App package identity', async () => {
 		renderDialog({ app: systemStartApp, details: systemStartDetails })
 
 		await screen.findByText('Launch target')
@@ -194,9 +246,6 @@ describe('AppInfoDialog', () => {
 		expect(
 			within(status.closest('section')!).getByText('Launch target found'),
 		).toBeVisible()
-		expect(
-			screen.getByRole('button', { name: 'Open folder' }),
-		).toBeEnabled()
 	})
 
 	it('shows the original file name without repeating the launch type', async () => {
@@ -363,7 +412,6 @@ describe('AppInfoDialog', () => {
 				categories={categories}
 				appsClient={{
 					getAppDetails: vi.fn().mockResolvedValue(details),
-					openAppFolder: vi.fn().mockResolvedValue(undefined),
 				}}
 				onClose={vi.fn()}
 			/>,

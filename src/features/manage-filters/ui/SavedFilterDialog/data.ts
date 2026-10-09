@@ -5,6 +5,7 @@ import {
 	SAVED_FILTER_SOURCES,
 	SOURCE_LABELS,
 	type AvailabilityBucket,
+	UNUSED_FOR_CHOICES,
 } from '../../../../entities/app'
 import type { AppSourceKind } from '../../../../entities/app'
 
@@ -37,6 +38,17 @@ export const ADDED_WITHIN_OPTIONS: { value: number | null; label: string }[] = [
 		label: days === 1 ? 'Last day' : `Last ${days} days`,
 	})),
 ]
+
+export const UNUSED_FOR_OPTIONS: { value: number | null; label: string }[] = [
+	{ value: null, label: 'Any time' },
+	...UNUSED_FOR_CHOICES.map(days => ({
+		value: days,
+		label: days === 365 ? 'Over a year' : `Over ${days} days`,
+	})),
+]
+
+export const UNUSED_FOR_HINT =
+	'Counts from the last launch through KesVio; an app never launched counts from when KesVio first saw it.'
 
 export const FIELD_LABEL_CLASS =
 	'text-xs font-semibold tracking-wide text-(--text-muted) uppercase'

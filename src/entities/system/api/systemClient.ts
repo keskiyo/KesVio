@@ -1,5 +1,5 @@
 import { open } from '@tauri-apps/plugin-dialog'
-import type { SystemClient } from '../model/system.types'
+import type { SystemClient, WindowBackdrop } from '../model/system.types'
 import {
 	invokeIfTauri,
 	invokeTauri,
@@ -12,6 +12,8 @@ export const tauriSystemClient: SystemClient = {
 	setScanSettings: settings => invokeTauri('set_scan_settings', { settings }),
 	setCloseBehavior: hideToTray =>
 		invokeTauri('set_close_behavior', { hideToTray }),
+	setGlobalShortcut: binding =>
+		invokeTauri('set_global_shortcut', { binding }),
 	savePreferencesBackup: contents =>
 		invokeTauri('save_preferences_backup', { contents }),
 	exportDiagnosticsLog: () => invokeTauri('export_diagnostics_log'),
@@ -53,4 +55,18 @@ export const tauriSystemClient: SystemClient = {
 		isTauriRuntime()
 			? invokeTauri<boolean>('take_tray_search_intent')
 			: Promise.resolve(false),
+	onVolumesArrived: handler =>
+		listenIfTauri<{ volumeIds: unknown }>('volumes://arrived', payload =>
+			handler(
+				Array.isArray(payload.volumeIds)
+					? payload.volumeIds.filter(
+							(id): id is string => typeof id === 'string',
+						)
+					: [],
+			),
+		),
+	getWindowBackdrop: () =>
+		isTauriRuntime()
+			? invokeTauri<WindowBackdrop>('get_window_backdrop')
+			: Promise.resolve('solid'),
 }

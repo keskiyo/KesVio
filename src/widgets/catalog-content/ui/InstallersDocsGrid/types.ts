@@ -4,6 +4,7 @@ import type {
 	AppCategory,
 	CategoryDefinition,
 } from '../../../../entities/category'
+import type { AppFileActions } from '../../../../features/app-actions'
 
 export interface InstallersDocsGridProps {
 	apps: AppInfo[]
@@ -17,6 +18,7 @@ export interface InstallersDocsGridProps {
 	onInfo(app: AppInfo): void
 	onOpenFolder(app: AppInfo): Promise<void>
 	onManageInWindows(): Promise<void>
+	fileActions: AppFileActions
 	onHide(id: string): void
 	onDemoteAuxiliary(id: string): void
 }

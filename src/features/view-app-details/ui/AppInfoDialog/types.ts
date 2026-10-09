@@ -6,7 +6,7 @@ import type { CategoryDefinition } from '../../../../entities/category'
 export interface AppInfoDialogProps {
 	app: AppInfo
 	categories: CategoryDefinition[]
-	appsClient: Pick<AppsClient, 'getAppDetails' | 'openAppFolder'>
+	appsClient: Pick<AppsClient, 'getAppDetails' | 'measureAppFolder'>
 	onClose(): void
 }
 
@@ -37,12 +37,14 @@ export interface DetailRowsProps {
 }
 
 export interface DialogActionsProps {
-	canOpenFolder: boolean
-	isOpeningFolder: boolean
 	message: string | null
-	onCopyPath(): Promise<void>
 	onCopyReport(): Promise<void>
-	onOpenFolder(): Promise<void>
+	folder: {
+		offered: boolean
+		measuring: boolean
+		label: string | null
+		onMeasure(): Promise<void>
+	}
 }
 
 export interface InfoCardProps {

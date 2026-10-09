@@ -18,6 +18,7 @@ import { useAppDerivations } from './model/useAppDerivations'
 import { useCatalogDialogs } from './model/useCatalogDialogs'
 import { useNavigationIdentity } from './model/useNavigationIdentity'
 import { useNavigationProps } from './model/useNavigationProps'
+import { usePreloadSecondaryPages } from './model/usePreloadSecondaryPages'
 import { useRememberedView } from './model/useRememberedView'
 import { AppDialogs } from './layout/AppDialogs'
 import { AppViews } from './layout/AppViews'
@@ -29,6 +30,7 @@ import { useTrayCatalogScan } from './model/useTrayCatalogScan'
 import { useTrayFavorites } from './model/useTrayFavorites'
 import { useTraySearch } from './model/useTraySearch'
 import { useUpdateFailureNotice } from './model/useUpdateFailureNotice'
+import { useWindowBackdrop } from './model/useWindowBackdrop'
 
 import { useGlobalShortcuts } from './model/useGlobalShortcuts'
 import { useStaleCopy } from '../features/stale-copy'
@@ -68,6 +70,10 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	const feedback = useAppFeedback({
 		onLaunch: state.launch,
 		onOpenFolder: appsClient.openAppFolder,
+		onLaunchElevated: appsClient.launchAppElevated
+			? state.launchElevated
+			: undefined,
+		onCanLaunchElevated: appsClient.canLaunchElevated,
 		onRefresh: state.refresh,
 		onFullScan: state.forceFullScan,
 		onUndo: state.undo,
@@ -85,6 +91,8 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		isCatalogReady: !isLoading && activeView === 'all',
 	})
 	useRememberedView({ activeView, setActiveView: state.setActiveView })
+	usePreloadSecondaryPages(!isLoading)
+	useWindowBackdrop(systemClient)
 
 	useCatalogBootstrap({
 		initialize,
@@ -209,6 +217,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 								onFirstScan={feedback.fullScan}
 								onRefreshCatalog={feedback.refresh}
 								onOpenFolder={feedback.openFolder}
+								fileActions={feedback.fileActions}
 							/>
 						</div>
 					</div>

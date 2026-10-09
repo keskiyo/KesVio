@@ -1,4 +1,5 @@
 pub(crate) mod apps_folder;
+pub(crate) mod backdrop;
 pub(crate) mod change_watcher;
 pub(crate) mod com;
 pub(crate) mod drives;
@@ -11,6 +12,7 @@ mod registry;
 mod shortcuts;
 pub(crate) mod volume_watcher;
 pub(crate) mod volumes;
+pub(crate) mod webview_memory;
 
 pub(crate) use execution::{
     close_risk, closer, exec_target, executable_metadata, is_console_subsystem, launcher,
