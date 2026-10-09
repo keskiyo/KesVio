@@ -5,22 +5,18 @@ include them in the application bundle.
 
 ## Current capture
 
-Captured on 2026-09-23 from the running KesVio 0.5.4 application, built from the
-release change set that introduces these images on top of revision `63dde23`;
-`settings.png` was recaptured on 0.5.4 for its gear-and-title header and
-`favorites.png` on 2026-10-02 from 0.5.5 for the compact Favorites view, so the
-version under the logo differs between them. The window
-was rendered at a 1600 × 900 viewport through the WebView2 debugging protocol, so
-the images are native size rather than downscaled. The catalog counts, categories
-and application names come from a real Windows installation rather than fixtures.
+Captured on 2026-10-09 from the running KesVio 0.5.6 application at revision
+`0050b4b`. The window was rendered at a 1600 × 900 viewport through the WebView2
+debugging protocol, so the images are native size rather than downscaled. The
+catalog counts, categories and application names come from a real Windows
+installation rather than fixtures.
 Scenario names are presentation-ready, saved filters were hidden for the capture
 and restored afterwards, and the application details use a standard Program Files
 path without account or machine identifiers.
 
 All six application screenshots are 1600 × 900 and use the same dark theme; five
-are below 500 KB and `catalog.png`, the densest view, is about 565 KB. The Social
-Preview is 1280 × 640 and reuses the previous layout with the new catalog capture
-in its frame.
+are below 500 KB and `catalog.png`, the densest view, is about 600 KB. The existing
+Social Preview remains 1280 × 640 and is maintained separately.
 
 | File                 | Content                                                                |
 | -------------------- | ---------------------------------------------------------------------- |
@@ -29,7 +25,7 @@ in its frame.
 | `more.png`           | Auxiliary tools, Scenarios, Hidden and Installers & Docs previews.     |
 | `scenarios.png`      | Configured scenarios with their launch and close lists.                |
 | `app-info.png`       | Application information, installation path, status and detection.      |
-| `settings.png`       | Density, startup and tray behavior, shortcut and Windows apps.         |
+| `settings.png`       | Configurable and built-in shortcuts followed by catalog discovery.     |
 | `social-preview.png` | 1280 × 640 repository preview built from the icon and catalog capture. |
 
 ## Refresh guidance

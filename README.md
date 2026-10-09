@@ -69,9 +69,9 @@ Inspect local file details, architecture, signature status, installation state, 
 
 ### Settings and maintenance
 
-![KesVio settings showing appearance, startup and tray behavior, and Windows integration](.github/images/settings.png)
+![KesVio settings showing configurable keyboard shortcuts and catalog discovery](.github/images/settings.png)
 
-Control catalog density, application discovery, startup and tray behavior, updates, and catalog maintenance from one place.
+Configure the global shortcut, review built-in shortcuts, and control catalog density, application discovery, startup and tray behavior, updates, and catalog maintenance from one place.
 
 <details>
 <summary>More screenshots</summary>
