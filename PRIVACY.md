@@ -13,11 +13,15 @@ writes, and falls back to your Windows user profile when it does not.
 | ---------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Application catalog cache: names, executable and shortcut paths, icons, categories, your marks | `KesVioData\data\apps-cache.json`, or `%APPDATA%\keskiyo.kesvio` |
 | Window size and position                                                                       | `KesVioData\data\`, or `%APPDATA%\keskiyo.kesvio`                |
-| Interface preferences: theme, card density, sorting, scenarios, update preferences             | WebView2 local storage for the application                       |
+| Global shortcut, scan folders                                                                  | `KesVioData\data\`, or `%APPDATA%\keskiyo.kesvio`                |
+| Interface preferences: card density, ordering, favorites, scenarios, saved filters, updates    | WebView2 local storage for the application                       |
+| Launch history: how often and when last you started each app through KesVio                    | WebView2 local storage for the application                       |
 | Diagnostics log                                                                                | `KesVioData\logs\`, or `%LOCALAPPDATA%\keskiyo.kesvio\logs`      |
 
-The catalog describes software installed on the machine. It is ordinary personal data in the sense
-that it says something about you, which is why it stays on the machine.
+The catalog describes software installed on the machine, and the launch history says which of it
+you use. Both are ordinary personal data in the sense that they say something about you, which is
+why they stay on the machine. The launch history only orders suggestions and powers the
+"Not launched for" filter; it is included in a preferences export you create yourself.
 
 Uninstalling always removes the application, its Startup shortcut, its registry state and the
 diagnostics logs. Your catalog and preferences are removed only if you tick **Delete application
@@ -40,12 +44,13 @@ Three things, all of them visible in the interface before they happen:
   replaced by placeholders, but application names remain and the replacement is best-effort, so
   read it before sharing.
 
-Automatic update checks can be turned off in **Settings → Updates**. With them off, KesVio makes no
-network request at all until you check manually.
+Automatic update checks can be turned off in **Settings → Updates & links**. With them off, KesVio
+makes no network request at all until you check manually.
 
 ## What KesVio does not do
 
-- No telemetry, analytics, crash reporting, or usage counting.
+- No telemetry, analytics, or crash reporting. The local launch history above is never sent
+  anywhere.
 - No account, sign-in, or licence check.
 - No upload of your application inventory, and no online metadata or artwork enrichment.
 - No advertising or tracking identifiers, and no third-party SDK inside the application.

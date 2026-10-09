@@ -41,7 +41,7 @@ Bring Start Menu shortcuts, installed desktop programs, Microsoft Store apps, St
 Categorize unfamiliar software using Windows registrations, file metadata, and Start Menu structure instead of a hard-coded product list.
 
 **Search beyond app names**<br>
-Find software by name, publisher, description, path, or category, or by the short names people actually type: cmd, scode, wt, kubectl,
+Find software by name, publisher, description, path, or category, or by the short names people actually type: cmd, vscode, wt, kubectl,
 vim, chrome-beta and thousands more from a built-in dictionary and a bundled, offline index of winget package names. Search tolerates typos, transliteration, and Russian/Latin keyboard-layout mismatches.
 
 **Launch workflows, not only apps**<br>
@@ -140,7 +140,7 @@ See [Verifying a downloaded installer](docs/development.md#verifying-a-downloade
 Prerequisites: the Node.js version in [`.node-version`](.node-version), the Rust MSVC toolchain pinned in [`rust-toolchain.toml`](rust-toolchain.toml), Microsoft C++ Build Tools, Windows SDK, and the [Tauri Windows prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```powershell
-npm install
+npm ci
 npm run tauri dev
 ```
 

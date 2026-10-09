@@ -128,6 +128,17 @@ also checks that every `npm run …` named in the documentation exists in
 own behaviour is pinned by `scripts/test-verify-docs-links.mjs`, which builds
 throwaway repositories for each failure mode.
 
+The same run also reads the maintainers' local instruction files named in the
+script's `LOCAL_INSTRUCTIONS` list — git-ignored, so not part of the
+repository — when they exist: their links and anchors, quoted paths whose first
+segment exists on disk, `Name.md §N` section references and `npm run …`
+scripts. A checkout without them, such as CI, passes unchanged.
+
+A verification script is trusted only after it has been seen to fail: run a new
+or changed one against a probe it must reject, and prefer a `scripts/test-*`
+companion that keeps doing so. A script that shells out to a missing tool and
+exits 0 checks nothing.
+
 `scripts/run-native-smoke.ps1` is the native smoke run for a built executable
 (`npm run tauri build` → `src-tauri/target/release/KesVio.exe`, or a
 `cargo build --release --features tauri/custom-protocol` binary; a plain

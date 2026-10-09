@@ -153,6 +153,84 @@ test('rejects an allow-listed document the index does not route to', () => {
 	)
 })
 
+test('passes without the local instruction files, as a clean checkout has none', () => {
+	const result = check({})
+	assert.equal(result.status, 0, result.output)
+})
+
+test('checks a local instruction file when it is present', () => {
+	rejects(
+		{
+			'AGENTS.md': 'The pattern lives in `src-tauri/src/gone.rs`.\n',
+			'src-tauri/src/lib.rs': '\n',
+		},
+		/AGENTS\.md \(local\): quoted repository path does not exist — src-tauri\/src\/gone\.rs/,
+	)
+})
+
+test('resolves a nested instruction path against its own source root', () => {
+	const result = check({
+		'src/AGENTS.md':
+			'State lives in `app/store/appStore.ts` and `../scripts/tool.mjs`.\n',
+		'src/app/store/appStore.ts': 'export {}\n',
+		'scripts/tool.mjs': 'export {}\n',
+	})
+	assert.equal(result.status, 0, result.output)
+})
+
+test('rejects a nested instruction path that resolves nowhere', () => {
+	rejects(
+		{
+			'src/AGENTS.md': 'State lives in `app/store/vanished.ts`.\n',
+			'src/app/store/appStore.ts': 'export {}\n',
+		},
+		/src\/AGENTS\.md \(local\): quoted repository path does not exist — app\/store\/vanished\.ts/,
+	)
+})
+
+test('leaves quoted text alone when its first segment names nothing on disk', () => {
+	const result = check({
+		'ReleaseInfo.md':
+			'Compare `HEAD` with `origin/master`; GitHub serves `application/octet-stream`.\n',
+	})
+	assert.equal(result.status, 0, result.output)
+})
+
+test('rejects a numbered section reference the named document no longer has', () => {
+	rejects(
+		{ 'AGENTS.md': 'The rules are in `Documentation.md` §6 (Volumes).\n' },
+		/AGENTS\.md \(local\): Documentation\.md has no section §6/,
+	)
+})
+
+test('accepts a numbered section reference that matches a heading', () => {
+	const result = check({
+		'AGENTS.md':
+			'# Rules\n\n## 7. Change discipline\n\nSee AGENTS.md §7.\n',
+	})
+	assert.equal(result.status, 0, result.output)
+})
+
+test('lets a local file link to another local file', () => {
+	const result = check({
+		'.gitignore': `${GITIGNORE}ReleaseInfo.md\n`,
+		'AGENTS.md': 'Follow [the runbook](ReleaseInfo.md#preflight).\n',
+		'ReleaseInfo.md': '# Runbook\n\n## Preflight\n',
+	})
+	assert.equal(result.status, 0, result.output)
+})
+
+test('rejects a local link to a heading that no longer exists', () => {
+	rejects(
+		{
+			'AGENTS.md':
+				'Follow [the runbook](ReleaseInfo.md#publish-twice).\n',
+			'ReleaseInfo.md': '# Runbook\n\n## Publish once\n',
+		},
+		/AGENTS\.md \(local\): ReleaseInfo\.md has no heading for the anchor #publish-twice/,
+	)
+})
+
 test('rejects an allow-listed document that is missing from the tree', () => {
 	rejects(
 		{ '.gitignore': `${GITIGNORE}!docs/catalog.md\n` },

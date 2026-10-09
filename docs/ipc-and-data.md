@@ -30,15 +30,66 @@
 - [Security model](security.md)
 - [UI and workflows](ui-and-workflows.md)
 
+**Contents:** [Contract at a glance](#contract-at-a-glance) ·
+[IPC](#ipc) · [Error model](#error-model) · [Events](#events) ·
+[Persisted stores](#persisted-stores) ·
+[Compatibility and migrations](#compatibility-and-migrations)
+
+## Contract at a glance
+
+Every command returns `Result<T, AppError>` and takes catalog ids, never paths,
+commands or registry keys. `src-tauri/src/lib.rs` registers them;
+`src/entities/app/api/appsClient.ts` and
+`src/entities/system/api/systemClient.ts` are the only callers.
+
+| Family                 | Commands                                                                                                         | Takes                                                                   | Answers                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Catalog and scans      | `get_apps`, `refresh_apps`, `force_full_scan`, `reset_catalog_cache`, `start_background_sync`, `cancel_scan`     | nothing                                                                 | snapshot or `{ apps, generation }`; nothing for the last two    |
+| Icons                  | `hydrate_visible_icons`, `clear_icon_cache`                                                                      | up to 128 ids / nothing                                                 | nothing; icons arrive as `catalog://patches`                    |
+| Launch                 | `launch_app`, `launch_app_elevated`, `can_launch_elevated`                                                       | one id                                                                  | nothing / nothing / boolean                                     |
+| Close                  | `close_apps`                                                                                                     | ids (256 examined at most), optional `allowForce`                       | closed, not running, unavailable, blocked and failed counts     |
+| Details                | `get_app_details`, `open_app_folder`, `measure_app_folder`                                                       | one id                                                                  | details / nothing / `{ bytes, files, complete }`                |
+| System settings        | `get_system_settings`, `set_scan_settings`, `set_close_behavior`, `set_startup_enabled`, `set_global_shortcut`   | nothing / settings / boolean / boolean / modifiers and one physical key | settings / stored settings / boolean / startup state / shortcut |
+| Window                 | `get_window_backdrop`                                                                                            | nothing                                                                 | `mica` or `solid`                                               |
+| Backup and diagnostics | `save_preferences_backup`, `export_diagnostics_log`, `preview_diagnostics_log`, `log_client_error`               | document text / nothing / nothing / bounded kind and detail             | saved flag / saved flag / at most 16 KiB of XML / nothing       |
+| Links and copies       | `open_telegram`, `open_github`, `open_apps_settings`, `open_release`, `stale_copy_status`, `open_installed_copy` | nothing, or a validated release version                                 | nothing, or the installed copy's version and location           |
+| Tray                   | `set_tray_scenarios`, `set_tray_favorites`, `set_tray_running`, `set_tray_scan_state`, `take_tray_search_intent` | bounded `{ id, label }` lists, a label, a busy flag / nothing           | nothing / whether a search intent was pending                   |
+
+| Event                                                              | Payload                                                        | Producer → consumer                                 |
+| ------------------------------------------------------------------ | -------------------------------------------------------------- | --------------------------------------------------- |
+| `catalog://delta`, `catalog://patches`, `catalog://diagnostics`    | upserts and removed ids; hydration patches; scan diagnostics   | catalog sync → store                                |
+| `scan://progress`                                                  | coarse stage and root counts                                   | scan → header                                       |
+| `launch://status`, `close://progress`                              | `{ id, state }`; asking, waiting or terminating with countdown | launch and close → store and scenario runner        |
+| `tray://run-scenario`, `tray://launch-app`                         | `{ id }`                                                       | tray menu → window, which resolves the id itself    |
+| `tray://search`, `tray://show-favorites`, `tray://force-full-scan` | none                                                           | tray menu → window                                  |
+| `volumes://arrived`                                                | `{ volumeIds }` of tracked removable volumes                   | volume watcher, after the refresh → scenario offers |
+| `app://frontend-ready`                                             | none                                                           | window → backend, which then shows the window       |
+
+| Area                   | Error codes                                                                                                                                                                                                             |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog, scans, icons  | `SCAN_CANCELLED`, `SCAN_COALESCED`, `SCAN_FAILED`, `SCAN_PATH_NOT_ABSOLUTE`, `SCAN_SETTINGS_TOO_LARGE`, `RESET_CATALOG_CACHE_FAILED`, `RESET_ICON_CACHE_FAILED`, `CLEAR_ICON_CACHE_FAILED`, `INVALID_HYDRATION_REQUEST` |
+| Launch and close       | `LAUNCH_UNAVAILABLE`, `LAUNCH_DATA_UNAVAILABLE`, `LAUNCH_CANCELLED`, `CLOSE_DATA_UNAVAILABLE`                                                                                                                           |
+| Details and copies     | `APP_DETAILS_UNAVAILABLE`, `OPEN_FOLDER_UNAVAILABLE`, `PRODUCT_NAME_MISSING`, `NO_NEWER_COPY`                                                                                                                           |
+| Settings               | `SAVE_SCAN_SETTINGS_FAILED`, `SAVE_WINDOW_SETTINGS_FAILED`, `STARTUP_ENTRY_UPDATE_FAILED`, `INVALID_GLOBAL_SHORTCUT`, `GLOBAL_SHORTCUT_UNAVAILABLE`, `SAVE_GLOBAL_SHORTCUT_FAILED`                                      |
+| Backup and diagnostics | `SAVE_PREFERENCES_BACKUP_FAILED`, `EXPORT_DIAGNOSTICS_FAILED`, `INVALID_RELEASE_VERSION`                                                                                                                                |
+| Any command            | `APP_DATA_UNAVAILABLE`, `OPERATION_INTERRUPTED`, `OPERATION_FAILED`                                                                                                                                                     |
+| Raised by the client   | `DESKTOP_RUNTIME_UNAVAILABLE`, `INTERNAL`                                                                                                                                                                               |
+
+The recorded wire contract `src-tauri/tests/fixtures/ipc/contract.json` is the
+checked source for the command answers, backend events and error codes above;
+[the change checklist](#ipc-change-checklist) says how to change one.
+
 ## IPC
 
-Command families cover catalog reads and scans, icon hydration, launch/close,
-details/folder, system settings, settings backup export,
-project links, update release links, stale-copy handling, tray menu contents,
-and bounded interface-failure reporting. Commands return
-`Result<T, AppError>`; errors expose stable `SCREAMING_SNAKE` codes and static
-safe messages. Internal paths, commands, registry values and upstream errors
-never reach the webview.
+Commands return `Result<T, AppError>`; errors expose stable `SCREAMING_SNAKE`
+codes and static safe messages. Internal paths, commands, registry values and
+upstream errors never reach the webview.
+
+`measure_app_folder(id)` answers `{ bytes, files, complete }` for the folder
+`open_app_folder` would open, walked off the async runtime without following
+links and stopped after 200 000 entries or ten seconds; `complete: false`
+reports a total that stopped early or skipped unreadable entries. An unknown id
+or an app without a folder is `OPEN_FOLDER_UNAVAILABLE`.
 
 `launch_app_elevated` takes one catalog id and starts the stored target through
 the shell's `runas` verb, so Windows shows its consent prompt. An executable or
@@ -181,6 +232,8 @@ and carries it in the patch, and because hydration writes that metadata back int
 the cache document, the next start derives the same answer without the patch.
 Display paths can be shown to the user but never return as action input.
 
+### IPC change checklist
+
 IPC changes update all of these together:
 
 1. Rust request/response type and `#[serde(rename_all = "camelCase")]`;
@@ -233,14 +286,19 @@ or a second ordinary launch.
 
 ## Persisted stores
 
-Four stores contain user data:
+Five stores contain user data:
 
-| Store           | Owner                                         | Rules                                                                                                                                                |
-| --------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Catalog cache   | `catalog/storage/cache/`                      | Versioned, atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                                |
-| Preferences     | `src/app/store/preferences.ts`                | Versioned `localStorage` document (schema 24) for categories, marks, scenarios, first-seen data, launch history, catalog density and unknown fields. |
-| Window state    | `lifecycle/window_state/`                     | Versioned `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                                           |
-| Global shortcut | `platform/windows/shortcuts/global_shortcut/` | Versioned `global-shortcut.json`; one validated physical-key binding, written through a temporary file and replaced only after Windows accepts it.   |
+| Store           | Version                            | Owner                                                       | Rules                                                                                                                                         |
+| --------------- | ---------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog cache   | 11 (`CACHE_SCHEMA_VERSION`)        | `src-tauri/src/catalog/storage/cache/`                      | `apps-cache.json`; atomic, cache-first, backup-aware; corrupt primary data falls back safely.                                                 |
+| Preferences     | 24 (`CURRENT_PREFERENCES_VERSION`) | `src/app/store/preferences.ts`                              | `localStorage` document for categories, marks, scenarios, first-seen data, launch history, saved filters, catalog density and unknown fields. |
+| Scan settings   | unversioned                        | `src-tauri/src/catalog/scan/settings.rs`                    | `scan-settings.json`; scan folders, exclusions, the fixed-drive toggle and catalog rollback switches; rewritten only when the value changes.  |
+| Window state    | 1                                  | `src-tauri/src/lifecycle/window_state/`                     | `window-state.json`; position, size, maximized flag and the close behaviour, written atomically.                                              |
+| Global shortcut | 1                                  | `src-tauri/src/platform/windows/shortcuts/global_shortcut/` | `global-shortcut.json`; one validated physical-key binding, replaced only after Windows accepts it.                                           |
+
+Presentation-only values outside these stores — `kesvio.last-view` and the
+update-check keys in `localStorage`, the icon cache and the diagnostics log —
+cost nothing when lost and carry no migration.
 
 Window state is presentation-only and deliberately disposable: a missing,
 malformed or newer-versioned document restores nothing, the window opens at the
@@ -288,12 +346,6 @@ integer or whose date is not a positive finite number. Documents written before
 schema 24 upgrade with an empty map and no start date; the store stamps the
 start on load, so "not launched for N days" never counts time before tracking
 existed. Both travel with export, import and the local backup.
-
-`measure_app_folder(id)` answers `{ bytes, files, complete }` for the folder
-`open_app_folder` would open, walked off the async runtime without following
-links and stopped after 200 000 entries or ten seconds; `complete: false`
-reports a total that stopped early or skipped unreadable entries. An unknown id
-or an app without a folder is `OPEN_FOLDER_UNAVAILABLE`.
 
 Schema 19 adds `lastRunAt` to a scenario. Documents written before it upgrade
 unstamped rather than being stamped with the migration time, which would claim
@@ -627,9 +679,9 @@ Cache schema 11 adds the optional `scanFolder` origin to catalog records. Schema
 10 loads with that value absent and upgrades in memory; older supported schemas
 continue through the same cumulative migration path. Within schema 11 two
 further additive fields default when absent: `volumeId` on a record and the
-document-level `volumes` list of tracked volumes (see _Removable volumes_
-below); a document written before them loads with the record field `None` and
-the list empty.
+document-level `volumes` list of tracked volumes (see
+[Removable volumes](catalog.md#removable-volumes)); a document written before
+them loads with the record field `None` and the list empty.
 
 The document a load hands back carries no icons, because hydration owns them and
 fills them in afterwards. PNG files in the content-addressed icon cache are the

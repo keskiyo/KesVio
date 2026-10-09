@@ -5,6 +5,11 @@
 // resolves, and while nothing tracked sends a reader to a local working file that was never
 // published. Those are the four failures this script reports.
 //
+// The git-ignored agent instructions and runbooks (AGENTS.md, CLAUDE.md, ReleaseInfo.md,
+// info_build.md) are checked too, but only when they exist: a clean checkout and CI have none,
+// so they never become a requirement. When present, their links, anchors, quoted paths, npm
+// scripts and `Name.md §N` section references must still resolve.
+//
 //   node scripts/verify-docs-links.mjs [--root <project>]
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, statSync } from 'node:fs'
@@ -19,6 +24,18 @@ const ENTRY_DOCUMENTS = [
 	'PRIVACY.md',
 	'THIRD_PARTY_NOTICES.md',
 ]
+const LOCAL_INSTRUCTIONS = [
+	{ name: 'AGENTS.md', roots: [''] },
+	{ name: 'CLAUDE.md', roots: [''] },
+	{ name: 'ReleaseInfo.md', roots: [''] },
+	{ name: 'info_build.md', roots: [''] },
+	{ name: 'src/AGENTS.md', roots: ['src', ''] },
+	{ name: 'src/CLAUDE.md', roots: ['src', ''] },
+	{ name: 'src-tauri/AGENTS.md', roots: ['src-tauri', 'src-tauri/src', ''] },
+	{ name: 'src-tauri/CLAUDE.md', roots: ['src-tauri', ''] },
+]
+const LOCAL_PATH = /`([\w.-]+(?:\/[\w.@-]+)+\/?)`/g
+const SECTION_REFERENCE = /`?([\w./-]+\.md)`?\s+§(\d+)/g
 const LINK = /\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g
 const REPOSITORY_PATH =
 	/`((?:src|src-tauri|scripts|tests|data|public|\.github)\/[^`\n]+)`/g
@@ -77,6 +94,82 @@ function readDocuments(root, documents) {
 			name,
 			text: readFileSync(join(root, name), 'utf8'),
 		}))
+}
+
+function numberedSections(markdown) {
+	const sections = new Set()
+	for (const line of markdown.split('\n')) {
+		const heading = /^#{1,6}\s+(\d+)[.\s]/.exec(line)
+		if (heading) sections.add(heading[1])
+	}
+	return sections
+}
+
+function firstExisting(root, bases, path) {
+	for (const base of bases) {
+		const full = resolve(root, base, path)
+		if (existsSync(full)) return full
+	}
+	return null
+}
+
+function inspectLocalInstruction(root, { name, roots }, scripts) {
+	const errors = []
+	const text = readFileSync(join(root, name), 'utf8')
+	const label = `${name} (local)`
+	const documentDirectory = dirname(name)
+	const bases = [...new Set([documentDirectory, ...roots])]
+
+	for (const [, raw] of text.matchAll(LINK)) {
+		if (EXTERNAL.test(raw)) continue
+		const [target, anchor] = raw.split('#')
+		const full = target
+			? resolve(root, documentDirectory, decodeURIComponent(target))
+			: join(root, name)
+		if (!existsSync(full)) {
+			errors.push(`${label}: link target does not exist — ${raw}`)
+			continue
+		}
+		if (anchor && statSync(full).isFile()) {
+			const known = headingAnchors(readFileSync(full, 'utf8'))
+			if (!known.has(anchor.toLowerCase()))
+				errors.push(
+					`${label}: ${relative(root, full).split('\\').join('/')} has no heading for the anchor #${anchor}`,
+				)
+		}
+	}
+
+	for (const [, quoted] of text.matchAll(LOCAL_PATH)) {
+		const candidate = quoted.replace(/[.,;:]+$/, '')
+		if (PLACEHOLDER.test(candidate) || BUILD_OUTPUT.test(candidate))
+			continue
+		const firstSegment = candidate.split('/')[0]
+		if (!firstExisting(root, bases, firstSegment)) continue
+		if (!firstExisting(root, bases, candidate))
+			errors.push(
+				`${label}: quoted repository path does not exist — ${candidate}`,
+			)
+	}
+
+	for (const [, document, section] of text.matchAll(SECTION_REFERENCE)) {
+		const full = firstExisting(root, ['', documentDirectory], document)
+		if (!full) {
+			errors.push(
+				`${label}: ${document} §${section} names a missing document`,
+			)
+			continue
+		}
+		if (!numberedSections(readFileSync(full, 'utf8')).has(section))
+			errors.push(`${label}: ${document} has no section §${section}`)
+	}
+
+	for (const [, script] of text.matchAll(NPM_SCRIPT))
+		if (!scripts.has(script))
+			errors.push(
+				`${label}: package.json has no script — npm run ${script}`,
+			)
+
+	return errors
 }
 
 export function inspect(root) {
@@ -172,7 +265,18 @@ export function inspect(root) {
 			errors.push(`Documentation.md does not route to ${document}`)
 	}
 
-	return { errors, documents: documents.length, links: targets.length }
+	const local = LOCAL_INSTRUCTIONS.filter(entry =>
+		existsSync(join(root, entry.name)),
+	)
+	for (const entry of local)
+		errors.push(...inspectLocalInstruction(root, entry, scripts))
+
+	return {
+		errors,
+		documents: documents.length,
+		links: targets.length,
+		local: local.length,
+	}
 }
 
 try {
@@ -184,13 +288,13 @@ try {
 	const root = args.length
 		? resolve(args[1])
 		: dirname(dirname(fileURLToPath(import.meta.url)))
-	const { errors, documents, links } = inspect(root)
+	const { errors, documents, links, local } = inspect(root)
 	if (errors.length) {
 		process.stderr.write(`${errors.join('\n')}\n`)
 		process.exitCode = 1
 	} else {
 		process.stdout.write(
-			`Verified documentation: ${documents} documents, ${links} internal links\n`,
+			`Verified documentation: ${documents} documents, ${links} internal links, ${local} local instruction files\n`,
 		)
 	}
 } catch (error) {

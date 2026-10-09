@@ -47,6 +47,13 @@ so the artifact classifier and the visibility rules read the same definition.
 Product names built from the same words — Revo Uninstaller, IObit Uninstaller —
 stay applications, because only the first word counts.
 
+Rejection is unrecoverable: `retain_visible` in `src-tauri/src/catalog/mod.rs`
+drops rejected entries before deduplication, and no view exposes them. The
+visibility rules therefore reject only on structural evidence — a framework
+package or a shell-location shortcut — while a name or text marker at most
+demotes an entry to auxiliary, where it stays reachable. The fixture test in
+`src-tauri/src/catalog/visibility/mod.rs` fails any rejection that cites another reason.
+
 ## Windows feature recognition
 
 Windows built-in tools are recognised by their whole name rather than by a

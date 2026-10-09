@@ -40,7 +40,8 @@ them will be closed as intended behaviour:
   project, so SmartScreen warns on first run. Verify a download with `SHA256SUMS.txt` and the build
   provenance attestation published with every release instead.
 - **KesVio enumerates and can terminate processes**, and launches applications and installers
-  through the shell. Both are documented features the user triggers.
+  through the shell, including **Run as administrator**, which always goes through the Windows
+  consent prompt. These are documented features the user triggers.
 - **Scenario close force-terminates applications that ignore a close request after five seconds**,
   which can discard unsaved work. This is stated in the interface before the action runs.
 - Findings that require an attacker who already has code execution or administrator rights on the

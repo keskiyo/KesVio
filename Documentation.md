@@ -39,7 +39,7 @@ The webview sends bounded intent and catalog IDs. Rust resolves native targets f
 4. Read linked domains only when the change crosses their boundary.
 5. Update the owner document when behavior changes; use cross-links instead of copying its detailed rule elsewhere.
 
-Historical rationale belongs in [Technical decisions](docs/decisions.md). Operational diagnosis starts in [Troubleshooting](docs/troubleshooting.md). Repository-wide contributor floors remain in [CONTRIBUTING.md](CONTRIBUTING.md) and the applicable `AGENTS.md` files.
+Historical rationale belongs in [Technical decisions](docs/decisions.md). Operational diagnosis starts in [Troubleshooting](docs/troubleshooting.md). Contributor floors live in [CONTRIBUTING.md](CONTRIBUTING.md); maintainers additionally keep local agent instruction files that are not part of the repository.
 
 ## Core invariants
 

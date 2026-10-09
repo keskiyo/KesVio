@@ -66,9 +66,10 @@ command covers the frontend, the documentation and the boundary checks:
 npm run verify
 ```
 
-It is lint, formatting check, typecheck, tests, production build, `npm run verify:docs` and
-`npm run verify:boundaries` in that order, so the first failure stops it. Run the parts alone
-while iterating:
+It is lint, formatting check, typecheck, tests, production build, the entry bundle budget
+(`npm run verify:bundle`), `npm run verify:docs` and `npm run verify:boundaries` (layer boundaries,
+Windows API ownership and the `// SAFETY:` rationale beside every `unsafe`) in that order, so the
+first failure stops it. Run the parts alone while iterating:
 
 ```bash
 npm run lint

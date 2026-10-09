@@ -31,6 +31,53 @@
 - [Desktop operations](desktop-operations.md)
 - [Troubleshooting](troubleshooting.md)
 
+**Contents:** [Interaction contracts at a glance](#interaction-contracts-at-a-glance) ·
+[Scenario editor lists](#scenario-editor-lists) ·
+[Catalog density and badges](#catalog-density-and-badges) ·
+[Artifact placement](#artifact-placement) ·
+[Category presentation](#category-presentation) ·
+[Catalog Health and Settings](#catalog-health-and-settings) ·
+[First-run catalog state](#first-run-catalog-state) ·
+[Scenario picker](#scenario-picker) ·
+[Destructive confirmations and focus](#destructive-confirmations-and-focus) ·
+[More and catalog utility pages](#more-and-catalog-utility-pages) ·
+[Scenario launcher](#scenario-launcher) · [Favorites](#favorites) ·
+[Application information](#application-information) ·
+[Saved catalog filters](#saved-catalog-filters) ·
+[Effective classification and drive placement](#effective-classification-and-drive-placement) ·
+[Scenario close policy](#scenario-close-policy) ·
+[Drive-triggered scenarios](#drive-triggered-scenarios) ·
+[Scenario import](#scenario-import) ·
+[Keyboard, screen reader and forced colors](#keyboard-screen-reader-and-forced-colors)
+
+## Interaction contracts at a glance
+
+| Keys                  | Where it works                                   | Action                                                      |
+| --------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
+| **Win+Shift+Q**       | anywhere in Windows; editable in Settings        | show KesVio (registered by the backend)                     |
+| **Ctrl+F**            | the window, unless a dialog is open              | select the search field, switching to the catalog if needed |
+| **/**                 | the window, outside a text field and dialogs     | focus the search field                                      |
+| **Ctrl+K**            | the window; closes its own launcher              | toggle Quick launch                                         |
+| **Ctrl+Shift+K**      | the window; closes its own launcher              | toggle the scenario launcher                                |
+| **Ctrl+Z**            | outside a text field, while an entry is undoable | undo the last preference transaction                        |
+| **Ctrl+P**            | the window                                       | swallowed; the webview never prints                         |
+| **Escape**            | the topmost dialog only                          | close it and restore focus                                  |
+| **Enter** / **Space** | a sidebar category                               | open it / pick it up for keyboard reordering                |
+
+| ⋮ menu item              | Offered for                                                                                                                 | Not offered for                                       |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| **App info**             | every record                                                                                                                | —                                                     |
+| **Run as administrator** | executables and shortcuts at once; an AppUserModelId once Windows confirms its `runas` verb                                 | `steam:` links, hidden apps, installers and documents |
+| **Open folder**          | executables, shortcuts and Windows Start Apps                                                                               | packaged Store app ids, installers and documents      |
+| **Copy path**            | every record that is not an installer or document                                                                           | installers and documents, whose row shows the folder  |
+| **Move back**            | a tool the user promoted out of Auxiliary tools; names "to Auxiliary tools" on hover or focus                               | everything else                                       |
+| **Uninstall**            | an installed program with a registered uninstaller; opens Windows Settings; disabled as **Uninstall unavailable** otherwise | installers, documents and hidden records              |
+
+Details and the reasons behind each row live in the sections below:
+[More and catalog utility pages](#more-and-catalog-utility-pages) for the menu,
+[Keyboard, screen reader and forced colors](#keyboard-screen-reader-and-forced-colors)
+for modal layering.
+
 ## Scenario editor lists
 
 A scenario's launch and close lists keep one row of tiles on screen and hold the
