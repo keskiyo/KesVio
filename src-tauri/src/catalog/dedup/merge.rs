@@ -46,7 +46,11 @@ pub(super) fn merge_app(left: AppInfo, right: AppInfo) -> AppInfo {
             && left.source_kind == SourceKind::Portable
             && right.source_kind == SourceKind::Portable
             && version_key(right.version.as_deref()) > version_key(left.version.as_deref()))
-        || (scores_tie && is_32bit_variant(&left) && !is_32bit_variant(&right));
+        || (scores_tie && is_32bit_variant(&left) && !is_32bit_variant(&right))
+        || (scores_tie
+            && left.launch_arguments.is_some()
+            && right.launch_arguments.is_none()
+            && describes_same_target(&left, &right));
     let (mut primary, secondary) = if prefer_right {
         (right, left)
     } else {
@@ -100,7 +104,10 @@ pub(super) fn merge_app(left: AppInfo, right: AppInfo) -> AppInfo {
     if primary.shortcut_icon_path.is_none() {
         primary.shortcut_icon_path = secondary.shortcut_icon_path;
     }
-    if primary.launch_arguments.is_none() && !secondary_is_side_action {
+    if primary.launch_arguments.is_none()
+        && !secondary_is_side_action
+        && !(same_target && scores_tie)
+    {
         primary.launch_arguments = secondary.launch_arguments;
     }
     if visibility_rank(secondary.visibility_class) > visibility_rank(primary.visibility_class) {

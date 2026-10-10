@@ -70,6 +70,26 @@ describe('ConfirmDialog', () => {
 		expect(onConfirm).toHaveBeenCalledTimes(1)
 	})
 
+	it('keeps the destructive look unless the change loses nothing', () => {
+		setup()
+		expect(
+			screen.getByRole('button', { name: 'Delete scenario' }),
+		).toHaveClass('danger-button')
+	})
+
+	it('drops the warning look for a calm confirmation', () => {
+		setup({ tone: 'calm', confirmLabel: 'Use Win+Alt+J' })
+
+		const confirm = screen.getByRole('button', { name: 'Use Win+Alt+J' })
+		expect(confirm).not.toHaveClass('danger-button')
+		expect(confirm).toHaveClass('utility-accent-button')
+		expect(
+			screen
+				.getByRole('alertdialog')
+				.querySelector('.lucide-triangle-alert'),
+		).toBeNull()
+	})
+
 	it('locks every control while the confirmed work runs', () => {
 		setup({ pending: true })
 

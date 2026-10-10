@@ -155,7 +155,7 @@ describe('useTrayFavorites', () => {
 		act(() => systemClient.launchFromTray('gone'))
 		expect(onLaunch).toHaveBeenCalledTimes(1)
 		expect(toast.error).toHaveBeenCalledWith(
-			'This favorite is no longer in the catalog',
+			'This app is no longer in the catalog',
 		)
 	})
 

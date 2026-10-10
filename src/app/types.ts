@@ -64,6 +64,7 @@ export interface AppDialogsProps {
 	dialogs: ReturnType<typeof useCatalogDialogs>
 	paletteApps: AppInfo[]
 	paletteSuggestions: AppInfo[]
+	onLaunchElevated(app: AppInfo): void
 	scenarioLauncher: ScenarioLauncherControl
 	savedFilterEditor: SavedFilterEditorControl
 	onError(kind: string, detail: string): void

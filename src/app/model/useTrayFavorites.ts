@@ -73,7 +73,7 @@ export function useTrayFavorites({
 					candidate => candidate.id === id,
 				)
 				if (app) void latest.current.onLaunch(app)
-				else toast.error('This favorite is no longer in the catalog')
+				else toast.error('This app is no longer in the catalog')
 			}),
 		)
 		hold(

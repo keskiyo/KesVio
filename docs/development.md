@@ -74,11 +74,12 @@ npm test
 npm run build
 ```
 
-`npm run verify` runs that whole frontend gate in order and adds the two
-repository checks below, so a contributor needs one command before opening a
-pull request; `npm run verify:rust` is its backend counterpart (format, Clippy
-with warnings denied, tests, all `--locked`). The parts are also available on
-their own as `npm run verify:docs` and `npm run verify:boundaries`.
+`npm run verify` runs that whole frontend gate in order and adds the repository
+checks below, so a contributor needs one command before opening a pull request;
+`npm run verify:rust` is its backend counterpart (format, Clippy with warnings
+denied, tests, all `--locked`). The parts are also available on their own as
+`npm run verify:bundle`, `npm run verify:catalog-diagnose`,
+`npm run verify:docs` and `npm run verify:boundaries`.
 
 Formatting is owned by Prettier through `prettier.config.mjs` and `.prettierignore`.
 `endOfLine` is `auto` because `core.autocrlf` is enabled on Windows checkouts while
@@ -166,6 +167,31 @@ Evidence is written to `.1localDocuments/native-smoke-<stamp>.json`. It stops
 only the process it started, after checking its path lies in the workspace,
 and deletes only that workspace; `scripts/test-run-native-smoke.ps1` holds it
 to that. The installer, the signed update and tray clicks remain manual.
+
+### Desktop E2E smoke
+
+`npm run test:e2e` drives the real window through WebDriver
+(`tests/e2e/smoke.e2e.mjs`, `node:test` plus `webdriverio`): the window opens,
+the startup scan of a fixture folder renders app cards, **Ctrl+F** selects the
+search field, a query makes the status name the match **Enter** would open and
+**↓**/**↑** move between the field and the cards (Enter itself is not pressed,
+so no real program starts), a card's actions menu opens and closes, Settings lists the global
+shortcut, and the per-user and installed stores stay untouched. It reuses the
+native smoke isolation (`tests/e2e/workspace.mjs`): a copy of the executable in
+`%TEMP%\kesvio-e2e\<stamp>\App` beside a pre-created `KesVioData`, its own
+WebView2 profile and `LOCALAPPDATA`, the workspace removed afterwards unless
+`KESVIO_E2E_KEEP` is set. It refuses to start while any KesVio or dev instance
+runs, because the single-instance guard would end the test app.
+
+One-time setup on a developer machine, outside the repository's dependencies:
+`cargo install tauri-driver --locked`, and the `msedgedriver.exe` whose version
+equals the installed WebView2 runtime, placed at
+`src-tauri/target/e2e/msedgedriver.exe` (or named by `KESVIO_E2E_DRIVER`).
+Build the executable with `npm run e2e:build` (frontend build plus
+`cargo build --release --features tauri/custom-protocol`), or point
+`KESVIO_E2E_APP` at another one. The suite is local only: it is not part of
+`npm test`, `npm run verify` or any workflow, because the hosted runners carry
+their own WebView2 version and the driver must match it.
 
 `scripts/measure-performance.ps1` is the performance baseline protocol: it
 records the commit, machine, OS, WebView2, node and rustc versions, runs the

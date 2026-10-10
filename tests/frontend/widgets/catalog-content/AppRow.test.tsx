@@ -82,9 +82,12 @@ describe('AppRow', () => {
 	it('shows compact tool identity and accessible actions', () => {
 		render(<AppRow {...props()} />)
 
-		expect(
-			screen.getByRole('button', { name: 'Launch Claude Code' }),
-		).toHaveTextContent('Claude Code')
+		const launch = screen.getByRole('button', {
+			name: 'Launch Claude Code',
+		})
+		expect(launch).toHaveTextContent('Claude Code')
+		expect(launch).toHaveAttribute('data-launch-target')
+		expect(launch.dataset.appId).toBe(props().app.id)
 		expect(
 			screen.getByText('Anthropic PBC · v2.1.186.0'),
 		).toBeInTheDocument()

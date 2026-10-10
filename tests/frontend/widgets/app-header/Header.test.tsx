@@ -28,6 +28,68 @@ function header(
 	)
 }
 
+function launchingHeader(query: string, bestMatch: string | null) {
+	const searchLaunch = {
+		bestMatch,
+		onSubmit: vi.fn(),
+		onLeave: vi.fn(),
+	}
+	render(
+		<Header
+			primaryAppCount={12}
+			auxiliaryToolCount={3}
+			visibleCount={bestMatch ? 2 : 0}
+			query={query}
+			isRefreshing={false}
+			scanProgress={null}
+			menuButtonRef={createRef()}
+			onOpenNavigation={vi.fn()}
+			onQueryChange={vi.fn()}
+			onRefresh={vi.fn().mockResolvedValue(undefined)}
+			onCancelScan={vi.fn().mockResolvedValue(undefined)}
+			showMenu={false}
+			searchLaunch={searchLaunch}
+		/>,
+	)
+	return searchLaunch
+}
+
+describe('Header search launching', () => {
+	// Results are grouped in category order, so the first card on screen is not always the
+	// best match; the status line names what Enter will open.
+	it('names the app Enter will open', () => {
+		launchingHeader('code', 'Visual Studio Code')
+
+		expect(screen.getByRole('status')).toHaveTextContent(
+			'2 matches · Enter opens Visual Studio Code',
+		)
+	})
+
+	it('launches on Enter, as administrator on Ctrl+Enter, and leaves on ArrowDown', async () => {
+		const launch = launchingHeader('code', 'Visual Studio Code')
+		const field = screen.getByPlaceholderText('Search apps…')
+		field.focus()
+
+		await userEvent.keyboard('{Enter}')
+		await userEvent.keyboard('{Control>}{Enter}{/Control}')
+		await userEvent.keyboard('{ArrowDown}')
+
+		expect(launch.onSubmit).toHaveBeenNthCalledWith(1, false)
+		expect(launch.onSubmit).toHaveBeenNthCalledWith(2, true)
+		expect(launch.onLeave).toHaveBeenCalledOnce()
+	})
+
+	it('does nothing on Enter without a match', async () => {
+		const launch = launchingHeader('zzz', null)
+		screen.getByPlaceholderText('Search apps…').focus()
+
+		await userEvent.keyboard('{Enter}')
+
+		expect(launch.onSubmit).not.toHaveBeenCalled()
+		expect(screen.getByRole('status')).not.toHaveTextContent('Enter opens')
+	})
+})
+
 describe('Header', () => {
 	// The chip used to open a second row under the counts, so applying a saved filter grew the
 	// header by 36 px and pushed the whole catalog down under the pointer.

@@ -148,6 +148,7 @@ pub fn run() {
             commands::diagnostics::preview_diagnostics_log,
             commands::tray::set_tray_scenarios,
             commands::tray::set_tray_favorites,
+            commands::tray::set_tray_recent,
             commands::tray::set_tray_running,
             commands::tray::set_tray_scan_state,
             commands::tray::take_tray_search_intent,

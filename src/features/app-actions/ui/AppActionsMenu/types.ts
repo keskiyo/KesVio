@@ -10,13 +10,7 @@ import type {
 	AppCategory,
 	CategoryDefinition,
 } from '../../../../entities/category'
-
-export interface AppFileActions {
-	openFolder(app: AppInfo): Promise<void>
-	copyPath(app: AppInfo): Promise<void>
-	launchElevated?(app: AppInfo): Promise<void>
-	canLaunchElevated?(app: AppInfo): Promise<boolean>
-}
+import type { AppFileActions } from '../../types'
 
 export interface FileActionItemsProps {
 	app: AppInfo

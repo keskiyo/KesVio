@@ -7,6 +7,7 @@ export function SearchField({
 	query,
 	searchRef,
 	onQueryChange,
+	searchLaunch,
 }: SearchFieldProps) {
 	const searchSpotlight = useSpotlight()
 
@@ -34,9 +35,22 @@ export function SearchField({
 					value={query}
 					onChange={event => onQueryChange(event.target.value)}
 					onKeyDown={event => {
-						if (event.key !== 'Escape' || !query) return
-						event.preventDefault()
-						onQueryChange('')
+						if (event.nativeEvent.isComposing) return
+						if (event.key === 'Escape' && query) {
+							event.preventDefault()
+							onQueryChange('')
+						} else if (event.key === 'ArrowDown' && searchLaunch) {
+							event.preventDefault()
+							searchLaunch.onLeave()
+						} else if (
+							event.key === 'Enter' &&
+							!event.altKey &&
+							!event.shiftKey &&
+							searchLaunch?.bestMatch
+						) {
+							event.preventDefault()
+							searchLaunch.onSubmit(event.ctrlKey)
+						}
 					}}
 					placeholder="Search apps…"
 					aria-describedby="search-hint"

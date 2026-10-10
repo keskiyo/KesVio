@@ -17,6 +17,7 @@ function statusText({
 	query,
 	isRefreshing,
 	scanProgress,
+	bestMatch,
 }: Pick<
 	HeaderProps,
 	| 'primaryAppCount'
@@ -25,9 +26,12 @@ function statusText({
 	| 'query'
 	| 'isRefreshing'
 	| 'scanProgress'
->) {
+> & { bestMatch: string | null }) {
 	if (isRefreshing && scanProgress) {
 		return `${scanProgress.stage}${scanProgress.location ? ` · ${scanProgress.location}` : ''}${scanProgress.totalRoots > 0 ? ` · ${scanProgress.completedRoots}/${scanProgress.totalRoots}` : ''}`
+	}
+	if (query.trim() && bestMatch) {
+		return `${countLabel(visibleCount, 'match')} · Enter opens ${bestMatch}`
 	}
 	if (query.trim()) {
 		return `${countLabel(visibleCount, 'match')} in ${catalogCountText(primaryAppCount, auxiliaryToolCount)}`
@@ -50,6 +54,7 @@ export function Header({
 	onRefresh,
 	onCancelScan,
 	showMenu,
+	searchLaunch,
 }: HeaderProps) {
 	const fallbackRef = useRef<HTMLInputElement>(null)
 	const searchRef = searchInputRef ?? fallbackRef
@@ -60,6 +65,7 @@ export function Header({
 		query,
 		isRefreshing,
 		scanProgress,
+		bestMatch: searchLaunch?.bestMatch ?? null,
 	})
 	return (
 		<header className="app-header-glass sticky top-0 z-300">
@@ -81,6 +87,7 @@ export function Header({
 							query={query}
 							searchRef={searchRef}
 							onQueryChange={onQueryChange}
+							searchLaunch={searchLaunch}
 						/>
 						<div className="app-header-status mt-1.5 flex min-w-0 items-center gap-2 px-1">
 							<p

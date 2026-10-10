@@ -2,6 +2,7 @@ import type { TrayScenarioEntry } from '../../scenario'
 
 export interface GlobalShortcutStatus {
 	available: boolean
+	pending: boolean
 	label: string
 	error: string | null
 }
@@ -66,6 +67,7 @@ export interface SystemClient {
 		entries: TrayFavoriteEntry[],
 		more: boolean,
 	): Promise<void>
+	setTrayRecent?(entries: TrayFavoriteEntry[]): Promise<void>
 	onTrayLaunchApp?(handler: (id: string) => void): Promise<() => void>
 	onTrayShowFavorites?(handler: () => void): Promise<() => void>
 	onTraySearch?(handler: () => void): Promise<() => void>

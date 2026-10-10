@@ -18,7 +18,7 @@ impl TraySearchIntent {
     }
 }
 
-pub(super) fn request(app: &AppHandle) {
+pub(crate) fn request(app: &AppHandle) {
     if let Some(intent) = app.try_state::<TraySearchIntent>() {
         intent.raise();
     }

@@ -1,7 +1,11 @@
-import { useRef } from 'react'
+import { useCallback, useRef } from 'react'
 import { useStore } from 'zustand'
 import { isCatalogView } from '../entities/app'
-import { useCatalogView } from '../widgets/catalog-content'
+import {
+	focusFirstLaunchTarget,
+	useCardNavigation,
+	useCatalogView,
+} from '../widgets/catalog-content'
 import {
 	AppDrawer,
 	AppSidebar,
@@ -26,13 +30,16 @@ import { useCatalogBootstrap } from './model/useCatalogBootstrap'
 import { useDrawer } from './model/useDrawer'
 import { useScenarioIntegration } from './model/useScenarioIntegration'
 import { useSearchAccess } from './model/useSearchAccess'
+import { useShortcutNotice } from './model/useShortcutNotice'
 import { useTrayCatalogScan } from './model/useTrayCatalogScan'
 import { useTrayFavorites } from './model/useTrayFavorites'
+import { useTrayRecent } from './model/useTrayRecent'
 import { useTraySearch } from './model/useTraySearch'
 import { useUpdateFailureNotice } from './model/useUpdateFailureNotice'
 import { useWindowBackdrop } from './model/useWindowBackdrop'
 
 import { useGlobalShortcuts } from './model/useGlobalShortcuts'
+import { useKeyboardLaunch } from './model/useKeyboardLaunch'
 import { useStaleCopy } from '../features/stale-copy'
 import { useUpdater } from '../features/update-app'
 import { AppStoreProvider } from './store/storeContext'
@@ -91,6 +98,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		isCatalogReady: !isLoading && activeView === 'all',
 	})
 	useRememberedView({ activeView, setActiveView: state.setActiveView })
+	useShortcutNotice({ systemClient, selectView: navigation.selectView })
 	usePreloadSecondaryPages(!isLoading)
 	useWindowBackdrop(systemClient)
 
@@ -107,6 +115,27 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		isCatalogView: isCatalogView(activeView),
 		setQuery: state.setQuery,
 		selectView: navigation.selectView,
+	})
+	const catalogScrollRef = useRef<HTMLDivElement>(null)
+	const focusResults = useCallback(
+		() => focusFirstLaunchTarget(catalogScrollRef.current),
+		[],
+	)
+	const keyboard = useKeyboardLaunch({
+		query: state.query,
+		deferredQuery: catalog.deferredQuery,
+		results: filteredApps,
+		catalogApps,
+		hiddenAppIds: state.hiddenAppIds,
+		hiddenAppIdentities: state.hiddenAppIdentities,
+		fileActions: feedback.fileActions,
+		onLaunch: dialogs.installerLaunch.requestLaunch,
+		onFocusResults: focusResults,
+	})
+	useCardNavigation({
+		containerRef: catalogScrollRef,
+		onLeaveTop: search.focus,
+		onElevate: keyboard.elevateById,
 	})
 	useGlobalShortcuts({
 		onToggleQuickLaunch: dialogs.palette.toggle,
@@ -134,6 +163,13 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		favoriteAppIds: state.favoriteAppIds,
 		onLaunch: feedback.launch,
 		selectView: navigation.selectView,
+	})
+	useTrayRecent({
+		systemClient,
+		apps: state.apps,
+		appLaunchStats: state.appLaunchStats,
+		hiddenAppIds: state.hiddenAppIds,
+		hiddenAppIdentities: state.hiddenAppIdentities,
 	})
 	useTraySearch({
 		systemClient,
@@ -200,8 +236,10 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							searchInputRef={search.searchInputRef}
 							onOpenNavigation={drawer.onOpen}
 							showMenu={!desktopNavigation}
+							searchLaunch={keyboard.searchLaunch}
 						/>
 						<div
+							ref={catalogScrollRef}
 							id="catalog-scroll"
 							className="min-h-0 overflow-x-hidden overflow-y-auto"
 						>
@@ -238,6 +276,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 					categories={state.categories}
 					dialogs={dialogs}
 					paletteApps={primaryApps}
+					onLaunchElevated={app => void keyboard.elevate(app)}
 					paletteSuggestions={catalog.paletteSuggestions}
 					scenarioLauncher={scenarios.launcher}
 					savedFilterEditor={{

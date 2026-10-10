@@ -2,15 +2,18 @@ mod menu;
 mod model;
 mod scan;
 mod search;
+mod tooltip;
 
 #[cfg(test)]
 pub(crate) use scan::FORCE_SCAN_EVENT;
+pub(crate) use search::request as request_search;
 pub(crate) use search::take_intent as take_search_intent;
 #[cfg(test)]
 pub(crate) use search::SEARCH_EVENT;
 
 pub(crate) use model::{
-    TrayFavorite, TrayScenario, MAX_SCENARIO_ID_CHARS, MAX_TRAY_FAVORITES, MAX_TRAY_SCENARIOS,
+    TrayFavorite, TrayScenario, MAX_SCENARIO_ID_CHARS, MAX_TRAY_FAVORITES, MAX_TRAY_RECENT,
+    MAX_TRAY_SCENARIOS,
 };
 
 use menu::{build_menu, sanitize_label, tray_action, TrayAction};
@@ -88,24 +91,20 @@ pub(crate) fn apply_favorites(app: &AppHandle, favorites: Vec<TrayFavorite>, mor
     });
 }
 
+pub(crate) fn apply_recent(app: &AppHandle, recent: Vec<TrayFavorite>) {
+    update_model(app, |model| model.recent = recent);
+}
+
 pub(crate) fn apply_scan_state(app: &AppHandle, busy: bool) {
     scan::apply_state(app, busy);
 }
 
 pub(crate) fn apply_running(app: &AppHandle, label: Option<String>) {
-    let handle = app.clone();
-    let tooltip = label
-        .map(|name| format!("{TOOLTIP} — running {}", sanitize_label(&name)))
-        .unwrap_or_else(|| TOOLTIP.to_owned());
-    if let Err(error) = app.run_on_main_thread(move || {
-        if let Some(tray) = handle.tray_by_id(TRAY_ID) {
-            if let Err(error) = tray.set_tooltip(Some(&tooltip)) {
-                log::error!("Could not update the tray tooltip: {error}");
-            }
-        }
-    }) {
-        log::error!("Could not reach the main thread for the tray tooltip: {error}");
-    }
+    tooltip::apply(app, |parts| parts.running = label);
+}
+
+pub(crate) fn apply_shortcut(app: &AppHandle, label: Option<String>) {
+    tooltip::apply(app, |parts| parts.shortcut = label);
 }
 
 fn show_and_emit(app: &AppHandle, event: &str) {
@@ -118,6 +117,7 @@ fn show_and_emit(app: &AppHandle, event: &str) {
 pub(crate) fn setup_tray(app: &AppHandle, state: Arc<LifecycleState>) -> tauri::Result<()> {
     app.manage(TrayModelState::default());
     app.manage(search::TraySearchIntent::default());
+    app.manage(tooltip::TrayTooltip::default());
     let scan_item = scan::create_item(app)?;
     let menu = build_menu(app, &TrayModel::default(), &scan_item)?;
     let icon = app.default_window_icon().cloned();

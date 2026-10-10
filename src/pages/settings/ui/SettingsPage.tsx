@@ -78,6 +78,7 @@ export function SettingsPage({
 			<KeyboardShortcuts
 				shortcut={settings?.shortcut ?? null}
 				saving={saving}
+				error={errorArea === 'shortcut' ? error : null}
 				onSetGlobalShortcut={setGlobalShortcut}
 			/>
 			<CatalogSettings

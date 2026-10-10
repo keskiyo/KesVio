@@ -24,6 +24,7 @@ pub(crate) const LABEL: &str = "Win+Shift+Q";
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Status {
     pub available: bool,
+    pub pending: bool,
     pub label: String,
     pub error: Option<&'static str>,
 }
@@ -32,6 +33,7 @@ impl Default for Status {
     fn default() -> Self {
         Self {
             available: false,
+            pending: true,
             label: LABEL.into(),
             error: Some("The shortcut has not been registered yet."),
         }
@@ -42,6 +44,7 @@ impl Status {
     pub(crate) fn pending(binding: &Binding) -> Self {
         Self {
             available: false,
+            pending: true,
             label: binding.label().unwrap_or_else(|()| LABEL.into()),
             error: Some("The shortcut has not been registered yet."),
         }
@@ -50,6 +53,7 @@ impl Status {
     fn registered(binding: &Binding) -> Self {
         Self {
             available: true,
+            pending: false,
             label: binding.label().unwrap_or_else(|()| LABEL.into()),
             error: None,
         }
@@ -58,6 +62,7 @@ impl Status {
     fn unavailable(binding: &Binding) -> Self {
         Self {
             available: false,
+            pending: false,
             label: binding.label().unwrap_or_else(|()| LABEL.into()),
             error: Some(
                 "The shortcut could not be registered. Another application may already use it.",
@@ -131,7 +136,7 @@ pub(crate) fn register(app: AppHandle, binding: Binding) -> RegisteredShortcut {
         let mut message = MSG::default();
         while GetMessageW(&mut message, None, 0, 0).as_bool() {
             if message.message == WM_HOTKEY && message.wParam.0 == HOTKEY_ID as usize {
-                crate::lifecycle::show_main_window(&app);
+                crate::lifecycle::request_search(&app);
             }
         }
         let _ = UnregisterHotKey(None, HOTKEY_ID);

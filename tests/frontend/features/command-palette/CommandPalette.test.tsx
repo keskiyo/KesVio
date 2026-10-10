@@ -39,6 +39,49 @@ afterEach(() => {
 	installKnownPackageEntries([])
 })
 
+describe('CommandPalette keyboard launching', () => {
+	it('runs the selected app as administrator on Ctrl+Enter and closes', async () => {
+		const user = userEvent.setup()
+		const onLaunch = vi.fn(async () => undefined)
+		const onLaunchElevated = vi.fn()
+		const onClose = vi.fn()
+		render(
+			<CommandPalette
+				apps={catalog}
+				suggestions={[]}
+				onLaunch={onLaunch}
+				onLaunchElevated={onLaunchElevated}
+				onClose={onClose}
+			/>,
+		)
+
+		await user.type(screen.getByRole('combobox'), 'ledger')
+		await user.keyboard('{Control>}{Enter}{/Control}')
+
+		expect(onLaunchElevated).toHaveBeenCalledWith(catalog[1])
+		expect(onLaunch).not.toHaveBeenCalled()
+		expect(onClose).toHaveBeenCalledOnce()
+	})
+
+	it('launches normally on Ctrl+Enter when elevation is not wired', async () => {
+		const user = userEvent.setup()
+		const onLaunch = vi.fn(async () => undefined)
+		render(
+			<CommandPalette
+				apps={catalog}
+				suggestions={[]}
+				onLaunch={onLaunch}
+				onClose={vi.fn()}
+			/>,
+		)
+
+		await user.type(screen.getByRole('combobox'), 'ledger')
+		await user.keyboard('{Control>}{Enter}{/Control}')
+
+		expect(onLaunch).toHaveBeenCalledWith(catalog[1])
+	})
+})
+
 // The external index arrives asynchronously after the first paint. A query typed before it
 // lands must recompute on its own once it is installed: no extra keystroke, no reopen.
 describe('CommandPalette and the lazily loaded alias index', () => {

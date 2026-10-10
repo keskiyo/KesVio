@@ -10,6 +10,7 @@ export function CommandPalette({
 	apps,
 	suggestions,
 	onLaunch,
+	onLaunchElevated,
 	onClose,
 }: CommandPaletteProps) {
 	const dialogRef = useRef<HTMLDivElement>(null)
@@ -38,8 +39,9 @@ export function CommandPalette({
 		node?.scrollIntoView({ block: 'nearest' })
 	}, [selected])
 
-	function launch(app: (typeof results)[number]) {
-		void onLaunch(app)
+	function launch(app: (typeof results)[number], elevated = false) {
+		if (elevated && onLaunchElevated) onLaunchElevated(app)
+		else void onLaunch(app)
 		onClose()
 	}
 
@@ -62,7 +64,7 @@ export function CommandPalette({
 		} else if (event.key === 'Enter') {
 			event.preventDefault()
 			const app = results[selected]
-			if (app) launch(app)
+			if (app) launch(app, event.ctrlKey)
 		}
 	}
 

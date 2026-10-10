@@ -61,6 +61,8 @@ function AppRowComponent({
 				onClick={() => {
 					if (!launching) void onLaunch(app)
 				}}
+				data-launch-target=""
+				data-app-id={app.id}
 				aria-label={`Launch ${app.name}`}
 				aria-busy={launching}
 				disabled={launching}

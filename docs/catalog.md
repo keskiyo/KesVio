@@ -175,8 +175,29 @@ and health state.
 Deduplication applies auxiliary-tool reasons after merging records for the same
 executable. A merged card therefore cannot remain primary until the next cache
 load merely because a secondary record supplied its tool classification. Reasons
-from a different executable still cannot demote the main application. Cache
-sanitation and migration remain active.
+from a different executable still cannot demote the main application. When
+equal-ranked shortcuts resolve to the same executable, the ordinary shortcut
+without launch arguments wins over a specialized mode such as remote or startup.
+Cache sanitation and migration remain active.
+
+### Catalog diagnosis
+
+`npm run catalog:diagnose -- "app name"` reads the current production cache and
+traces matching per-source records into the final catalog card. Pass
+`--catalog <apps-cache.json>` before the name to inspect another cache. The
+report includes each discovered target and launch mode, the final winner,
+visibility reasons, and one result:
+
+| Result                 | Meaning                                                             |
+| ---------------------- | ------------------------------------------------------------------- |
+| `FOUND`                | A final card still matches the requested name.                      |
+| `FINAL_NAME_MISMATCH`  | Discovery found it, but dedup selected a differently named card.    |
+| `LOST_AFTER_DISCOVERY` | Source snapshots contain it, but no correlated final card survived. |
+| `NOT_DISCOVERED`       | No source snapshot contains the requested identity.                 |
+
+Debug builds also write `dedup-report.json` in the report directory. Every
+merged group records its winner, launch arguments, candidate score, merge
+evidence, and the winner-selection reason.
 
 A force scan bypasses
 the previous filesystem index and shares the same three-minute cooperative

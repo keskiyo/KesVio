@@ -162,6 +162,14 @@ describe('CatalogAppCard', () => {
 		},
 	)
 
+	it('marks the card face as a keyboard launch target for its app', () => {
+		renderCard({ ...app, platformKind: 'portable' })
+
+		const face = screen.getByRole('button', { name: `Launch ${app.name}` })
+		expect(face).toHaveAttribute('data-launch-target')
+		expect(face.dataset.appId).toBe(app.id)
+	})
+
 	// "from Steam" names the storefront the launch goes through. "from Portable" names nothing a
 	// user recognises, so the badge carries that signal alone and the accessible name stays plain.
 	it('keeps the plain accessible name for a portable entry', () => {

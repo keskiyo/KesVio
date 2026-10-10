@@ -103,6 +103,11 @@ fn portable_and_store_match_the_baseline() {
 }
 
 #[test]
+fn softether_launch_modes_match_the_baseline() {
+    assert_matches_baseline("softether-launch-modes", &[]);
+}
+
+#[test]
 fn a_changed_category_is_reported_as_forbidden() {
     let records = read_fixture("squirrel-and-office");
     let baseline = pinned_report(records.clone());

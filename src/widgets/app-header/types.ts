@@ -22,6 +22,13 @@ export interface HeaderProps {
 	onRefresh(): Promise<void>
 	onCancelScan(): Promise<void>
 	showMenu: boolean
+	searchLaunch?: SearchLaunch
+}
+
+export interface SearchLaunch {
+	bestMatch: string | null
+	onSubmit(elevated: boolean): void
+	onLeave(): void
 }
 
 export interface FilterChipProps {
@@ -32,6 +39,7 @@ export interface SearchFieldProps {
 	query: string
 	searchRef: RefObject<HTMLInputElement>
 	onQueryChange(query: string): void
+	searchLaunch?: SearchLaunch
 }
 
 export interface ScanButtonProps {

@@ -1,12 +1,13 @@
 import { Command, ListChecks, Search } from 'lucide-react'
 import { ROW_CHIP, SETTINGS_SECTION_LABEL, SETTINGS_SURFACE } from '../../data'
 import { SettingsRow } from '../components/SettingsRow'
-import { GlobalShortcutRow } from './GlobalShortcutRow'
+import { GlobalShortcutRow } from './GlobalShortcutRow/GlobalShortcutRow'
 import type { KeyboardShortcutsProps } from '../../types'
 
 export function KeyboardShortcuts({
 	shortcut,
 	saving,
+	error,
 	onSetGlobalShortcut,
 }: KeyboardShortcutsProps) {
 	return (
@@ -15,6 +16,7 @@ export function KeyboardShortcuts({
 			<GlobalShortcutRow
 				shortcut={shortcut}
 				saving={saving}
+				error={error}
 				onSetGlobalShortcut={onSetGlobalShortcut}
 			/>
 			<SettingsRow
@@ -39,7 +41,7 @@ export function KeyboardShortcuts({
 				<kbd className={ROW_CHIP}>Ctrl+Shift+K</kbd>
 			</SettingsRow>
 			{shortcut?.error && (
-				<p className="border-t border-slate-200 px-5 py-3 text-sm text-amber-700">
+				<p className="border-t border-slate-200 px-5 py-3 text-sm text-(--category-amber)">
 					{shortcut.error}
 				</p>
 			)}

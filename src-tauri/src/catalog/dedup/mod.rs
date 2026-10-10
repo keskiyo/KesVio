@@ -1902,6 +1902,33 @@ mod tests {
     }
 
     #[test]
+    fn plain_shortcut_wins_over_a_specialized_mode_for_the_same_target() {
+        let mut remote = app(
+            "Manage Remote Computer's SoftEther VPN Client",
+            r"C:\Menu\SoftEther VPN Client\Manage Remote.lnk",
+        );
+        remote.launch_kind = LaunchKind::Shortcut;
+        remote.source_kind = SourceKind::StartMenu;
+        remote.resolved_path =
+            Some(r"C:\Program Files\SoftEther VPN Client\vpncmgr_x64.exe".into());
+        remote.launch_arguments = Some("/remote".into());
+        let mut plain = remote.clone();
+        plain.name = "SoftEther VPN Client Manager".into();
+        plain.path = r"C:\Menu\SoftEther VPN Client\SoftEther VPN Client Manager.lnk".into();
+        plain.launch_arguments = None;
+
+        let merged = resolve(vec![remote.clone(), plain.clone()]);
+        let reversed = resolve(vec![plain, remote]);
+
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].name, "SoftEther VPN Client Manager");
+        assert_eq!(merged[0].launch_arguments, None);
+        assert_eq!(reversed[0].name, merged[0].name);
+        assert_eq!(reversed[0].path, merged[0].path);
+        assert_eq!(reversed[0].launch_arguments, merged[0].launch_arguments);
+    }
+
+    #[test]
     fn meaningful_profile_arguments_keep_shortcuts_separate() {
         let mut work = app("Browser Work", r"C:\Menu\Browser Work.lnk");
         work.launch_kind = LaunchKind::Shortcut;

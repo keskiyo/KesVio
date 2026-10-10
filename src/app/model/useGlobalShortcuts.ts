@@ -47,6 +47,7 @@ export function useGlobalShortcuts({
 				commandOrControl && !event.shiftKey && pressedK
 			const isSearchShortcut =
 				commandOrControl &&
+				!event.shiftKey &&
 				(event.code === 'KeyF' || event.key.toLowerCase() === 'f')
 			const isPrintShortcut =
 				commandOrControl &&

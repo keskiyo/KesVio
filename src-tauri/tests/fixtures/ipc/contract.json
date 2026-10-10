@@ -110,7 +110,8 @@
       "shortcut": {
         "available": false,
         "error": "The shortcut has not been registered yet.",
-        "label": "Win+Shift+Q"
+        "label": "Win+Shift+Q",
+        "pending": true
       },
       "startupEntry": "disabled",
       "version": "0.0.0-sample"
@@ -202,7 +203,8 @@
     "set_global_shortcut": {
       "available": false,
       "error": "The shortcut has not been registered yet.",
-      "label": "Win+Shift+Q"
+      "label": "Win+Shift+Q",
+      "pending": true
     },
     "set_scan_settings": {
       "autoScanFixedDrives": true,
@@ -213,6 +215,7 @@
     },
     "set_startup_enabled": "disabled",
     "set_tray_favorites": null,
+    "set_tray_recent": null,
     "set_tray_running": null,
     "set_tray_scan_state": null,
     "set_tray_scenarios": null,

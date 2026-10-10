@@ -27,6 +27,13 @@ fn register_global_shortcut(app: &AppHandle) {
         *status = global_shortcut::Status::pending(&binding);
     }
     let registered = global_shortcut::register(app.clone(), binding);
+    super::set_tray_shortcut(
+        app,
+        registered
+            .status
+            .available
+            .then(|| registered.status.label.clone()),
+    );
     if let Ok(mut status) = state.shortcut_status.lock() {
         *status = registered.status;
     }

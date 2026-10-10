@@ -43,6 +43,7 @@ pub(crate) async fn set_global_shortcut(
     .await?
     .map_err(|error| AppError::SaveGlobalShortcut(error.to_string()))?;
     let status = registered.status.clone();
+    crate::lifecycle::set_tray_shortcut(&app, Some(status.label.clone()));
     *state
         .global_shortcut
         .lock()

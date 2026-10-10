@@ -103,6 +103,17 @@ describe('useGlobalShortcuts', () => {
 		expect(event.defaultPrevented).toBe(true)
 	})
 
+	// Settings documents Ctrl+F and the shortcut recorder reserves only Ctrl+F, so a global
+	// Ctrl+Shift+F stays assignable; the in-app search must not claim it as well.
+	it('leaves Ctrl+Shift+F to whoever owns it', () => {
+		const view = mount()
+
+		const event = press('F', { ctrlKey: true, shiftKey: true })
+
+		expect(view.onSearchFromShortcut).not.toHaveBeenCalled()
+		expect(event.defaultPrevented).toBe(false)
+	})
+
 	it('focuses search on a bare slash only outside text fields', () => {
 		const view = mount()
 

@@ -1,18 +1,22 @@
-use super::model::{TrayModel, TrayScenario, MAX_SCENARIO_ID_CHARS};
-use tauri::menu::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
+use super::model::{TrayModel, MAX_SCENARIO_ID_CHARS};
+use tauri::menu::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::AppHandle;
 
 mod labels;
+mod sections;
 pub(super) use labels::sanitize_label;
-use labels::{favorite_labels, menu_label};
+use sections::{favorites_submenu, recent_rows, scenarios_submenu};
 
 const SCENARIO_PREFIX: &str = "scenario:";
 const FAVORITE_PREFIX: &str = "favorite:";
+const RECENT_PREFIX: &str = "recent:";
 pub(super) const SEARCH_ID: &str = "search";
 pub(super) const SHOW_FAVORITES_ID: &str = "show-favorites";
 pub(super) const OPEN_LABEL: &str = "Open KesVio";
 pub(super) const SEARCH_LABEL: &str = "Search";
 pub(super) const FAVORITES_LABEL: &str = "Favorite apps";
+pub(super) const RECENT_LABEL: &str = "Recent";
+const RECENT_HEADER_ID: &str = "recent-header";
 pub(super) const SHOW_ALL_FAVORITES_LABEL: &str = "Show all favorites…";
 pub(super) const SCENARIOS_LABEL: &str = "Scenarios";
 pub(super) const QUIT_LABEL: &str = "Quit";
@@ -39,8 +43,10 @@ pub(super) fn tray_action(id: &str) -> Option<TrayAction> {
             if let Some(scenario) = id.strip_prefix(SCENARIO_PREFIX) {
                 return usable_id(scenario).map(|id| TrayAction::RunScenario(id.to_owned()));
             }
-            let favorite = id.strip_prefix(FAVORITE_PREFIX)?;
-            usable_id(favorite).map(|id| TrayAction::LaunchApp(id.to_owned()))
+            let app = id
+                .strip_prefix(FAVORITE_PREFIX)
+                .or_else(|| id.strip_prefix(RECENT_PREFIX))?;
+            usable_id(app).map(|id| TrayAction::LaunchApp(id.to_owned()))
         }
     }
 }
@@ -75,6 +81,10 @@ pub(super) fn build_menu(
     if !model.scenarios.is_empty() {
         owned.push(Box::new(scenarios_submenu(app, &model.scenarios)?));
     }
+    if !model.recent.is_empty() {
+        owned.push(Box::new(PredefinedMenuItem::separator(app)?));
+        owned.extend(recent_rows(app, &model.recent)?);
+    }
     owned.push(Box::new(PredefinedMenuItem::separator(app)?));
     owned.push(Box::new(scan.clone()));
     owned.push(Box::new(PredefinedMenuItem::separator(app)?));
@@ -87,62 +97,6 @@ pub(super) fn build_menu(
     )?));
     let references = owned.iter().map(|item| item.as_ref()).collect::<Vec<_>>();
     Menu::with_items(app, &references)
-}
-
-fn favorites_submenu(app: &AppHandle, model: &TrayModel) -> tauri::Result<Submenu<tauri::Wry>> {
-    let labels = favorite_labels(&model.favorites);
-    let mut entries = model
-        .favorites
-        .iter()
-        .zip(labels)
-        .map(|(favorite, label)| {
-            MenuItem::with_id(
-                app,
-                format!("{FAVORITE_PREFIX}{}", favorite.id),
-                label,
-                true,
-                None::<&str>,
-            )
-        })
-        .collect::<tauri::Result<Vec<_>>>()?;
-    if model.more_favorites {
-        entries.push(MenuItem::with_id(
-            app,
-            SHOW_FAVORITES_ID,
-            SHOW_ALL_FAVORITES_LABEL,
-            true,
-            None::<&str>,
-        )?);
-    }
-    let references = entries
-        .iter()
-        .map(|entry| entry as &dyn IsMenuItem<tauri::Wry>)
-        .collect::<Vec<_>>();
-    Submenu::with_items(app, FAVORITES_LABEL, true, &references)
-}
-
-fn scenarios_submenu(
-    app: &AppHandle,
-    scenarios: &[TrayScenario],
-) -> tauri::Result<Submenu<tauri::Wry>> {
-    let marked = scenarios.iter().any(|scenario| scenario.favorite);
-    let entries = scenarios
-        .iter()
-        .map(|scenario| {
-            MenuItem::with_id(
-                app,
-                format!("{SCENARIO_PREFIX}{}", scenario.id),
-                menu_label(scenario, marked),
-                true,
-                None::<&str>,
-            )
-        })
-        .collect::<tauri::Result<Vec<_>>>()?;
-    let references = entries
-        .iter()
-        .map(|entry| entry as &dyn IsMenuItem<tauri::Wry>)
-        .collect::<Vec<_>>();
-    Submenu::with_items(app, SCENARIOS_LABEL, true, &references)
 }
 
 #[cfg(test)]

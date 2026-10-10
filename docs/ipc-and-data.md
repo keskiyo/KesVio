@@ -42,18 +42,18 @@ commands or registry keys. `src-tauri/src/lib.rs` registers them;
 `src/entities/app/api/appsClient.ts` and
 `src/entities/system/api/systemClient.ts` are the only callers.
 
-| Family                 | Commands                                                                                                         | Takes                                                                   | Answers                                                         |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------- |
-| Catalog and scans      | `get_apps`, `refresh_apps`, `force_full_scan`, `reset_catalog_cache`, `start_background_sync`, `cancel_scan`     | nothing                                                                 | snapshot or `{ apps, generation }`; nothing for the last two    |
-| Icons                  | `hydrate_visible_icons`, `clear_icon_cache`                                                                      | up to 128 ids / nothing                                                 | nothing; icons arrive as `catalog://patches`                    |
-| Launch                 | `launch_app`, `launch_app_elevated`, `can_launch_elevated`                                                       | one id                                                                  | nothing / nothing / boolean                                     |
-| Close                  | `close_apps`                                                                                                     | ids (256 examined at most), optional `allowForce`                       | closed, not running, unavailable, blocked and failed counts     |
-| Details                | `get_app_details`, `open_app_folder`, `measure_app_folder`                                                       | one id                                                                  | details / nothing / `{ bytes, files, complete }`                |
-| System settings        | `get_system_settings`, `set_scan_settings`, `set_close_behavior`, `set_startup_enabled`, `set_global_shortcut`   | nothing / settings / boolean / boolean / modifiers and one physical key | settings / stored settings / boolean / startup state / shortcut |
-| Window                 | `get_window_backdrop`                                                                                            | nothing                                                                 | `mica` or `solid`                                               |
-| Backup and diagnostics | `save_preferences_backup`, `export_diagnostics_log`, `preview_diagnostics_log`, `log_client_error`               | document text / nothing / nothing / bounded kind and detail             | saved flag / saved flag / at most 16 KiB of XML / nothing       |
-| Links and copies       | `open_telegram`, `open_github`, `open_apps_settings`, `open_release`, `stale_copy_status`, `open_installed_copy` | nothing, or a validated release version                                 | nothing, or the installed copy's version and location           |
-| Tray                   | `set_tray_scenarios`, `set_tray_favorites`, `set_tray_running`, `set_tray_scan_state`, `take_tray_search_intent` | bounded `{ id, label }` lists, a label, a busy flag / nothing           | nothing / whether a search intent was pending                   |
+| Family                 | Commands                                                                                                                            | Takes                                                                   | Answers                                                         |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Catalog and scans      | `get_apps`, `refresh_apps`, `force_full_scan`, `reset_catalog_cache`, `start_background_sync`, `cancel_scan`                        | nothing                                                                 | snapshot or `{ apps, generation }`; nothing for the last two    |
+| Icons                  | `hydrate_visible_icons`, `clear_icon_cache`                                                                                         | up to 128 ids / nothing                                                 | nothing; icons arrive as `catalog://patches`                    |
+| Launch                 | `launch_app`, `launch_app_elevated`, `can_launch_elevated`                                                                          | one id                                                                  | nothing / nothing / boolean                                     |
+| Close                  | `close_apps`                                                                                                                        | ids (256 examined at most), optional `allowForce`                       | closed, not running, unavailable, blocked and failed counts     |
+| Details                | `get_app_details`, `open_app_folder`, `measure_app_folder`                                                                          | one id                                                                  | details / nothing / `{ bytes, files, complete }`                |
+| System settings        | `get_system_settings`, `set_scan_settings`, `set_close_behavior`, `set_startup_enabled`, `set_global_shortcut`                      | nothing / settings / boolean / boolean / modifiers and one physical key | settings / stored settings / boolean / startup state / shortcut |
+| Window                 | `get_window_backdrop`                                                                                                               | nothing                                                                 | `mica` or `solid`                                               |
+| Backup and diagnostics | `save_preferences_backup`, `export_diagnostics_log`, `preview_diagnostics_log`, `log_client_error`                                  | document text / nothing / nothing / bounded kind and detail             | saved flag / saved flag / at most 16 KiB of XML / nothing       |
+| Links and copies       | `open_telegram`, `open_github`, `open_apps_settings`, `open_release`, `stale_copy_status`, `open_installed_copy`                    | nothing, or a validated release version                                 | nothing, or the installed copy's version and location           |
+| Tray                   | `set_tray_scenarios`, `set_tray_favorites`, `set_tray_recent`, `set_tray_running`, `set_tray_scan_state`, `take_tray_search_intent` | bounded `{ id, label }` lists, a label, a busy flag / nothing           | nothing / whether a search intent was pending                   |
 
 | Event                                                              | Payload                                                        | Producer → consumer                                 |
 | ------------------------------------------------------------------ | -------------------------------------------------------------- | --------------------------------------------------- |
@@ -118,7 +118,10 @@ physical key code from `KeyA`-`KeyZ`, `Digit0`-`Digit9` or `F1`-`F12`. At least
 one of Win, Ctrl or Alt is required; `Ctrl+F`, `Ctrl+K` and `Ctrl+Shift+K` are
 reserved for fixed in-app actions. The backend validates the bounded payload,
 registers the candidate before releasing the active shortcut, persists it, and
-returns the same `GlobalShortcutStatus` shape as `get_system_settings`.
+returns the same `GlobalShortcutStatus` shape as `get_system_settings`:
+`available`, `label`, a static `error` and `pending`, which stays `true` until
+the startup registration has answered so the window can tell "not yet" from
+"refused" without reading message text.
 Validation, Windows conflicts and write failures use
 `INVALID_GLOBAL_SHORTCUT`, `GLOBAL_SHORTCUT_UNAVAILABLE` and
 `SAVE_GLOBAL_SHORTCUT_FAILED`.
@@ -166,11 +169,13 @@ scenarios and the favorite apps with a "more" flag behind `TrayModelState`;
 every `set_tray_*` command updates one field and the menu is rebuilt only when
 the model actually changed, so a list that reads the same never touches the
 native menu. The layout is **Open KesVio**, **Search**, **Favorite apps** (only
-when there are any), **Scenarios** (only when there are any), a separator,
-**Force scan**, a separator and **Quit**. The menu deliberately carries no scan
-status line and no pause: the catalog's state lives in Settings (Catalog
-sources), and background scans are not pausable. Menu ids are static or carry a
-checked id (`favorite:<id>`, `scenario:<id>`); a label never decides an action.
+when there are any), **Scenarios** (only when there are any), then — only when
+there are any — a separator, a disabled **Recent** heading and up to five
+recent apps as plain rows, then a separator, **Force scan**, a separator and
+**Quit**. The menu deliberately carries no scan status line and no pause: the
+catalog's state lives in Settings (Catalog sources), and background scans are
+not pausable. Menu ids are static or carry a checked id (`favorite:<id>`,
+`recent:<id>`, `scenario:<id>`); a label never decides an action.
 
 **Search** shows the window and emits `tray://search`. The click can land before
 the window has a listener, so the backend also raises a one-shot intent that the
@@ -190,6 +195,18 @@ get a position suffix so two rows stay tied to their own targets. A click emits
 catalog it holds and launches through the ordinary path with its feedback, and
 an id that has left the catalog is refused with a notice. **Show all
 favorites…** shows the window and opens the Favorites view (`tray://show-favorites`).
+
+**Recent** lists the five most recently launched apps from the local launch
+history, newest first, leaving out hidden apps, through `set_tray_recent` —
+pushed by `useTrayRecent` only when the list changes, validated and capped like
+favorites. The rows sit in the menu itself rather than in a submenu: Windows
+decides which side a tray submenu opens on, so one level less is the only way
+to keep them in place. A click emits the same `tray://launch-app`, so it
+launches without opening the window.
+
+The global shortcut takes the **Search** path: the hotkey thread calls
+`tray::search::request`, so Win+Shift+Q shows the window and focuses the search
+field with the previous query selected.
 Favorite scenarios stay in their own submenu.
 
 The tray's **Force scan** opens the main window and emits

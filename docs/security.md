@@ -65,7 +65,10 @@ For reporting vulnerabilities, see [SECURITY.md](../SECURITY.md). For the user p
   catalog id, the backend resolves the stored executable or shortcut and asks
   the shell for the `runas` verb, and Windows' consent prompt decides. KesVio
   itself stays unelevated, starts no child process of its own, and passes no
-  path, argument or verb from the webview.
+  path, argument or verb from the webview. **Ctrl+Enter** in search, on a card
+  or in Quick launch is the same request: it is offered only where the app menu
+  would offer it (`isElevationOffered` in `src/features/app-actions/lib/elevationOffer.ts`),
+  never for a hidden app or a link, and a Store app is checked with Windows first.
 - Signature checks do not show Windows UI or fetch network data. Logs and
   diagnostics exclude credentials, file contents and unnecessary personal paths.
 - Unsafe Windows code is confined to `platform/windows`; every unsafe block,

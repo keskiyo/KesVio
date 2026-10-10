@@ -1,24 +1,19 @@
 import { useEffect, useState } from 'react'
-import { type AppInfo, elevationSupport } from '../../../../entities/app'
-import type { AppFileActions } from './types'
+import type { AppInfo } from '../../../../entities/app'
+import { elevationOffer } from '../../lib/elevationOffer'
+import type { AppFileActions } from '../../types'
 
 export function useElevationOffer(
 	app: AppInfo,
 	isHidden: boolean,
 	fileActions: AppFileActions,
 ): boolean {
-	const { launchElevated, canLaunchElevated } = fileActions
-	const support = elevationSupport(app)
-	const offeredUpfront =
-		!isHidden && Boolean(launchElevated) && support === 'available'
-	const mustAsk =
-		!isHidden &&
-		Boolean(launchElevated && canLaunchElevated) &&
-		support === 'ask-windows'
+	const offer = elevationOffer(app, isHidden, fileActions)
+	const { canLaunchElevated } = fileActions
 	const [answer, setAnswer] = useState<{ id: string; offered: boolean }>()
 
 	useEffect(() => {
-		if (!mustAsk || !canLaunchElevated) return
+		if (offer !== 'ask-windows' || !canLaunchElevated) return
 		let active = true
 		canLaunchElevated(app).then(
 			offered => {
@@ -29,8 +24,8 @@ export function useElevationOffer(
 		return () => {
 			active = false
 		}
-	}, [app, canLaunchElevated, mustAsk])
+	}, [app, canLaunchElevated, offer])
 
-	if (offeredUpfront) return true
-	return mustAsk && answer?.id === app.id && answer.offered
+	if (offer === 'offered') return true
+	return offer === 'ask-windows' && answer?.id === app.id && answer.offered
 }

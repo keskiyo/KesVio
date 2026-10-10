@@ -80,7 +80,7 @@ export function useSystemSettings({
 	}
 
 	async function setGlobalShortcut(binding: GlobalShortcutBinding) {
-		await persist('settings', async () => ({
+		await persist('shortcut', async () => ({
 			shortcut: await client.setGlobalShortcut(binding),
 		}))
 	}

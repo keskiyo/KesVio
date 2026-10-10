@@ -708,7 +708,28 @@ describe('App', () => {
 		})
 		await userEvent.type(search, 'code')
 		expect(screen.getByRole('status')).toHaveTextContent(
-			'1 match in 3 apps · 0 tools',
+			'1 match · Enter opens Visual Studio Code',
+		)
+	})
+
+	it('launches the best match from the search field and walks the cards with arrows', async () => {
+		const { client } = renderApp()
+		await screen.findByText('Steam')
+		const search = await screen.findByRole('textbox', {
+			name: 'Search applications',
+		})
+
+		await userEvent.type(search, 'code')
+		await userEvent.keyboard('{ArrowDown}')
+		expect(
+			screen.getByRole('button', { name: 'Launch Visual Studio Code' }),
+		).toHaveFocus()
+		await userEvent.keyboard('{ArrowUp}')
+		expect(search).toHaveFocus()
+
+		await userEvent.keyboard('{Enter}')
+		await waitFor(() =>
+			expect(client.launchApp).toHaveBeenCalledWith({ id: 'code' }),
 		)
 	})
 

@@ -24,10 +24,17 @@ export function useDriveScenarioTriggers({
 		let stop: (() => void) | undefined
 		listen(volumeIds => {
 			if (!active) return
-			const { scenarios: current, onRun: run } = latest.current
-			for (const scenario of scenariosTriggeredBy(current, volumeIds))
+			for (const scenario of scenariosTriggeredBy(
+				latest.current.scenarios,
+				volumeIds,
+			))
 				toast.info(`Drive connected: run ${scenario.name}?`, {
-					action: { label: 'Run', onClick: () => run(scenario.id) },
+					id: `drive-scenario:${scenario.id}`,
+					duration: Number.POSITIVE_INFINITY,
+					action: {
+						label: 'Run',
+						onClick: () => latest.current.onRun(scenario.id),
+					},
 				})
 		})
 			.then(unsubscribe => {

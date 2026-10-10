@@ -35,7 +35,7 @@
 | Duplicate or stale entries     | Refresh; then use **Settings → Catalog → Reset catalog cache**.                                                                                             |
 | Missing application            | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive.                                             |
 | Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                                                              |
-| Global shortcut fails          | Windows policy or another process can already own Win+Shift+Q; Settings reports the reason.                                                                 |
+| Global shortcut fails          | Windows or another process already owns the combination (most Win+letter ones, such as Win+Q); the Show KesVio row reports it — add Shift or Alt.           |
 | Uninstall unavailable          | Windows has no registered uninstaller for the entry, so there is nothing to open.                                                                           |
 | Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.                                                       |
 | A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.                                                          |

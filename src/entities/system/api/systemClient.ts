@@ -44,6 +44,7 @@ export const tauriSystemClient: SystemClient = {
 		),
 	setTrayFavorites: (entries, more) =>
 		invokeIfTauri('set_tray_favorites', { entries, more }),
+	setTrayRecent: entries => invokeIfTauri('set_tray_recent', { entries }),
 	onTrayLaunchApp: handler =>
 		listenIfTauri<{ id: string }>('tray://launch-app', payload =>
 			handler(payload.id),

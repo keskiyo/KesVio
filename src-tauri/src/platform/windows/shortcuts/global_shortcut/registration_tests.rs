@@ -24,6 +24,20 @@ fn status_names_the_binding_that_was_registered() {
 }
 
 #[test]
+fn status_tells_a_pending_registration_from_a_refused_one() {
+    let binding = Binding::default();
+
+    assert!(Status::default().pending);
+    assert!(Status::pending(&binding).pending);
+    assert!(!Status::registered(&binding).pending);
+    assert!(!Status::unavailable(&binding).pending);
+    assert_eq!(
+        serde_json::to_value(Status::unavailable(&binding)).unwrap()["pending"],
+        serde_json::Value::Bool(false)
+    );
+}
+
+#[test]
 fn dropping_the_guard_stops_the_message_loop_promptly() {
     let Some(guard) = register_for_test() else {
         return;

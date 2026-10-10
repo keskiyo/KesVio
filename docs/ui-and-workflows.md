@@ -52,17 +52,28 @@
 
 ## Interaction contracts at a glance
 
-| Keys                  | Where it works                                   | Action                                                      |
-| --------------------- | ------------------------------------------------ | ----------------------------------------------------------- |
-| **Win+Shift+Q**       | anywhere in Windows; editable in Settings        | show KesVio (registered by the backend)                     |
-| **Ctrl+F**            | the window, unless a dialog is open              | select the search field, switching to the catalog if needed |
-| **/**                 | the window, outside a text field and dialogs     | focus the search field                                      |
-| **Ctrl+K**            | the window; closes its own launcher              | toggle Quick launch                                         |
-| **Ctrl+Shift+K**      | the window; closes its own launcher              | toggle the scenario launcher                                |
-| **Ctrl+Z**            | outside a text field, while an entry is undoable | undo the last preference transaction                        |
-| **Ctrl+P**            | the window                                       | swallowed; the webview never prints                         |
-| **Escape**            | the topmost dialog only                          | close it and restore focus                                  |
-| **Enter** / **Space** | a sidebar category                               | open it / pick it up for keyboard reordering                |
+Search results are grouped in category order, so the first card on screen is
+not always the best match; while a query has matches the header status reads
+`N matches · Enter opens <name>`, naming the ranked first result that **Enter**
+launches through the same path as a click (installers keep their
+confirmation). The name appears only once the ranked list has caught up with
+the typed query. Arrow keys move between launch targets by their position on
+screen and step over a card that is still launching.
+
+| Keys                  | Where it works                                      | Action                                                                            |
+| --------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------- |
+| **Win+Shift+Q**       | anywhere in Windows; editable in Settings           | show KesVio with the search field focused and its query selected                  |
+| **Enter**             | the search field, while a query has matches         | launch the best match named in the status line                                    |
+| **Ctrl+Enter**        | the search field, a focused card, Quick launch      | run as administrator where the ⋮ menu would offer it, otherwise explain why not   |
+| **↓** / arrows        | the search field / a focused card                   | move to the first card / move between cards; ↑ from the top row returns to search |
+| **Ctrl+F**            | the window, unless a dialog is open; not with Shift | select the search field, switching to the catalog if needed                       |
+| **/**                 | the window, outside a text field and dialogs        | focus the search field                                                            |
+| **Ctrl+K**            | the window; closes its own launcher                 | toggle Quick launch                                                               |
+| **Ctrl+Shift+K**      | the window; closes its own launcher                 | toggle the scenario launcher                                                      |
+| **Ctrl+Z**            | outside a text field, while an entry is undoable    | undo the last preference transaction                                              |
+| **Ctrl+P**            | the window                                          | swallowed; the webview never prints                                               |
+| **Escape**            | the topmost dialog only                             | close it and restore focus                                                        |
+| **Enter** / **Space** | a sidebar category                                  | open it / pick it up for keyboard reordering                                      |
 
 | ⋮ menu item              | Offered for                                                                                                                 | Not offered for                                       |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
@@ -156,9 +167,32 @@ Settings contains two open groups: General and Catalog. General separates appear
 
 Keyboard shortcuts lists **Show KesVio**, **Search**, **Quick launcher** and
 **Scenario launcher**. Only Show KesVio is editable because it is registered
-across Windows and may conflict with another application. Activating its key
-button captures one letter, digit or F1-F12 with Win, Ctrl or Alt; Escape
-cancels and Backspace or the reset button restores **Win+Shift+Q**. Search,
+across Windows and may conflict with another application. **Change** starts
+recording and turns into **Cancel**; the user holds the modifiers and presses a
+letter, digit or F1-F12. The prompt gives Win+Shift+J as an example and warns
+that most Win+letter shortcuts belong to Windows and never reach KesVio, since
+Windows consumes those keystrokes before the window sees them. Recording takes
+the keystroke ahead of the in-app shortcuts, lets Tab and Enter through to the
+buttons, survives the window losing focus, and
+ends when focus moves elsewhere on the page. A bare key asks for a modifier,
+**Ctrl+F**, **Ctrl+K** and **Ctrl+Shift+K** are refused as already used inside
+KesVio, Escape cancels, and Backspace or the reset button restores
+**Win+Shift+Q**. A captured combination is then checked against a fixed table
+and handled by what it would take away:
+
+| Combination                                                  | Result                                                                                                   |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| built-in Windows shortcut (Win+letter, Win+digit, Win+Ctrl…) | refused in the row, naming the Windows action and suggesting a free Shift or Alt variant when one exists |
+| standard app shortcut (Ctrl+C/V/X/Z/A/S…, Alt+F4)            | refused in the row, naming the action it performs in every app                                           |
+| Ctrl+digit, Alt+letter, Ctrl+Alt+letter (AltGr)              | warning confirmation listing what stops working first, then the gain and the freed old shortcut          |
+| anything else                                                | calm confirmation with the gain and the freed old shortcut                                               |
+
+Refusals keep recording so the next combination can be pressed at once. The
+confirmation saves only through its **Use …** button; Cancel or the close
+control leave the current shortcut. Windows cannot report which other program
+owns a hotkey, so both confirmations say that saving fails if another app holds
+the combination, and such a refusal is reported inside the row with the
+attempted combination while the previous shortcut stays active. Search,
 Quick launcher and Scenario launcher remain fixed at **Ctrl+F**, **Ctrl+K** and
 **Ctrl+Shift+K**.
 
@@ -484,8 +518,16 @@ its scan folder and app count (`driveTriggerChoices`), and a bound drive that is
 unplugged stays listed as "A drive not connected now". When that drive arrives,
 the catalog refreshes first and then a toast asks **Drive connected: run …?**
 with a **Run** action — the scenario never starts on its own, because plugging
-in a stick is not consent to launch or close anything. The binding is an
+in a stick is not consent to launch or close anything. The prompt stays until
+it is answered or closed, one per scenario (a reconnect replaces it rather than
+stacking a copy), and **Run** starts the scenario as it is at that moment, so an
+edit or deletion made while the prompt waits is respected. The binding is an
 undoable change like the close policy.
+
+Every notice waits while the window is hidden: the toaster pauses its timers
+whenever the page reports `document.hidden`, which it does while KesVio sits in
+the tray. A drive prompt or a tray-started scenario summary raised there is
+still on screen when the window is opened, instead of expiring unseen.
 
 Manual verification still required in an isolated Windows profile: accepting and
 refusing WM_CLOSE, unsaved-document prompts, both policy settings, forced close,

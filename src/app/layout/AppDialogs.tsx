@@ -12,6 +12,7 @@ export function AppDialogs({
 	dialogs,
 	paletteApps,
 	paletteSuggestions,
+	onLaunchElevated,
 	scenarioLauncher,
 	savedFilterEditor,
 	onError,
@@ -50,6 +51,7 @@ export function AppDialogs({
 					apps={paletteApps}
 					suggestions={paletteSuggestions}
 					onLaunch={installerLaunch.requestLaunch}
+					onLaunchElevated={onLaunchElevated}
 					onClose={palette.close}
 				/>
 			)}

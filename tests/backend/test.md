@@ -89,7 +89,7 @@ src-tauri/Cargo.toml` is the count, and the script at the end prints the
   the shortcut file name, and that the state serializes as a lowercase word.
   `lifecycle/tray/menu/` proves the tray menu: every static id maps to one
   explicit action while the withdrawn status and pause ids map to nothing, a
-  `scenario:<id>` or `favorite:<id>` menu id carries the id it runs and rejects
+  `scenario:<id>`, `favorite:<id>` or `recent:<id>` menu id carries the id it runs and rejects
   an empty or over-long one, two favorites with the same name stay
   distinguishable, a label reaches the native menu with control characters
   stripped, `&` escaped and a long name truncated, a starred entry keeps its
@@ -98,9 +98,11 @@ src-tauri/Cargo.toml` is the count, and the script at the end prints the
   copy the user learned is pinned word for word;
   `lifecycle/tray/model.rs` proves the model reports only real changes;
   `lifecycle/tray/search.rs` proves a search intent raised before the listener
-  existed is taken exactly once; `commands/tray.rs` proves the commands cap the
-  scenario and favorite lists, drop blank or over-long ids, clear the tooltip
-  for a blank label and bound the running label before any of that.
+  existed is taken exactly once; `lifecycle/tray/tooltip.rs` proves the tooltip
+  names the registered shortcut while idle, stays plain without one and lets a
+  running scenario take precedence; `commands/tray.rs` proves the commands cap
+  the scenario, favorite and recent lists, drop blank or over-long ids, clear
+  the tooltip for a blank label and bound the running label before any of that.
   `commands/contract.rs`
   serializes every IPC payload and event and compares the shape against a
   recorded fixture, so a renamed or retyped field is reported as a contract
@@ -222,6 +224,7 @@ corpus entry can pin down on its own.
 - [`catalog/close.rs`](../../src-tauri/src/catalog/close.rs)
 - [`catalog/dedup/merge/tests.rs`](../../src-tauri/src/catalog/dedup/merge/tests.rs)
 - [`catalog/dedup/mod.rs`](../../src-tauri/src/catalog/dedup/mod.rs)
+- [`catalog/dedup/report.rs`](../../src-tauri/src/catalog/dedup/report.rs)
 - [`catalog/details/cache.rs`](../../src-tauri/src/catalog/details/cache.rs)
 - [`catalog/details/folder_size.rs`](../../src-tauri/src/catalog/details/folder_size.rs)
 - [`catalog/details/read.rs`](../../src-tauri/src/catalog/details/read.rs)
@@ -391,6 +394,7 @@ declined by the rules `paths/` names.
 - [`lifecycle/tray/menu/tests.rs`](../../src-tauri/src/lifecycle/tray/menu/tests.rs)
 - [`lifecycle/tray/model.rs`](../../src-tauri/src/lifecycle/tray/model.rs)
 - [`lifecycle/tray/search.rs`](../../src-tauri/src/lifecycle/tray/search.rs)
+- [`lifecycle/tray/tooltip.rs`](../../src-tauri/src/lifecycle/tray/tooltip.rs)
 - [`lifecycle/window_state/mod.rs`](../../src-tauri/src/lifecycle/window_state/mod.rs), [`window_state/geometry.rs`](../../src-tauri/src/lifecycle/window_state/geometry.rs) and [`window_state/store.rs`](../../src-tauri/src/lifecycle/window_state/store.rs)
 - [`paths/adopt.rs`](../../src-tauri/src/paths/adopt.rs)
 - [`paths/mod.rs`](../../src-tauri/src/paths/mod.rs)

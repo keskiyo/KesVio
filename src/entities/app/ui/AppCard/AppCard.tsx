@@ -47,6 +47,8 @@ export function AppCard({
 					if (launching) return
 					void onLaunch(app)
 				}}
+				data-launch-target=""
+				data-app-id={app.id}
 				aria-label={`Launch ${app.name}${launchSource ? ` from ${launchSource}` : ''}`}
 				aria-busy={launching}
 				disabled={launching}

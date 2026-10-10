@@ -17,10 +17,11 @@ pub(crate) use tray::launch_app_sample as tray_launch_app_sample;
 #[cfg(test)]
 pub(crate) use tray::run_scenario_sample as tray_run_scenario_sample;
 pub(crate) use tray::{
-    apply_favorites as set_tray_favorites, apply_running as set_tray_running,
-    apply_scan_state as set_tray_scan_state, apply_scenarios as set_tray_scenarios, setup_tray,
-    take_search_intent as take_tray_search_intent, TrayFavorite, TrayScenario,
-    MAX_SCENARIO_ID_CHARS, MAX_TRAY_FAVORITES, MAX_TRAY_SCENARIOS,
+    apply_favorites as set_tray_favorites, apply_recent as set_tray_recent,
+    apply_running as set_tray_running, apply_scan_state as set_tray_scan_state,
+    apply_scenarios as set_tray_scenarios, apply_shortcut as set_tray_shortcut, request_search,
+    setup_tray, take_search_intent as take_tray_search_intent, TrayFavorite, TrayScenario,
+    MAX_SCENARIO_ID_CHARS, MAX_TRAY_FAVORITES, MAX_TRAY_RECENT, MAX_TRAY_SCENARIOS,
 };
 #[cfg(test)]
 pub(crate) use tray::{FORCE_SCAN_EVENT, LAUNCH_APP_EVENT, SEARCH_EVENT, SHOW_FAVORITES_EVENT};

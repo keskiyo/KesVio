@@ -1,6 +1,7 @@
 use crate::error::AppError;
 use crate::lifecycle::{
-    TrayFavorite, TrayScenario, MAX_SCENARIO_ID_CHARS, MAX_TRAY_FAVORITES, MAX_TRAY_SCENARIOS,
+    TrayFavorite, TrayScenario, MAX_SCENARIO_ID_CHARS, MAX_TRAY_FAVORITES, MAX_TRAY_RECENT,
+    MAX_TRAY_SCENARIOS,
 };
 use tauri::AppHandle;
 
@@ -19,12 +20,20 @@ fn accepted(entries: Vec<TrayScenario>) -> Vec<TrayScenario> {
         .collect()
 }
 
-fn accepted_favorites(entries: Vec<TrayFavorite>) -> Vec<TrayFavorite> {
+fn accepted_apps(entries: Vec<TrayFavorite>, limit: usize) -> Vec<TrayFavorite> {
     entries
         .into_iter()
         .filter(|entry| usable_id(&entry.id) && crate::commands::is_valid_catalog_id(&entry.id))
-        .take(MAX_TRAY_FAVORITES)
+        .take(limit)
         .collect()
+}
+
+fn accepted_favorites(entries: Vec<TrayFavorite>) -> Vec<TrayFavorite> {
+    accepted_apps(entries, MAX_TRAY_FAVORITES)
+}
+
+fn accepted_recent(entries: Vec<TrayFavorite>) -> Vec<TrayFavorite> {
+    accepted_apps(entries, MAX_TRAY_RECENT)
 }
 
 fn accepted_label(label: Option<String>) -> Option<String> {
@@ -54,6 +63,15 @@ pub(crate) async fn set_tray_favorites(
     more: bool,
 ) -> Result<(), AppError> {
     crate::lifecycle::set_tray_favorites(&app, accepted_favorites(entries), more);
+    Ok(())
+}
+
+#[tauri::command]
+pub(crate) async fn set_tray_recent(
+    app: AppHandle,
+    entries: Vec<TrayFavorite>,
+) -> Result<(), AppError> {
+    crate::lifecycle::set_tray_recent(&app, accepted_recent(entries));
     Ok(())
 }
 
@@ -133,6 +151,20 @@ mod tests {
         let kept = accepted_favorites(entries);
 
         assert_eq!(kept.len(), MAX_TRAY_FAVORITES);
+        assert!(kept.iter().all(|entry| entry.id.starts_with("path:")));
+    }
+
+    #[test]
+    fn recent_apps_are_validated_and_capped_like_favorites() {
+        let entries = std::iter::once(favorite(""))
+            .chain(
+                (0..MAX_TRAY_RECENT + 2).map(|index| favorite(&format!("path:c:\\app{index}.exe"))),
+            )
+            .collect::<Vec<_>>();
+
+        let kept = accepted_recent(entries);
+
+        assert_eq!(kept.len(), MAX_TRAY_RECENT);
         assert!(kept.iter().all(|entry| entry.id.starts_with("path:")));
     }
 

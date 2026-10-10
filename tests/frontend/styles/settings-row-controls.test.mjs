@@ -13,7 +13,7 @@ const read = file => readFileSync(file, 'utf8')
 const general = read('src/pages/settings/ui/sections/GeneralSettings.tsx')
 const shortcuts = read('src/pages/settings/ui/sections/KeyboardShortcuts.tsx')
 const globalShortcut = read(
-	'src/pages/settings/ui/sections/GlobalShortcutRow.tsx',
+	'src/pages/settings/ui/sections/GlobalShortcutRow/GlobalShortcutRow.tsx',
 )
 const updates = read(
 	'src/pages/settings/ui/sections/SettingsUpdateControls.tsx',
@@ -57,6 +57,18 @@ describe('settings row controls', () => {
 		expect(general).toContain('ACTION_BUTTON_PRIMARY')
 		expect(updates).toContain('ACTION_BUTTON_PRIMARY')
 		expect(updates).toContain('ACTION_BUTTON_QUIET')
+	})
+
+	it('keeps the shortcut buttons focus ring inside the group that clips them', () => {
+		// The group rounds its corners with overflow-hidden, so an outer ring was cut down to a
+		// single violet stripe beside the pencil once a keystroke made focus visible.
+		expect(globalShortcut).toContain('overflow-hidden')
+		const buttons = [
+			...globalShortcut.matchAll(/\$\{ACTION_BUTTON\}[^`]*/g),
+		]
+		expect(buttons.length).toBeGreaterThan(0)
+		for (const [classes] of buttons)
+			expect(classes).toContain('focus-visible:-outline-offset-2!')
 	})
 
 	it('lets the density choices fill the settings row', () => {

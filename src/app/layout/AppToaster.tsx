@@ -11,6 +11,7 @@ export function AppToaster() {
 			gap={10}
 			offset={16}
 			closeButton
+			pauseWhenPageIsHidden
 		/>
 	)
 }

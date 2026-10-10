@@ -1,5 +1,5 @@
-use super::super::model::TrayFavorite;
-use super::labels::{FALLBACK_LABEL, FAVORITE_MARK, MAX_LABEL_CHARS};
+use super::super::model::{TrayFavorite, TrayScenario};
+use super::labels::{favorite_labels, menu_label, FALLBACK_LABEL, FAVORITE_MARK, MAX_LABEL_CHARS};
 use super::*;
 
 #[test]
@@ -35,6 +35,15 @@ fn a_favorite_menu_id_carries_the_catalog_id_it_launches() {
         )),
         None
     );
+}
+
+#[test]
+fn a_recent_menu_id_launches_the_app_like_a_favorite() {
+    assert_eq!(
+        tray_action("recent:path:c:\\tools\\editor.exe"),
+        Some(TrayAction::LaunchApp("path:c:\\tools\\editor.exe".into()))
+    );
+    assert_eq!(tray_action("recent:"), None);
 }
 
 fn favorite(label: &str) -> TrayFavorite {
@@ -120,6 +129,7 @@ fn the_tray_copy_is_pinned() {
     assert_eq!(OPEN_LABEL, "Open KesVio");
     assert_eq!(SEARCH_LABEL, "Search");
     assert_eq!(FAVORITES_LABEL, "Favorite apps");
+    assert_eq!(RECENT_LABEL, "Recent");
     assert_eq!(SHOW_ALL_FAVORITES_LABEL, "Show all favorites…");
     assert_eq!(SCENARIOS_LABEL, "Scenarios");
     assert_eq!(QUIT_LABEL, "Quit");

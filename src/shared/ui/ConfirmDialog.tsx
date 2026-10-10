@@ -3,7 +3,17 @@ import { useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useModalDialog } from '../hooks/useModalDialog'
 import type { ReactNode } from 'react'
+
+const CONFIRM_SHAPE =
+	'inline-flex h-9 items-center gap-2 rounded-lg px-4 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-50'
+
+const CONFIRM_TONES = {
+	danger: `danger-button ${CONFIRM_SHAPE} border border-(--category-red) bg-(--surface-inset) text-(--category-red) hover:bg-(--surface-raised) focus-visible:outline-(--category-red)`,
+	calm: `utility-accent-button icon-follows-color ${CONFIRM_SHAPE} text-white focus-visible:outline-violet-300`,
+}
+
 interface ConfirmDialogProps {
+	tone?: keyof typeof CONFIRM_TONES
 	label: string
 	title: string
 	description: string
@@ -18,6 +28,7 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({
+	tone = 'danger',
 	label,
 	title,
 	description,
@@ -44,8 +55,14 @@ export function ConfirmDialog({
 				className="motion-panel w-[min(32rem,calc(100vw-2rem))] rounded-2xl border border-(--border-neutral) bg-(--surface-panel) p-5 text-(--text-primary) shadow-(--shadow-dialog)"
 			>
 				<header className="flex items-start gap-3">
-					<span className="grid size-10 shrink-0 place-items-center rounded-xl border border-(--category-orange) bg-(--surface-inset)">
-						<TriangleAlert size={19} aria-hidden="true" />
+					<span
+						className={`grid size-10 shrink-0 place-items-center rounded-xl border bg-(--surface-inset) ${tone === 'calm' ? 'border-(--border-neutral)' : 'border-(--category-orange)'}`}
+					>
+						{tone === 'calm' ? (
+							<ConfirmIcon size={19} aria-hidden="true" />
+						) : (
+							<TriangleAlert size={19} aria-hidden="true" />
+						)}
 					</span>
 					<div className="min-w-0 flex-1">
 						<h2 className="text-base font-semibold break-words">
@@ -84,7 +101,7 @@ export function ConfirmDialog({
 						type="button"
 						disabled={pending || confirmDisabled}
 						onClick={onConfirm}
-						className="danger-button inline-flex h-9 items-center gap-2 rounded-lg border border-(--category-red) bg-(--surface-inset) px-4 text-sm font-medium text-(--category-red) transition-colors hover:bg-(--surface-raised) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--category-red) disabled:opacity-50"
+						className={CONFIRM_TONES[tone]}
 					>
 						<ConfirmIcon size={15} aria-hidden="true" />
 						{confirmLabel}

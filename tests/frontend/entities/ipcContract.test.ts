@@ -170,9 +170,15 @@ describe('IPC wire contract', () => {
 		})
 
 		it('describes system settings and the scan settings inside them', () => {
+			const shortcut: Required<SystemSettings['shortcut']> = {
+				available: false,
+				pending: false,
+				label: '',
+				error: null,
+			}
 			const declared: Required<SystemSettings> = {
 				version: '',
-				shortcut: { available: false, label: '', error: null },
+				shortcut,
 				scanSettings,
 				fixedDrives: [],
 				hideToTrayOnClose: false,
@@ -181,6 +187,7 @@ describe('IPC wire contract', () => {
 			const settings = contract.commands
 				.get_system_settings as SystemSettings
 			expectWireShape(settings, declared, 'SystemSettings')
+			expectWireShape(settings.shortcut, shortcut, 'GlobalShortcutStatus')
 			expectWireShape(settings.scanSettings, scanSettings, 'ScanSettings')
 			expectWireShape(
 				contract.commands.set_global_shortcut,
@@ -354,6 +361,7 @@ describe('IPC wire contract', () => {
 			expect(contract.events['tray://show-favorites']).toBeNull()
 			expect(contract.events).not.toHaveProperty('tray://catalog-status')
 			expect(contract.commands.set_tray_favorites).toBeNull()
+			expect(contract.commands.set_tray_recent).toBeNull()
 			expect(contract.commands.take_tray_search_intent).toBe(false)
 		})
 	})

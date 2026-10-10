@@ -5,6 +5,14 @@ import { SettingsPage } from '../../../../src/pages/settings/ui/SettingsPage'
 import type { UpdaterState } from '../../../../src/features/update-app'
 import type { SystemClient } from '../../../../src/entities/system'
 
+const changes = (dialog: HTMLElement) =>
+	within(dialog)
+		.getAllByRole('listitem')
+		.map(item => item.textContent)
+
+const recording = () =>
+	screen.queryByRole('button', { name: 'Cancel shortcut change' })
+
 describe('SettingsPage', () => {
 	const settings = {
 		version: '0.1.0',
@@ -128,6 +136,22 @@ describe('SettingsPage', () => {
 			altKey: true,
 		})
 
+		expect(setGlobalShortcut).not.toHaveBeenCalled()
+		const dialog = screen.getByRole('alertdialog', {
+			name: 'Confirm shortcut',
+		})
+		expect(dialog).toHaveTextContent('Use Ctrl+Alt+P to open KesVio?')
+		expect(changes(dialog)).toEqual([
+			'Ctrl+Alt+P will stop typing its AltGr character',
+			'Ctrl+Alt+P will open KesVio from anywhere',
+			'Win+Shift+Q will stop opening KesVio',
+		])
+		const confirm = within(dialog).getByRole('button', {
+			name: 'Use Ctrl+Alt+P',
+		})
+		expect(confirm).toHaveClass('danger-button')
+		await userEvent.click(confirm)
+
 		expect(setGlobalShortcut).toHaveBeenCalledWith({
 			win: false,
 			ctrl: true,
@@ -136,6 +160,105 @@ describe('SettingsPage', () => {
 			key: 'KeyP',
 		})
 		expect(await screen.findByText('Ctrl+Alt+P')).toBeVisible()
+	})
+
+	it('refuses a Windows shortcut in the row and suggests a free one', async () => {
+		const setGlobalShortcut = vi.fn()
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={{ ...systemClient(), setGlobalShortcut }}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, { key: 'e', code: 'KeyE', metaKey: true })
+
+		expect(
+			screen.getByText(
+				'Windows keeps Win+E for opening File Explorer. Try Win+Shift+E.',
+			),
+		).toBeVisible()
+		expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+
+		fireEvent.keyDown(shortcut, { key: '3', code: 'Digit3', metaKey: true })
+
+		expect(
+			screen.getByText(
+				'Windows keeps Win+3 for opening the taskbar app pinned in position 3. Choose another shortcut.',
+			),
+		).toBeVisible()
+		expect(recording()).toBeVisible()
+		expect(setGlobalShortcut).not.toHaveBeenCalled()
+	})
+
+	it('refuses a standard app shortcut in the row', async () => {
+		const setGlobalShortcut = vi.fn()
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={{ ...systemClient(), setGlobalShortcut }}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, { key: 'c', code: 'KeyC', ctrlKey: true })
+
+		expect(
+			screen.getByText(
+				'Ctrl+C is used for copying in every app. Choose another shortcut.',
+			),
+		).toBeVisible()
+		expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+		expect(setGlobalShortcut).not.toHaveBeenCalled()
+	})
+
+	it('cancels a risky shortcut from the confirmation without saving', async () => {
+		const setGlobalShortcut = vi.fn()
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={{ ...systemClient(), setGlobalShortcut }}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, { key: '1', code: 'Digit1', ctrlKey: true })
+
+		const dialog = screen.getByRole('alertdialog', {
+			name: 'Confirm shortcut',
+		})
+		expect(changes(dialog)[0]).toBe(
+			'Ctrl+1 will stop switching browser tabs in other apps',
+		)
+		await userEvent.click(
+			within(dialog).getByRole('button', { name: 'Cancel' }),
+		)
+
+		expect(setGlobalShortcut).not.toHaveBeenCalled()
+		expect(
+			screen.queryByRole('alertdialog', { name: 'Confirm shortcut' }),
+		).not.toBeInTheDocument()
+		expect(
+			screen.getByRole('button', {
+				name: 'Change global shortcut, currently Win+Shift+Q',
+			}),
+		).toBeVisible()
 	})
 
 	it('keeps reserved in-app shortcuts out of the global binding', async () => {
@@ -153,17 +276,255 @@ describe('SettingsPage', () => {
 		const shortcut = await screen.findByRole('button', {
 			name: 'Change global shortcut, currently Win+Shift+Q',
 		})
+		const appShortcuts = vi.fn()
+		document.addEventListener('keydown', appShortcuts, { capture: true })
 		await userEvent.click(shortcut)
 		fireEvent.keyDown(shortcut, {
 			key: 'k',
 			code: 'KeyK',
 			ctrlKey: true,
 		})
+		document.removeEventListener('keydown', appShortcuts, { capture: true })
+
+		expect(setGlobalShortcut).not.toHaveBeenCalled()
+		expect(appShortcuts).not.toHaveBeenCalled()
+		expect(
+			screen.getByText(
+				'Ctrl+K already works inside KesVio. Choose another shortcut.',
+			),
+		).toBeVisible()
+	})
+
+	it('asks for a modifier when a bare key is pressed', async () => {
+		const setGlobalShortcut = vi.fn()
+		const client = { ...systemClient(), setGlobalShortcut }
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, { key: 'j', code: 'KeyJ' })
 
 		expect(setGlobalShortcut).not.toHaveBeenCalled()
 		expect(
-			screen.getByText('Use A-Z, 0-9 or F1-F12 with Win, Ctrl or Alt.'),
+			screen.getByText(
+				'Add Win, Ctrl or Alt, then press a letter, digit or F1-F12.',
+			),
 		).toBeVisible()
+	})
+
+	it('explains how to record and why most Win+letter keys never arrive', async () => {
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+			/>,
+		)
+
+		await userEvent.click(
+			await screen.findByRole('button', {
+				name: 'Change global shortcut, currently Win+Shift+Q',
+			}),
+		)
+
+		expect(
+			screen.getByText(
+				'Hold the modifiers and press a key, e.g. Win+Shift+J. Most Win+letter shortcuts belong to Windows and never reach KesVio. Esc cancels.',
+			),
+		).toBeVisible()
+		expect(
+			screen.queryByRole('button', { name: 'Win' }),
+		).not.toBeInTheDocument()
+	})
+
+	it('records a Win shortcut held on the keyboard', async () => {
+		const setGlobalShortcut = vi.fn().mockResolvedValue({
+			available: true,
+			label: 'Win+Alt+J',
+			error: null,
+		})
+		const client = { ...systemClient(), setGlobalShortcut }
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, {
+			key: 'Meta',
+			code: 'MetaLeft',
+			metaKey: true,
+		})
+		fireEvent.keyDown(shortcut, {
+			key: 'j',
+			code: 'KeyJ',
+			metaKey: true,
+			altKey: true,
+		})
+		const dialog = screen.getByRole('alertdialog', {
+			name: 'Confirm shortcut',
+		})
+		expect(changes(dialog)).toEqual([
+			'Win+Alt+J will open KesVio from anywhere',
+			'Win+Shift+Q will stop opening KesVio',
+		])
+		expect(dialog).toHaveTextContent(
+			'If another app already uses Win+Alt+J, saving fails and Win+Shift+Q stays.',
+		)
+		const confirm = within(dialog).getByRole('button', {
+			name: 'Use Win+Alt+J',
+		})
+		expect(confirm).not.toHaveClass('danger-button')
+		await userEvent.click(confirm)
+
+		expect(setGlobalShortcut).toHaveBeenCalledWith({
+			win: true,
+			ctrl: false,
+			alt: true,
+			shift: false,
+			key: 'KeyJ',
+		})
+		expect(await screen.findByText('Win+Alt+J')).toBeVisible()
+		expect(recording()).not.toBeInTheDocument()
+	})
+
+	it('lets Tab and Enter through while recording', async () => {
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+
+		expect(fireEvent.keyDown(shortcut, { key: 'Tab', code: 'Tab' })).toBe(
+			true,
+		)
+		expect(
+			fireEvent.keyDown(shortcut, { key: 'Enter', code: 'Enter' }),
+		).toBe(true)
+		expect(recording()).toBeVisible()
+	})
+
+	it('shows a shortcut Windows refuses beside the shortcut row', async () => {
+		const setGlobalShortcut = vi.fn().mockRejectedValue({
+			code: 'GLOBAL_SHORTCUT_UNAVAILABLE',
+			message: 'That shortcut is already in use. Choose another one.',
+		})
+		const client = { ...systemClient(), setGlobalShortcut }
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={client}
+				updater={updaterState()}
+			/>,
+		)
+
+		const shortcut = await screen.findByRole('button', {
+			name: 'Change global shortcut, currently Win+Shift+Q',
+		})
+		await userEvent.click(shortcut)
+		fireEvent.keyDown(shortcut, {
+			key: 'J',
+			code: 'KeyJ',
+			metaKey: true,
+			shiftKey: true,
+		})
+		await userEvent.click(
+			within(
+				screen.getByRole('alertdialog', { name: 'Confirm shortcut' }),
+			).getByRole('button', { name: 'Use Win+Shift+J' }),
+		)
+
+		const shortcuts = screen.getByRole('region', {
+			name: 'Keyboard shortcuts',
+		})
+		const alert = await within(shortcuts).findByRole('alert')
+		expect(alert).toHaveTextContent(
+			'Win+Shift+J: That shortcut is already in use. Choose another one.',
+		)
+		expect(within(shortcuts).getByText('Win+Shift+Q')).toBeVisible()
+	})
+
+	it('keeps recording when Windows takes focus and stops when the page does', async () => {
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+			/>,
+		)
+
+		await userEvent.click(
+			await screen.findByRole('button', {
+				name: 'Change global shortcut, currently Win+Shift+Q',
+			}),
+		)
+		const cancel = screen.getByRole('button', {
+			name: 'Cancel shortcut change',
+		})
+		const windowFocus = vi
+			.spyOn(document, 'hasFocus')
+			.mockReturnValue(false)
+		fireEvent.blur(cancel, { relatedTarget: null })
+		windowFocus.mockRestore()
+		expect(recording()).toBeVisible()
+
+		fireEvent.blur(cancel, {
+			relatedTarget: screen.getByRole('switch', {
+				name: 'Launch KesVio when Windows starts',
+			}),
+		})
+		expect(recording()).not.toBeInTheDocument()
+	})
+
+	it('cancels recording from the same button', async () => {
+		const setGlobalShortcut = vi.fn()
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={{ ...systemClient(), setGlobalShortcut }}
+				updater={updaterState()}
+			/>,
+		)
+
+		await userEvent.click(
+			await screen.findByRole('button', {
+				name: 'Change global shortcut, currently Win+Shift+Q',
+			}),
+		)
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Cancel shortcut change' }),
+		)
+
+		expect(recording()).not.toBeInTheDocument()
+		expect(setGlobalShortcut).not.toHaveBeenCalled()
 	})
 
 	it('cancels capture and restores the default shortcut', async () => {

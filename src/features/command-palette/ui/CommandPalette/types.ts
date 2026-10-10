@@ -4,6 +4,7 @@ export interface CommandPaletteProps {
 	apps: AppInfo[]
 	suggestions: AppInfo[]
 	onLaunch(app: AppInfo): Promise<void>
+	onLaunchElevated?(app: AppInfo): void
 	onClose(): void
 }
 

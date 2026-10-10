@@ -75,6 +75,7 @@ fn commands(app: &AppInfo) -> Value {
         "preview_diagnostics_log": wire(String::from("<diagnostics redacted=\"true\" />")),
         "set_tray_scenarios": wire(()),
         "set_tray_favorites": wire(()),
+        "set_tray_recent": wire(()),
         "set_tray_running": wire(()),
         "set_tray_scan_state": wire(()),
         "take_tray_search_intent": wire(false),

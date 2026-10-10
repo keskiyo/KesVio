@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-export type SettingsArea = 'settings' | 'discovery' | 'maintenance'
+export type SettingsArea = 'settings' | 'shortcut' | 'discovery' | 'maintenance'
 
 export interface SettingsReporter {
 	reportError(area: SettingsArea, message: string): void

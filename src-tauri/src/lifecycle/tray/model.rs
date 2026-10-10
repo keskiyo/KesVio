@@ -3,6 +3,7 @@ use std::sync::Mutex;
 
 pub(crate) const MAX_TRAY_SCENARIOS: usize = 5;
 pub(crate) const MAX_TRAY_FAVORITES: usize = 5;
+pub(crate) const MAX_TRAY_RECENT: usize = 5;
 pub(crate) const MAX_SCENARIO_ID_CHARS: usize = 512;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
@@ -26,6 +27,7 @@ pub(crate) struct TrayModel {
     pub(crate) scenarios: Vec<TrayScenario>,
     pub(crate) favorites: Vec<TrayFavorite>,
     pub(crate) more_favorites: bool,
+    pub(crate) recent: Vec<TrayFavorite>,
 }
 
 #[derive(Default)]

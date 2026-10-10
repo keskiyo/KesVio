@@ -68,12 +68,14 @@ export interface GeneralSettingsProps {
 export interface KeyboardShortcutsProps {
 	shortcut: GlobalShortcutStatus | null
 	saving: boolean
+	error: string | null
 	onSetGlobalShortcut(binding: GlobalShortcutBinding): Promise<void>
 }
 
 export interface GlobalShortcutRowProps {
 	shortcut: GlobalShortcutStatus | null
 	saving: boolean
+	error: string | null
 	onSetGlobalShortcut(binding: GlobalShortcutBinding): Promise<void>
 }
 
