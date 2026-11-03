@@ -39,6 +39,7 @@ export function SortableCategoryList({
 							count={counts.get(category) ?? 0}
 							label={labels.get(category) ?? category}
 							accent={accents.get(category)?.accent}
+							disconnected={accents.get(category)?.disconnected}
 							isDragPreviewActive={
 								drag.activeCategory === category
 							}
@@ -55,6 +56,7 @@ export function SortableCategoryList({
 							count={counts.get(active) ?? 0}
 							label={activeDefinition.label}
 							accent={activeDefinition.accent}
+							disconnected={activeDefinition.disconnected}
 						/>
 					)}
 				</DragOverlay>,

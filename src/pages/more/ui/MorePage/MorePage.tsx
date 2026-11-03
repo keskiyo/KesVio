@@ -1,7 +1,7 @@
 import { WandSparkles } from 'lucide-react'
 import { buildMoreDestinations, catalogHealthLine } from './data'
 import { MoreCard } from './MoreCard'
-import { MorePreviewRow } from './MorePreviewRow'
+import { MoreRecentList } from './MoreRecentList'
 import type { MorePageProps } from './types'
 
 export function MorePage({
@@ -33,6 +33,13 @@ export function MorePage({
 			onViewAll: scenarioRun.onViewAll,
 		},
 	})
+	const primary = destinations.filter(
+		destination =>
+			!['catalog_health', 'backup_restore'].includes(destination.view),
+	)
+	const maintenance = destinations.filter(destination =>
+		['catalog_health', 'backup_restore'].includes(destination.view),
+	)
 
 	return (
 		<section aria-labelledby="more-title" className="mx-auto max-w-5xl">
@@ -52,7 +59,7 @@ export function MorePage({
 				</div>
 			</header>
 			<div className="grid gap-3 lg:grid-cols-2">
-				{destinations.map(destination => (
+				{primary.map(destination => (
 					<MoreCard
 						key={destination.view}
 						destination={destination}
@@ -60,20 +67,24 @@ export function MorePage({
 					/>
 				))}
 			</div>
-			{recentApps.length > 0 && (
-				<section className="mt-6 overflow-hidden rounded-2xl border border-(--border-neutral) bg-(--surface-panel)">
-					<header className="px-5 py-4">
-						<h2 className="text-base font-semibold">
-							Recently added
-						</h2>
-					</header>
-					<ul className="border-t border-(--border-neutral)">
-						{recentApps.map(entry => (
-							<MorePreviewRow key={entry.app.id} entry={entry} />
-						))}
-					</ul>
-				</section>
-			)}
+			{recentApps.length > 0 && <MoreRecentList entries={recentApps} />}
+			<section aria-labelledby="more-maintenance-title" className="mt-8">
+				<h2
+					id="more-maintenance-title"
+					className="mb-3 text-base font-semibold"
+				>
+					Maintenance
+				</h2>
+				<div className="grid gap-3 lg:grid-cols-2">
+					{maintenance.map(destination => (
+						<MoreCard
+							key={destination.view}
+							destination={destination}
+							onSelect={onSelectView}
+						/>
+					))}
+				</div>
+			</section>
 		</section>
 	)
 }

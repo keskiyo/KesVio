@@ -7,26 +7,6 @@
 
 [advisories]
 ignore = [
-  # RUSTSEC-2026-0194 — quick-xml: quadratic run time when checking a start tag for duplicate
-  # attribute names. Severity 7.5 (high). Fixed in quick-xml >= 0.41.0.
-  #
-  #   chain:       quick-xml 0.39.4 <- plist 1.9.0 <- tauri-utils 2.9.3 <- tauri 2.11.3
-  #   reason:      `plist` parses Apple property lists. KesVio is Windows-only by design and
-  #                never parses one: the crate is compiled into the Windows build but no code path
-  #                reaches it at runtime. Both advisories are denial of service through hostile XML
-  #                input, and this application feeds plist no input at all.
-  #   blocked by:  plist 1.9.0 requires quick-xml ^0.39, so 0.41 is semver-unreachable.
-  #                `cargo update -p quick-xml` locks 0 packages. Removing it needs a plist release
-  #                that accepts quick-xml 0.41 and a tauri-utils release that accepts that plist.
-  #   owner:       keskiyo
-  #   reviewBy:    2026-10-31
-  #   remediation: re-run `cargo audit` after each Tauri upgrade and drop these entries as soon as
-  #                the chain resolves quick-xml >= 0.41.0.
-  "RUSTSEC-2026-0194",
-  # RUSTSEC-2026-0195 — quick-xml: unbounded namespace-declaration allocation in `NsReader` enables
-  # memory-exhaustion denial of service. Severity 7.5 (high). Same crate, chain, reasoning and
-  # remediation as RUSTSEC-2026-0194 above.
-  "RUSTSEC-2026-0195",
   # RUSTSEC-2026-0235 — rkyv: shared-pointer validation keyed already-validated pointees by address
   # and type without pointer metadata, so an archive holding two Rc/Arc to one address with
   # different slice lengths could make the checked `access` API return a forged length and read out

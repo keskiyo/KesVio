@@ -110,15 +110,15 @@ foreach ($workflow in @($workflowText, $verifyWorkflowText, $securityWorkflowTex
   }
 }
 
-if ($verifyWorkflowText -notmatch "toolchain: '1.88.0'") {
+if ($verifyWorkflowText -notmatch "toolchain: '1.90.0'") {
   throw "Verification workflow must retain the declared MSRV"
 }
 
-if ($verifyWorkflowText -notmatch '& rustc \+1\.88\.0 --version') {
+if ($verifyWorkflowText -notmatch '& rustc \+1\.90\.0 --version') {
   throw "MSRV declaration check must bypass the repository Rust toolchain override"
 }
 
-if ($verifyWorkflowText -notmatch 'cargo \+1\.88\.0 check --locked') {
+if ($verifyWorkflowText -notmatch 'cargo \+1\.90\.0 check --locked') {
   throw "MSRV build must bypass the repository Rust toolchain override"
 }
 

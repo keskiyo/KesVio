@@ -24,7 +24,7 @@ fn wait_for_launch_ready(handle: &launcher::OwnedProcessHandle) -> &'static str 
     "ready"
 }
 
-fn resolve_launch_target(state: &AppState, id: &str) -> Result<LaunchTarget, AppError> {
+pub(super) fn resolve_launch_target(state: &AppState, id: &str) -> Result<LaunchTarget, AppError> {
     if !is_valid_catalog_id(id) {
         return Err(AppError::LaunchUnavailable);
     }
@@ -33,6 +33,33 @@ fn resolve_launch_target(state: &AppState, id: &str) -> Result<LaunchTarget, App
         .lock()
         .map_err(|_| AppError::LaunchDataUnavailable)?;
     stored.get(id).cloned().ok_or(AppError::LaunchUnavailable)
+}
+
+fn volume_matches(expected: Option<&str>, actual: Option<&str>) -> bool {
+    expected
+        .is_none_or(|expected| actual.is_some_and(|actual| expected.eq_ignore_ascii_case(actual)))
+}
+
+pub(super) fn validate_volume(target: &LaunchTarget) -> Result<(), AppError> {
+    validate_target_volume(&target.path, target.volume_id.as_deref())
+}
+
+pub(super) fn validate_target_volume(path: &str, volume_id: Option<&str>) -> Result<(), AppError> {
+    if volume_id.is_none() {
+        return Ok(());
+    }
+    let actual = crate::catalog::volumes::folder_letter(path)
+        .and_then(|letter| {
+            crate::platform::windows::volumes::volume_identity(std::path::Path::new(&format!(
+                r"{letter}:\"
+            )))
+        })
+        .map(|identity| crate::catalog::volumes::volume_key(&identity));
+    if volume_matches(volume_id, actual.as_deref()) {
+        Ok(())
+    } else {
+        Err(AppError::LaunchUnavailable)
+    }
 }
 
 #[tauri::command]
@@ -45,11 +72,13 @@ pub(crate) async fn launch_app(app: tauri::AppHandle, id: String) -> Result<(), 
         )
     };
     let handle = tauri::async_runtime::spawn_blocking(move || {
+        validate_volume(&launch_target)?;
         launcher::launch(
             launch_target.kind,
             &launch_target.path,
             launch_target.arguments.as_deref(),
         )
+        .map_err(AppError::from)
     })
     .await
     .map_err(|error| AppError::Interrupted {
@@ -92,7 +121,8 @@ pub(crate) async fn can_launch_elevated(
 ) -> Result<bool, AppError> {
     let launch_target = resolve_launch_target(&app.state::<AppState>(), &id)?;
     tauri::async_runtime::spawn_blocking(move || {
-        launcher::supports_elevated_launch(launch_target.kind, &launch_target.path)
+        validate_volume(&launch_target).is_ok()
+            && launcher::supports_elevated_launch(launch_target.kind, &launch_target.path)
     })
     .await
     .map_err(|error| AppError::Interrupted {
@@ -105,6 +135,7 @@ pub(crate) async fn can_launch_elevated(
 pub(crate) async fn launch_app_elevated(app: tauri::AppHandle, id: String) -> Result<(), AppError> {
     let launch_target = resolve_launch_target(&app.state::<AppState>(), &id)?;
     tauri::async_runtime::spawn_blocking(move || {
+        validate_volume(&launch_target).map_err(|_| ElevatedLaunchError::Unsupported)?;
         launcher::launch_elevated(
             launch_target.kind,
             &launch_target.path,
@@ -195,4 +226,12 @@ mod tests {
             Err(AppError::LaunchUnavailable)
         ));
     }
+}
+#[cfg(test)]
+#[test]
+fn tracked_target_requires_matching_mounted_volume_identity() {
+    assert!(!volume_matches(Some("12345678"), None));
+    assert!(!volume_matches(Some("12345678"), Some("87654321")));
+    assert!(volume_matches(Some("12345678"), Some("12345678")));
+    assert!(volume_matches(None, None));
 }

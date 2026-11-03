@@ -20,6 +20,22 @@
 	will-change: transform, opacity;
 }
 
+.publisher-overlay.is-closing {
+	animation: overlay-exit 180ms var(--motion-ease-in) both;
+}
+
+.publisher-overlay.is-closing .publisher-panel {
+	animation: publisher-panel-exit 200ms var(--motion-ease-in) both;
+	pointer-events: none;
+}
+
+@keyframes publisher-panel-exit {
+	to {
+		opacity: 0;
+		transform: translateY(8px) scale(0.985);
+	}
+}
+
 .spotlight {
 	position: absolute;
 	inset: 0;
@@ -167,6 +183,8 @@
 	.app-card,
 	.motion-overlay,
 	.motion-panel,
+	.publisher-overlay.is-closing,
+	.publisher-overlay.is-closing .publisher-panel,
 	.drawer-backdrop,
 	.drawer-panel,
 	.drawer-shell.is-closing .drawer-backdrop,

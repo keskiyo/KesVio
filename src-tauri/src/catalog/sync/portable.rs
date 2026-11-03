@@ -4,6 +4,7 @@ use crate::catalog::incremental::{
 use crate::catalog::sync::scan_control::StageStop;
 use crate::catalog::sync::scan_steps::StepTracker;
 use crate::catalog::{AppInfo, ScanProgress};
+use std::cell::Cell;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -71,6 +72,25 @@ pub(super) fn scan_roots(
             root_duration.as_secs()
         );
         let root_at = Instant::now();
+        let visited = Cell::new(0usize);
+        let last_report = Cell::new(None::<Instant>);
+        let on_directory = || {
+            let count = visited.get().saturating_add(1);
+            visited.set(count);
+            let now = Instant::now();
+            if last_report
+                .get()
+                .is_none_or(|previous| now.duration_since(previous) >= Duration::from_secs(1))
+            {
+                last_report.set(Some(now));
+                progress(ScanProgress {
+                    stage: format!("Portable folders visited: {count}"),
+                    location: None,
+                    completed_roots: index,
+                    total_roots: input.roots.len(),
+                });
+            }
+        };
         let scanned = scan_root_with_duration(
             &RootScanInput {
                 root,
@@ -80,9 +100,11 @@ pub(super) fn scan_roots(
                 is_cancelled,
                 verify_fingerprints: input.verify_fingerprints,
                 steps: input.steps,
+                on_directory: Some(&on_directory),
             },
             root_duration,
         );
+        log::info!("Portable root statistics: foldersVisited={} directoriesEnumerated={} entriesSeen={} executablesInspected={}", visited.get(), scanned.statistics.directories_enumerated, scanned.statistics.entries_seen, scanned.statistics.executables_inspected);
         let root_stop = match scanned.limit_reached {
             Some(ScanLimit::Entries) => Some(StageStop::EntryLimit),
             Some(ScanLimit::Time) => Some(StageStop::TimedOut),

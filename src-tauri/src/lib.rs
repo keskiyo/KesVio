@@ -132,6 +132,7 @@ pub fn run() {
             commands::details::open_app_folder,
             commands::details::measure_app_folder,
             commands::settings::get_system_settings,
+            commands::drive_offer::get_untracked_removable_drives,
             commands::settings::set_scan_settings,
             commands::settings::set_close_behavior,
             commands::shortcut::set_global_shortcut,

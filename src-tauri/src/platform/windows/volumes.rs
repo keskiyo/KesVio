@@ -65,6 +65,13 @@ pub(crate) fn mounted_volumes() -> Vec<MountedVolume> {
         .collect()
 }
 
+pub(crate) fn is_removable_disk(letter: char) -> bool {
+    let root = format!(r"{letter}:\");
+    let wide = root.encode_utf16().chain(Some(0)).collect::<Vec<_>>();
+    // SAFETY: `wide` is NUL-terminated and remains live for the duration of this call.
+    unsafe { GetDriveTypeW(PCWSTR(wide.as_ptr())) == DRIVE_REMOVABLE_TYPE }
+}
+
 fn is_local_disk(letter: char) -> bool {
     let root = format!(r"{letter}:\");
     let wide = root.encode_utf16().chain(Some(0)).collect::<Vec<_>>();

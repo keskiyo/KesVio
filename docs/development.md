@@ -44,9 +44,10 @@ Three independent checks, none of which requires trusting the author:
 - The detached `.sig`, verified with `minisign` against the public key in
   `tauri.conf.json`. This is the same signature the in-app updater checks.
 
-None of the three suppresses SmartScreen, which only an Authenticode certificate
-does. They answer a different question: whether the bytes are the ones this
-repository built.
+These checks establish release origin and integrity. They do not guarantee that
+the file is safe or that SmartScreen or an antivirus will accept it. Antivirus
+reports require review of the exact file, as described in
+[Security Policy](../SECURITY.md#antivirus-detections).
 
 ## Repository workflow
 
@@ -90,6 +91,19 @@ catalog baselines re-recorded by `serde_json`, `THIRD_PARTY_NOTICES.md`,
 generators remain the only writers.
 
 ## Verification and releases
+
+Before publication, synchronize the npm manifest and lockfile, Cargo manifest
+and lockfile, and Tauri configuration to one version. Refresh the curated
+release-note snapshot and the dependency notices when their inputs change.
+Keep user documentation aligned with the shipped interface; historical release
+references and third-party package versions are not application-version markers.
+
+A passing unit suite does not replace native smoke or the reference-machine
+soak. A blocked executable leaves native verification incomplete even when its
+installer was bundled. A local build without the updater signature is not a
+publishable release. Retain the failing command and the exact artifact hash;
+do not reuse a scan verdict from another build or change security settings to
+make a release check pass. The tag workflow below remains the publication path.
 
 For frontend production changes run lint, formatting check, typecheck, relevant
 tests, the full suite for shared behavior, and production build. For backend
@@ -156,6 +170,8 @@ the process lives, a second launch that exits and is forwarded to the first
 (`Second instance forwarded to this process`), a warm restart that reuses the
 cache (`previous generation=N`) with a stable scan, and unchanged per-user
 and installed stores, the WebView2 profile under `EBWebView` included. Every
+log assertion reads only the current smoke process's files, with time buckets
+and segment sequences sorted numerically; process IDs do not imply start order. Every
 build shares the `keskiyo.kesvio` identifier, so the smoke process would
 otherwise open the installed copy's WebView2 profile — the `localStorage` that
 holds the user's preferences — and prune them against the fixture catalog; the
@@ -234,7 +250,7 @@ runner while passing locally.
 
 Node.js `22.22.2` and Rust `1.96.0` are pinned in `.node-version` and
 `rust-toolchain.toml`. Cargo verification uses `--locked`; the separate MSRV
-job builds with Rust `1.88.0`.
+job builds with Rust `1.90.0`, the declared minimum for the current Tauri stack.
 
 Release preparation also provides `scripts/run-release-soak.ps1`.
 It binds to one exact application PID and executable path, records operator-confirmed

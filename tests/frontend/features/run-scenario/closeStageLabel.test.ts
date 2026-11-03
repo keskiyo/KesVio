@@ -36,6 +36,7 @@ describe('scenarioRunSummaryMessage', () => {
 				notRunning: 1,
 				blocked: 1,
 				closeFailed: 1,
+				unavailable: 0,
 				closeUnavailable: false,
 			}),
 		).toBe(
@@ -53,6 +54,7 @@ describe('scenarioRunSummaryMessage', () => {
 				notRunning: 0,
 				blocked: 0,
 				closeFailed: 0,
+				unavailable: 0,
 				closeUnavailable: false,
 			}),
 		).toBeNull()

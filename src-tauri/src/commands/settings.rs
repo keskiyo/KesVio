@@ -3,7 +3,7 @@ use crate::app_state::AppState;
 use crate::catalog;
 use crate::catalog::sync::{cancel_pending_retry, restart_change_watcher};
 use crate::error::AppError;
-use crate::lifecycle::{window_state, LifecycleState};
+use crate::lifecycle::LifecycleState;
 use crate::paths;
 use crate::platform::windows::{drives, global_shortcut, startup_approval};
 use serde::Serialize;
@@ -135,17 +135,11 @@ pub(crate) async fn set_close_behavior(
     let app_data_dir =
         paths::data_dir(&app).map_err(|error| AppError::AppDataDir(error.to_string()))?;
     let lifecycle = Arc::clone(&app.state::<Arc<LifecycleState>>());
-    let previous = lifecycle.hides_to_tray();
-    lifecycle.set_hides_to_tray(hide_to_tray);
-    let preferences = window_state::preferences_of(&lifecycle);
-    let written = run_blocking("Window settings update", move || {
-        window_state::write(&app_data_dir, &preferences)
+    run_blocking("Window settings update", move || {
+        lifecycle.persist_window_preferences(&app_data_dir, Some(hide_to_tray))
     })
-    .await?;
-    if let Err(error) = written {
-        lifecycle.set_hides_to_tray(previous);
-        return Err(AppError::SaveWindowSettings(error.to_string()));
-    }
+    .await?
+    .map_err(|error| AppError::SaveWindowSettings(error.to_string()))?;
     Ok(hide_to_tray)
 }
 

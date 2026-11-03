@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { keepFocusNearRemovedItem } from '../../../src/shared/lib/focus'
+import {
+	keepFocusNearRemovedItem,
+	restoreFocus,
+} from '../../../src/shared/lib/focus'
 
 function list(...labels: string[]) {
 	const container = document.createElement('div')
@@ -20,6 +23,17 @@ afterEach(() => {
 })
 
 describe('keepFocusNearRemovedItem', () => {
+	it('restores focus without scrolling when the original group has been removed', () => {
+		const main = document.createElement('main')
+		const fallback = document.createElement('button')
+		const opener = document.createElement('button')
+		main.append(fallback, opener)
+		document.body.append(main)
+		opener.remove()
+		const focus = vi.spyOn(fallback, 'focus')
+		restoreFocus(opener)
+		expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+	})
 	it('focuses the next item, or the previous one at the end of the list', () => {
 		vi.useFakeTimers()
 		const [, middle, last] = list('first', 'middle', 'last')

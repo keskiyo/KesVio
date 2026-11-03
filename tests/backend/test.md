@@ -4,11 +4,18 @@ The Rust backend has no external integration-test crate. Tests live next to the
 modules they exercise in `#[cfg(test)]` blocks so they can validate private and
 `pub(crate)` behaviour without widening production APIs.
 
+Offline-volume retention and reconnect tests live in `catalog/volumes.rs` and
+`catalog/sync/scan_sources/portable_sources/`. Removable-drive offer filtering
+is covered in `commands/drive_offer.rs`.
+Command tests cover volume identity checks before close and details operations.
+
 - Rust: colocated `#[cfg(test)]` modules; `cargo test --manifest-path
 src-tauri/Cargo.toml` is the count, and the script at the end prints the
-  per-module numbers when they are wanted. One developer-only test is ignored
-  in the normal run. The ignored case is `catalog/golden/timings.rs`, which prints stage medians instead of
-  asserting a threshold. Removing the uninstall feature deleted
+  per-module numbers when they are wanted. Two developer-only tests are ignored
+  in the normal run: `catalog/golden/timings.rs` prints stage medians instead of
+  asserting a threshold, and `platform/windows/execution/launcher/elevation.rs`
+  queries the live shell for a manual elevation-capability check.
+  Removing the uninstall feature deleted
   `platform/windows/uninstall/`, `commands/uninstall.rs` and
   `app_state/uninstall.rs` along with their cases, and left one invariant behind
   that is now guarded on purpose: `can_uninstall` is the evidence that an entry
@@ -31,9 +38,17 @@ src-tauri/Cargo.toml` is the count, and the script at the end prints the
   watchdog: the threshold, the repeat interval, the reused detail buffer, a
   thread that stops before its next poll rather than after it, and a throttled
   burst that still reaches the watchdog; `cadence.rs` pins the log cadence) and
-  `platform/windows/apps_folder/`. `catalog/scan/settings.rs` and
-  `lifecycle/window_state/store.rs` each prove that rewriting the stored value is a
-  no-op while a malformed or unsupported document is still replaced.
+  `platform/windows/apps_folder/`. `catalog/scan/settings.rs` proves unchanged
+  values do not write. `lifecycle/window_state/store/tests.rs` proves unchanged
+  preferences do not write, malformed documents recover, future documents are
+  preserved, and updates retain unknown root and geometry fields.
+  `lifecycle/window_state/writer/tests.rs` proves geometry and preference writes
+  serialize, failed writes retain the durable preference, and an older failure
+  cannot revert a newer successful preference.
+  `catalog/sync/scan/publication_tests.rs` proves unchanged and empty catalogs
+  publish each committed generation. `catalog/scan/coordinator/cancellation_tests.rs`
+  proves requests after cancellation wait for a replacement scan; the coordinator
+  also tests waiter registration during completion.
   `diagnostics/export.rs` holds the XML document together — a plugin-formatted
   line becomes a structured entry, a line the logger did not write is kept
   verbatim, markup and control characters cannot escape their element, the
@@ -63,21 +78,21 @@ src-tauri/Cargo.toml` is the count, and the script at the end prints the
   never wraps. `diagnostics/panic_log.rs` proves a panic is recorded
   with its location and stack but never its payload, and
   `diagnostics/operation.rs` proves an operation's timing line names it.
-  The lifecycle module keeps the close-to-tray decision in `lifecycle/state.rs`,
-  which now also proves the two rules behind settled persistence — every
+  The lifecycle module keeps the close-to-tray decision in `lifecycle/state.rs`;
+  `lifecycle/state/tests.rs` proves the two rules behind settled persistence — every
   geometry change advances a generation, and only one persist waits at a time —
   and window geometry in `lifecycle/window_state/geometry.rs`, where a window from a
   disconnected monitor, one hanging off an edge, one larger than its screen and
   a maximized one each have a named case, and a resize reaches the stored state
   without a close, because an update, a shutdown or a kill ends the process
-  without one. `lifecycle/window_state/mod.rs` proves the restore clamps to the
+  without one. `lifecycle/window_state/tests.rs` proves the restore clamps to the
   minimum the window configuration declares, converted to the physical pixels a
   geometry is stored in, that a missing or impossible minimum clamps nothing
   away, and that `tauri.conf.json` still declares the 446 × 529 minimum the
   interface is built for — a second constant in the restore path had drifted
   to 430 × 520. `lifecycle/presentation.rs` keeps ordinary startup hidden until
   the frontend readiness event while tray-backed autostart remains hidden.
-  `lifecycle/state.rs` also proves the quiet-start rules — a fresh session is
+  `lifecycle/state/tests.rs` also proves the quiet-start rules — a fresh session is
   not one, it ends exactly once, and ending it releases a deferred startup scan
   — while `lifecycle/quiet_start.rs` proves the gate itself: an unwoken wait
   returns at the timeout, a wake from another thread ends it early, and a wake
@@ -244,6 +259,7 @@ corpus entry can pin down on its own.
 - [`catalog/product_duplicates.rs`](../../src-tauri/src/catalog/product_duplicates.rs)
 - [`catalog/registry_enrichment.rs`](../../src-tauri/src/catalog/registry_enrichment.rs)
 - [`catalog/scan/coordinator.rs`](../../src-tauri/src/catalog/scan/coordinator.rs)
+- [`catalog/scan/coordinator/cancellation_tests.rs`](../../src-tauri/src/catalog/scan/coordinator/cancellation_tests.rs)
 - [`catalog/scan/hydration/icon.rs`](../../src-tauri/src/catalog/scan/hydration/icon.rs)
 - [`catalog/scan/hydration/mod.rs`](../../src-tauri/src/catalog/scan/hydration/mod.rs)
 - [`catalog/scan/hydration/queue.rs`](../../src-tauri/src/catalog/scan/hydration/queue.rs)
@@ -269,6 +285,7 @@ corpus entry can pin down on its own.
 - [`catalog/sync/mod.rs`](../../src-tauri/src/catalog/sync/mod.rs)
 - [`catalog/sync/portable/tests.rs`](../../src-tauri/src/catalog/sync/portable/tests.rs)
 - [`catalog/sync/scan.rs`](../../src-tauri/src/catalog/sync/scan.rs)
+- [`catalog/sync/scan/publication_tests.rs`](../../src-tauri/src/catalog/sync/scan/publication_tests.rs)
 - [`catalog/sync/scan_control.rs`](../../src-tauri/src/catalog/sync/scan_control.rs)
 - [`catalog/sync/scan_guard.rs`](../../src-tauri/src/catalog/sync/scan_guard.rs)
 - [`catalog/sync/scan_sources/portable_sources/roots/tests.rs`](../../src-tauri/src/catalog/sync/scan_sources/portable_sources/roots/tests.rs)
@@ -391,11 +408,13 @@ declined by the rules `paths/` names.
 - [`lifecycle/presentation.rs`](../../src-tauri/src/lifecycle/presentation.rs)
 - [`lifecycle/quiet_start.rs`](../../src-tauri/src/lifecycle/quiet_start.rs)
 - [`lifecycle/state.rs`](../../src-tauri/src/lifecycle/state.rs)
+- [`lifecycle/state/tests.rs`](../../src-tauri/src/lifecycle/state/tests.rs)
 - [`lifecycle/tray/menu/tests.rs`](../../src-tauri/src/lifecycle/tray/menu/tests.rs)
 - [`lifecycle/tray/model.rs`](../../src-tauri/src/lifecycle/tray/model.rs)
 - [`lifecycle/tray/search.rs`](../../src-tauri/src/lifecycle/tray/search.rs)
 - [`lifecycle/tray/tooltip.rs`](../../src-tauri/src/lifecycle/tray/tooltip.rs)
 - [`lifecycle/window_state/mod.rs`](../../src-tauri/src/lifecycle/window_state/mod.rs), [`window_state/geometry.rs`](../../src-tauri/src/lifecycle/window_state/geometry.rs) and [`window_state/store.rs`](../../src-tauri/src/lifecycle/window_state/store.rs)
+- [`lifecycle/window_state/tests.rs`](../../src-tauri/src/lifecycle/window_state/tests.rs), [`window_state/store/tests.rs`](../../src-tauri/src/lifecycle/window_state/store/tests.rs) and [`window_state/writer/tests.rs`](../../src-tauri/src/lifecycle/window_state/writer/tests.rs)
 - [`paths/adopt.rs`](../../src-tauri/src/paths/adopt.rs)
 - [`paths/mod.rs`](../../src-tauri/src/paths/mod.rs)
 - [`paths/portable.rs`](../../src-tauri/src/paths/portable.rs)

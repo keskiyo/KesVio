@@ -146,6 +146,7 @@ export function useAppFeedback({
 			summary.launchFailed ||
 			summary.closeFailed ||
 			summary.blocked ||
+			summary.unavailable ||
 			summary.closeUnavailable
 		if (failed) toast.warning(message)
 		else toast.success(message)

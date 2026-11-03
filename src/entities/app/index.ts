@@ -153,3 +153,4 @@ export {
 	type CategorizedAppsState,
 	selectCategorizedApps,
 } from './model/categorizedApps'
+export type { CatalogScanChanges } from './model/catalogScanChanges'

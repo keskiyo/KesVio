@@ -8,7 +8,12 @@ export function CatalogSettings({
 	maintenance,
 }: CatalogSettingsProps) {
 	return (
-		<section aria-label="Catalog" className={SETTINGS_SURFACE}>
+		<section
+			id="settings-catalog"
+			aria-label="Catalog"
+			tabIndex={-1}
+			className={`${SETTINGS_SURFACE} scroll-mt-5 focus-visible:outline-2 focus-visible:outline-(--accent)`}
+		>
 			<p className={SETTINGS_SECTION_LABEL}>Catalog</p>
 			<SettingsDiscoveryControls {...discovery} />
 			{maintenance && <CatalogMaintenance {...maintenance} />}

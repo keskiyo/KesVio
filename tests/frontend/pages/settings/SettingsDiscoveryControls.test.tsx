@@ -23,6 +23,90 @@ const settings: SystemSettings = {
 }
 
 describe('SettingsDiscoveryControls', () => {
+	it('lets a long saved path shrink within the discovery grid', () => {
+		const path = `C:\\${'long-folder-name\\'.repeat(25)}`
+		render(
+			<SettingsDiscoveryControls
+				settings={{
+					...settings,
+					scanSettings: {
+						...settings.scanSettings,
+						includedPaths: [path],
+					},
+				}}
+				saving={false}
+				onSaveScanSettings={vi.fn()}
+				onAddPath={vi.fn()}
+				onRemovePath={vi.fn()}
+				onPickFolder={vi.fn()}
+			/>,
+		)
+		const input = screen.getByRole('textbox', {
+			name: 'Additional scan folder',
+		})
+		expect(input.parentElement?.parentElement?.parentElement).toHaveClass(
+			'min-w-0',
+		)
+		expect(screen.getByText(path)).toHaveAttribute('title', path)
+	})
+	it.each([
+		['Additional scan folder', 'Add scan folder', 'includedPaths'],
+		['Excluded folder', 'Exclude folder', 'excludedPaths'],
+	])(
+		'submits a manually entered %s by button and Enter',
+		async (label, button, kind) => {
+			const onAddPath = vi.fn()
+			render(
+				<SettingsDiscoveryControls
+					settings={settings}
+					saving={false}
+					onSaveScanSettings={vi.fn()}
+					onAddPath={onAddPath}
+					onRemovePath={vi.fn()}
+					onPickFolder={vi.fn()}
+				/>,
+			)
+			const input = screen.getByRole('textbox', { name: label })
+			const add = screen.getByRole('button', { name: button })
+			expect(add).toBeDisabled()
+			await userEvent.type(input, '   ')
+			expect(add).toBeDisabled()
+			await userEvent.keyboard('{Enter}')
+			expect(onAddPath).not.toHaveBeenCalled()
+			await userEvent.clear(input)
+			await userEvent.type(input, ' D:\\Apps ')
+			await userEvent.click(add)
+			expect(onAddPath).toHaveBeenLastCalledWith(kind, 'D:\\Apps')
+			expect(input).toHaveValue('')
+			await userEvent.type(input, 'E:\\Tools{Enter}')
+			expect(onAddPath).toHaveBeenLastCalledWith(kind, 'E:\\Tools')
+			expect(onAddPath).toHaveBeenCalledTimes(2)
+		},
+	)
+
+	it('blocks manual submit while settings are saving', async () => {
+		const onAddPath = vi.fn()
+		const props = {
+			settings,
+			saving: false,
+			onSaveScanSettings: vi.fn(),
+			onAddPath,
+			onRemovePath: vi.fn(),
+			onPickFolder: vi.fn(),
+		}
+		const { rerender } = render(<SettingsDiscoveryControls {...props} />)
+		const input = screen.getByRole('textbox', {
+			name: 'Additional scan folder',
+		})
+		await userEvent.type(input, 'D:\\Apps')
+		rerender(<SettingsDiscoveryControls {...props} saving />)
+		expect(input).toBeDisabled()
+		expect(
+			screen.getByRole('button', { name: 'Add scan folder' }),
+		).toBeDisabled()
+		await userEvent.keyboard('{Enter}')
+		expect(onAddPath).not.toHaveBeenCalled()
+	})
 	it('explains that fixed drives are scanned on a forced scan by default', () => {
 		render(
 			<SettingsDiscoveryControls

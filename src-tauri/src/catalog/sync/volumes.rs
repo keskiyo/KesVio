@@ -51,6 +51,7 @@ pub(crate) fn start_volume_watcher(app: tauri::AppHandle) {
 }
 
 fn follow_volume_change(app: &tauri::AppHandle, change: VolumeChange) {
+    let _ = app.emit("volumes://changed", ());
     let Ok(app_data_dir) = paths::data_dir(app) else {
         return;
     };

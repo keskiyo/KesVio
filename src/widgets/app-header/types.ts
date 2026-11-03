@@ -23,6 +23,7 @@ export interface HeaderProps {
 	onCancelScan(): Promise<void>
 	showMenu: boolean
 	searchLaunch?: SearchLaunch
+	onScrollToTop?: () => void
 }
 
 export interface SearchLaunch {

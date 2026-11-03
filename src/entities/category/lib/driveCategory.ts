@@ -10,6 +10,7 @@ export const DRIVE_CATEGORY_PREFIX = 'drive:'
 export interface DriveLocation {
 	scanFolder?: string | null
 	volumeId?: string | null
+	targetAvailability?: string | null
 }
 
 export interface DriveCategory {
@@ -45,6 +46,37 @@ export function isDriveCategory(category: CategoryDefinition): boolean {
 
 export function isDriveCategoryId(id: string): boolean {
 	return DRIVE_CATEGORY.test(id)
+}
+
+export function offlineDriveCategoryIds(
+	apps: readonly DriveLocation[],
+): Set<string> {
+	const availability = new Map<string, boolean>()
+	for (const app of apps) {
+		const drive = driveCategoryFor(app)
+		if (!drive) continue
+		const offline =
+			app.targetAvailability === 'target.unverifiable.unmounted_volume'
+		availability.set(
+			drive.id,
+			(availability.get(drive.id) ?? true) && offline,
+		)
+	}
+	return new Set(
+		[...availability].filter(([, offline]) => offline).map(([id]) => id),
+	)
+}
+
+export function withDriveAvailability(
+	categories: CategoryDefinition[],
+	apps: readonly DriveLocation[],
+): CategoryDefinition[] {
+	const offline = offlineDriveCategoryIds(apps)
+	return categories.map(category =>
+		offline.has(category.id)
+			? { ...category, disconnected: true }
+			: category,
+	)
 }
 
 export function staysVisibleWhenEmpty(category: CategoryDefinition): boolean {

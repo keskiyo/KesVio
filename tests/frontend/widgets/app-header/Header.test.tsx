@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
@@ -53,6 +53,23 @@ function launchingHeader(query: string, bestMatch: string | null) {
 	)
 	return searchLaunch
 }
+
+it('offers a header action to return to the top after scrolling', async () => {
+	const onScrollToTop = vi.fn()
+	const view = header()
+	render(<Header {...view.props} onScrollToTop={onScrollToTop} />)
+	await userEvent.click(screen.getByRole('button', { name: 'Back to top' }))
+	expect(onScrollToTop).toHaveBeenCalledOnce()
+})
+
+it('ignores repeated Enter while accepting a fresh Enter', () => {
+	const launch = launchingHeader('code', 'code')
+	const input = screen.getByRole('textbox', { name: 'Search applications' })
+	fireEvent.keyDown(input, { key: 'Enter', repeat: true })
+	expect(launch.onSubmit).not.toHaveBeenCalled()
+	fireEvent.keyDown(input, { key: 'Enter' })
+	expect(launch.onSubmit).toHaveBeenCalledExactlyOnceWith(false)
+})
 
 describe('Header search launching', () => {
 	// Results are grouped in category order, so the first card on screen is not always the

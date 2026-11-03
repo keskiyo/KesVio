@@ -24,6 +24,7 @@ pub(super) struct VisitContext<'a> {
     pub(super) facts: &'a MachineFacts,
     pub(super) verify_fingerprints: bool,
     pub(super) steps: &'a StepTracker,
+    pub(super) on_directory: Option<&'a dyn Fn()>,
 }
 
 pub(super) fn visit_directory(
@@ -39,6 +40,9 @@ pub(super) fn visit_directory(
         || !portable::should_visit_directory(directory, context.excluded)
     {
         return;
+    }
+    if let Some(on_directory) = context.on_directory {
+        on_directory();
     }
     let key = normalized_path(directory);
     let modified_nanos = directory_modified_nanos(directory);

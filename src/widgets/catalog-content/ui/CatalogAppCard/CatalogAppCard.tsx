@@ -17,6 +17,7 @@ function CatalogAppCardComponent({
 	fileActions,
 	isHidden = false,
 	isAuxiliary = false,
+	showOfflineLabel,
 	onHide,
 	onRestore,
 	onDemote,
@@ -30,6 +31,7 @@ function CatalogAppCardComponent({
 			onToggleFavorite={onToggleFavorite}
 			onLaunch={onLaunch}
 			isAuxiliary={isAuxiliary}
+			showOfflineLabel={showOfflineLabel}
 			renderActions={({ close, anchorRef }) => (
 				<AppActionsMenu
 					app={app}

@@ -557,7 +557,7 @@ describe('MorePage', () => {
 		expect(recent.querySelector('button')).toBeNull()
 		expect(within(recent).getByText('New tool')).toBeInTheDocument()
 		const backup = screen.getByRole('button', { name: 'Backup & Restore' })
-		expect(backup.compareDocumentPosition(recent)).toBe(
+		expect(recent.compareDocumentPosition(backup)).toBe(
 			Node.DOCUMENT_POSITION_FOLLOWING,
 		)
 	})

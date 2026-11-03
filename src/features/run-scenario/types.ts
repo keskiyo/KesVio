@@ -13,5 +13,6 @@ export interface ScenarioRunSummary {
 	notRunning: number
 	blocked: number
 	closeFailed: number
+	unavailable: number
 	closeUnavailable: boolean
 }

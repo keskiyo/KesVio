@@ -35,12 +35,19 @@ export function CategorySubmenu({
 			{categoryOrder.map(category => {
 				const expandable = category === INSTALLERS_DOCS_CATEGORY
 				const expanded = expandable && category === expandedCategory
+				const disconnected =
+					categories.find(item => item.id === category)
+						?.disconnected === true
 				const Chevron = expanded ? ChevronDown : ChevronRight
 				return (
 					<div key={category} className="flex flex-col gap-0.5">
 						<button
 							type="button"
 							role="menuitem"
+							disabled={disconnected}
+							title={
+								disconnected ? 'Drive not connected' : undefined
+							}
 							aria-current={
 								category === activeCategory ? 'true' : undefined
 							}
@@ -52,7 +59,7 @@ export function CategorySubmenu({
 									: onSelect(category)
 							}
 							{...spotlight}
-							className={`relative flex w-full items-center rounded-lg px-2.5 py-1.5 text-[13px] focus-visible:outline-2 focus-visible:outline-violet-500 sm:px-3 sm:py-2 sm:text-sm ${category === activeCategory ? 'bg-violet-500/18 font-medium text-violet-300' : 'text-slate-600 hover:bg-slate-500/15'}`}
+							className={`relative flex w-full items-center rounded-lg px-2.5 py-1.5 text-[13px] focus-visible:outline-2 focus-visible:outline-violet-500 disabled:cursor-not-allowed disabled:opacity-45 sm:px-3 sm:py-2 sm:text-sm ${category === activeCategory ? 'bg-violet-500/18 font-medium text-violet-300' : 'text-slate-600 enabled:hover:bg-slate-500/15'}`}
 						>
 							<SpotlightLayer size={60} />
 							<span className="min-w-0 flex-1 text-left">

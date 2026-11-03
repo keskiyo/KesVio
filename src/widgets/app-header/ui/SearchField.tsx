@@ -44,6 +44,7 @@ export function SearchField({
 							searchLaunch.onLeave()
 						} else if (
 							event.key === 'Enter' &&
+							!event.repeat &&
 							!event.altKey &&
 							!event.shiftKey &&
 							searchLaunch?.bestMatch

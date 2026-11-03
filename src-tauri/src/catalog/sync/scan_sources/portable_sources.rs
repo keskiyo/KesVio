@@ -1,4 +1,6 @@
+mod offline;
 mod roots;
+use offline::retain_offline_apps;
 use roots::{roots_for, stamp_scan_folders};
 
 use super::stage_log;
@@ -58,8 +60,19 @@ pub(super) fn scan(
         .find(|snapshot| snapshot.key.0 == "portable")
         .map(|snapshot| snapshot.apps.as_slice());
     let previous_apps = previous_snapshot.unwrap_or_default();
+    let active_folders = resolution
+        .folders
+        .iter()
+        .filter(|folder| {
+            !resolution.tracked.iter().any(|tracked| {
+                tracked.folder.eq_ignore_ascii_case(&folder.configured)
+                    && tracked.mounted_at.is_none()
+            })
+        })
+        .cloned()
+        .collect::<Vec<_>>();
     let roots = roots_for(
-        &resolution.folders,
+        &active_folders,
         settings.auto_scan_fixed_drives,
         request,
         fixed_roots,
@@ -78,6 +91,13 @@ pub(super) fn scan(
     let mut excluded = catalog::default_portable_exclusions();
     excluded.extend(settings.excluded_paths.iter().map(PathBuf::from));
     excluded.extend(steam_libraries);
+    excluded.extend(
+        resolution
+            .tracked
+            .iter()
+            .filter(|volume| volume.mounted_at.is_none())
+            .map(|volume| PathBuf::from(&volume.folder)),
+    );
     let mode = if request == SyncRequest::Force {
         ScanMode::Force
     } else {
@@ -99,7 +119,14 @@ pub(super) fn scan(
         progress,
         is_cancelled,
     );
-    stamp_scan_folders(&mut scan.apps, &resolution.folders);
+    stamp_scan_folders(&mut scan.apps, &active_folders);
+    retain_offline_apps(
+        &mut scan.apps,
+        previous_apps,
+        &resolution.tracked,
+        &previous.volumes,
+        &settings.excluded_paths,
+    );
     let replaced = adopts_results(scan.stop);
     let outcome = SourceOutcome {
         key: "portable",

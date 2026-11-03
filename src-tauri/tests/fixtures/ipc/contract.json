@@ -116,6 +116,13 @@
       "startupEntry": "disabled",
       "version": "0.0.0-sample"
     },
+    "get_untracked_removable_drives": [
+      {
+        "id": "1a2b3c4d",
+        "label": "USB",
+        "letter": "F"
+      }
+    ],
     "get_window_backdrop": "mica",
     "launch_app_elevated": null,
     "measure_app_folder": {
@@ -258,7 +265,8 @@
     "SCAN_FAILED",
     "SCAN_PATH_NOT_ABSOLUTE",
     "SCAN_SETTINGS_TOO_LARGE",
-    "STARTUP_ENTRY_UPDATE_FAILED"
+    "STARTUP_ENTRY_UPDATE_FAILED",
+    "WINDOW_ACTIVATION_UNAVAILABLE"
   ],
   "events": {
     "catalog://delta": {
@@ -364,6 +372,7 @@
       "volumeIds": [
         "1a2b3c4d"
       ]
-    }
+    },
+    "volumes://changed": null
   }
 }

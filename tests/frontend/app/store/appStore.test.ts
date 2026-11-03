@@ -1,4 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
+import { act, renderHook } from '@testing-library/react'
+import { toast } from 'sonner'
+import { useAppFeedback } from '../../../../src/app/model/useAppFeedback'
+import {
+	useScenarioRunner,
+	type ScenarioRunSummary,
+} from '../../../../src/features/run-scenario'
 import {
 	PREFERENCES_BACKUP_KEY,
 	PREFERENCES_KEY,
@@ -109,6 +116,51 @@ function client(overrides: Partial<AppsClient> = {}): AppsClient {
 }
 
 describe('app store', () => {
+	it('applies hydration after an empty background delta advances the generation', async () => {
+		let publishDelta!: Parameters<
+			NonNullable<AppsClient['onCatalogDelta']>
+		>[0]
+		let publishPatches!: Parameters<
+			NonNullable<AppsClient['onCatalogPatches']>
+		>[0]
+		const store = createAppStore(
+			client({
+				getApps: vi.fn().mockResolvedValue({
+					apps: [apps[0]],
+					hasCache: true,
+					generation: 10,
+				}),
+				onCatalogDelta: async handler => {
+					publishDelta = handler
+					return () => undefined
+				},
+				onCatalogPatches: async handler => {
+					publishPatches = handler
+					return () => undefined
+				},
+				startBackgroundSync: vi.fn().mockResolvedValue(undefined),
+			}),
+			memoryStorage(),
+		)
+		const dispose = await store.getState().initialize()
+		publishDelta({
+			generation: 11,
+			upserted: [],
+			removedIds: [],
+			summary: { added: 0, removed: 0, updated: 0 },
+		})
+		publishPatches([
+			{ id: apps[0].id, generation: 11, iconBase64: 'current' },
+		])
+		expect(store.getState().catalogGeneration).toBe(11)
+		expect(store.getState().apps[0].iconBase64).toBe('current')
+		publishPatches([
+			{ id: apps[0].id, generation: 10, iconBase64: 'stale' },
+		])
+		expect(store.getState().apps[0].iconBase64).toBe('current')
+		dispose()
+	})
+
 	it('starts at the stored density and persists a change', () => {
 		const values = new Map<string, string>()
 		const storage = {
@@ -353,6 +405,26 @@ describe('app store', () => {
 		expect(store.getState().favoriteAppIds).toEqual([])
 		expect(store.getState().categoryOverrides).toEqual({})
 		expect(store.getState().categoryOverrideIdentities).toEqual({})
+	})
+
+	it('does not move an app to a disconnected drive category', () => {
+		const stick = app({
+			id: 'stick',
+			name: 'Tool',
+			path: 'F:\\tool.exe',
+			category: 'utilities',
+			scanFolder: 'F:\\',
+			targetAvailability: 'target.unverifiable.unmounted_volume',
+		})
+		const store = createAppStore(client())
+		store.setState({ apps: [...apps, stick] })
+		store.getState().moveApp('code', 'drive:f')
+		expect(store.getState().categoryOverrides).toEqual({})
+		store.setState({
+			apps: [...apps, { ...stick, targetAvailability: 'present' }],
+		})
+		store.getState().moveApp('code', 'drive:f')
+		expect(store.getState().categoryOverrides).toEqual({ code: 'drive:f' })
 	})
 
 	it('files an application into Installers & Docs and lets it back out', () => {
@@ -1184,6 +1256,201 @@ describe('app store', () => {
 		}
 	})
 
+	it.each([
+		['launch', 'event'],
+		['launch', 'timeout'],
+		['launchElevated', 'event'],
+		['launchElevated', 'timeout'],
+	] as const)(
+		'owns same-id launch across both modes while %s is pending after %s',
+		async (mode, release) => {
+			vi.useFakeTimers()
+			try {
+				let finish!: () => void
+				const pending = new Promise<void>(resolve => {
+					finish = resolve
+				})
+				const launchApp = vi
+					.fn()
+					.mockImplementation(({ id }: { id: string }) =>
+						id === 'code' ? pending : Promise.resolve(),
+					)
+				const launchAppElevated = vi.fn().mockReturnValue(pending)
+				const store = createAppStore(
+					client({ launchApp, launchAppElevated }),
+					memoryStorage(),
+				)
+				const first = store.getState()[mode](apps[0])
+				void store
+					.getState()
+					.launch(apps[0])
+					.catch(() => undefined)
+				void store
+					.getState()
+					.launchElevated(apps[0])
+					.catch(() => undefined)
+				await store.getState().launch(apps[1])
+				expect(
+					launchApp.mock.calls.filter(
+						([request]) => request.id === 'code',
+					).length + launchAppElevated.mock.calls.length,
+				).toBe(1)
+				expect(launchApp).toHaveBeenCalledWith({ id: 'chrome' })
+				if (release === 'event') store.getState().clearLaunching('code')
+				else vi.advanceTimersByTime(12000)
+				void store
+					.getState()
+					.launch(apps[0])
+					.catch(() => undefined)
+				expect(
+					launchApp.mock.calls.filter(
+						([request]) => request.id === 'code',
+					).length + launchAppElevated.mock.calls.length,
+				).toBe(1)
+				finish()
+				await first
+				await store.getState().launch(apps[0])
+				expect(store.getState().appLaunchStats.code?.count).toBe(2)
+			} finally {
+				vi.useRealTimers()
+			}
+		},
+	)
+
+	it('releases elevated ownership after failure and launch completion', async () => {
+		const launchAppElevated = vi
+			.fn()
+			.mockRejectedValueOnce(new Error('denied'))
+			.mockResolvedValue(undefined)
+		const store = createAppStore(
+			client({ launchAppElevated }),
+			memoryStorage(),
+		)
+		await expect(store.getState().launchElevated(apps[0])).rejects.toThrow(
+			'denied',
+		)
+		expect(store.getState().launchingIds).not.toContain('code')
+		await store.getState().launchElevated(apps[0])
+		await expect(store.getState().launch(apps[0])).rejects.toThrow(
+			'Application is already launching.',
+		)
+		expect(store.getState().appLaunchStats.code?.count).toBe(1)
+		store.getState().clearLaunching('code')
+		await store.getState().launch(apps[0])
+		expect(store.getState().appLaunchStats.code?.count).toBe(2)
+	})
+
+	it.each(['launch', 'launchElevated'] as const)(
+		'shares the pending %s failure with same-kind duplicates',
+		async mode => {
+			let fail!: (error: Error) => void
+			const pending = new Promise<void>((_, reject) => {
+				fail = reject
+			})
+			const store = createAppStore(
+				client({
+					launchApp: () => pending,
+					launchAppElevated: () => pending,
+				}),
+				memoryStorage(),
+			)
+			const first = store.getState()[mode](apps[0])
+			const duplicate = store.getState()[mode](apps[0])
+			const firstResult = expect(first).rejects.toThrow('denied')
+			const duplicateResult = expect(duplicate).rejects.toThrow('denied')
+			fail(new Error('denied'))
+			await Promise.all([firstResult, duplicateResult])
+			expect(store.getState().appLaunchStats).toEqual({})
+		},
+	)
+
+	it.each([
+		['launch', 'launchElevated'],
+		['launchElevated', 'launch'],
+	] as const)(
+		'rejects %s to %s mode changes while the first request is pending',
+		async (owner, duplicate) => {
+			let finish!: () => void
+			const pending = new Promise<void>(resolve => {
+				finish = resolve
+			})
+			const store = createAppStore(
+				client({
+					launchApp: () => pending,
+					launchAppElevated: () => pending,
+				}),
+				memoryStorage(),
+			)
+			const first = store.getState()[owner](apps[0])
+			await expect(store.getState()[duplicate](apps[0])).rejects.toThrow(
+				'Application is already launching.',
+			)
+			finish()
+			await first
+		},
+	)
+
+	it('does not report a suppressed scenario launch as launched', async () => {
+		const store = createAppStore(client(), memoryStorage())
+		await store.getState().launch(apps[0])
+		const summaries: ScenarioRunSummary[] = []
+		const { result } = renderHook(() =>
+			useScenarioRunner({
+				apps,
+				scenarios: [],
+				launch: store.getState().launch,
+				closeApps: store.getState().closeApps,
+				onFinished: summary => summaries.push(summary),
+			}),
+		)
+		await act(() =>
+			result.current.run({
+				id: 'coding',
+				name: 'Coding',
+				launchIdentities: ['code'],
+				closeIdentities: [],
+				createdAt: null,
+			}),
+		)
+		expect(summaries[0]).toMatchObject({ launched: 0, launchFailed: 1 })
+	})
+
+	it('never reports elevated success when a normal launch owns the request', async () => {
+		let finish!: () => void
+		const pending = new Promise<void>(resolve => {
+			finish = resolve
+		})
+		const store = createAppStore(
+			client({ launchApp: () => pending, launchAppElevated: vi.fn() }),
+			memoryStorage(),
+		)
+		const first = store.getState().launch(apps[0])
+		const success = vi.spyOn(toast, 'success').mockReturnValue('success')
+		const failure = vi.spyOn(toast, 'error').mockReturnValue('error')
+		try {
+			const { result } = renderHook(() =>
+				useAppFeedback({
+					onLaunch: store.getState().launch,
+					onLaunchElevated: store.getState().launchElevated,
+					onOpenFolder: async () => undefined,
+					onRefresh: async () => undefined,
+					onFullScan: async () => undefined,
+					onUndo: () => ({ ok: true }),
+				}),
+			)
+			await act(() => result.current.fileActions.launchElevated!(apps[0]))
+			expect(success).not.toHaveBeenCalled()
+			expect(failure).toHaveBeenCalledWith(
+				'Could not launch Visual Studio Code as administrator',
+			)
+		} finally {
+			finish()
+			await first
+			success.mockRestore()
+			failure.mockRestore()
+		}
+	})
+
 	it('clears launching immediately when a launch fails', async () => {
 		const store = createAppStore(
 			client({ launchApp: vi.fn().mockRejectedValue(new Error('nope')) }),
@@ -1199,6 +1466,7 @@ describe('app store', () => {
 		const store = createAppStore(client(), storage)
 
 		await store.getState().launch(apps[0])
+		store.getState().clearLaunching(apps[0].id)
 		await store.getState().launch(apps[0])
 
 		expect(store.getState().appLaunchStats.code?.count).toBe(2)

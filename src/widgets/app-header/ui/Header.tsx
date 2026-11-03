@@ -1,4 +1,4 @@
-import { Menu } from 'lucide-react'
+import { ArrowUp, Menu } from 'lucide-react'
 import { useRef } from 'react'
 import { FilterChip } from './FilterChip'
 import { ScanButton } from './ScanButton'
@@ -55,6 +55,7 @@ export function Header({
 	onCancelScan,
 	showMenu,
 	searchLaunch,
+	onScrollToTop,
 }: HeaderProps) {
 	const fallbackRef = useRef<HTMLInputElement>(null)
 	const searchRef = searchInputRef ?? fallbackRef
@@ -100,6 +101,16 @@ export function Header({
 							</p>
 							{activeFilter && (
 								<FilterChip filter={activeFilter} />
+							)}
+							{onScrollToTop && (
+								<button
+									type="button"
+									onClick={onScrollToTop}
+									aria-label="Back to top"
+									className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-(--text-muted) focus-visible:outline-2 focus-visible:outline-(--accent)"
+								>
+									<ArrowUp size={14} aria-hidden="true" /> Top
+								</button>
 							)}
 						</div>
 					</div>

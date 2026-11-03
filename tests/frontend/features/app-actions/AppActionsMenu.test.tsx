@@ -128,6 +128,73 @@ function renderMovableMenu(
 // it to Windows, so `canUninstall` still means "Windows has a registered uninstaller for this" and
 // nothing in the menu can start a removal.
 describe('AppActionsMenu removal handover', () => {
+	it('does not scroll the catalog to position a menu opened inside a dialog', () => {
+		const catalog = document.createElement('div')
+		catalog.id = 'catalog-scroll'
+		Object.defineProperty(catalog, 'scrollHeight', { value: 2000 })
+		Object.defineProperty(catalog, 'clientHeight', { value: 400 })
+		catalog.scrollBy = vi.fn()
+		document.body.append(catalog)
+		const anchorRef = createRef<HTMLButtonElement>()
+		const bounds = vi
+			.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+			.mockImplementation(function (this: HTMLElement) {
+				if (this.getAttribute('aria-label') === 'modal anchor')
+					return rect(100, window.innerHeight - 50, 32, 32)
+				if (
+					this.getAttribute('aria-label') ===
+					'Visual Studio Code actions'
+				)
+					return rect(100, 100, 208, 300)
+				return rect(0, 0, 0, 0)
+			})
+		try {
+			render(
+				<div role="dialog">
+					<button ref={anchorRef} aria-label="modal anchor" />
+					<AppActionsMenu
+						app={visualStudioCode}
+						categories={threeCategories}
+						categoryOrder={threeCategories.map(
+							category => category.id,
+						)}
+						onClose={vi.fn()}
+						onMove={vi.fn()}
+						onInfo={vi.fn()}
+						onManageInWindows={vi.fn()}
+						fileActions={fileActions()}
+						onHide={vi.fn()}
+						onRestore={vi.fn()}
+						onDemote={vi.fn()}
+						anchorRef={anchorRef}
+					/>
+				</div>,
+			)
+			expect(catalog.scrollBy).not.toHaveBeenCalled()
+		} finally {
+			bounds.mockRestore()
+			catalog.remove()
+		}
+	})
+	it('disables a disconnected drive as a destination', async () => {
+		const user = userEvent.setup()
+		const { onMove } = renderMovableMenu(createRef<HTMLButtonElement>(), [
+			{
+				id: 'drive:f',
+				label: 'Disk F',
+				builtIn: false,
+				disconnected: true,
+			},
+			...threeCategories,
+		])
+		await user.click(
+			screen.getByRole('menuitem', { name: 'Move to category' }),
+		)
+		const drive = screen.getByRole('menuitem', { name: /Disk F/ })
+		expect(drive).toBeDisabled()
+		await user.click(drive)
+		expect(onMove).not.toHaveBeenCalled()
+	})
 	function renderWithUninstaller(canUninstall: boolean) {
 		const onManageInWindows = vi.fn().mockResolvedValue(undefined)
 		const anchor = createRef<HTMLButtonElement>()

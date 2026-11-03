@@ -11,6 +11,8 @@ export function scenarioRunSummaryMessage(
 	if (summary.notRunning) parts.push(`${summary.notRunning} already closed`)
 	if (summary.blocked) parts.push(`${summary.blocked} refused to close`)
 	if (summary.closeFailed) parts.push(`${summary.closeFailed} stayed open`)
+	if (summary.unavailable)
+		parts.push(`${summary.unavailable} unavailable to close`)
 	if (summary.closeUnavailable) parts.push('closing was unavailable')
 	return parts.length ? `${summary.scenarioName}: ${parts.join(', ')}` : null
 }

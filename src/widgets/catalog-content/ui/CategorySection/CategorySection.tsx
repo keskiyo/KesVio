@@ -1,12 +1,16 @@
 import { Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CatalogAppCard } from '../CatalogAppCard/CatalogAppCard'
 import { CategoryNameEditor } from '../../../../features/manage-category'
+import { isDriveCategoryId } from '../../../../entities/category'
 import { useProgressiveList } from '../../../../shared/hooks/useProgressiveList'
 import { DANGER_ICON_BUTTON } from '../../../../shared/ui/buttonVariants'
 import { CollapsiblePanel } from '../../../../shared/ui/CollapsiblePanel'
 import { ConfirmDialog } from '../../../../shared/ui/ConfirmDialog'
 import { CategoryHeader } from './CategoryHeader'
+import { PublisherGroup } from './PublisherGroup'
+import { groupByPublisher } from './publisherGroups'
+import type { AppInfo } from '../../../../entities/app'
 import type { CategorySectionProps } from './types'
 
 export function CategorySection({
@@ -15,6 +19,7 @@ export function CategorySection({
 	categories,
 	categoryOrder,
 	apps,
+	groupPublishers,
 	collapsed,
 	favoriteIds,
 	onToggle,
@@ -31,9 +36,43 @@ export function CategorySection({
 	onDeleteCategory,
 }: CategorySectionProps) {
 	const label = definition.label
+	const driveOffline =
+		isDriveCategoryId(category) &&
+		apps.length > 0 &&
+		apps.every(
+			app =>
+				app.targetAvailability ===
+				'target.unverifiable.unmounted_volume',
+		)
 	const [editing, setEditing] = useState(false)
 	const [deleting, setDeleting] = useState(false)
-	const cards = useProgressiveList(apps)
+	const items = useMemo(
+		() =>
+			groupPublishers
+				? groupByPublisher(apps)
+				: apps.map(app => ({ kind: 'app' as const, app })),
+		[apps, groupPublishers],
+	)
+	const cards = useProgressiveList(items)
+	const renderApp = (app: AppInfo) => (
+		<CatalogAppCard
+			key={app.id}
+			app={app}
+			showOfflineLabel={!driveOffline}
+			isFavorite={favoriteIds.has(app.id)}
+			categories={categories}
+			categoryOrder={categoryOrder}
+			onToggleFavorite={onToggleFavorite}
+			onLaunch={onLaunch}
+			onMove={onMoveApp}
+			onInfo={onInfo}
+			onManageInWindows={onManageInWindows}
+			fileActions={fileActions}
+			onHide={onHide}
+			onRestore={onRestore}
+			onDemote={onDemote}
+		/>
+	)
 	return (
 		<section
 			aria-labelledby={`category-${category}`}
@@ -57,6 +96,7 @@ export function CategorySection({
 						category={category}
 						label={label}
 						appCount={apps.length}
+						driveOffline={driveOffline}
 						collapsed={collapsed}
 						onToggle={onToggle}
 						onEdit={() => setEditing(true)}
@@ -67,7 +107,7 @@ export function CategorySection({
 						type="button"
 						aria-label={`Delete ${label} category`}
 						onClick={() => setDeleting(true)}
-						className={DANGER_ICON_BUTTON}
+						className={`category-header-action ${DANGER_ICON_BUTTON}`}
 					>
 						<Trash2 size={15} aria-hidden="true" />
 					</button>
@@ -76,24 +116,18 @@ export function CategorySection({
 			<CollapsiblePanel open={!collapsed}>
 				<div>
 					<div className="app-card-grid">
-						{cards.visible.map(app => (
-							<CatalogAppCard
-								key={app.id}
-								app={app}
-								isFavorite={favoriteIds.has(app.id)}
-								categories={categories}
-								categoryOrder={categoryOrder}
-								onToggleFavorite={onToggleFavorite}
-								onLaunch={onLaunch}
-								onMove={onMoveApp}
-								onInfo={onInfo}
-								onManageInWindows={onManageInWindows}
-								fileActions={fileActions}
-								onHide={onHide}
-								onRestore={onRestore}
-								onDemote={onDemote}
-							/>
-						))}
+						{cards.visible.map(item =>
+							item.kind === 'app' ? (
+								renderApp(item.app)
+							) : (
+								<PublisherGroup
+									key={item.key}
+									publisher={item.publisher}
+									apps={item.apps}
+									renderApp={renderApp}
+								/>
+							),
+						)}
 					</div>
 					{cards.hasMore && (
 						<div

@@ -39,9 +39,18 @@ export interface TrayFavoriteEntry {
 	label: string
 }
 
+export interface DriveOffer {
+	id: string
+	letter: string
+	label: string
+}
+
 export interface SystemClient {
 	getSettings(): Promise<SystemSettings>
 	setScanSettings(settings: ScanSettings): Promise<ScanSettings>
+	onScanSettingsChanged?(
+		handler: (settings: ScanSettings) => void,
+	): () => void
 	setCloseBehavior(hideToTray: boolean): Promise<boolean>
 	setGlobalShortcut(
 		binding: GlobalShortcutBinding,
@@ -76,6 +85,8 @@ export interface SystemClient {
 	onVolumesArrived?(
 		handler: (volumeIds: string[]) => void,
 	): Promise<() => void>
+	getUntrackedRemovableDrives?(): Promise<DriveOffer[]>
+	onVolumesChanged?(handler: () => void): Promise<() => void>
 }
 
 export interface StaleCopyInfo {

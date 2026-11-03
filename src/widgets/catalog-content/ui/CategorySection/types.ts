@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { AppInfo } from '../../../../entities/app'
 import type {
 	AppCategory,
@@ -11,6 +12,7 @@ export interface CategorySectionProps {
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
 	apps: AppInfo[]
+	groupPublishers: boolean
 	collapsed: boolean
 	favoriteIds: ReadonlySet<string>
 	onToggle(): void
@@ -28,4 +30,10 @@ export interface CategorySectionProps {
 		label: string,
 	): { ok: true } | { ok: false; error: string }
 	onDeleteCategory(id: string): { ok: true } | { ok: false; error: string }
+}
+
+export interface PublisherGroupProps {
+	publisher: string
+	apps: AppInfo[]
+	renderApp(app: AppInfo): ReactNode
 }

@@ -40,6 +40,7 @@ export function CategoryList(props: AppGridProps) {
 						key={category}
 						category={category}
 						definition={definition}
+						groupPublishers={props.activeView === 'all'}
 						categories={props.categories}
 						categoryOrder={props.categoryOrder}
 						apps={sortFavoritesFirst(

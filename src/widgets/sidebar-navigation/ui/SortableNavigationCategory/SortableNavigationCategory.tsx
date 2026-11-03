@@ -14,6 +14,7 @@ export function SortableNavigationCategory({
 	count,
 	label,
 	accent: customAccent,
+	disconnected = false,
 	isDragPreviewActive = false,
 	onSelect,
 }: SortableNavigationCategoryProps) {
@@ -34,13 +35,15 @@ export function SortableNavigationCategory({
 		transition: isDragging ? undefined : transition,
 	}
 	const spotlight = useSpotlight()
-	const accent = categoryAccent(category, customAccent)
+	const accent = disconnected
+		? 'slate'
+		: categoryAccent(category, customAccent)
 
 	return (
 		<button
 			type="button"
-			aria-label={label}
-			title="Click or press Enter to open, drag or press Space to reorder"
+			aria-label={disconnected ? `${label}, drive not connected` : label}
+			title={`${disconnected ? 'Drive not connected. ' : ''}Click or press Enter to open, drag or press Space to reorder`}
 			onClick={() => onSelect(category)}
 			onPointerMove={spotlight.onPointerMove}
 			onPointerEnter={spotlight.onPointerEnter}
@@ -56,7 +59,16 @@ export function SortableNavigationCategory({
 			}}
 		>
 			<SpotlightLayer size={90} />
-			<span className="block min-w-0 flex-1 truncate">{label}</span>
+			<span
+				className={`block min-w-0 flex-1 truncate ${disconnected ? 'text-(--text-muted)' : ''}`}
+			>
+				{label}
+			</span>
+			{disconnected && (
+				<span className="mx-2 shrink-0 text-[11px] text-(--text-muted)">
+					Disconnected
+				</span>
+			)}
 			<span className={navigationCategoryCountClass}>{count}</span>
 		</button>
 	)

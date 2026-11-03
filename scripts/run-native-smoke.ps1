@@ -104,12 +104,22 @@ function Get-OtherKesVioProcesses {
 }
 
 function Get-LogText {
-  if (-not (Test-Path -LiteralPath $logDirectory -PathType Container)) {
+  if (-not $smokeProcess -or -not (Test-Path -LiteralPath $logDirectory -PathType Container)) {
     return ""
   }
+  $pattern = "^kesvio-(\d+)-$($smokeProcess.Id)(?:-(\d+))?\.log$"
+  $segments = foreach ($file in Get-ChildItem -LiteralPath $logDirectory -File -Filter "*.log") {
+    if ($file.Name -match $pattern) {
+      [pscustomobject]@{
+        File = $file
+        Start = [long]$Matches[1]
+        Sequence = $(if ($Matches[2]) { [long]$Matches[2] } else { 0 })
+      }
+    }
+  }
   $text = ""
-  foreach ($file in Get-ChildItem -LiteralPath $logDirectory -File -Filter "*.log" | Sort-Object Name) {
-    $stream = [IO.File]::Open($file.FullName, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+  foreach ($segment in $segments | Sort-Object Start, Sequence) {
+    $stream = [IO.File]::Open($segment.File.FullName, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
     try {
       $reader = [IO.StreamReader]::new($stream, [Text.Encoding]::UTF8)
       $text += $reader.ReadToEnd()
@@ -121,11 +131,11 @@ function Get-LogText {
 }
 
 function Wait-LogLine {
-  param([string]$Pattern, [int]$TimeoutSeconds, [int]$Occurrences = 1)
+  param([string]$Pattern, [int]$TimeoutSeconds)
   $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
   while ([DateTime]::UtcNow -lt $deadline) {
     $text = Get-LogText
-    if (([regex]::Matches($text, $Pattern)).Count -ge $Occurrences) {
+    if ([regex]::IsMatch($text, $Pattern)) {
       return $text
     }
     if ($smokeProcess -and $smokeProcess.HasExited) {
@@ -292,10 +302,10 @@ try {
   Add-Result -Step "first process stopped" -Passed $smokeProcess.HasExited -Detail "pid $($smokeProcess.Id)"
 
   $smokeProcess = Start-Smoke -Executable $smokeExecutable
-  $text = Wait-LogLine -Pattern "Scan finished: mode=startup" -TimeoutSeconds $StartupTimeoutSeconds -Occurrences 2
+  $text = Wait-LogLine -Pattern "Scan finished: mode=startup" -TimeoutSeconds $StartupTimeoutSeconds
   $previous = [regex]::Matches($text, "Catalog persistence: previous generation=(\d+) records=(\d+)")
   $warm = $previous[$previous.Count - 1]
-  Add-Result -Step "warm start reuses the cache" -Passed ($previous.Count -ge 2 -and [long]$warm.Groups[1].Value -ge $firstGeneration -and [long]$warm.Groups[2].Value -ge 1) -Detail "previous generation=$($warm.Groups[1].Value) records=$($warm.Groups[2].Value)"
+  Add-Result -Step "warm start reuses the cache" -Passed ($previous.Count -ge 1 -and [long]$warm.Groups[1].Value -ge $firstGeneration -and [long]$warm.Groups[2].Value -ge 1) -Detail "previous generation=$($warm.Groups[1].Value) records=$($warm.Groups[2].Value)"
   $finished = [regex]::Matches($text, "Scan finished: mode=startup [^\r\n]*added=(\d+) updated=(\d+) removed=(\d+)")
   $warmScan = $finished[$finished.Count - 1]
   Add-Result -Step "warm scan is stable" -Passed ([int]$warmScan.Groups[1].Value -eq 0 -and [int]$warmScan.Groups[3].Value -eq 0) -Detail "added=$($warmScan.Groups[1].Value) updated=$($warmScan.Groups[2].Value) removed=$($warmScan.Groups[3].Value)"

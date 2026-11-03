@@ -9,13 +9,17 @@ import type { PathEditorProps } from '../../types'
 export function PathEditor(props: PathEditorProps) {
 	const spotlight = useSpotlight()
 	const [removingPath, setRemovingPath] = useState<string | null>(null)
+	function add() {
+		const value = props.value.trim()
+		if (!props.disabled && value) props.onAdd(value)
+	}
 	async function browse() {
 		if (props.disabled) return
 		const picked = await props.onBrowse()
 		if (picked) props.onAdd(picked)
 	}
 	return (
-		<div>
+		<div className="min-w-0">
 			<label className="text-sm font-medium" htmlFor={props.label}>
 				{props.label}
 			</label>
@@ -31,13 +35,33 @@ export function PathEditor(props: PathEditorProps) {
 						id={props.label}
 						aria-label={props.label}
 						value={props.value}
+						disabled={props.disabled}
 						onChange={event => props.onChange(event.target.value)}
+						onKeyDown={event => {
+							if (
+								event.key !== 'Enter' ||
+								event.repeat ||
+								event.nativeEvent.isComposing
+							)
+								return
+							event.preventDefault()
+							add()
+						}}
 						onDoubleClick={() => void browse()}
 						placeholder="D:\\Apps"
 						title="Double-click to browse for a folder"
 						className="h-10 w-full rounded-xl border border-slate-200 bg-white/75 px-3 text-sm text-slate-800 outline-none focus:border-violet-400/55 focus:ring-3 focus:ring-violet-500/10"
 					/>
 				</div>
+				<button
+					type="button"
+					aria-label={props.buttonLabel}
+					disabled={props.disabled || !props.value.trim()}
+					onClick={add}
+					className="grid size-10 shrink-0 place-items-center rounded-xl border border-slate-200 bg-white/75 text-violet-700 hover:bg-violet-50 focus-visible:outline-2 focus-visible:outline-violet-500 disabled:opacity-40"
+				>
+					{props.icon}
+				</button>
 				<button
 					type="button"
 					aria-label={props.browseLabel}
@@ -54,7 +78,9 @@ export function PathEditor(props: PathEditorProps) {
 						key={path}
 						className="flex items-center gap-2 rounded-lg bg-slate-100/85 px-2.5 py-2 text-xs text-slate-600"
 					>
-						<code className="min-w-0 flex-1 truncate">{path}</code>
+						<code className="min-w-0 flex-1 truncate" title={path}>
+							{path}
+						</code>
 						<button
 							type="button"
 							aria-label={`Remove ${path}`}

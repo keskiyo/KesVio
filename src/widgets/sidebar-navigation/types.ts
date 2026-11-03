@@ -75,6 +75,7 @@ export interface CategoryDragOverlayProps {
 	count: number
 	label: string
 	accent?: CustomCategoryAccent
+	disconnected?: boolean
 }
 
 export interface SortableNavigationCategoryProps extends CategoryDragOverlayProps {

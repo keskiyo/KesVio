@@ -6,6 +6,7 @@ export function CategoryHeader({
 	category,
 	label,
 	appCount,
+	driveOffline,
 	collapsed,
 	onToggle,
 	onEdit,
@@ -21,7 +22,7 @@ export function CategoryHeader({
 				type="button"
 				aria-expanded={collapsible ? !collapsed : undefined}
 				aria-disabled={collapsible ? undefined : true}
-				aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${label}`}
+				aria-label={`${collapsed ? 'Expand' : 'Collapse'} ${label}${driveOffline ? ': drive not connected' : ''}`}
 				onClick={collapsible ? onToggle : undefined}
 				className="flex h-full min-w-0 flex-1 cursor-pointer items-center rounded-lg px-1 text-left focus-visible:z-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent-strong) aria-disabled:opacity-60"
 			>
@@ -45,6 +46,11 @@ export function CategoryHeader({
 				<span className="category-count ml-2.5 shrink-0 rounded-full border px-2.5 py-0.5 text-[0.7rem] font-medium">
 					{countLabel(appCount, 'app')}
 				</span>
+				{driveOffline && (
+					<span className="ml-2 min-w-0 truncate text-xs text-(--text-muted)">
+						Drive not connected
+					</span>
+				)}
 			</button>
 			<button
 				type="button"

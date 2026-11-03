@@ -6,6 +6,13 @@ use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
 pub(crate) fn remember_catalog(state: &AppState, apps: &[AppInfo]) {
+    if let Ok(mut stored) = state.published_availability.lock() {
+        *stored = apps
+            .iter()
+            .filter(|app| app.volume_id.is_some())
+            .map(|app| (app.id.clone(), app.target_availability.clone()))
+            .collect();
+    }
     remember_catalog_ids(state, apps);
     remember_launch_targets(state, apps);
     remember_close_targets(state, apps);
@@ -71,6 +78,7 @@ fn remember_launch_targets(state: &AppState, apps: &[AppInfo]) {
                     kind: app.launch_kind,
                     path: app.path.clone(),
                     arguments: app.launch_arguments.clone(),
+                    volume_id: app.volume_id.clone(),
                 },
             )
         })
@@ -90,6 +98,7 @@ fn remember_close_targets(state: &AppState, apps: &[AppInfo]) {
             Some((
                 app.id.clone(),
                 CloseTarget {
+                    volume_id: app.volume_id.clone(),
                     install_root: catalog::close_scope_of(app),
                     path,
                     blocked,
@@ -202,6 +211,7 @@ mod tests {
                 kind: LaunchKind::Executable,
                 path: r"C:\Code.exe".to_string(),
                 arguments: None,
+                volume_id: None,
             })
         );
         assert!(stored.get("unknown-id").is_none());

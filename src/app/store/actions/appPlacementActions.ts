@@ -3,7 +3,10 @@ import {
 	isCatalogArtifact,
 } from '../../../entities/app'
 import { addUnique, identityOf } from '../reconciliation'
-import { driveCategoryFor } from '../../../entities/category'
+import {
+	driveCategoryFor,
+	offlineDriveCategoryIds,
+} from '../../../entities/category'
 import type {
 	AppState,
 	GetAppState,
@@ -32,6 +35,7 @@ export function createAppPlacementActions({
 	return {
 		moveApp(id, category, artifact = 'installer') {
 			if (driveCategoryFor(get().apps.find(app => app.id === id))) return
+			if (offlineDriveCategoryIds(get().apps).has(category)) return
 			transact(moveLabel(get(), id, category), () =>
 				set(state => {
 					const app = state.apps.find(item => item.id === id)

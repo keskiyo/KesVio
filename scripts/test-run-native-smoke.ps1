@@ -73,4 +73,30 @@ if ($output -notmatch "Native smoke executable not found") {
   throw "Native smoke harness did not return the static executable error"
 }
 
-Write-Output "Verified native smoke harness safety contract"
+$tokens = $null
+$parseErrors = $null
+$ast = [Management.Automation.Language.Parser]::ParseInput($source, [ref]$tokens, [ref]$parseErrors)
+$logFunction = $ast.Find({ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Get-LogText' }, $true)
+Invoke-Expression $logFunction.Extent.Text
+$logDirectory = Join-Path ([IO.Path]::GetTempPath()) "kesvio-smoke-log-test-$([Guid]::NewGuid().ToString('N'))"
+$smokeProcess = [pscustomobject]@{ Id = 100 }
+[IO.Directory]::CreateDirectory($logDirectory) | Out-Null
+try {
+  [IO.File]::WriteAllText((Join-Path $logDirectory 'kesvio-1000-200.log'), "old process`n")
+  [IO.File]::WriteAllText((Join-Path $logDirectory 'kesvio-1000-100.log'), "warm base`n")
+  [IO.File]::WriteAllText((Join-Path $logDirectory 'kesvio-1000-100-2.log'), "warm second`n")
+  [IO.File]::WriteAllText((Join-Path $logDirectory 'kesvio-1000-100-10.log'), "warm tenth`n")
+  [IO.File]::WriteAllText((Join-Path $logDirectory 'kesvio-2000-100.log'), "next bucket`n")
+  $text = Get-LogText
+  if ($text -ne "warm base`nwarm second`nwarm tenth`nnext bucket`n") {
+    throw "Native smoke must read only the current process logs in numeric segment order; received: $text"
+  }
+} finally {
+  $resolved = [IO.Path]::GetFullPath($logDirectory)
+  if ((Split-Path -Parent $resolved) -ne ([IO.Path]::GetTempPath()).TrimEnd('\')) {
+    throw "Refusing to remove a smoke log fixture outside the temporary directory"
+  }
+  Remove-Item -LiteralPath $resolved -Recurse -Force
+}
+
+Write-Output "Verified native smoke harness safety contract and process log isolation"

@@ -29,6 +29,7 @@ pub(crate) struct RootScanInput<'a> {
     pub(crate) is_cancelled: &'a dyn Fn() -> bool,
     pub(crate) verify_fingerprints: bool,
     pub(crate) steps: &'a StepTracker,
+    pub(crate) on_directory: Option<&'a dyn Fn()>,
 }
 
 #[cfg(test)]
@@ -48,6 +49,7 @@ pub(crate) fn scan_root(
             is_cancelled: &is_cancelled,
             verify_fingerprints: true,
             steps: &StepTracker::default(),
+            on_directory: None,
         },
         ScanLimits::default(),
     )
@@ -84,6 +86,7 @@ fn scan_root_with_limits(input: &RootScanInput<'_>, limits: ScanLimits) -> Incre
         facts: &facts,
         verify_fingerprints: input.verify_fingerprints,
         steps: input.steps,
+        on_directory: input.on_directory,
     };
     visit_directory(input.root, 0, &context, &mut result);
     result
@@ -317,6 +320,7 @@ mod tests {
             is_cancelled,
             verify_fingerprints: true,
             steps,
+            on_directory: None,
         }
     }
 

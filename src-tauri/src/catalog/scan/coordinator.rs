@@ -87,7 +87,9 @@ impl<T: Clone> ScanCoordinator<T> {
             };
         };
 
-        if request.is_interactive() && !active.request.is_interactive() {
+        if active.cancelled.load(Ordering::Relaxed)
+            || (request.is_interactive() && !active.request.is_interactive())
+        {
             active.cancelled.store(true, Ordering::Relaxed);
             merge_pending(&mut state.pending, request, waiters);
             return if wants_result {
@@ -203,6 +205,9 @@ fn merge_pending<T>(
         }
     }
 }
+
+#[cfg(test)]
+mod cancellation_tests;
 
 #[cfg(test)]
 mod tests {

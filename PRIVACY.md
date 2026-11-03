@@ -23,6 +23,11 @@ you use. Both are ordinary personal data in the sense that they say something ab
 why they stay on the machine. The launch history only orders suggestions and powers the
 "Not launched for" filter; it is included in a preferences export you create yourself.
 
+The catalog also keeps tracked-volume identities and saved application records from disconnected
+drives so they can be recognized when reconnected. Disconnecting a drive does not erase those
+local records. A removable-drive scan offer does not upload information. After you choose a
+folder, KesVio saves it in application discovery settings and starts scanning.
+
 Uninstalling always removes the application, its Startup shortcut, its registry state and the
 diagnostics logs. Your catalog and preferences are removed only if you tick **Delete application
 data** in the uninstaller.

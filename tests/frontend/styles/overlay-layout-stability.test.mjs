@@ -6,6 +6,11 @@ const stylesheet = readStylesheet()
 const appSource = readFileSync('src/app/App.tsx', 'utf8')
 
 describe('overlay layout stability', () => {
+	it('does not animate cards beyond the publisher dialog scroll area during entry', () => {
+		expect(stylesheet).toMatch(
+			/\.publisher-panel\s+\.app-card\s*\{[^}]*animation:\s*none/,
+		)
+	})
 	it('reserves the catalog scrollbar gutter while overlays lock scrolling', () => {
 		const style = document.createElement('style')
 		const catalog = document.createElement('div')

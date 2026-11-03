@@ -29,24 +29,28 @@
 
 ## Quick reference
 
-| Problem                        | First action                                                                                                                                                |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Catalog empty                  | Use **Scan for apps**; the first complete scan is explicit.                                                                                                 |
-| Duplicate or stale entries     | Refresh; then use **Settings → Catalog → Reset catalog cache**.                                                                                             |
-| Missing application            | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive.                                             |
-| Old version or icon            | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                                                              |
-| Global shortcut fails          | Windows or another process already owns the combination (most Win+letter ones, such as Win+Q); the Show KesVio row reports it — add Shift or Alt.           |
-| Uninstall unavailable          | Windows has no registered uninstaller for the entry, so there is nothing to open.                                                                           |
-| Catalog stays on placeholders  | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.                                                       |
-| A panel closes by itself       | That dialog failed to render; the failure is in the application log and the catalog is unaffected.                                                          |
-| Search finds nothing here      | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                                                                 |
-| Update/download failure        | Press **Retry update** under the KesVio name, or **Open release** in the error toast to download the installer.                                             |
-| SmartScreen warning            | Expected for the unsigned NSIS installer; verify the release source and updater signature.                                                                  |
-| Window opens off-screen        | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.                                                         |
-| A scan never finishes          | Open the newest `KesVioData\logs\kesvio-<start>-<pid>.log` beside the executable; `Scan stalled … in <stage>: <item>` names the item.                       |
-| A stall must be traced further | Detailed scan steps are always logged; use **More → Catalog Health → Diagnostics log → Export log as XML** and read the `Scan step` lines around the stall. |
-| Closing the window hides it    | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                                                            |
-| Scrolling or dragging stutters | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.                                                |
+| Problem                                | First action                                                                                                                                                |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Catalog empty                          | Use **Scan for apps**; the first complete scan is explicit.                                                                                                 |
+| Duplicate or stale entries             | Refresh; then use **Settings → Catalog → Reset catalog cache**.                                                                                             |
+| Missing application                    | Run **Force full scan**, or add its folder under **Application discovery** when it lives outside a fixed drive.                                             |
+| Old version or icon                    | Refresh; clear the icon cache if needed. Visible icons are rebuilt without losing preferences.                                                              |
+| Global shortcut fails                  | Windows or another process already owns the combination (most Win+letter ones, such as Win+Q); the Show KesVio row reports it — add Shift or Alt.           |
+| Uninstall unavailable                  | Windows has no registered uninstaller for the entry, so there is nothing to open.                                                                           |
+| Catalog stays on placeholders          | The event connection failed; use **Retry** in the notice. Refresh and launch keep working without it.                                                       |
+| A panel closes by itself               | That dialog failed to render; the failure is in the application log and the catalog is unaffected.                                                          |
+| Search finds nothing here              | Check the counts under the results; a match may live in Tools, Hidden or Installers & docs.                                                                 |
+| Update/download failure                | Press **Retry update** under the KesVio name, or **Open release** in the error toast to download the installer.                                             |
+| SmartScreen warning                    | Expected for the unsigned NSIS installer; verify the release source and updater signature.                                                                  |
+| Window opens off-screen                | Geometry that no longer fits a connected monitor is discarded; delete `window-state.json` to reset.                                                         |
+| A scan never finishes                  | Check the newest log under `%LOCALAPPDATA%\keskiyo.kesvio\logs`, or `KesVioData\logs` beside a portable executable; `Scan stalled …` names the item.        |
+| A stall must be traced further         | Detailed scan steps are always logged; use **More → Catalog Health → Diagnostics log → Export log as XML** and read the `Scan step` lines around the stall. |
+| Closing the window hides it            | That is the default; turn **Keep running in the tray** off in Settings to quit on close instead.                                                            |
+| Scrolling or dragging stutters         | Turn off **Settings → Personalization → Colors → Transparency effects**; the blurred surfaces become opaque.                                                |
+| Disconnected drive is grey             | Reconnect the tracked drive. Its saved catalog remains visible, but launching and moving applications into that drive are unavailable.                      |
+| A group has fewer tiles than its count | Counts include every application inside a publisher group; open the group to see its members.                                                               |
+| No removable-drive scan offer          | Offers cover untracked removable drives. Add a folder under **Settings → Catalog → Application discovery**, then refresh if the offer was dismissed.        |
+| Portable progress remains at 0/1       | The counter counts completed roots. Check **Portable folders visited** and the newest portable-root diagnostics for progress within the current root.       |
 
 ## Search result is wrong
 
@@ -75,6 +79,12 @@ Use [UI and workflows](ui-and-workflows.md#keyboard-screen-reader-and-forced-col
 ## Update or installer verification issue
 
 Use [Desktop operations](desktop-operations.md#windows-integration-and-updates) for runtime update behavior. Use [Development and releases](development.md#verifying-a-downloaded-installer) for checksum, signature, and provenance verification.
+
+A malware or potentially unwanted software block is separate from an unsigned
+installer's SmartScreen reputation warning. Keep the exact version, file hash,
+antivirus product, detection name, and security-intelligence version for review.
+Use [Security Policy](../SECURITY.md#antivirus-detections) for reporting; a
+suspected false positive is not a confirmed verdict that the file is safe.
 
 ## Related documentation
 

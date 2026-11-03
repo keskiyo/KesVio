@@ -4,8 +4,8 @@ use crate::app_state::{
 };
 use crate::catalog::cache;
 use crate::catalog::{
-    can_open_folder, details_fingerprint, folder_target, measure_folder, read_cached_details,
-    read_details, AppDetails, AppDetailsTarget, FolderSize,
+    details_fingerprint, folder_target, measure_folder, read_cached_details, read_details,
+    AppDetails, AppDetailsTarget, FolderSize,
 };
 use crate::error::AppError;
 use crate::paths;
@@ -21,10 +21,24 @@ fn resolve_app_details_target(state: &AppState, id: &str) -> Result<AppDetailsTa
 }
 
 fn resolve_folder_target(state: &AppState, id: &str) -> Result<AppDetailsTarget, AppError> {
-    let target = resolve_app_details_target(state, id)?;
-    can_open_folder(&target)
-        .then_some(target)
-        .ok_or(AppError::OpenFolderUnavailable)
+    resolve_app_details_target(state, id).map_err(|_| AppError::OpenFolderUnavailable)
+}
+
+fn validate_details_volume_with(
+    target: &AppDetailsTarget,
+    valid: impl Fn(&str, Option<&str>) -> bool,
+) -> Result<(), AppError> {
+    target
+        .volume_paths()
+        .all(|(path, volume)| valid(path, volume))
+        .then_some(())
+        .ok_or(AppError::AppDetailsUnavailable)
+}
+
+fn validate_details_volume(target: &AppDetailsTarget) -> Result<(), AppError> {
+    validate_details_volume_with(target, |path, volume| {
+        super::launch::validate_target_volume(path, volume).is_ok()
+    })
 }
 
 async fn load_persisted_details(
@@ -50,9 +64,12 @@ pub(crate) async fn get_app_details(
     let cache_dir = paths::data_dir(&app).ok();
     let fingerprint = run_blocking("App detail fingerprint", {
         let target = target.clone();
-        move || details_fingerprint(&target)
+        move || {
+            validate_details_volume(&target)?;
+            Ok::<_, AppError>(details_fingerprint(&target))
+        }
     })
-    .await?;
+    .await??;
     if let Some(fingerprint) = fingerprint {
         if let Some(cached) = cached_app_details_for(state.inner(), &id, &fingerprint) {
             return Ok(cached);
@@ -67,20 +84,28 @@ pub(crate) async fn get_app_details(
         }
 
         let details_target = target.clone();
-        let details =
-            run_blocking("App detail read", move || read_details(&details_target)).await?;
+        let details = run_blocking("App detail read", move || {
+            validate_details_volume(&details_target)?;
+            Ok::<_, AppError>(read_details(&details_target))
+        })
+        .await??;
         remember_app_details(state.inner(), id, fingerprint, details.clone());
         return Ok(details);
     }
 
     let details_target = target.clone();
-    run_blocking("App detail read", move || read_details(&details_target)).await
+    run_blocking("App detail read", move || {
+        validate_details_volume(&details_target)?;
+        Ok::<_, AppError>(read_details(&details_target))
+    })
+    .await?
 }
 
 #[tauri::command]
 pub(crate) async fn open_app_folder(app: tauri::AppHandle, id: String) -> Result<(), AppError> {
     let target = resolve_folder_target(&app.state::<AppState>(), &id)?;
     run_blocking("Application folder open", move || {
+        validate_details_volume(&target).map_err(|_| ())?;
         folder_target(&target)
             .ok_or(())
             .and_then(|folder| open_trusted_folder(&folder))
@@ -96,10 +121,12 @@ pub(crate) async fn measure_app_folder(
 ) -> Result<FolderSize, AppError> {
     let target = resolve_folder_target(&app.state::<AppState>(), &id)?;
     run_blocking("Application folder size", move || {
-        folder_target(&target).map(|folder| measure_folder(&folder))
+        validate_details_volume(&target).map_err(|_| AppError::OpenFolderUnavailable)?;
+        folder_target(&target)
+            .map(|folder| measure_folder(&folder))
+            .ok_or(AppError::OpenFolderUnavailable)
     })
     .await?
-    .ok_or(AppError::OpenFolderUnavailable)
 }
 
 #[cfg(test)]
@@ -111,7 +138,7 @@ mod tests {
     use crate::error::AppError;
 
     #[test]
-    fn resolves_only_known_bounded_ids_and_refuses_aumid_folders() {
+    fn resolves_only_known_bounded_ids() {
         let state = AppState::default();
         let mut executable = cached_app("Editor", r"C:\Editor\editor.exe");
         executable.id = "editor".into();
@@ -130,8 +157,30 @@ mod tests {
             Err(AppError::AppDetailsUnavailable)
         ));
         assert!(matches!(
-            resolve_folder_target(&state, "store"),
+            resolve_folder_target(&state, "missing"),
             Err(AppError::OpenFolderUnavailable)
         ));
     }
+}
+
+#[test]
+fn details_target_keeps_volume_identity_for_operation_validation() {
+    let mut app = crate::app_state::cached_app("Portable", r"Q:\Portable\app.exe");
+    app.volume_id = Some("12345678".into());
+    let target = crate::catalog::AppDetailsTarget::from_app(&app);
+    assert!(validate_details_volume_with(&target, |path, volume| {
+        assert_eq!(path, r"Q:\Portable\app.exe");
+        assert_eq!(volume, Some("12345678"));
+        false
+    })
+    .is_err());
+}
+
+#[test]
+fn details_rejects_a_resolved_path_on_a_different_volume() {
+    let mut app = crate::app_state::cached_app("Portable", r"Q:\Portable\app.exe");
+    app.volume_id = Some("12345678".into());
+    app.resolved_path = Some(r"R:\Other\app.exe".into());
+    let target = crate::catalog::AppDetailsTarget::from_app(&app);
+    assert!(validate_details_volume_with(&target, |path, _| path.starts_with("Q:")).is_err());
 }

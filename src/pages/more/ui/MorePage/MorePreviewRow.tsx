@@ -3,14 +3,20 @@ import { formatPreviewDate } from './data'
 import { previewSubtitleOf } from './previewSubtitle'
 import type { MorePreviewRowProps } from './types'
 
-export function MorePreviewRow({ entry }: MorePreviewRowProps) {
+export function MorePreviewRow({
+	entry,
+	context = 'destination',
+}: MorePreviewRowProps) {
 	const { app } = entry
-	const subtitle = previewSubtitleOf(app)
-	const firstSeenDate = formatPreviewDate(entry.firstSeenAt)
+	const subtitle = previewSubtitleOf(app, context)
+	const firstSeenDate =
+		context === 'destination' ? formatPreviewDate(entry.firstSeenAt) : null
 
 	return (
-		<li className="flex min-w-0 flex-auto items-center gap-3 border-t border-(--border-neutral) px-5 py-2.5 first:border-t-0">
-			<span className="grid size-8 shrink-0 place-items-center rounded-lg bg-(--surface-inset)">
+		<li
+			className={`flex min-w-0 flex-auto items-center gap-3 px-5 py-2.5 ${context === 'destination' ? 'border-t border-(--shell-divider) first:border-t-0' : ''}`}
+		>
+			<span className="grid size-8 shrink-0 place-items-center">
 				{app.iconBase64 ? (
 					<img
 						src={app.iconBase64}

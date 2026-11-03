@@ -2,44 +2,50 @@ KesVio is a local-first Windows app catalog for finding, organizing, and launchi
 
 ## Highlights
 
-This release turns KesVio into a keyboard launcher — press the shortcut, type, press Enter — adds recently used apps to the tray, and makes the global shortcut easier to choose and harder to break. Notices raised while KesVio waits in the tray now stay until you see them.
+KesVio 0.5.8 makes large catalogs easier to browse with automatic application groups, offers to scan newly connected removable drives, and keeps saved portable catalogs available while a drive is disconnected. Settings, scrolling, scan progress, and diagnostics receive focused reliability fixes.
 
 ## Added
 
-- **Launch from the keyboard.** **Win+Shift+Q** opens KesVio with the search field ready. **Enter** opens the best match, which the line under the search field names (`Enter opens …`), because results are grouped by category and the best match is not always the first card. **↓** moves into the cards, arrow keys move between them, and **↑** from the top row returns to search.
-- **Run as administrator from the keyboard.** **Ctrl+Enter** in the search field, on a selected card, or in Quick launch runs the app as administrator through the Windows consent prompt — only where the app menu offers it; otherwise KesVio says why not.
-- **Recent apps in the tray.** The tray menu lists your five most recently launched apps under **Recent**; a click launches without opening the window. Hidden apps are left out.
-- **The tray names your shortcut.** Hovering the tray icon shows `KesVio — Win+Shift+Q` (or your own combination).
-- **A warning when the shortcut is taken.** If Windows or another program already holds your saved shortcut when KesVio starts, a notice says so and **Choose another** opens Settings, instead of the shortcut silently doing nothing.
+- **Application groups in All Apps.** Applications from the same publisher share a compact group card within their category. Open it to see the applications and their usual actions. Product names such as LibreOffice and Battle.net identify supported groups. Other catalog views keep their existing organization.
+- **Removable-drive discovery.** Connecting an untracked removable drive offers to choose a folder for application scanning. The offer also appears for drives already connected when KesVio starts. Choosing **Not now** explains how to add the folder later in Settings.
+- **Last-scan changes.** Catalog health shows applications added, removed, or updated by the latest scan.
+- **Back to top.** A compact **Top** control appears in the catalog header after scrolling and returns smoothly to the beginning.
 
 ## Changed
 
-- **Choosing a global shortcut.** Press **Change**, hold the modifiers, and press a key. Combinations Windows keeps for itself (such as Win+E) and everyday app shortcuts (such as Ctrl+C) are refused right in the row, with a free alternative suggested where one exists. Before saving, a confirmation lists what the new shortcut opens, what it stops doing elsewhere, and that the previous one is released; harmless choices get a calm confirmation, risky ones a warning.
-- **Ctrl+F only.** In-app search answers **Ctrl+F**; **Ctrl+Shift+F** is now free for other use.
-- **Ordinary launch over special modes.** When several shortcuts open the same program, its card launches the ordinary one rather than a special mode such as remote or startup.
+- **Disconnected portable catalogs stay visible.** A saved drive category remains available for browsing while its drive is absent. One status beside the category identifies the disconnected drive; its applications cannot launch and it cannot receive moved applications until it returns.
+- **Disconnected drives in navigation.** The sidebar and drawer mark disconnected drive categories with a muted accent and a status label. Their position can still be reordered, including with the keyboard.
+- **Clearer settings and recent activity.** Settings navigation stays within its own scroll area, shortcut controls adapt to narrow windows, and related recent entries are collected together.
+- **Calmer application groups.** Groups use compact icon previews and smooth opening and closing. Clicking outside a group closes it.
 
 ## Fixed
 
-- **Notices wait while KesVio is in the tray.** A drive prompt or the summary of a scenario started from the tray used to time out before the window was opened; notices now pause while the window is hidden.
-- **Drive prompts stay until answered.** A **Drive connected: run …?** prompt waits for your answer, reconnecting the drive no longer stacks copies, and **Run** starts the scenario as it is at that moment.
-- **Readable shortcut settings.** The keyboard focus outline of the shortcut buttons is no longer clipped to a stripe, and shortcut warnings use a readable color on the dark theme.
+- Long scan-folder paths and drive labels stay within Settings panels and scenario cards at narrow window widths. Recently added entries use spacing instead of repeated horizontal dividers.
 
-## Security
+- Escape dismisses a card's menu before its application group, preserving the group and returning focus to the menu trigger.
+- An open Settings page receives folder changes saved through removable-drive offers, preventing a later discovery change from overwriting the added folder.
 
-- Keyboard elevation reuses the exact rule of the app menu: never for hidden apps or links, and Windows is asked first for Store apps. The webview still sends only a bounded catalog id; the backend resolves every target.
+- Category delete controls follow the Edit button's hover and keyboard-focus reveal, keeping category headers quieter without shifting their layout.
+
+- Moving an application from a group no longer sends the catalog back to the top through focus restoration. Opening its action menu no longer scrolls the catalog behind the dialog.
+- Group dialogs no longer briefly show a scrollbar caused by individual card entrance animations.
+- Portable scans report visited folders during a long root scan instead of leaving progress unchanged at the initial root count. Diagnostics include portable-root work counters.
+- Diagnostic log segments are collected in numeric sequence within each process.
+- Window-state persistence, shutdown coordination, and catalog refresh handling have additional regression coverage.
+
+## Maintenance
+
+- Updated the previously selected frontend and Tauri dependencies, refreshed the Windows dependency license inventory, and retained the existing updater verification and security boundaries.
+- Updated the README and technical guidance for application groups, removable-drive scanning, disconnected catalogs, diagnostics, and release verification.
 
 ## Install
 
-1. Download `KesVio_0.5.7_x64-setup.exe`.
-2. Run it. The installer needs no administrator rights and installs for the current user into `%LOCALAPPDATA%\KesVio`; you can pick another folder on the install page. Because it is not Authenticode-signed, SmartScreen may show **Windows protected your PC**; choose **More info → Run anyway**.
-3. If Microsoft Edge WebView2 is missing, the embedded bootstrapper downloads it from Microsoft and requires internet access.
+1. Download `KesVio_0.5.8_x64-setup.exe`.
+2. Run it. The installer needs no administrator rights and installs for the current user into `%LOCALAPPDATA%\KesVio`; another folder can be selected. The installer is not Authenticode-signed, so Windows SmartScreen may show a reputation warning.
+3. If Microsoft Edge WebView2 is missing, its bootstrapper downloads it from Microsoft and requires internet access.
 
-Updating from 0.5.6 takes one click on **Update 0.5.7 available** under the KesVio name, or **Settings → Check updates**. Preferences, the saved shortcut and the catalog cache are kept.
+Updating from 0.5.7 is available through the update notice or **Settings → Check updates** once this release is published. Preferences and the saved catalog are preserved.
 
 ## Verification
 
-The installer is not Authenticode-signed, so these are published beside it instead:
-
-- `SHA256SUMS.txt` — compare it with `Get-FileHash KesVio_0.5.7_x64-setup.exe -Algorithm SHA256`.
-- A build provenance attestation tying these exact bytes to the workflow run and commit that produced them — `gh attestation verify KesVio_0.5.7_x64-setup.exe --repo keskiyo/KesVio`.
-- `KesVio_0.5.7_sbom.cdx.json` — the inventory of every third-party component in the installer.
+Release assets include `SHA256SUMS.txt`, the updater signature, provenance attestation, and `KesVio_0.5.8_sbom.cdx.json`. Compare the installer hash with `Get-FileHash KesVio_0.5.8_x64-setup.exe -Algorithm SHA256`. Verify provenance with `gh attestation verify KesVio_0.5.8_x64-setup.exe --repo keskiyo/KesVio`.

@@ -36,6 +36,10 @@
 Launch uses a trusted catalog target through the Windows shell. Launch feedback
 clears from a backend input-idle signal when available, otherwise from a bounded
 client fallback. A launch action does not expose arbitrary command execution.
+The frontend reserves each catalog ID across ordinary and administrator launch.
+Calls of the same kind share the pending result; a competing kind reports that
+the app is already launching. Failure releases the reservation, while successful
+launch feedback keeps its existing input-idle or bounded fallback lifetime.
 
 Close operates on trusted process identities, not visible windows alone. It
 first requests normal close, then performs a bounded recheck before terminating
@@ -163,10 +167,12 @@ would have to reintroduce it deliberately.
   no close event: with the close as the only write, the next start restored the
   size from the last close rather than the size the window had, which read as
   the window reopening larger than it was left. One waiter serves a burst of
-  events, it gives up after ten seconds of continuous movement, and the write
+  events, it writes after at most ten seconds of continuous movement, and the write
   is the same no-op-when-unchanged write the close performs, so a drag costs one
-  file write at its end. Both the restore and each write are logged with the
-  geometry they saw. The stored size is the inner size, because `set_size` restores an inner
+  file write at its end. If geometry changes during that write, one bounded
+  settled follow-up is scheduled after the current waiter releases ownership.
+  Restore logs include the geometry; persistence logs report completed writes
+  and failures. The stored size is the inner size, because `set_size` restores an inner
   size: storing the outer one instead added the invisible resize border —
   sixteen pixels wide, nine tall — back on every start, and the window grew by
   that much each time it was reopened. The position is the outer position, which
@@ -174,9 +180,9 @@ would have to reintroduce it deliberately.
 - Closing the window hides KesVio in the notification area, and
   **Settings → Keep running in the tray** turns that into an ordinary quit. The
   flag lives in `LifecycleState`, so the close handler reads it without touching
-  the disk; `set_close_behavior` writes the document and restores the previous
-  value if that write fails, because a setting the interface shows and the disk
-  does not hold is worse than a refused change. Quitting from the tray still
+  the disk; `set_close_behavior` commits the active value only after the shared
+  serialized writer succeeds. Persistence and forward-version protection are
+  recorded in [IPC and data](ipc-and-data.md#persisted-stores). Quitting from the tray still
   quits whatever the setting says.
 - Startup does no discovery work on the main thread. Tray creation and the
   window are the only things `setup` performs; saved global-shortcut registration,

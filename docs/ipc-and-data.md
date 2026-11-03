@@ -58,11 +58,12 @@ commands or registry keys. `src-tauri/src/lib.rs` registers them;
 | Event                                                              | Payload                                                        | Producer → consumer                                 |
 | ------------------------------------------------------------------ | -------------------------------------------------------------- | --------------------------------------------------- |
 | `catalog://delta`, `catalog://patches`, `catalog://diagnostics`    | upserts and removed ids; hydration patches; scan diagnostics   | catalog sync → store                                |
-| `scan://progress`                                                  | coarse stage and root counts                                   | scan → header                                       |
+| `scan://progress`                                                  | stage and root counts; portable walk includes visited folders  | scan → header                                       |
 | `launch://status`, `close://progress`                              | `{ id, state }`; asking, waiting or terminating with countdown | launch and close → store and scenario runner        |
 | `tray://run-scenario`, `tray://launch-app`                         | `{ id }`                                                       | tray menu → window, which resolves the id itself    |
 | `tray://search`, `tray://show-favorites`, `tray://force-full-scan` | none                                                           | tray menu → window                                  |
 | `volumes://arrived`                                                | `{ volumeIds }` of tracked removable volumes                   | volume watcher, after the refresh → scenario offers |
+| `volumes://changed`                                                | `null`                                                         | volume watcher → removable-drive offers             |
 | `app://frontend-ready`                                             | none                                                           | window → backend, which then shows the window       |
 
 | Area                   | Error codes                                                                                                                                                                                                             |
@@ -103,12 +104,20 @@ AppUserModelId only when the shell item's context menu lists canonical `runas`
 (`src-tauri/src/platform/windows/execution/launcher/elevation.rs`). Nothing
 about the target crosses back to the webview.
 
+The existing-window activation action was withdrawn.
+
 `volumes://arrived` carries `{ volumeIds }` — the 8-hex-digit serials of
 tracked removable volumes that just arrived — and is emitted after the catalog
 refresh that the arrival started, so the apps on the drive are already in the
 catalog when a scenario bound to it runs. Untracked drives are never named. A
 scenario's optional `triggerVolumeId` (schema 24) holds one such serial; a value
 that is not eight hex digits is dropped on read.
+
+`get_untracked_removable_drives` returns display information for currently
+connected removable drives without a configured scan folder or tracked identity.
+The `volumes://changed` event prompts the client to request a fresh list. Choosing
+an offer opens the native folder picker; the existing settings and refresh paths
+then add and scan the folder the user chose.
 
 `get_window_backdrop` takes nothing and answers `mica` or `solid`, whichever
 the backend applied to the main window at setup.
@@ -287,6 +296,13 @@ the client raises without the backend, `DESKTOP_RUNTIME_UNAVAILABLE` and
 
 ## Events
 
+The desktop `SystemClient` additionally exposes a local scan-settings
+subscription. Its adapter publishes the canonical result only after a
+successful `set_scan_settings` call. Settings owns its subscription and cleanup,
+including a save arriving before its initial read resolves. This is an
+in-process frontend notification, not a new Tauri event or persisted field;
+the IPC command, payload, and cache formats are unchanged.
+
 Events use `namespace://name`. Catalog synchronization emits full updates,
 deltas, change counts, hydration patches, diagnostics and coarse scan progress.
 Progress is coalesced; icon and metadata patches are emitted in bounded batches.
@@ -317,12 +333,18 @@ Presentation-only values outside these stores — `kesvio.last-view` and the
 update-check keys in `localStorage`, the icon cache and the diagnostics log —
 cost nothing when lost and carry no migration.
 
-Window state is presentation-only and deliberately disposable: a missing,
-malformed or newer-versioned document restores nothing, the window opens at the
-configured 446×740, centered, and closing hides to the tray. It is the one
-store whose loss costs the user nothing, so it never falls back to a backup copy
-and never blocks startup. Geometry is optional inside the document, because the
-close setting has to survive a session in which the window was never moved.
+Missing, malformed or newer-versioned window state restores safe defaults:
+the window opens at the configured 446×740, centered, and closing hides to the
+tray. Startup never waits for a backup copy. Writes reject newer versions
+without changing their bytes; malformed documents may be replaced. Updates
+preserve unknown root fields and unknown fields inside an existing geometry
+object. Geometry is optional because the close setting must survive a session
+in which the window was never moved.
+
+One serialized writer owns the geometry snapshot, atomic file replacement and
+commit of the active close preference. A failed write leaves the last durable
+close preference active. Settled geometry writes use this same writer; the
+timing and follow-up rules are recorded in [Desktop operations](desktop-operations.md#windows-integration-and-updates).
 
 The last open view is the same kind of presentation-only value: one view name
 under the `localStorage` key `kesvio.last-view`, outside the versioned
@@ -341,14 +363,10 @@ rather than a moment in the middle of one, and that keeps the document bounded
 by the catalog size.
 
 Schema 23 adds `firstSeenVolumes`, the volume id (`volumeId`) of every stamped
-identity that came from a tracked removable volume. A folder on an unmounted
-drive is neither scanned nor retained, so the first completed scan after a stick
-was unplugged used to prune its stamps, and plugging it back in listed every app
-on it as recently added. Pruning now keeps the stamp of an identity whose volume
-has no record in the finished catalog — the volume is away, not the app — and
-prunes it normally once the volume is back and the app is gone from it. The
-mapping lives in the preference document because the catalog cache does not keep
-records of an unmounted volume, so the answer has to survive a restart.
+identity that came from a tracked removable volume. The catalog now retains
+known applications while their volume is unmounted and marks them unavailable.
+The preference mapping also preserves stamps when a volume has no catalog
+records, and prunes them normally when the volume returns and an app is gone.
 `src/app/store/firstSeen.ts` owns stamping and pruning; documents written before
 schema 23 upgrade with an empty map, and an entry without a stamp, a non-string
 id or an id over 64 characters is dropped on read.

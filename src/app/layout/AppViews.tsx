@@ -1,7 +1,8 @@
-import { Suspense, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { INSTALLERS_DOCS_CATEGORY, isCatalogView } from '../../entities/app'
 import { CatalogPage } from '../../pages/catalog'
 import { MorePage } from '../../pages/more'
+import { withDriveAvailability } from '../../entities/category'
 import type { AppViewsProps } from '../types'
 import {
 	BackupRestorePage,
@@ -25,6 +26,10 @@ export function AppViews({
 	fileActions,
 }: AppViewsProps) {
 	const [scanPromptDismissed, setScanPromptDismissed] = useState(false)
+	const moveCategories = useMemo(
+		() => withDriveAvailability(state.categories, state.apps),
+		[state.apps, state.categories],
+	)
 	const { catalogApps, counts, deferredQuery, filteredApps, morePreview } =
 		catalog
 	const { auxiliaryCount, hiddenCount, navigationCounts } = counts
@@ -77,6 +82,7 @@ export function AppViews({
 				)}
 				{state.activeView === 'catalog_health' && (
 					<CatalogHealthPage
+						lastScanChanges={state.lastScanChanges}
 						diagnostics={state.catalogDiagnostics}
 						isRefreshing={state.isRefreshing}
 						onRefresh={onRefreshCatalog}
@@ -137,7 +143,7 @@ export function AppViews({
 							onSelectView: navigation.selectView,
 							onBack: () => navigation.selectView('more'),
 							categoryOrder: state.categoryOrder,
-							categories: state.categories,
+							categories: moveCategories,
 							collapsedCategories: state.collapsedCategories,
 							favoriteAppIds: state.favoriteAppIds,
 							favoriteScenarios: {

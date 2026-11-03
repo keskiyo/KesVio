@@ -34,10 +34,23 @@ export function useSystemSettings({
 
 	useEffect(() => {
 		let active = true
+		let latestScanSettings: ScanSettings | undefined
+		const stop = client.onScanSettingsChanged?.(scanSettings => {
+			if (!active) return
+			latestScanSettings = scanSettings
+			setSettings(current =>
+				current ? { ...current, scanSettings } : current,
+			)
+		})
 		client
 			.getSettings()
 			.then(value => {
-				if (active) setSettings(value)
+				if (active)
+					setSettings(
+						value && latestScanSettings
+							? { ...value, scanSettings: latestScanSettings }
+							: value,
+					)
 			})
 			.catch(reason => {
 				if (active)
@@ -45,6 +58,7 @@ export function useSystemSettings({
 			})
 		return () => {
 			active = false
+			stop?.()
 		}
 	}, [client, reportError])
 

@@ -35,7 +35,12 @@ export function CatalogMaintenance({
 	}, [confirming])
 
 	return (
-		<div className="flex flex-col">
+		<div
+			id="settings-maintenance"
+			tabIndex={-1}
+			aria-label="Catalog maintenance"
+			className="flex scroll-mt-5 flex-col focus-visible:outline-2 focus-visible:outline-(--accent)"
+		>
 			<SettingsRow
 				icon={RefreshCw}
 				title="Catalog maintenance"

@@ -7,6 +7,7 @@ pub(crate) mod close;
 mod contract;
 pub(crate) mod details;
 pub(crate) mod diagnostics;
+pub(crate) mod drive_offer;
 pub(crate) mod icons;
 pub(crate) mod launch;
 pub(crate) mod links;

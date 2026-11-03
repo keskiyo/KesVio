@@ -5,10 +5,12 @@ import type { CatalogHealthPageProps } from '../types'
 import { CatalogHealthSummary } from './CatalogHealthSummary'
 import { CatalogSources } from './CatalogSources'
 import { DiagnosticsLog } from './DiagnosticsLog/DiagnosticsLog'
+import { ScanChanges } from './ScanChanges'
 import { LastScanPanel } from './LastScanPanel'
 
 export function CatalogHealthPage({
 	diagnostics,
+	lastScanChanges,
 	isRefreshing,
 	onRefresh,
 	onPreviewDiagnostics,
@@ -38,6 +40,7 @@ export function CatalogHealthPage({
 				<CatalogSources health={health} scanning={isRefreshing} />
 				<LastScanPanel diagnostics={diagnostics} />
 			</div>
+			<ScanChanges changes={lastScanChanges} />
 			<p className="mt-8 mb-2 text-xs font-semibold tracking-[0.14em] text-(--text-muted) uppercase">
 				Advanced
 			</p>

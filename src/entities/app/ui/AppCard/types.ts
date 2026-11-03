@@ -13,6 +13,7 @@ export interface AppCardProps {
 	onToggleFavorite(id: string): void
 	onLaunch(app: AppInfo): Promise<void>
 	isAuxiliary?: boolean
+	showOfflineLabel?: boolean
 	renderActions(actions: AppCardActions): ReactNode
 }
 
@@ -27,6 +28,8 @@ export interface CardLabelProps {
 	name: string
 	version: string | null
 	launching: boolean
+	offline?: boolean
+	showOfflineLabel?: boolean
 }
 
 export interface PlatformBadgeProps {

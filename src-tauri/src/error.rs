@@ -38,6 +38,9 @@ pub(crate) enum AppError {
     LaunchDataUnavailable,
     LaunchUnavailable,
     LaunchCancelled,
+    // Retain the published error code for wire compatibility after feature withdrawal.
+    #[allow(dead_code)]
+    WindowActivationUnavailable,
     CloseDataUnavailable,
     AppDetailsUnavailable,
     OpenFolderUnavailable,
@@ -78,6 +81,7 @@ impl AppError {
             Self::LaunchDataUnavailable => "LAUNCH_DATA_UNAVAILABLE",
             Self::LaunchUnavailable => "LAUNCH_UNAVAILABLE",
             Self::LaunchCancelled => "LAUNCH_CANCELLED",
+            Self::WindowActivationUnavailable => "WINDOW_ACTIVATION_UNAVAILABLE",
             Self::CloseDataUnavailable => "CLOSE_DATA_UNAVAILABLE",
             Self::AppDetailsUnavailable => "APP_DETAILS_UNAVAILABLE",
             Self::OpenFolderUnavailable => "OPEN_FOLDER_UNAVAILABLE",
@@ -119,6 +123,7 @@ impl AppError {
             Self::LaunchDataUnavailable => "Launch data is temporarily unavailable.",
             Self::LaunchUnavailable => "This application is not available for launch.",
             Self::LaunchCancelled => "The launch was cancelled.",
+            Self::WindowActivationUnavailable => "The application window could not be activated.",
             Self::CloseDataUnavailable => "Close data is temporarily unavailable.",
             Self::AppDetailsUnavailable => "Application details are unavailable.",
             Self::OpenFolderUnavailable => "The application folder is unavailable.",
@@ -160,6 +165,7 @@ pub(crate) fn every_variant() -> Vec<AppError> {
         AppError::LaunchDataUnavailable,
         AppError::LaunchUnavailable,
         AppError::LaunchCancelled,
+        AppError::WindowActivationUnavailable,
         AppError::CloseDataUnavailable,
         AppError::AppDetailsUnavailable,
         AppError::OpenFolderUnavailable,
@@ -271,6 +277,7 @@ mod tests {
                 "SCAN_PATH_NOT_ABSOLUTE",
                 "SCAN_SETTINGS_TOO_LARGE",
                 "STARTUP_ENTRY_UPDATE_FAILED",
+                "WINDOW_ACTIVATION_UNAVAILABLE",
             ]
         );
     }

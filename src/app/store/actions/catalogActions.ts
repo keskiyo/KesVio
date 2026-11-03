@@ -127,6 +127,19 @@ export function createCatalogActions({
 			...firstSeen,
 			hasCache: true,
 			catalogGeneration: scan.generation,
+			lastScanChanges: order === 'newer' ? null : get().lastScanChanges,
+			scanChangesBaseline:
+				order === 'newer' && get().apps.length <= 10000
+					? {
+							generation: scan.generation,
+							apps: get().apps.map(({ id, name }) => ({
+								id,
+								name: name.slice(0, 256),
+							})),
+						}
+					: order === 'same'
+						? get().scanChangesBaseline
+						: null,
 		})
 		if (
 			adopted.changed ||

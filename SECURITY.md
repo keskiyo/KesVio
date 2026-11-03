@@ -42,8 +42,9 @@ them will be closed as intended behaviour:
 - **KesVio enumerates and can terminate processes**, and launches applications and installers
   through the shell, including **Run as administrator**, which always goes through the Windows
   consent prompt. These are documented features the user triggers.
-- **Scenario close force-terminates applications that ignore a close request after five seconds**,
-  which can discard unsaved work. This is stated in the interface before the action runs.
+- **If Force close after 5 seconds is enabled, Scenario close can terminate applications that
+  ignore a close request**, which can discard unsaved work. New scenarios default to graceful close, and
+  the selected policy is stated in the interface before the action runs.
 - Findings that require an attacker who already has code execution or administrator rights on the
   machine.
 

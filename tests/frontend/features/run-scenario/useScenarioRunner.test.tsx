@@ -81,6 +81,27 @@ function setup(options: {
 }
 
 describe('useScenarioRunner', () => {
+	it.each([0, 1])(
+		'preserves unavailable close count alongside %i closed apps',
+		async count => {
+			const summaries: ScenarioRunSummary[] = []
+			const { view } = setup({
+				apps: [app('chat'), app('mail')],
+				closeApps: async () => ({ ...closed(count), unavailable: 1 }),
+				onFinished: summary => summaries.push(summary),
+			})
+			await act(() =>
+				view.result.current.run(
+					scenario({ closeIdentities: ['chat', 'mail'] }),
+				),
+			)
+			expect(summaries[0]).toMatchObject({
+				closed: count,
+				unavailable: 1,
+				closeUnavailable: false,
+			})
+		},
+	)
 	it('launches the launch list, then closes the close list', async () => {
 		const order: string[] = []
 		const { view } = setup({
@@ -170,6 +191,7 @@ describe('useScenarioRunner', () => {
 				notRunning: 0,
 				blocked: 0,
 				closeFailed: 0,
+				unavailable: 0,
 				closeUnavailable: false,
 			},
 		])

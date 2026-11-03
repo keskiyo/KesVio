@@ -1,3 +1,4 @@
+import { scanChanges } from '../scanChanges'
 import { reconcileDriveCategories } from '../driveCategories'
 import { identityRekeys, rekeyRecord } from '../identityRekey'
 import { catalogGenerationOrder, mergeIcon } from '../catalogGeneration'
@@ -58,6 +59,14 @@ export function createCatalogSyncActions({
 			set({
 				apps: merged,
 				catalogGeneration: delta.generation,
+				lastScanChanges:
+					delta.generation === state.catalogGeneration
+						? state.scanChangesBaseline?.generation ===
+							delta.generation
+							? scanChanges(state.scanChangesBaseline.apps, delta)
+							: state.lastScanChanges
+						: scanChanges(state.apps, delta),
+				scanChangesBaseline: null,
 				...firstSeen,
 				appLaunchStats,
 			})

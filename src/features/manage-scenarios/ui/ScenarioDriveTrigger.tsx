@@ -26,7 +26,7 @@ export function ScenarioDriveTrigger({
 			: drives
 	if (!choices.length) return null
 	return (
-		<div className="grid gap-1 text-xs text-(--text-muted)">
+		<div className="grid min-w-0 gap-1 text-xs text-(--text-muted)">
 			<label htmlFor={selectId}>Offer to run when a drive connects</label>
 			<select
 				id={selectId}
@@ -37,7 +37,7 @@ export function ScenarioDriveTrigger({
 						!onChange(scenario.id, event.target.value || null),
 					)
 				}
-				className="h-9 max-w-full rounded-lg border border-(--border-neutral) bg-(--surface-inset) px-2 text-sm text-(--text-primary) focus-visible:outline-2 focus-visible:outline-(--accent-strong)"
+				className="h-9 w-full max-w-full min-w-0 rounded-lg border border-(--border-neutral) bg-(--surface-inset) px-2 text-sm text-(--text-primary) focus-visible:outline-2 focus-visible:outline-(--accent-strong)"
 			>
 				<option value="">Never</option>
 				{choices.map(drive => (

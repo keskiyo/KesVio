@@ -61,7 +61,12 @@ pub(super) fn write_catalog_under_lock(
         .catalog_generation
         .next(previous.generation)
         .ok_or_else(|| "Catalog generation exhausted".to_owned())?;
-    let delta = compute_delta(document.generation, &previous.apps, &document.apps);
+    let delta = published_delta(
+        state.inner(),
+        document.generation,
+        &previous.apps,
+        &document.apps,
+    );
     log::info!(
         "Catalog persistence: writing document generation={} records={}",
         document.generation,
@@ -103,4 +108,73 @@ fn prune_expired_logs(app: &tauri::AppHandle) {
         std::time::SystemTime::now(),
         crate::diagnostics::MAX_LOG_AGE,
     );
+}
+
+fn published_delta(
+    state: &AppState,
+    generation: u64,
+    previous: &[AppInfo],
+    current: &[AppInfo],
+) -> crate::catalog::sync::CatalogDelta {
+    let mut delta = compute_delta(generation, previous, current);
+    if let Ok(availability) = state.published_availability.lock() {
+        let existing = delta
+            .upserted
+            .iter()
+            .map(|app| app.id.clone())
+            .collect::<std::collections::HashSet<_>>();
+        let mut observed_changes = current
+            .iter()
+            .filter(|app| {
+                !existing.contains(&app.id)
+                    && availability
+                        .get(&app.id)
+                        .is_some_and(|published| *published != app.target_availability)
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+        delta.summary.updated += observed_changes.len();
+        delta.upserted.append(&mut observed_changes);
+        delta.upserted.sort_by_cached_key(|app| app.id.clone());
+    }
+    delta
+}
+
+#[cfg(test)]
+mod availability_tests {
+    use super::*;
+    use crate::app_state::cached_app;
+
+    #[test]
+    fn delta_tracks_detach_and_return_against_the_published_snapshot() {
+        let state = AppState::default();
+        let mut online = cached_app("Editor", r"F:\Apps\Editor.exe");
+        online.volume_id = Some("12345678".into());
+        online.target_availability = Some("target.present".into());
+        let mut offline = online.clone();
+        offline.target_availability = Some("target.unverifiable.unmounted_volume".into());
+        remember_catalog(&state, &[online.clone()]);
+        let detached = published_delta(&state, 1, &[online.clone()], &[offline.clone()]);
+        assert_eq!(detached.upserted, vec![offline.clone()]);
+        remember_catalog(&state, &[offline.clone()]);
+        let returned = published_delta(&state, 2, &[online.clone()], &[online.clone()]);
+        assert_eq!(returned.upserted, vec![online]);
+    }
+    #[test]
+    fn delta_uses_published_availability_when_disk_already_matches_scan() {
+        let state = AppState::default();
+        let mut online = cached_app("Editor", r"F:\Apps\Editor.exe");
+        online.volume_id = Some("12345678".into());
+        online.target_availability = Some("target.present".into());
+        let mut offline = online.clone();
+        offline.target_availability = Some("target.unverifiable.unmounted_volume".into());
+        remember_catalog(&state, &[online.clone()]);
+        let detach = published_delta(&state, 1, &[offline.clone()], &[offline.clone()]);
+        assert_eq!(detach.upserted, vec![offline.clone()]);
+        assert_eq!(detach.summary.updated, 1);
+        remember_catalog(&state, &[offline]);
+        let reconnect = published_delta(&state, 2, &[online.clone()], &[online.clone()]);
+        assert_eq!(reconnect.upserted, vec![online]);
+        assert_eq!(reconnect.summary.updated, 1);
+    }
 }

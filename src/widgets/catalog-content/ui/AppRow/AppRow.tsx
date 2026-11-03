@@ -37,6 +37,8 @@ function AppRowComponent({
 		keepFocusNearRemovedItem(trigger?.closest('article'))
 	}, [])
 	const artifact = isCatalogArtifact(app)
+	const offline =
+		app.targetAvailability === 'target.unverifiable.unmounted_volume'
 	const draggable = useDraggable({
 		id: `app:${app.id}`,
 		data: { type: 'app', appId: app.id, category: app.category },
@@ -59,14 +61,24 @@ function AppRowComponent({
 			<button
 				type="button"
 				onClick={() => {
-					if (!launching) void onLaunch(app)
+					if (!launching && !offline) void onLaunch(app)
 				}}
 				data-launch-target=""
 				data-app-id={app.id}
-				aria-label={`Launch ${app.name}`}
+				aria-label={
+					offline
+						? `${app.name}: drive not connected`
+						: `Launch ${app.name}`
+				}
 				aria-busy={launching}
-				disabled={launching}
-				title={launching ? 'Launching…' : app.name}
+				disabled={launching || offline}
+				title={
+					offline
+						? 'Drive not connected'
+						: launching
+							? 'Launching…'
+							: app.name
+				}
 				className="relative z-1 grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-l-xl px-3 py-2.5 text-left focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-(--accent-strong) disabled:cursor-progress"
 			>
 				<CardIcon
@@ -78,6 +90,11 @@ function AppRowComponent({
 					<span className="line-clamp-2 text-sm leading-5 font-semibold break-words text-(--text-primary)">
 						{app.name}
 					</span>
+					{offline && (
+						<span className="block text-xs text-(--text-muted)">
+							Drive not connected
+						</span>
+					)}
 					{metadata && (
 						<span
 							className="mt-0.5 block truncate text-xs leading-4 text-(--text-muted)"

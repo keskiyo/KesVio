@@ -44,7 +44,12 @@ export function useKeyboardLaunch({
 	)
 
 	const bestMatch =
-		query.trim() && query === deferredQuery ? (results[0] ?? null) : null
+		query.trim() &&
+		query === deferredQuery &&
+		results[0]?.targetAvailability !==
+			'target.unverifiable.unmounted_volume'
+			? (results[0] ?? null)
+			: null
 
 	const searchLaunch = useMemo(
 		() => ({

@@ -24,5 +24,7 @@ export {
 	isDefaultDriveLabel,
 	isDriveCategory,
 	isDriveCategoryId,
+	offlineDriveCategoryIds,
 	staysVisibleWhenEmpty,
+	withDriveAvailability,
 } from './lib/driveCategory'

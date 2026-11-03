@@ -56,6 +56,16 @@ function renderCard(entry: AppInfo) {
 }
 
 describe('CatalogAppCard', () => {
+	it('shows a disconnected drive and prevents launching its app', () => {
+		renderCard({
+			...app,
+			targetAvailability: 'target.unverifiable.unmounted_volume',
+		})
+		expect(
+			screen.getByRole('button', { name: /drive not connected/i }),
+		).toBeDisabled()
+		expect(screen.getByText('Drive not connected')).toBeVisible()
+	})
 	// The badge was a card-level sibling pinned to the bottom-left corner, which is where the
 	// centred name runs: "Hearthstone" read "'earthstone" and "World of Warcraft" lost its W.
 	it('draws the platform badge on the icon corner, off the name row', () => {

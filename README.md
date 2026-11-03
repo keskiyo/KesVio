@@ -37,8 +37,12 @@
 **One catalog**<br>
 Bring Start Menu shortcuts, installed desktop programs, Microsoft Store apps, Steam games, and portable executables together. Duplicate discoveries merge into one application card. Portable apps on a tracked drive keep their category and favorites when its drive letter changes.
 
+Connect an untracked removable drive to choose a folder for scanning. Saved drive catalogs remain browsable when disconnected, with launch and move destinations disabled until the drive returns.
+
 **Automatic organization**<br>
 Categorize unfamiliar software using Windows registrations, file metadata, and Start Menu structure instead of a hard-coded product list.
+
+In All Apps, applications from the same publisher share a group card within their category. Open the group to choose an application; other views keep their own layouts. Category counts include the applications inside groups.
 
 **Search beyond app names**<br>
 Find software by name, publisher, description, path, or category, or by the short names people actually type: cmd, vscode, wt, kubectl,
@@ -75,6 +79,8 @@ Inspect local file details, architecture, signature status, installation state, 
 ![KesVio settings showing configurable keyboard shortcuts and catalog discovery](.github/images/settings.png)
 
 Configure the global shortcut, review built-in shortcuts, and control catalog density, application discovery, startup and tray behavior, updates, and catalog maintenance from one place.
+
+Section links navigate smoothly through Settings. Catalog Health lists changes from the latest scan, and the catalog header offers **Top** after scrolling.
 
 <details>
 <summary>More screenshots</summary>

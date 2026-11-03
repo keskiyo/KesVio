@@ -37,14 +37,20 @@ fn synchronize_catalog_once(
         let _ = app.emit("catalog://diagnostics", diagnostics);
         super::retry::after_scan(app, job.request, diagnostics);
     }
-    let summary = &outcome.delta.summary;
-    if summary.added + summary.removed + summary.updated > 0 {
-        let _ = app.emit("catalog://delta", CatalogDeltaDto::from(&outcome.delta));
-    }
-    Ok(ScanCommit {
+    Ok(publish_catalog(outcome, |delta| {
+        let _ = app.emit("catalog://delta", delta);
+    }))
+}
+
+fn publish_catalog(
+    outcome: super::commit::ScanOutcome,
+    publish: impl FnOnce(CatalogDeltaDto),
+) -> ScanCommit {
+    publish(CatalogDeltaDto::from(&outcome.delta));
+    ScanCommit {
         apps: outcome.apps,
         generation: outcome.generation,
-    })
+    }
 }
 
 fn synchronize_catalog_guarded(
@@ -135,6 +141,9 @@ fn process_scan_chain(app: &tauri::AppHandle, mut job: ScanJob<ScanCommit>) {
         job = next;
     }
 }
+
+#[cfg(test)]
+mod publication_tests;
 
 #[cfg(test)]
 mod tests {

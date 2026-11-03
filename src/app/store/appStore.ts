@@ -30,6 +30,8 @@ function initialState(preferences: AppPreferencesV24) {
 		scanProgress: null,
 		hasCache: false,
 		catalogGeneration: 0,
+		lastScanChanges: null,
+		scanChangesBaseline: null,
 		catalogDiagnostics: null,
 		error: null,
 		activeView: 'all' as const,

@@ -1,5 +1,6 @@
 export type {
 	GlobalShortcutStatus,
+	DriveOffer,
 	GlobalShortcutBinding,
 	ScanSettings,
 	StaleCopyInfo,

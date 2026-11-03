@@ -11,6 +11,7 @@ import type {
 	AppView,
 	CatalogArtifactKind,
 	CatalogDelta,
+	CatalogScanChanges,
 	CatalogDensity,
 	CatalogDiagnostics,
 	CloseAppsResult,
@@ -27,6 +28,11 @@ export interface AppState {
 	scanProgress: ScanProgress | null
 	hasCache: boolean
 	catalogGeneration: number
+	lastScanChanges: CatalogScanChanges | null
+	scanChangesBaseline: {
+		generation: number
+		apps: Pick<AppInfo, 'id' | 'name'>[]
+	} | null
 	catalogDiagnostics: CatalogDiagnostics | null
 	error: string | null
 	activeView: AppView

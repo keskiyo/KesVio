@@ -1,19 +1,17 @@
 mod geometry;
+mod persistence;
 mod store;
-
+mod writer;
 pub(crate) use geometry::{fit_to_screens, MinimumSize, ScreenRect, WindowGeometry};
-pub(crate) use store::{read, write, WindowPreferences};
+pub(crate) use persistence::{persist, persist_when_settled};
+use store::read;
+pub(crate) use writer::WindowStateWriter;
 
 use super::state::LifecycleState;
 use crate::paths;
 use geometry::merged_geometry;
 use std::path::Path;
-use std::sync::Arc;
-use std::time::Duration;
 use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
-
-const PERSIST_SETTLE_DELAY: Duration = Duration::from_millis(500);
-const PERSIST_SETTLE_ROUNDS: u32 = 20;
 
 fn describe(geometry: Option<WindowGeometry>) -> String {
     match geometry {
@@ -53,47 +51,6 @@ pub(crate) fn remember(app: &AppHandle, lifecycle: &LifecycleState) {
     if let Some(geometry) = capture(&window, lifecycle.geometry()) {
         lifecycle.remember_geometry(geometry);
     }
-}
-
-pub(crate) fn preferences_of(lifecycle: &LifecycleState) -> WindowPreferences {
-    WindowPreferences {
-        geometry: lifecycle.geometry(),
-        hide_to_tray: lifecycle.hides_to_tray(),
-    }
-}
-
-pub(crate) fn persist(app: &AppHandle, lifecycle: &LifecycleState) {
-    let Ok(app_data_dir) = paths::data_dir(app) else {
-        return;
-    };
-    let preferences = preferences_of(lifecycle);
-    match write(&app_data_dir, &preferences) {
-        Ok(true) => log::info!("Window state persisted: {}", describe(preferences.geometry)),
-        Ok(false) => {}
-        Err(error) => log::warn!("Window state was not persisted: {error}"),
-    }
-}
-
-pub(crate) fn persist_when_settled(app: &AppHandle, lifecycle: &Arc<LifecycleState>) {
-    lifecycle.note_geometry_change();
-    if !lifecycle.claim_persist() {
-        return;
-    }
-    let app = app.clone();
-    let lifecycle = Arc::clone(lifecycle);
-    tauri::async_runtime::spawn_blocking(move || {
-        let mut seen = lifecycle.geometry_changes();
-        for _ in 0..PERSIST_SETTLE_ROUNDS {
-            std::thread::sleep(PERSIST_SETTLE_DELAY);
-            let latest = lifecycle.geometry_changes();
-            if latest == seen {
-                break;
-            }
-            seen = latest;
-        }
-        lifecycle.release_persist();
-        persist(&app, &lifecycle);
-    });
 }
 
 fn screen_rects(window: &WebviewWindow) -> Vec<ScreenRect> {
@@ -178,33 +135,4 @@ pub(crate) fn restore_main_window(app: &AppHandle, lifecycle: &LifecycleState) {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn a_configured_minimum_is_converted_to_the_physical_pixels_a_geometry_is_stored_in() {
-        assert_eq!(physical_minimum(Some(446.0), 1.0), 446);
-        assert_eq!(physical_minimum(Some(446.0), 1.25), 558);
-        assert_eq!(physical_minimum(Some(529.0), 1.5), 794);
-    }
-
-    #[test]
-    fn a_missing_or_impossible_minimum_clamps_nothing_away() {
-        assert_eq!(physical_minimum(None, 1.0), 0);
-        assert_eq!(physical_minimum(Some(0.0), 1.0), 0);
-        assert_eq!(physical_minimum(Some(f64::NAN), 1.0), 0);
-        assert_eq!(physical_minimum(Some(446.0), f64::NAN), 446);
-        assert_eq!(physical_minimum(Some(446.0), 0.0), 446);
-    }
-
-    #[test]
-    fn the_window_configuration_declares_the_minimum_the_interface_is_built_for() {
-        let config: serde_json::Value =
-            serde_json::from_str(include_str!("../../../tauri.conf.json"))
-                .expect("tauri.conf.json is valid JSON");
-        let window = &config["app"]["windows"][0];
-
-        assert_eq!(window["minWidth"].as_u64(), Some(446));
-        assert_eq!(window["minHeight"].as_u64(), Some(529));
-    }
-}
+mod tests;

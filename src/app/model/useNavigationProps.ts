@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { withDriveAvailability } from '../../entities/category'
 import type { ActiveFilterChip } from '../../widgets/app-header'
 import type { useCatalogView } from '../../widgets/catalog-content'
 import type {
@@ -27,9 +29,13 @@ export function useNavigationProps({
 	activeFilterChip: ActiveFilterChip | null
 } {
 	const { counts } = catalog
+	const categories = useMemo(
+		() => withDriveAvailability(state.categories, state.apps),
+		[state.categories, state.apps],
+	)
 	const navigationProps: AppNavigationProps = {
 		categoryOrder: state.categoryOrder,
-		categories: state.categories,
+		categories,
 		counts: counts.navigationCounts,
 		activeView: state.activeView,
 		appCount: counts.visibleCategorizedApps.length,

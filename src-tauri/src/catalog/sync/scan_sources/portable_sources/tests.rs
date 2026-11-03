@@ -108,3 +108,50 @@ fn only_a_cancelled_portable_scan_throws_away_what_it_found() {
     assert!(adopts_results(Some(StageStop::EntryLimit)));
     assert!(!adopts_results(Some(StageStop::Cancelled)));
 }
+
+#[test]
+fn detached_tracked_volume_retains_only_its_records_as_unavailable() {
+    let mut app = super::super::super::app("portable", "Editor");
+    app.path = r"F:\Apps\Editor.exe".into();
+    app.scan_folder = Some(r"F:\Apps".into());
+    app.volume_id = Some("12345678".into());
+    let tracked = vec![TrackedVolume {
+        folder: r"F:\Apps".into(),
+        serial: "12345678".into(),
+        label: String::new(),
+        filesystem: String::new(),
+        mounted_at: None,
+    }];
+    let mut apps = Vec::new();
+    retain_offline_apps(&mut apps, &[app], &tracked, &tracked, &[]);
+    assert_eq!(apps.len(), 1);
+    assert_eq!(
+        apps[0].target_availability.as_deref(),
+        Some("target.unverifiable.unmounted_volume")
+    );
+}
+
+#[test]
+fn offline_folders_on_same_volume_remain_distinct_after_one_is_removed() {
+    let mut a = super::super::super::app("a", "A");
+    a.path = r"F:\A\a.exe".into();
+    a.scan_folder = Some(r"F:\A".into());
+    a.volume_id = Some("12345678".into());
+    let mut b = a.clone();
+    b.id = "b".into();
+    b.path = r"F:\B\b.exe".into();
+    b.scan_folder = Some(r"F:\B".into());
+    let tracked = [r"F:\A", r"F:\B"].map(|folder| TrackedVolume {
+        folder: folder.into(),
+        serial: "12345678".into(),
+        label: String::new(),
+        filesystem: String::new(),
+        mounted_at: None,
+    });
+    let mut first = Vec::new();
+    retain_offline_apps(&mut first, &[a, b], &tracked, &tracked, &[]);
+    let mut second = Vec::new();
+    retain_offline_apps(&mut second, &first, &tracked[1..], &tracked, &[]);
+    assert_eq!(second.len(), 1);
+    assert_eq!(second[0].id, "b");
+}

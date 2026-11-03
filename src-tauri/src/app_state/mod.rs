@@ -18,6 +18,7 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct CloseTarget {
+    pub(crate) volume_id: Option<String>,
     pub(crate) path: String,
     pub(crate) install_root: Option<String>,
     pub(crate) blocked: bool,
@@ -28,12 +29,14 @@ pub(crate) struct LaunchTarget {
     pub(crate) kind: LaunchKind,
     pub(crate) path: String,
     pub(crate) arguments: Option<String>,
+    pub(crate) volume_id: Option<String>,
 }
 
 #[derive(Default)]
 pub(crate) struct AppState {
     pub(crate) catalog_generation: catalog_generation::CatalogGeneration,
     pub(crate) catalog_ids: Mutex<HashSet<String>>,
+    pub(crate) published_availability: Mutex<HashMap<String, Option<String>>>,
     pub(crate) launch_targets: Mutex<HashMap<String, LaunchTarget>>,
     pub(crate) close_targets: Mutex<HashMap<String, CloseTarget>>,
     pub(crate) app_details_targets: Mutex<HashMap<String, AppDetailsTarget>>,

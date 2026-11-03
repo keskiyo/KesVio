@@ -3,6 +3,7 @@ import {
 	type SettingsArea,
 	useSystemSettings,
 } from '../../../features/edit-settings'
+import { SettingsNavigation } from './components/SettingsNavigation'
 import { CatalogSettings } from './sections/CatalogSettings'
 import { GeneralSettings } from './sections/GeneralSettings'
 import { KeyboardShortcuts } from './sections/KeyboardShortcuts'
@@ -62,6 +63,7 @@ export function SettingsPage({
 					</p>
 				</div>
 			</header>
+			<SettingsNavigation maintenance={Boolean(onForceFullScan)} />
 			<GeneralSettings
 				settings={settings}
 				updater={updater}

@@ -35,6 +35,10 @@ export function createLaunchActions({
 	persist,
 }: LaunchActionOptions): LaunchActions {
 	const launchTimers = new Map<string, ReturnType<typeof setTimeout>>()
+	const pendingLaunches = new Map<
+		string,
+		{ elevated: boolean; result: Promise<void> }
+	>()
 	function recordSuccessfulLaunch(app: Parameters<AppState['launch']>[0]) {
 		set(state => ({
 			appLaunchStats: recordLaunchStat(
@@ -44,6 +48,32 @@ export function createLaunchActions({
 			),
 		}))
 		persist()
+	}
+	async function launch(
+		app: Parameters<AppState['launch']>[0],
+		elevated: boolean,
+		run: () => Promise<void>,
+	) {
+		const pending = pendingLaunches.get(app.id)
+		if (pending?.elevated === elevated) return pending.result
+		if (pending || get().launchingIds.includes(app.id))
+			throw new Error('Application is already launching.')
+		set({ error: null })
+		get().markLaunching(app.id)
+		launchTimers.set(
+			app.id,
+			setTimeout(() => get().clearLaunching(app.id), LAUNCH_CEILING_MS),
+		)
+		const result = Promise.resolve()
+			.then(run)
+			.then(() => recordSuccessfulLaunch(app))
+			.catch((error: unknown) => {
+				get().clearLaunching(app.id)
+				throw error
+			})
+			.finally(() => pendingLaunches.delete(app.id))
+		pendingLaunches.set(app.id, { elevated, result })
+		return result
 	}
 
 	return {
@@ -70,31 +100,14 @@ export function createLaunchActions({
 					: state,
 			)
 		},
-		async launch(app) {
-			set({ error: null })
-			get().markLaunching(app.id)
-			const existing = launchTimers.get(app.id)
-			if (existing) clearTimeout(existing)
-			launchTimers.set(
-				app.id,
-				setTimeout(
-					() => get().clearLaunching(app.id),
-					LAUNCH_CEILING_MS,
-				),
-			)
-			try {
-				await client.launchApp({ id: app.id })
-			} catch (error) {
-				get().clearLaunching(app.id)
-				throw error
-			}
-			recordSuccessfulLaunch(app)
+		launch(app) {
+			return launch(app, false, () => client.launchApp({ id: app.id }))
 		},
 		async launchElevated(app) {
 			if (!client.launchAppElevated)
 				throw new Error('Elevated launch is unavailable.')
-			await client.launchAppElevated({ id: app.id })
-			recordSuccessfulLaunch(app)
+			const run = client.launchAppElevated
+			await launch(app, true, () => run.call(client, { id: app.id }))
 		},
 		async closeApps(ids, allowForce = false) {
 			set({ error: null })

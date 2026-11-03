@@ -52,7 +52,7 @@ describe('settings row controls', () => {
 
 	it('gives each trailing control in a row that shape', () => {
 		expect(shortcuts).toContain('ROW_CHIP')
-		expect(globalShortcut).toContain('<SettingsRow')
+		expect(globalShortcut).toContain('<ShortcutRow')
 		expect(globalShortcut).toContain('ACTION_BUTTON')
 		expect(general).toContain('ACTION_BUTTON_PRIMARY')
 		expect(updates).toContain('ACTION_BUTTON_PRIMARY')

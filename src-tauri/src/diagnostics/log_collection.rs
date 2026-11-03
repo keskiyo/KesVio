@@ -114,15 +114,47 @@ fn log_files(directory: &Path) -> (Vec<PathBuf>, bool) {
                 .ok()
                 .map(unix_seconds)
         });
-        files.push((order, path));
+        let segment = segment_identity(&path);
+        files.push((order, segment, path));
     }
     files.sort();
-    (files.into_iter().map(|(_, path)| path).collect(), truncated)
+    (
+        files.into_iter().map(|(_, _, path)| path).collect(),
+        truncated,
+    )
+}
+
+fn segment_identity(path: &Path) -> Option<(u32, u32)> {
+    let stem = path.file_stem()?.to_str()?.strip_prefix("kesvio-")?;
+    let mut parts = stem.split('-');
+    parts.next()?.parse::<u64>().ok()?;
+    let process = parts.next()?.parse().ok()?;
+    let sequence = parts.next().map(str::parse).transpose().ok()?.unwrap_or(0);
+    if parts.next().is_some() {
+        return None;
+    }
+    Some((process, sequence))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn numbered_segments_are_exported_in_chronological_sequence() {
+        let directory = tempfile::tempdir().unwrap();
+        for (name, content) in [
+            ("kesvio-600-42.log", "@601 first\n"),
+            ("kesvio-600-42-1.log", "@602 second\n"),
+            ("kesvio-600-42-10.log", "@603 third\n"),
+        ] {
+            std::fs::write(directory.path().join(name), content).unwrap();
+        }
+        assert_eq!(
+            collect_lines(directory.path(), 603).lines,
+            ["first", "second", "third"]
+        );
+    }
 
     #[test]
     fn oversized_lines_are_omitted_and_future_timestamps_do_not_enter_the_window() {

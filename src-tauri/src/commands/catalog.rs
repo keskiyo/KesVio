@@ -1,7 +1,7 @@
 use super::run_blocking;
 use crate::app_state::{remember_catalog, remember_volumes, AppState};
 use crate::catalog::sync::{
-    cancel_pending_retry, load_sanitized_document, run_coordinated_scan, SyncRequest,
+    cancel_pending_retry, load_observed_document, run_coordinated_scan, SyncRequest,
 };
 use crate::catalog::{self, cache, CatalogAppDto};
 use crate::error::AppError;
@@ -64,7 +64,7 @@ pub(crate) async fn get_apps(app: tauri::AppHandle) -> Result<CatalogSnapshot, A
     let cached = run_blocking("Catalog cache read", move || {
         let state = handle.state::<AppState>();
         let _guard = state.lock_sync();
-        let cached = load_sanitized_document(&cache_dir);
+        let cached = load_observed_document(&cache_dir);
         if let Some(document) = &cached {
             state.catalog_generation.observe(document.generation);
             remember_catalog(state.inner(), &document.apps);

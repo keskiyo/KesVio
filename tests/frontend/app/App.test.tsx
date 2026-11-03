@@ -262,6 +262,43 @@ describe('App', () => {
 		expect(screen.getByText('Steam')).toBeVisible()
 	})
 
+	it('hydrates recently added icons when More is the first opened view', async () => {
+		const hydrateVisibleIcons = vi.fn().mockResolvedValue(undefined)
+		let publishPatches!: Parameters<
+			NonNullable<AppsClient['onCatalogPatches']>
+		>[0]
+		const { store } = renderApp({
+			hydrateVisibleIcons,
+			onCatalogPatches: async handler => {
+				publishPatches = handler
+				return () => undefined
+			},
+		})
+		act(() => store.getState().setActiveView('more'))
+		const heading = await screen.findByRole('heading', {
+			name: 'Recently added',
+		})
+		const section = heading.closest('section')!
+		const row = within(section)
+			.getByText('Visual Studio Code')
+			.closest('li')!
+		expect(row.querySelector('img')).toBeNull()
+		await waitFor(() =>
+			expect(hydrateVisibleIcons.mock.calls.flat(2)).toContain('code'),
+		)
+		const icon = 'data:image/png;base64,aWNvbg=='
+		act(() =>
+			publishPatches([
+				{
+					id: 'code',
+					generation: store.getState().catalogGeneration,
+					iconBase64: icon,
+				},
+			]),
+		)
+		expect(row.querySelector('img')).toHaveAttribute('src', icon)
+	})
+
 	it('does not rehydrate the whole catalog on a recovery timer', async () => {
 		vi.useFakeTimers({ shouldAdvanceTime: true })
 		const hydrateVisibleIcons = vi.fn().mockResolvedValue(undefined)

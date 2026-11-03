@@ -74,6 +74,21 @@ describe('useKeyboardLaunch', () => {
 		expect(result.current.searchLaunch.bestMatch).toBeNull()
 	})
 
+	it('does not launch a result on a disconnected drive', () => {
+		const input = options({
+			results: [
+				{
+					...code,
+					targetAvailability: 'target.unverifiable.unmounted_volume',
+				},
+			],
+		})
+		const { result } = renderHook(() => useKeyboardLaunch(input))
+		expect(result.current.searchLaunch.bestMatch).toBeNull()
+		result.current.searchLaunch.onSubmit(false)
+		expect(input.onLaunch).not.toHaveBeenCalled()
+	})
+
 	it('runs the best match as administrator on Ctrl+Enter', async () => {
 		const input = options()
 		const { result } = renderHook(() => useKeyboardLaunch(input))

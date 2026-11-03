@@ -18,6 +18,7 @@ export function AppCard({
 	onToggleFavorite,
 	onLaunch,
 	isAuxiliary = false,
+	showOfflineLabel = true,
 	renderActions,
 }: AppCardProps) {
 	const [menuOpen, setMenuOpen] = useState(false)
@@ -30,6 +31,8 @@ export function AppCard({
 	}, [])
 	const spotlight = useSpotlight()
 	const artifact = isCatalogArtifact(app)
+	const offline =
+		app.targetAvailability === 'target.unverifiable.unmounted_volume'
 	const launchSource = launchSourceLabel(app.platformKind)
 	return (
 		<article
@@ -44,15 +47,25 @@ export function AppCard({
 			<button
 				type="button"
 				onClick={() => {
-					if (launching) return
+					if (launching || offline) return
 					void onLaunch(app)
 				}}
 				data-launch-target=""
 				data-app-id={app.id}
-				aria-label={`Launch ${app.name}${launchSource ? ` from ${launchSource}` : ''}`}
+				aria-label={
+					offline
+						? `${app.name}: drive not connected`
+						: `Launch ${app.name}${launchSource ? ` from ${launchSource}` : ''}`
+				}
 				aria-busy={launching}
-				disabled={launching}
-				title={launching ? 'Launching…' : app.name}
+				disabled={launching || offline}
+				title={
+					offline
+						? 'Drive not connected'
+						: launching
+							? 'Launching…'
+							: app.name
+				}
 				className="app-card-face relative z-1 flex size-full flex-col items-center justify-center text-center focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-violet-500 disabled:cursor-progress"
 			>
 				<CardIcon
@@ -64,6 +77,8 @@ export function AppCard({
 					name={app.name}
 					version={app.version}
 					launching={launching}
+					offline={offline}
+					showOfflineLabel={showOfflineLabel}
 				/>
 			</button>
 			<button

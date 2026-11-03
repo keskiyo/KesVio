@@ -44,7 +44,7 @@ describe('catalog density presets', () => {
 			expect(stylesheet, `${token} has a default`).toContain(`${token}: `)
 		}
 		expect(stylesheet).toContain('--app-card-width: 8rem;')
-		expect(stylesheet).toContain('--app-card-height: 7.875rem;')
+		expect(stylesheet).toContain('--app-card-height: 8.875rem;')
 		expect(stylesheet).toContain('--app-card-gap: 0.625rem;')
 	})
 

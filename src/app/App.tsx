@@ -1,6 +1,10 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { useStore } from 'zustand'
-import { isCatalogView } from '../entities/app'
+import {
+	isCatalogView,
+	joinHydrationIds,
+	splitHydrationIds,
+} from '../entities/app'
 import {
 	focusFirstLaunchTarget,
 	useCardNavigation,
@@ -37,6 +41,7 @@ import { useTrayRecent } from './model/useTrayRecent'
 import { useTraySearch } from './model/useTraySearch'
 import { useUpdateFailureNotice } from './model/useUpdateFailureNotice'
 import { useWindowBackdrop } from './model/useWindowBackdrop'
+import { useDriveScanOffers } from './model/useDriveScanOffers'
 
 import { useGlobalShortcuts } from './model/useGlobalShortcuts'
 import { useKeyboardLaunch } from './model/useKeyboardLaunch'
@@ -101,13 +106,20 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	useShortcutNotice({ systemClient, selectView: navigation.selectView })
 	usePreloadSecondaryPages(!isLoading)
 	useWindowBackdrop(systemClient)
+	useDriveScanOffers(systemClient, state.refresh)
 
 	useCatalogBootstrap({
 		initialize,
 		error,
 		isLoading,
 		catalogGeneration: state.catalogGeneration,
-		visibleHydrationIds,
+		visibleHydrationIds:
+			activeView === 'more'
+				? joinHydrationIds([
+						...splitHydrationIds(visibleHydrationIds),
+						...derivations.recentApps.map(entry => entry.app.id),
+					])
+				: visibleHydrationIds,
 		hydrateVisibleIcons,
 	})
 
@@ -117,6 +129,12 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		selectView: navigation.selectView,
 	})
 	const catalogScrollRef = useRef<HTMLDivElement>(null)
+	const [scrolled, setScrolled] = useState(false)
+	const scrollToTop = () =>
+		catalogScrollRef.current?.scrollTo({
+			top: 0,
+			behavior: 'smooth',
+		})
 	const focusResults = useCallback(
 		() => focusFirstLaunchTarget(catalogScrollRef.current),
 		[],
@@ -237,10 +255,14 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							onOpenNavigation={drawer.onOpen}
 							showMenu={!desktopNavigation}
 							searchLaunch={keyboard.searchLaunch}
+							onScrollToTop={scrolled ? scrollToTop : undefined}
 						/>
 						<div
 							ref={catalogScrollRef}
 							id="catalog-scroll"
+							onScroll={event =>
+								setScrolled(event.currentTarget.scrollTop > 200)
+							}
 							className="min-h-0 overflow-x-hidden overflow-y-auto"
 						>
 							<AppViews

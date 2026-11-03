@@ -79,6 +79,20 @@ beforeEach(() => {
 })
 
 describe('AppRow', () => {
+	it('shows a disconnected drive and prevents launching its app', () => {
+		render(
+			<AppRow
+				{...props({
+					...app,
+					targetAvailability: 'target.unverifiable.unmounted_volume',
+				})}
+			/>,
+		)
+		expect(
+			screen.getByRole('button', { name: /drive not connected/i }),
+		).toBeDisabled()
+		expect(screen.getByText('Drive not connected')).toBeVisible()
+	})
 	it('shows compact tool identity and accessible actions', () => {
 		render(<AppRow {...props()} />)
 

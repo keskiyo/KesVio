@@ -25,6 +25,7 @@ function props(
 		],
 		categoryOrder: ['custom:work'],
 		apps: [],
+		groupPublishers: false,
 		collapsed: false,
 		favoriteIds: new Set<string>(),
 		onToggle: vi.fn(),
@@ -44,6 +45,15 @@ function props(
 }
 
 describe('CategorySection', () => {
+	it('reveals deletion through the same hover and focus styling as Edit', () => {
+		render(<CategorySection {...props()} />)
+		expect(
+			screen.getByRole('button', { name: 'Delete Work category' }),
+		).toHaveClass('category-header-action')
+		expect(
+			screen.getByRole('button', { name: 'Rename Work category' }),
+		).toHaveClass('category-header-action')
+	})
 	it('withdraws the delete control while the name is being edited', async () => {
 		render(<CategorySection {...props()} />)
 

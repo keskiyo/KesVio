@@ -13,7 +13,7 @@ export function keepFocusNearRemovedItem(item: Element | null | undefined) {
 				? neighbour.querySelector<HTMLElement>(FOCUSABLE)
 				: null
 			if (target) {
-				target.focus()
+				target.focus({ preventScroll: true })
 				return
 			}
 		}
@@ -40,7 +40,7 @@ function counterpartOf(element: HTMLElement): HTMLElement | null {
 export function restoreFocus(target: Element | null) {
 	if (!(target instanceof HTMLElement) || target === document.body) return
 	if (target.isConnected) {
-		target.focus()
+		target.focus({ preventScroll: true })
 		return
 	}
 	const active = document.activeElement
@@ -48,5 +48,5 @@ export function restoreFocus(target: Element | null) {
 	const fallback =
 		counterpartOf(target) ??
 		document.querySelector<HTMLElement>(`main :is(${FOCUSABLE})`)
-	fallback?.focus()
+	fallback?.focus({ preventScroll: true })
 }

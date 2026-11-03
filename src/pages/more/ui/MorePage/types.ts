@@ -66,6 +66,7 @@ export interface MoreCardProps {
 
 export interface MorePreviewRowProps {
 	entry: MorePreviewItem
+	context?: 'destination' | 'timeline' | 'publisher-group'
 }
 
 export interface MoreScenarioRowProps {

@@ -3,17 +3,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppFeedback } from '../../../src/app/model/useAppFeedback'
 import type { AppInfo } from '../../../src/entities/app'
 
-const { toastError, toastInfo, toastSuccess } = vi.hoisted(() => ({
-	toastError: vi.fn(),
-	toastInfo: vi.fn(),
-	toastSuccess: vi.fn(),
-}))
+const { toastError, toastInfo, toastSuccess, toastWarning } = vi.hoisted(
+	() => ({
+		toastError: vi.fn(),
+		toastInfo: vi.fn(),
+		toastSuccess: vi.fn(),
+		toastWarning: vi.fn(),
+	}),
+)
 
 vi.mock('sonner', () => ({
 	toast: {
 		error: toastError,
 		info: toastInfo,
 		success: toastSuccess,
+		warning: toastWarning,
 	},
 }))
 
@@ -30,6 +34,31 @@ function options(overrides: Partial<Parameters<typeof useAppFeedback>[0]>) {
 }
 
 describe('useAppFeedback', () => {
+	it.each([0, 1])(
+		'warns when %i closed apps accompany an unavailable target',
+		closed => {
+			const { result } = renderHook(() => useAppFeedback(options({})))
+			act(() =>
+				result.current.reportScenarioRun({
+					scenarioName: 'Gaming',
+					launched: 0,
+					launchFailed: 0,
+					closed,
+					notRunning: 0,
+					blocked: 0,
+					closeFailed: 0,
+					unavailable: 1,
+					closeUnavailable: false,
+				}),
+			)
+			expect(toastWarning).toHaveBeenCalledWith(
+				closed
+					? 'Gaming: 1 closed, 1 unavailable to close'
+					: 'Gaming: 1 unavailable to close',
+			)
+			expect(toastSuccess).not.toHaveBeenCalled()
+		},
+	)
 	beforeEach(() => {
 		vi.clearAllMocks()
 	})

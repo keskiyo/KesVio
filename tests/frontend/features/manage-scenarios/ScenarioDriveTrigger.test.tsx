@@ -14,6 +14,24 @@ const scenario: Scenario = {
 const drives = [{ volumeId: '1a2b3c4d', label: 'F:\\ (2 apps)' }]
 
 describe('ScenarioDriveTrigger', () => {
+	it('constrains long drive choices to the scenario card width', () => {
+		render(
+			<ScenarioDriveTrigger
+				scenario={scenario}
+				drives={[
+					{
+						volumeId: '1a2b3c4d',
+						label: 'Very long removable drive label '.repeat(12),
+					},
+				]}
+				disabled={false}
+				onChange={vi.fn()}
+			/>,
+		)
+		const select = screen.getByRole('combobox')
+		expect(select).toHaveClass('min-w-0', 'w-full')
+		expect(select.parentElement).toHaveClass('min-w-0')
+	})
 	it('binds and unbinds a drive', async () => {
 		const onChange = vi.fn().mockReturnValue(true)
 		render(

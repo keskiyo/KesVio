@@ -1,11 +1,13 @@
 import type {
 	CatalogDiagnostics,
+	CatalogScanChanges,
 	CatalogHealthStatus,
 	SourceStatusRow,
 	TargetAvailabilityDiff,
 } from '../../entities/app'
 
 export interface CatalogHealthPageProps {
+	lastScanChanges?: CatalogScanChanges | null
 	diagnostics: CatalogDiagnostics | null
 	isRefreshing: boolean
 	onRefresh(): Promise<void>

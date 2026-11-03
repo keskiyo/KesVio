@@ -4,8 +4,48 @@ import {
 	isDefaultDriveLabel,
 	isDriveCategory,
 	isDriveCategoryId,
+	offlineDriveCategoryIds,
 	staysVisibleWhenEmpty,
+	withDriveAvailability,
 } from '../../../../src/entities/category'
+
+it('derives disconnected labels without persisting them and clears them when the drive returns', () => {
+	const categories = [
+		{ id: 'drive:f' as const, label: 'Disk F', builtIn: false },
+	]
+	const app = {
+		scanFolder: 'F:\\',
+		targetAvailability: 'target.unverifiable.unmounted_volume',
+	}
+	expect(withDriveAvailability(categories, [app])[0].disconnected).toBe(true)
+	expect(categories[0]).not.toHaveProperty('disconnected')
+	expect(
+		withDriveAvailability(categories, [
+			{ ...app, targetAvailability: 'target.present' },
+		])[0],
+	).toBe(categories[0])
+})
+
+it('marks only drives whose known apps are all offline and clears the mark on return', () => {
+	const offline = {
+		scanFolder: 'F:\\',
+		volumeId: '1234abcd',
+		targetAvailability: 'target.unverifiable.unmounted_volume',
+	}
+	expect([...offlineDriveCategoryIds([offline])]).toEqual(['drive:1234abcd'])
+	expect([
+		...offlineDriveCategoryIds([
+			offline,
+			{ ...offline, targetAvailability: 'present' },
+		]),
+	]).toEqual([])
+	expect([
+		...offlineDriveCategoryIds([
+			{ ...offline, targetAvailability: 'present' },
+		]),
+	]).toEqual([])
+	expect([...offlineDriveCategoryIds([])]).toEqual([])
+})
 
 describe('driveCategoryFor', () => {
 	it('turns a drive root the user added into a category named after the letter', () => {

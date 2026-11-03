@@ -38,6 +38,7 @@ export interface CategoryDefinition {
 	label: string
 	builtIn: boolean
 	accent?: CustomCategoryAccent
+	disconnected?: boolean
 }
 
 export const CATEGORY_LABELS: Record<string, string> = {

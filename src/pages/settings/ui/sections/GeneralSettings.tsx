@@ -23,58 +23,58 @@ export function GeneralSettings({
 }: GeneralSettingsProps) {
 	const hideToTray = settings?.hideToTrayOnClose ?? true
 	return (
-		<>
-			<div className={SETTINGS_SURFACE}>
-				<p className={SETTINGS_SECTION_LABEL}>Appearance</p>
-				<CatalogDensityRow
-					density={density}
-					onSetDensity={onSetDensity}
+		<section
+			id="settings-general"
+			aria-label="General"
+			tabIndex={-1}
+			className={`${SETTINGS_SURFACE} scroll-mt-5 focus-visible:outline-2 focus-visible:outline-(--accent)`}
+		>
+			<p className={SETTINGS_SECTION_LABEL}>Appearance</p>
+			<CatalogDensityRow density={density} onSetDensity={onSetDensity} />
+			<p className={SETTINGS_SECTION_LABEL}>Startup &amp; window</p>
+			<StartupSettingsRow
+				startupEntry={settings?.startupEntry ?? null}
+				saving={saving}
+				onSetStartupEnabled={onSetStartupEnabled}
+			/>
+			<div className="flex flex-wrap items-center gap-4 border-b border-slate-200 p-5">
+				<SettingsSectionHeader
+					icon={Minimize2}
+					title="Keep running in the tray"
+					description={
+						hideToTray
+							? 'Closing the window leaves KesVio in the notification area.'
+							: 'Closing the window quits KesVio.'
+					}
 				/>
-				<p className={SETTINGS_SECTION_LABEL}>Startup &amp; window</p>
-				<StartupSettingsRow
-					startupEntry={settings?.startupEntry ?? null}
-					saving={saving}
-					onSetStartupEnabled={onSetStartupEnabled}
-				/>
-				<div className="flex flex-wrap items-center gap-4 border-b border-slate-200 p-5">
-					<SettingsSectionHeader
-						icon={Minimize2}
-						title="Keep running in the tray"
-						description={
-							hideToTray
-								? 'Closing the window leaves KesVio in the notification area.'
-								: 'Closing the window quits KesVio.'
-						}
-					/>
-					<SettingsToggle
-						label="Keep running in the tray when the window is closed"
-						checked={hideToTray}
-						disabled={!settings || saving}
-						onToggle={() => void onSetCloseBehavior(!hideToTray)}
-					/>
-				</div>
-				<p className={SETTINGS_SECTION_LABEL}>System</p>
-				<SettingsRow
-					icon={AppWindow}
-					title="Windows installed apps"
-					description="Open Windows Settings."
-				>
-					<button
-						type="button"
-						aria-label="Open Windows installed apps"
-						onClick={() => void onOpenAppsSettings()}
-						className={ACTION_BUTTON_PRIMARY}
-					>
-						Open
-					</button>
-				</SettingsRow>
-				<p className={SETTINGS_SECTION_LABEL}>Updates &amp; links</p>
-				<SettingsUpdateControls
-					updater={updater}
-					onOpenGithub={onOpenGithub}
-					onOpenTelegram={onOpenTelegram}
+				<SettingsToggle
+					label="Keep running in the tray when the window is closed"
+					checked={hideToTray}
+					disabled={!settings || saving}
+					onToggle={() => void onSetCloseBehavior(!hideToTray)}
 				/>
 			</div>
-		</>
+			<p className={SETTINGS_SECTION_LABEL}>System</p>
+			<SettingsRow
+				icon={AppWindow}
+				title="Windows installed apps"
+				description="Open Windows Settings."
+			>
+				<button
+					type="button"
+					aria-label="Open Windows installed apps"
+					onClick={() => void onOpenAppsSettings()}
+					className={ACTION_BUTTON_PRIMARY}
+				>
+					Open
+				</button>
+			</SettingsRow>
+			<p className={SETTINGS_SECTION_LABEL}>Updates &amp; links</p>
+			<SettingsUpdateControls
+				updater={updater}
+				onOpenGithub={onOpenGithub}
+				onOpenTelegram={onOpenTelegram}
+			/>
+		</section>
 	)
 }

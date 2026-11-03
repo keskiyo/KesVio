@@ -421,3 +421,40 @@ describe('CatalogHealthPage', () => {
 		).toBeEnabled()
 	})
 })
+
+it('shows named catalog changes without claiming installation', () => {
+	renderPage({
+		lastScanChanges: {
+			added: ['New app'],
+			updated: ['Changed app'],
+			removed: ['Old app'],
+			truncated: false,
+		},
+	})
+	const changes = screen.getByRole('region', { name: 'Scan changes' })
+	expect(within(changes).getByText('New app')).toBeInTheDocument()
+	expect(within(changes).getByText('Changed app')).toBeInTheDocument()
+	expect(within(changes).getByText('Old app')).toBeInTheDocument()
+	expect(changes).not.toHaveTextContent(/installed/i)
+})
+
+it('explains unavailable and empty scan changes', () => {
+	const { rerender, props } = renderPage({ lastScanChanges: null })
+	expect(
+		screen.getByText(/Changes are unavailable for this scan/),
+	).toBeInTheDocument()
+	rerender(
+		<CatalogHealthPage
+			{...props}
+			lastScanChanges={{
+				added: [],
+				updated: [],
+				removed: [],
+				truncated: false,
+			}}
+		/>,
+	)
+	expect(
+		screen.getByText('No catalog changes in this scan.'),
+	).toBeInTheDocument()
+})

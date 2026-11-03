@@ -52,7 +52,7 @@ pub(crate) struct CloseAppsResponse {
 
 #[derive(Debug, Default, PartialEq, Eq)]
 struct CloseRequest {
-    targets: Vec<closer::CloseTarget>,
+    targets: Vec<crate::app_state::CloseTarget>,
     unavailable: usize,
     blocked: usize,
 }
@@ -98,15 +98,38 @@ fn resolve_close_targets(state: &AppState, ids: Vec<String>) -> Result<CloseRequ
         match stored.get(&id) {
             Some(target) if target.blocked => request.blocked += 1,
             Some(target) if request.targets.len() < MAX_CLOSE_BATCH => {
-                request.targets.push(closer::CloseTarget::new(
-                    PathBuf::from(&target.path),
-                    target.install_root.as_deref().map(PathBuf::from),
-                ))
+                request.targets.push(target.clone())
             }
             _ => request.unavailable += 1,
         }
     }
     Ok(request)
+}
+
+fn validated_close_targets(
+    targets: Vec<crate::app_state::CloseTarget>,
+    valid: impl Fn(&str, Option<&str>) -> bool,
+) -> (Vec<closer::CloseTarget>, usize) {
+    let mut unavailable = 0;
+    let targets = targets
+        .into_iter()
+        .filter_map(|target| {
+            if !valid(&target.path, target.volume_id.as_deref())
+                || target
+                    .install_root
+                    .as_deref()
+                    .is_some_and(|path| !valid(path, target.volume_id.as_deref()))
+            {
+                unavailable += 1;
+                return None;
+            }
+            Some(closer::CloseTarget::new(
+                PathBuf::from(target.path),
+                target.install_root.map(PathBuf::from),
+            ))
+        })
+        .collect();
+    (targets, unavailable)
 }
 
 #[tauri::command]
@@ -122,15 +145,20 @@ pub(crate) async fn close_apps(
     let targets = request.targets;
     let emitter = app.clone();
     let outcome = super::run_blocking("Application close", move || {
-        closer::close_processes(&targets, allow_force.unwrap_or(false), |stage| {
+        let (targets, unavailable) = validated_close_targets(targets, |path, volume| {
+            super::launch::validate_target_volume(path, volume).is_ok()
+        });
+        let outcome = closer::close_processes(&targets, allow_force.unwrap_or(false), |stage| {
             let _ = emitter.emit("close://progress", CloseProgressPayload::from(stage));
-        })
+        });
+        (outcome, unavailable)
     })
     .await?;
+    let (outcome, unavailable) = outcome;
     Ok(CloseAppsResponse {
         closed: outcome.closed,
         not_running: outcome.not_running,
-        unavailable: request.unavailable,
+        unavailable: request.unavailable + unavailable,
         blocked: request.blocked,
         failed: outcome.failed,
     })
@@ -146,7 +174,7 @@ mod tests {
         request
             .targets
             .iter()
-            .map(|target| target.executable.clone())
+            .map(|target| PathBuf::from(&target.path))
             .collect()
     }
 
@@ -262,4 +290,20 @@ mod tests {
         assert_eq!(request.blocked, 1);
         assert!(request.targets.is_empty());
     }
+}
+
+#[test]
+fn close_targets_keep_volume_identity_and_reject_a_reused_drive() {
+    let state = AppState::default();
+    let mut app = crate::app_state::cached_app("Portable", r"Q:\Portable\app.exe");
+    app.id = "portable".into();
+    app.volume_id = Some("12345678".into());
+    crate::app_state::remember_catalog(&state, &[app]);
+    let request = resolve_close_targets(&state, vec!["portable".into()]).unwrap();
+    let (targets, unavailable) = validated_close_targets(request.targets, |_, volume| {
+        assert_eq!(volume, Some("12345678"));
+        false
+    });
+    assert!(targets.is_empty());
+    assert_eq!(unavailable, 1);
 }

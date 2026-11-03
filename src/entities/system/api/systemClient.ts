@@ -1,5 +1,6 @@
 import { open } from '@tauri-apps/plugin-dialog'
 import type { SystemClient, WindowBackdrop } from '../model/system.types'
+import { observeScanSettings } from './observeScanSettings'
 import {
 	invokeIfTauri,
 	invokeTauri,
@@ -7,7 +8,11 @@ import {
 	listenIfTauri,
 } from '../../../shared/api/tauri/client'
 
-export const tauriSystemClient: SystemClient = {
+export const tauriSystemClient: SystemClient = observeScanSettings({
+	getUntrackedRemovableDrives: () =>
+		invokeIfTauri('get_untracked_removable_drives'),
+	onVolumesChanged: handler =>
+		listenIfTauri<null>('volumes://changed', handler),
 	getSettings: () => invokeIfTauri('get_system_settings'),
 	setScanSettings: settings => invokeTauri('set_scan_settings', { settings }),
 	setCloseBehavior: hideToTray =>
@@ -70,4 +75,4 @@ export const tauriSystemClient: SystemClient = {
 		isTauriRuntime()
 			? invokeTauri<WindowBackdrop>('get_window_backdrop')
 			: Promise.resolve('solid'),
-}
+})

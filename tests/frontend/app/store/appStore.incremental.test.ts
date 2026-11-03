@@ -369,3 +369,109 @@ describe('committing a scan result', () => {
 		)
 	})
 })
+
+it('records names from the latest delta and ignores duplicate and stale deltas', async () => {
+	const store = createAppStore(client())
+	await store.getState().load()
+	const delta = {
+		generation: 3,
+		removedIds: ['code'],
+		summary: { added: 1, updated: 0, removed: 1 },
+		upserted: [{ ...code, id: 'new', name: 'New app' }],
+	}
+	store.getState().applyDelta(delta)
+	expect(store.getState().lastScanChanges).toEqual({
+		added: ['New app'],
+		updated: [],
+		removed: ['Visual Studio Code'],
+		truncated: false,
+	})
+	store.getState().applyDelta(delta)
+	store.getState().applyDelta({ ...delta, generation: 2 })
+	expect(store.getState().lastScanChanges?.removed).toEqual([
+		'Visual Studio Code',
+	])
+})
+
+it('uses the previous catalog when the response precedes its delta', async () => {
+	const store = createAppStore(
+		client({
+			refreshApps: vi.fn().mockResolvedValue({
+				apps: [{ ...code, id: 'new', name: 'New app' }],
+				generation: 3,
+			}),
+		}),
+	)
+	await store.getState().load()
+	await store.getState().refresh()
+	const delta = {
+		generation: 3,
+		removedIds: ['code'],
+		summary: { added: 1, updated: 0, removed: 1 },
+		upserted: [{ ...code, id: 'new', name: 'New app' }],
+	}
+	store.getState().applyDelta(delta)
+	expect(store.getState().lastScanChanges).toEqual({
+		added: ['New app'],
+		updated: [],
+		removed: ['Visual Studio Code'],
+		truncated: false,
+	})
+	store.getState().applyDelta(delta)
+	expect(store.getState().lastScanChanges?.removed).toEqual([
+		'Visual Studio Code',
+	])
+})
+
+it('keeps empty changes when the delta precedes the response', async () => {
+	let resolve!: (scan: { apps: AppInfo[]; generation: number }) => void
+	const store = createAppStore(
+		client({
+			refreshApps: () =>
+				new Promise(done => {
+					resolve = done
+				}),
+		}),
+	)
+	await store.getState().load()
+	const pending = store.getState().refresh()
+	store.getState().applyDelta({
+		generation: 3,
+		removedIds: [],
+		upserted: [],
+		summary: { added: 0, updated: 0, removed: 0 },
+	})
+	resolve({ apps: [code], generation: 3 })
+	await pending
+	expect(store.getState().lastScanChanges).toEqual({
+		added: [],
+		updated: [],
+		removed: [],
+		truncated: false,
+	})
+})
+
+it('bounds retained names while identifying updates separately from hydration', async () => {
+	const store = createAppStore(client())
+	await store.getState().load()
+	store
+		.getState()
+		.applyPatches([{ id: 'code', generation: 2, publisher: 'Hydrated' }])
+	expect(store.getState().lastScanChanges).toBeNull()
+	store.getState().applyDelta({
+		generation: 3,
+		removedIds: [],
+		summary: { added: 101, updated: 1, removed: 0 },
+		upserted: [
+			{ ...code, name: 'Updated code' },
+			...Array.from({ length: 101 }, (_, index) => ({
+				...code,
+				id: `new-${index}`,
+				name: `App ${index}`,
+			})),
+		],
+	})
+	expect(store.getState().lastScanChanges?.updated).toEqual(['Updated code'])
+	expect(store.getState().lastScanChanges?.added).toHaveLength(99)
+	expect(store.getState().lastScanChanges?.truncated).toBe(true)
+})

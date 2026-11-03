@@ -37,6 +37,12 @@ Sources are Start Menu shortcuts, uninstall registry entries, Start Apps and pac
 
 Background deltas update the catalog silently. Manual refresh reports its own result, while Catalog Health owns the durable source and last-scan account presented by the interface. The page layout is documented in [UI and workflows](ui-and-workflows.md#catalog-health-and-settings).
 
+During a portable root walk the progress event reports the number of folders
+visited at most once per second. This is an activity count, not a percentage:
+the total number of folders is not known in advance. The root count advances
+when the root walk finishes or reaches a scan limit. Root completion logs also
+include visited folders, enumerated directories, entries and inspected executables.
+
 Normal startup is cache-first. Background validation and incremental scans keep
 the UI usable while source work runs. Startup, watchers and ordinary refreshes
 scan only explicitly configured portable folders. Fixed-drive discovery is on
@@ -55,12 +61,11 @@ option removes those retained records on the next refresh. A configured portable
 folder that is currently unavailable on a mounted drive remains retained rather
 than being treated as removed from settings; a configured folder whose drive
 letter is not mounted at all — a pulled stick, `F:\` itself or `F:\Apps` while
-`F:` is gone — is neither scanned nor retained, so any scan drops its records
-and the drive's entries leave the directory index with them. While automatic
-drive coverage is enabled, cached local drive roots that are absent from Windows
-drive discovery and inaccessible are also retained, except for the letters of
-those unmounted configured folders, so the two rules never disagree about one
-stick. Root planning probes each cached drive once, does not infer drive
+`F:` is gone — is not scanned. Its cached applications remain visible as
+unavailable while the tracked volume and folder are still configured. While
+automatic drive coverage is enabled, cached local drive roots that are absent
+from Windows drive discovery and inaccessible are also retained. Root planning
+probes each cached drive once, does not infer drive
 coverage from UNC or relative targets, and never scans an unavailable root. On
 return, that drive follows the normal refresh/force policy. Confirmed missing
 application targets still follow the existing target-availability filter.
@@ -84,8 +89,8 @@ letters come from `dbcv_unitmask`. It starts once at startup, lives in
 `AppState`, and reads the scan settings at event time. A change whose letters
 touch a configured scan folder runs an ordinary refresh through the scan
 coordinator — not a forced walk of the fixed drives — so a pulled stick's
-applications disappear within the delta of that scan and a returned stick's
-come back; an arrival also restarts the change watcher so the folder is watched
+applications become unavailable within the delta of that scan and become
+available again on return; an arrival also restarts the change watcher so the folder is watched
 again. A letter that touches no configured folder still refreshes when it holds
 a tracked volume (an arrival, identified through `GetVolumeInformationW` at
 event time) or when a tracked volume was last mounted there (a removal);
@@ -126,12 +131,12 @@ every configured folder before the portable walk:
   records carry the key (`serial` as eight hex digits) of whatever volume is
   there now; a folder with no entry learns that volume; a folder whose entry
   names another serial (a reformat, or a different stick that took the letter)
-  keeps its entry, logs a warning, and lets the new volume start its own
-  records and category — trust is never moved automatically, and removing and
-  re-adding the folder in Settings is the manual re-map;
+  keeps its entry and logs a warning. If the original serial is uniquely mounted
+  at another letter, it follows that volume; otherwise the tracked applications
+  remain unavailable and the new volume is not trusted as the old one;
 - the configured letter is not mounted but the tracked serial is mounted at
   exactly one other letter → the folder follows it (`F:\Apps` scans as
-  `G:\Apps`), the stale letter's records drop as an unmounted root, and
+  `G:\Apps`), and
   `scanFolder` names the place the record actually is;
 - the same serial at two letters (a clone) is an ambiguity: no remap, a warning
   naming both letters, the folder counts as unmounted;
@@ -209,6 +214,11 @@ stale result may overwrite a newer generation. The rule holds in both
 directions, so a scan hands its records and the generation that produced them
 back as one value: the interface adopts that generation with the records, and
 hydration patches from the same generation cannot be mistaken for stale work.
+Every successful background commit publishes its delta, including an empty
+delta, so the interface advances to the generation used by subsequent hydration.
+Once an active scan is cancelled, new requests wait for its replacement rather
+than joining the cancelled result. Completion and waiter registration share the
+coordinator lock, so a request cannot attach after the completed waiters drain.
 
 Generations are monotonic for the life of the process. `AppState` keeps the
 highest generation it has observed — the cached document `get_apps` loads, the
@@ -340,6 +350,16 @@ group a second sanitize sees. Two versions of one product stay two rows.
 Startup is cache-first. Catalog persistence owns the source-aware generation document and keeps its previous known-good copy; the detailed format, migration, backup, and overwrite rules live in [IPC and data](ipc-and-data.md#persisted-stores). Runtime catalog code owns when a cache is reused, when the directory index may be reused, and when records or icons must be hydrated again.
 
 Hydration is lazy, generation-checked, trusted-ID-only, and batched. Visible views request priority work; background scans do not enqueue an unbounded whole-catalog hydration pass. Catalog reset, icon-cache clear, and preference reset remain separate operations.
+
+Previously discovered applications on a detached tracked volume remain in the
+catalog with an unavailable indicator. Cache-first startup checks mounted volume
+identities before presenting them; reconnecting a uniquely identified volume
+allows its records to be refreshed at the new letter. Native actions check the
+current serial before using a stored target, including after a letter is reused.
+
+The More page requests icons for its destination previews, shown scenario apps,
+and the exact Recently added rows it renders. Opening More directly after
+cache-first startup does not require visiting an app's catalog category first.
 
 ## Related documentation
 

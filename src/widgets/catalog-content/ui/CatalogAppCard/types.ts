@@ -18,6 +18,7 @@ export interface CatalogAppCardProps {
 	fileActions: AppFileActions
 	isHidden?: boolean
 	isAuxiliary?: boolean
+	showOfflineLabel?: boolean
 	onHide(id: string): void
 	onRestore(id: string): void
 	onDemote(id: string): void

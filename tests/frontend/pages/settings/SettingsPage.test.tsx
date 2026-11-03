@@ -68,6 +68,120 @@ describe('SettingsPage', () => {
 		...overrides,
 	})
 
+	it('scrolls only the catalog viewport when navigating settings', async () => {
+		const scroll = vi.fn()
+		render(
+			<div id="catalog-scroll">
+				<SettingsPage
+					density="comfortable"
+					onSetDensity={vi.fn()}
+					client={systemClient()}
+					updater={updaterState()}
+				/>
+			</div>,
+		)
+		const viewport = document.getElementById('catalog-scroll')!
+		viewport.scrollTo = scroll
+		await userEvent.click(screen.getByRole('link', { name: 'Catalog' }))
+		expect(scroll).toHaveBeenCalledWith(
+			expect.objectContaining({ behavior: 'smooth' }),
+		)
+	})
+
+	it('links only to rendered sections and moves keyboard focus to the destination', async () => {
+		const user = userEvent.setup()
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+			/>,
+		)
+		await screen.findByText('Win+Shift+Q')
+		const navigation = screen.getByRole('navigation', {
+			name: 'Settings sections',
+		})
+		const links = within(navigation).getAllByRole('link')
+		expect(links.map(link => link.textContent)).toEqual([
+			'General',
+			'Keyboard shortcuts',
+			'Catalog',
+		])
+		for (const link of links) {
+			const target = document.getElementById(
+				link.getAttribute('href')!.slice(1),
+			)
+			expect(target).toBeInTheDocument()
+			link.focus()
+			await user.keyboard('{Enter}')
+			expect(target).toHaveFocus()
+		}
+		expect(
+			within(navigation).queryByRole('link', { name: 'Maintenance' }),
+		).not.toBeInTheDocument()
+	})
+
+	it('includes maintenance navigation when maintenance controls are available', async () => {
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+				onForceFullScan={vi.fn()}
+			/>,
+		)
+		await screen.findByText('Win+Shift+Q')
+		const navigation = screen.getByRole('navigation', {
+			name: 'Settings sections',
+		})
+		const maintenance = within(navigation).getByRole('link', {
+			name: 'Maintenance',
+		})
+		const target = document.getElementById(
+			maintenance.getAttribute('href')!.slice(1),
+		)!
+		expect(
+			within(target).getByRole('button', { name: 'Force full scan' }),
+		).toBeVisible()
+		await userEvent.click(maintenance)
+		expect(target).toHaveFocus()
+	})
+
+	it('pairs each compact shortcut action with its key and accessible explanation', async () => {
+		render(
+			<SettingsPage
+				density="comfortable"
+				onSetDensity={vi.fn()}
+				client={systemClient()}
+				updater={updaterState()}
+			/>,
+		)
+		await screen.findByText('Win+Shift+Q')
+		const shortcuts = screen.getByRole('region', {
+			name: 'Keyboard shortcuts',
+		})
+		for (const [action, key, description] of [
+			['Search', 'Ctrl+F', 'Focuses the search field inside KesVio.'],
+			['Quick launcher', 'Ctrl+K', 'Opens apps from any KesVio view.'],
+			[
+				'Scenario launcher',
+				'Ctrl+Shift+K',
+				'Opens scenarios from any KesVio view.',
+			],
+		]) {
+			const term = within(shortcuts)
+				.getAllByRole('term')
+				.find(term => term.textContent === action)!
+			const row = term.parentElement!
+			expect(within(row).getByRole('definition')).toHaveTextContent(key!)
+			expect(within(row).getByRole('definition')).toHaveTextContent(
+				description!,
+			)
+		}
+	})
+
 	it('lists the editable global shortcut and the three fixed shortcuts', async () => {
 		render(
 			<SettingsPage

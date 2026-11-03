@@ -2,9 +2,11 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { useSystemSettings } from '../../../../src/features/edit-settings/model/useSystemSettings'
 import { AppClientError } from '../../../../src/shared/api/tauri/errors'
+import { observeScanSettings } from '../../../../src/entities/system/api/observeScanSettings'
 import type {
 	ScanSettings,
 	SystemClient,
+	SystemSettings,
 } from '../../../../src/entities/system'
 
 const scanSettings: ScanSettings = {
@@ -50,6 +52,83 @@ const client: SystemClient = {
 }
 
 describe('useSystemSettings', () => {
+	it('preserves an observed save when an older initial read resolves later', async () => {
+		const snapshot = await client.getSettings()
+		let finish: ((value: SystemSettings) => void) | undefined
+		const waiting = new Promise<SystemSettings>(resolve => {
+			finish = resolve
+		})
+		const observed = observeScanSettings({
+			...client,
+			getSettings: () => waiting,
+			setScanSettings: async value => value,
+		})
+		const { result } = renderHook(() =>
+			useSystemSettings({ client: observed }),
+		)
+		await act(() =>
+			observed.setScanSettings({
+				...scanSettings,
+				includedPaths: ['F:\\Apps'],
+			}),
+		)
+		await act(async () => finish?.(snapshot))
+		expect(result.current.settings?.scanSettings.includedPaths).toEqual([
+			'F:\\Apps',
+		])
+	})
+	it('notifies successful saves, skips failed saves and releases subscriptions', async () => {
+		const save = vi.fn().mockResolvedValue(scanSettings)
+		const observed = observeScanSettings({
+			...client,
+			setScanSettings: save,
+		})
+		const listener = vi.fn()
+		const stop = observed.onScanSettingsChanged!(listener)
+		await observed.setScanSettings(scanSettings)
+		expect(listener).toHaveBeenCalledExactlyOnceWith(scanSettings)
+		save.mockRejectedValueOnce(new Error('save failed'))
+		await expect(observed.setScanSettings(scanSettings)).rejects.toThrow(
+			'save failed',
+		)
+		expect(listener).toHaveBeenCalledOnce()
+		stop()
+		await observed.setScanSettings(scanSettings)
+		expect(listener).toHaveBeenCalledOnce()
+	})
+	it('keeps a folder added by another client consumer when editing open settings', async () => {
+		const save = vi.fn().mockImplementation(async value => value)
+		const observed = observeScanSettings({
+			...client,
+			setScanSettings: save,
+		})
+		const { result, unmount } = renderHook(() =>
+			useSystemSettings({ client: observed }),
+		)
+		await waitFor(() => expect(result.current.settings).not.toBeNull())
+		await act(() =>
+			observed.setScanSettings({
+				...scanSettings,
+				includedPaths: ['F:\\Apps'],
+			}),
+		)
+		expect(result.current.settings?.scanSettings.includedPaths).toEqual([
+			'F:\\Apps',
+		])
+		await act(() =>
+			result.current.saveScanSettings({
+				...result.current.settings!.scanSettings,
+				autoScanFixedDrives: false,
+			}),
+		)
+		expect(save).toHaveBeenLastCalledWith(
+			expect.objectContaining({
+				includedPaths: ['F:\\Apps'],
+				autoScanFixedDrives: false,
+			}),
+		)
+		unmount()
+	})
 	it('does not expose settings failure internals', async () => {
 		const { result } = renderHook(() =>
 			useSystemSettings({

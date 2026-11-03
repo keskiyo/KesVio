@@ -35,8 +35,8 @@ pub(crate) use close::{
     attach_close_risk, close_scope_of, close_target_of, demote_console_applications,
 };
 pub(crate) use details::{
-    can_open_folder, details_fingerprint, folder_target, measure_folder, read_cached_details,
-    read_details, AppDetailsTarget, FolderSize,
+    details_fingerprint, folder_target, measure_folder, read_cached_details, read_details,
+    AppDetailsTarget, FolderSize,
 };
 pub(crate) use display::CatalogAppDto;
 use hydration::icon_source_candidates;
@@ -158,13 +158,26 @@ pub(crate) fn retain_present_targets(
 ) -> target_availability::TargetAvailabilityDiff {
     let mut diff = target_availability::TargetAvailabilityDiff::default();
     apps.retain_mut(|app| {
-        let availability = target_availability::availability(app);
+        let availability = if app.target_availability.as_deref()
+            == Some("target.unverifiable.unmounted_volume")
+            && app.volume_id.is_some()
+        {
+            target_availability::TargetAvailability::Unverifiable(
+                target_availability::TargetUnverifiableReason::UnmountedVolume,
+            )
+        } else {
+            target_availability::availability(app)
+        };
         app.target_availability = Some(availability.reason_id().to_owned());
         diff.record(availability, settings.catalog_target_availability_v1);
         if settings.catalog_target_availability_v1 {
             availability != target_availability::TargetAvailability::Missing
         } else {
-            legacy_target_is_present(app)
+            availability
+                == target_availability::TargetAvailability::Unverifiable(
+                    target_availability::TargetUnverifiableReason::UnmountedVolume,
+                )
+                || legacy_target_is_present(app)
         }
     });
     diff

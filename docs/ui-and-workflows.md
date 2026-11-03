@@ -58,7 +58,10 @@ not always the best match; while a query has matches the header status reads
 launches through the same path as a click (installers keep their
 confirmation). The name appears only once the ranked list has caught up with
 the typed query. Arrow keys move between launch targets by their position on
-screen and step over a card that is still launching.
+screen and step over a card that is still launching. Held Enter and Ctrl+Enter
+do not repeat a launch, and a pending launch blocks another search submission
+for the same application. The shared reservation is recorded in
+[Desktop operations](desktop-operations.md#native-launch-and-close).
 
 | Keys                  | Where it works                                      | Action                                                                            |
 | --------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -108,6 +111,9 @@ about to happen, so it may not hide half the answer.
 
 ## Catalog density and badges
 
+Tile names occupy up to two lines in every density. Tiles within a density keep
+the same height; longer names retain their full accessible name and tooltip.
+
 Catalog tile geometry is owned entirely by the `--app-card-*` tokens in
 `src/app/styles/index.css`, never by a size class on a card. `.app-card-grid`
 lays out `repeat(auto-fill, var(--app-card-width))`, so the column count follows
@@ -141,6 +147,11 @@ Manual placement into Installers & Docs records the specific installer or docume
 
 ## Category presentation
 
+Category delete buttons use the same reveal rule as Edit: hidden until the
+category is hovered or contains keyboard focus, with space reserved to avoid
+layout movement. Both remain visible on devices without hover; deletion still
+requires its existing confirmation.
+
 A category carries an accent colour. The fifteen built-in rows each hold a
 distinct hue, except System and Windows Features, which deliberately share one
 muted tone to say the software there is not the user's own. A category the user
@@ -163,7 +174,25 @@ shape against the shell.
 
 ## Catalog Health and Settings
 
-Settings contains two open groups: General and Catalog. General separates appearance, startup and window behavior, keyboard shortcuts, system links, and updates. Catalog contains Application discovery and Catalog maintenance; unclassified records follow when present.
+Settings provides keyboard-accessible section links for general settings,
+shortcuts, catalog discovery and available maintenance actions. Shortcut rows
+pair each action with its keys while retaining recording and conflict feedback.
+
+Additional scan folders and exclusions accept typed paths through **Add** or
+Enter. Both trim surrounding whitespace, reject blank values and remain
+disabled while settings are saving. Held Enter and IME composition do not
+submit the editor.
+Long saved paths truncate inside a zero-minimum-width grid cell, retaining
+their full value in a tooltip; input and browse/add controls stay inside the
+panel. Scenario drive selectors also shrink to their card width when an
+option has a long volume label.
+
+Settings is one page with section links for General, Keyboard shortcuts, Catalog,
+and Maintenance when maintenance actions are available. General separates
+appearance, startup and window behavior, system links, and updates. Keyboard
+shortcuts has its own section; Catalog owns Application discovery. Unclassified
+records follow when present. Section navigation scrolls only the catalog
+viewport, with smooth motion unless reduced motion is requested.
 
 Keyboard shortcuts lists **Show KesVio**, **Search**, **Quick launcher** and
 **Scenario launcher**. Only Show KesVio is editable because it is registered
@@ -197,6 +226,44 @@ Quick launcher and Scenario launcher remain fixed at **Ctrl+F**, **Ctrl+K** and
 **Ctrl+Shift+K**.
 
 **Catalog Health** lives under More. Its summary owns the primary **Refresh catalog** action plus Applications, Sources, Last scan, and Duration. Catalog sources show a compact labelled list at narrow widths and a table at wider widths; Source details opens automatically when a source needs attention. Last scan owns added, updated, removed, duration, and optional technical detail without repeating the total application count.
+
+Scan changes lists the names added, updated and removed by the latest catalog
+delta, bounded to 100 entries. An unavailable baseline is reported rather than
+inventing names. These are catalog changes, not proof of software installation.
+Applications on disconnected tracked volumes remain visible with a disabled
+launch control. A fully disconnected drive category shows one status beside its
+heading; elsewhere an unavailable app keeps its own status label. The existing-window
+activation action was withdrawn.
+
+When all known applications for a drive are unavailable because the volume is
+disconnected, that drive is disabled as a move destination until it returns.
+In sidebar and drawer navigation its category instead keeps opening and
+reordering available, with a muted accent and a **Disconnected** label. The
+label remains on the drag preview and clears when the drive returns. This
+availability is derived from catalog records rather than saved in preferences.
+Moving an app from a publisher dialog does not scroll the catalog to a focus
+fallback when its group disappears.
+
+In All Apps, each category groups two or more applications with the same
+non-empty publisher into a tile. When a shared product name identifies a main
+application, the tile uses that name; otherwise it uses the publisher, with
+Battle.net identified as the Blizzard launcher. Opening the tile shows the
+original cards and their actions in a scrollable dialog; identical names also
+show their filenames. Escape and clicking outside close the dialog.
+When a card menu is open inside a group, the first Escape closes only that
+menu and restores its trigger; the next Escape closes the group. A menu behind
+a newer modal cannot consume that modal's Escape.
+Categories count applications, including those inside groups. Other views keep
+their own layouts. An unknown publisher remains a separate card.
+
+The header offers a smooth return to the top after the catalog is scrolled.
+When an unknown removable drive is connected, including at startup, a persistent
+notice offers to select a scan folder. Declining explains how to add one in
+Settings and refresh later. Selecting a folder saves it and refreshes the catalog.
+Successful scan-setting writes also update an already open Settings page, so
+changing another discovery control does not overwrite a folder just added by
+the removable-drive offer. A late initial settings read cannot replace that
+newer scan-settings snapshot.
 
 The More preview and full page consume the shared health verdict. Source-state meaning, diagnostic ordering, retry behavior, and silent background deltas are owned by [Catalog](catalog.md#sources-and-scan-modes).
 
@@ -306,6 +373,12 @@ it over the name. The Settings page header matches More: a gear icon, the
 brand block is the only place for both.
 
 ## More and catalog utility pages
+
+Recently added groups entries by the local day they first appeared in the
+catalog. Consecutive entries from the same publisher share a publisher label;
+their original order is retained. Timeline rows use spacing rather than
+horizontal separators. Catalog Health and Backup & Restore appear in
+the separate Maintenance section.
 
 The More page ("Catalog views and tools.") holds six cards in two columns:
 Auxiliary tools, Scenarios, Hidden and Installers & Docs with their counts and
@@ -493,6 +566,10 @@ records. `moveApp` independently rejects those moves before creating a preferenc
 transaction, covering drag/drop and other callers. Hide remains available.
 
 ## Scenario close policy
+
+The final scenario notice counts unavailable close targets separately as
+`N unavailable to close`. Any such target makes the notice a warning, including
+a run whose other launches or closures succeeded.
 
 Preferences schema 22 adds optional scenario `forceClose`. New scenarios store
 false. Older scenarios with no field retain their previous force-after-five-seconds

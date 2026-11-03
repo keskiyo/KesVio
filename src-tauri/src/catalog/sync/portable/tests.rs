@@ -6,6 +6,31 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::time::Duration;
 
+#[test]
+fn reports_progress_while_visiting_a_portable_root() {
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::create_dir(directory.path().join("apps")).unwrap();
+    let reports = std::cell::RefCell::new(Vec::new());
+    scan_roots(
+        PortableScanInput {
+            previous_apps: &[],
+            previous_index: &FilesystemIndex::default(),
+            roots: &[directory.path().to_path_buf()],
+            retained_roots: &[],
+            excluded: &[],
+            mode: ScanMode::Force,
+            max_duration: Duration::from_secs(10),
+            verify_fingerprints: true,
+            steps: &StepTracker::default(),
+        },
+        &|progress| reports.borrow_mut().push(progress),
+        &|| false,
+    );
+    assert!(reports.borrow().iter().any(
+        |progress| progress.completed_roots == 0 && progress.stage.contains("folders visited")
+    ));
+}
+
 fn app(id: &str, path: &str) -> AppInfo {
     AppInfo {
         id: id.into(),

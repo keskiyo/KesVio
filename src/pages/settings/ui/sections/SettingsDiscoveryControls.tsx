@@ -61,7 +61,7 @@ export function SettingsDiscoveryControls({
 				</div>
 			</div>
 
-			<div className="mt-5 grid gap-5 md:grid-cols-2">
+			<div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-5 md:grid-cols-2">
 				<PathEditor
 					label="Additional scan folder"
 					buttonLabel="Add scan folder"

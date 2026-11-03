@@ -46,6 +46,50 @@ function savedFilter(index: number): SavedFilter {
 }
 
 describe('AppNavigation', () => {
+	it('marks a disconnected drive while keeping navigation and keyboard dragging available', async () => {
+		const onSelect = vi.fn()
+		render(
+			<AppNavigation
+				categoryOrder={['drive:f', 'games']}
+				categories={[
+					...categories,
+					{
+						id: 'drive:f',
+						label: 'Disk F',
+						builtIn: false,
+						disconnected: true,
+					},
+				]}
+				counts={
+					new Map([
+						['drive:f', 185],
+						['games', 9],
+					])
+				}
+				activeView="all"
+				appCount={194}
+				favoriteCount={0}
+				onSelectView={vi.fn()}
+				onSelectCategory={onSelect}
+				onCreateCategory={() => ({ ok: true, id: 'custom' })}
+				onReorderCategory={vi.fn()}
+			/>,
+		)
+		const drive = screen.getByRole('button', {
+			name: 'Disk F, drive not connected',
+		})
+		expect(drive).toBeEnabled()
+		expect(drive).toHaveAttribute('data-category-accent', 'slate')
+		expect(screen.getByText('Disconnected')).toBeVisible()
+		await userEvent.click(drive)
+		expect(onSelect).toHaveBeenCalledWith('drive:f')
+		drive.focus()
+		await userEvent.keyboard(' ')
+		expect(screen.getByTestId('category-drag-overlay')).toHaveTextContent(
+			'Disconnected',
+		)
+		await userEvent.keyboard('{Escape}')
+	})
 	it.each([
 		'more',
 		'auxiliary',

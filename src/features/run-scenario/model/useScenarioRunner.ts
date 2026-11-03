@@ -84,6 +84,7 @@ export function useScenarioRunner({
 				notRunning: 0,
 				blocked: 0,
 				closeFailed: 0,
+				unavailable: 0,
 				closeUnavailable: false,
 			}
 			setProgress({
@@ -120,6 +121,7 @@ export function useScenarioRunner({
 						summary.notRunning = result.notRunning
 						summary.blocked = result.blocked ?? 0
 						summary.closeFailed = result.failed
+						summary.unavailable = result.unavailable
 					} catch {
 						summary.closeUnavailable = true
 					}

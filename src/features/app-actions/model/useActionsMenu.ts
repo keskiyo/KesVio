@@ -11,6 +11,7 @@ import {
 	floatingSubmenuPosition,
 	requiredMenuScroll,
 } from '../../../shared/lib/positioning'
+import { topmostModal } from '../../../shared/lib/modalLayering'
 
 const MENU_KEYS = new Set(['ArrowDown', 'ArrowUp', 'Home', 'End'])
 
@@ -88,6 +89,9 @@ export function useActionsMenu({
 				: 0
 			if (
 				catalog &&
+				!anchorRef.current?.closest(
+					'[role="dialog"], [role="alertdialog"]',
+				) &&
 				scrollAmount > 0 &&
 				remaining > 0 &&
 				adjustedHeightRef.current !== menuHeight
@@ -117,7 +121,12 @@ export function useActionsMenu({
 
 	useEffect(() => {
 		function keydown(event: KeyboardEvent) {
-			if (event.key === 'Escape') onClose()
+			if (event.key !== 'Escape') return
+			const modal = topmostModal()
+			if (modal && !modal.contains(anchorRef.current)) return
+			event.preventDefault()
+			event.stopImmediatePropagation()
+			onClose()
 		}
 		function pointerdown(event: PointerEvent) {
 			const target = event.target as Node
@@ -126,10 +135,10 @@ export function useActionsMenu({
 			if (anchorRef.current?.contains(target)) return
 			onClose()
 		}
-		document.addEventListener('keydown', keydown)
+		document.addEventListener('keydown', keydown, true)
 		document.addEventListener('pointerdown', pointerdown)
 		return () => {
-			document.removeEventListener('keydown', keydown)
+			document.removeEventListener('keydown', keydown, true)
 			document.removeEventListener('pointerdown', pointerdown)
 		}
 	}, [onClose, anchorRef])

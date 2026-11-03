@@ -1,7 +1,7 @@
 import type { FocusEvent } from 'react'
-import { Keyboard, Pencil, RotateCcw, X } from 'lucide-react'
+import { Pencil, RotateCcw, X } from 'lucide-react'
 import { ACTION_BUTTON } from '../../../../../shared/ui/buttonVariants'
-import { SettingsRow } from '../../components/SettingsRow'
+import { ShortcutRow } from '../../components/ShortcutRow'
 import { DEFAULT_BINDING, DEFAULT_LABEL } from './data'
 import { ShortcutConfirmDialog } from './ShortcutConfirmDialog'
 import { ShortcutDescription } from './ShortcutDescription'
@@ -23,8 +23,7 @@ export function GlobalShortcutRow({
 		recorder.stop()
 	}
 	return (
-		<SettingsRow
-			icon={Keyboard}
+		<ShortcutRow
 			title="Show KesVio"
 			description={
 				<ShortcutDescription
@@ -39,9 +38,9 @@ export function GlobalShortcutRow({
 				role="group"
 				aria-label="Global shortcut"
 				onBlur={handleBlur}
-				className="flex w-full overflow-hidden rounded-xl border border-(--border-neutral) bg-(--surface-inset) sm:w-auto"
+				className="flex max-w-full overflow-hidden rounded-lg border border-(--border-neutral) bg-(--surface-inset)"
 			>
-				<kbd className="flex min-w-0 flex-1 items-center justify-center truncate px-4 py-2.5 font-mono text-sm font-medium text-(--text-primary) sm:min-w-36">
+				<kbd className="flex min-w-0 flex-1 items-center justify-center truncate px-2.5 py-2 font-mono text-xs font-medium text-(--text-primary)">
 					{recorder.recording ? 'Press keys' : label}
 				</kbd>
 				<button
@@ -55,7 +54,7 @@ export function GlobalShortcutRow({
 					onClick={
 						recorder.recording ? recorder.stop : recorder.start
 					}
-					className={`${ACTION_BUTTON} !rounded-none border-l border-(--border-neutral) text-violet-700 hover:bg-(--surface-raised) focus-visible:-outline-offset-2! focus-visible:outline-violet-500`}
+					className={`${ACTION_BUTTON} !rounded-none border-l border-(--border-neutral) px-2.5 text-(--text-primary) hover:bg-(--surface-raised) focus-visible:-outline-offset-2! focus-visible:outline-violet-500`}
 				>
 					{recorder.recording ? (
 						<X size={16} aria-hidden="true" />
@@ -87,6 +86,6 @@ export function GlobalShortcutRow({
 					onClose={recorder.dismiss}
 				/>
 			)}
-		</SettingsRow>
+		</ShortcutRow>
 	)
 }

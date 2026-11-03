@@ -91,6 +91,7 @@ export interface CategoryHeaderProps {
 	category: AppCategory
 	label: string
 	appCount: number
+	driveOffline?: boolean
 	collapsed: boolean
 	onToggle(): void
 	onEdit(): void

@@ -18,7 +18,7 @@ mod watch_scope;
 mod watcher;
 
 pub(crate) use delta::{compute_delta, CatalogDelta, CatalogDeltaDto};
-pub(crate) use document::load_sanitized_document;
+pub(crate) use document::load_observed_document;
 pub(crate) use hydration::enqueue_hydration;
 pub(crate) use retry::{cancel_pending as cancel_pending_retry, RetryBudget, RetryGuard};
 pub(crate) use scan::{run_coordinated_scan, ScanCommit};

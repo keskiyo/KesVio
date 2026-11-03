@@ -60,6 +60,15 @@ pub(crate) fn resolve_folders(
                 next_tracked.push(tracked_at(configured, &here.identity, configured));
             }
             (Some(here), Some(entry)) => {
+                let mut matching = mounted
+                    .iter()
+                    .filter(|volume| same_serial(entry, &volume.identity));
+                if let Some(only) = matching.next().filter(|_| matching.next().is_none()) {
+                    let path = relocated(configured, only.letter);
+                    folders.push(resolved(configured, &path, &only.identity));
+                    next_tracked.push(tracked_at(configured, &only.identity, &path));
+                    continue;
+                }
                 log::warn!(
                     "Scan folder {configured} now holds volume {} ({:?}) instead of tracked {} ({:?}): remove and re-add the folder to follow the new volume",
                     volume_key(&here.identity),
@@ -342,5 +351,21 @@ mod tests {
 
         assert_eq!(resolution.folders[0].path, r"G:\apps");
         assert_eq!(resolution.folders[0].volume.as_deref(), Some("1a2b3c4d"));
+    }
+    #[test]
+    fn tracked_volume_reconnects_at_another_letter_when_its_old_letter_is_reused() {
+        let resolution = resolve_folders(
+            &paths(&[r"F:\Apps"]),
+            &[tracked(r"F:\Apps", "1a2b3c4d")],
+            &[
+                mounted('F', 0x99999999, "OTHER"),
+                mounted('G', 0x1a2b3c4d, "STICK"),
+            ],
+        );
+        assert_eq!(resolution.folders[0].path, r"G:\Apps");
+        assert_eq!(
+            resolution.tracked[0].mounted_at.as_deref(),
+            Some(r"G:\Apps")
+        );
     }
 }

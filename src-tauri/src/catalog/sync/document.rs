@@ -17,6 +17,41 @@ pub(crate) fn load_sanitized_document(app_data_dir: &Path) -> Option<CatalogCach
     Some(document)
 }
 
+pub(crate) fn load_observed_document(app_data_dir: &Path) -> Option<CatalogCache> {
+    let mut document = load_sanitized_document(app_data_dir)?;
+    if document.apps.iter().any(|app| app.volume_id.is_some()) {
+        refresh_cached_volume_availability(
+            &mut document.apps,
+            &crate::platform::windows::volumes::mounted_volumes(),
+        );
+    }
+    Some(document)
+}
+
+fn refresh_cached_volume_availability(
+    apps: &mut [crate::catalog::AppInfo],
+    mounted: &[crate::platform::windows::volumes::MountedVolume],
+) {
+    for app in apps {
+        let Some(serial) = app.volume_id.as_deref() else {
+            continue;
+        };
+        let matches = crate::catalog::volumes::folder_letter(&app.path).is_some_and(|letter| {
+            mounted.iter().any(|volume| {
+                volume.letter.eq_ignore_ascii_case(&letter)
+                    && crate::catalog::volumes::volume_key(&volume.identity)
+                        .eq_ignore_ascii_case(serial)
+            })
+        });
+        if !matches {
+            app.target_availability = Some("target.unverifiable.unmounted_volume".into());
+        } else if app.target_availability.as_deref() == Some("target.unverifiable.unmounted_volume")
+        {
+            app.target_availability = None;
+        }
+    }
+}
+
 fn newer_generation_on_disk(app_data_dir: &Path, generation: u64) -> bool {
     cache::stored_generation(app_data_dir).is_some_and(|current| current > generation)
 }
@@ -226,5 +261,24 @@ mod tests {
 
         assert!(document.app_details.contains_key(&kept_id));
         assert!(!document.app_details.contains_key("removed"));
+    }
+    #[test]
+    fn cache_first_marks_tracked_records_unavailable_when_letter_is_reused() {
+        let mut app = cached_app("Editor", r"F:\Apps\Editor.exe");
+        app.volume_id = Some("12345678".into());
+        app.target_availability = Some("target.present".into());
+        let mounted = vec![crate::platform::windows::volumes::MountedVolume {
+            letter: 'F',
+            identity: crate::platform::windows::volumes::VolumeIdentity {
+                serial: 0x87654321,
+                label: String::new(),
+                filesystem: String::new(),
+            },
+        }];
+        refresh_cached_volume_availability(std::slice::from_mut(&mut app), &mounted);
+        assert_eq!(
+            app.target_availability.as_deref(),
+            Some("target.unverifiable.unmounted_volume")
+        );
     }
 }
