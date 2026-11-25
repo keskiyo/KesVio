@@ -15,6 +15,8 @@ export interface SearchScopeHintProps {
 	counts: SearchScopeCounts
 	activeView: AppView
 	onSelectView(view: AppView): void
+	inline?: boolean
+	fallback?: ReactNode
 }
 
 export interface CatalogViewHeaderProps {
@@ -39,6 +41,7 @@ export interface ViewEmptyStateProps {
 export interface AuxiliaryGridProps {
 	apps: AppInfo[]
 	hasQuery: boolean
+	emptySearch?: ReactNode
 	favoriteAppIds: string[]
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
@@ -55,6 +58,7 @@ export interface AuxiliaryGridProps {
 export interface CatalogGridProps {
 	apps: AppInfo[]
 	hasQuery: boolean
+	emptySearch?: ReactNode
 	favoriteAppIds: string[]
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]

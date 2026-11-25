@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { connect } from 'node:net'
+import { join } from 'node:path'
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { remote } from 'webdriverio'
@@ -20,6 +21,7 @@ const SCAN_TIMEOUT = 120_000
 let driver
 let browser
 let workspace
+let fixtureName
 const baseline = new Map()
 
 function waitForPort(port, timeout) {
@@ -116,10 +118,33 @@ describe('KesVio desktop smoke', () => {
 
 	it('scans the fixture folder and renders app cards', async () => {
 		await browser.waitUntil(
-			async () =>
-				(await inPage(
-					`return document.querySelectorAll('button[aria-label^="Manage "]').length`,
-				)) >= 2,
+			async () => {
+				try {
+					const cache = JSON.parse(
+						readFileSync(
+							join(
+								workspace.root,
+								'App',
+								'KesVioData',
+								'data',
+								'apps-cache.json',
+							),
+							'utf8',
+						),
+					)
+					fixtureName = cache.apps.find(app =>
+						/[\\/]alpha[\\/]alpha\.exe$/i.test(app.path),
+					)?.name
+					return (
+						Boolean(fixtureName) &&
+						(await inPage(
+							`return document.querySelectorAll('button[aria-label^="Manage "]').length`,
+						)) >= 2
+					)
+				} catch {
+					return false
+				}
+			},
 			{
 				timeout: SCAN_TIMEOUT,
 				timeoutMsg: 'no app cards after the startup scan',
@@ -144,10 +169,15 @@ describe('KesVio desktop smoke', () => {
 		await search.setValue('Alpha')
 		await browser.waitUntil(
 			async () =>
-				/Enter opens/.test(
-					await (await browser.$('header [role="status"]')).getText(),
-				),
-			{ timeout: 10_000, timeoutMsg: 'the status never named a match' },
+				(
+					await (
+						await browser.$('section[aria-label="Best match"]')
+					).getText()
+				).includes(fixtureName),
+			{
+				timeout: 10_000,
+				timeoutMsg: 'the best-match row never named the Alpha fixture',
+			},
 		)
 		await browser.keys(['ArrowDown'])
 		assert.equal(

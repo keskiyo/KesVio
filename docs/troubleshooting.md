@@ -58,6 +58,10 @@ Start with [Search](search.md) for query variants, scopes, and ranking. If the q
 
 ## Application is missing
 
+Search for the app and follow any matches in **Tools**, **Hidden**, or
+**Installers & docs**. When nothing matches, **Find missing app** opens actions
+for Catalog Health and the scan folder settings.
+
 Check the source and last scan under **More → Catalog Health**. Use [Catalog](catalog.md) for scan modes, retention, retries, exclusions, and removable volumes. If the record exists but is hidden, auxiliary, or an artifact, use [Classification](classification.md).
 
 ## Category or visibility is wrong

@@ -62,6 +62,16 @@ it('offers a header action to return to the top after scrolling', async () => {
 	expect(onScrollToTop).toHaveBeenCalledOnce()
 })
 
+it('moves focus to search when Back to top is activated by keyboard', async () => {
+	const view = header()
+	render(<Header {...view.props} onScrollToTop={vi.fn()} />)
+	screen.getByRole('button', { name: 'Back to top' }).focus()
+	await userEvent.keyboard('{Enter}')
+	expect(
+		screen.getByRole('textbox', { name: 'Search applications' }),
+	).toHaveFocus()
+})
+
 it('ignores repeated Enter while accepting a fresh Enter', () => {
 	const launch = launchingHeader('code', 'code')
 	const input = screen.getByRole('textbox', { name: 'Search applications' })

@@ -26,6 +26,23 @@ describe('closeStageLabel', () => {
 })
 
 describe('scenarioRunSummaryMessage', () => {
+	it('reports unresolved entries even when nothing else ran', () => {
+		expect(
+			scenarioRunSummaryMessage({
+				scenarioName: 'Work',
+				launched: 0,
+				launchFailed: 0,
+				missingLaunch: 1,
+				missingClose: 1,
+				closed: 0,
+				notRunning: 0,
+				blocked: 0,
+				closeFailed: 0,
+				unavailable: 0,
+				closeUnavailable: false,
+			}),
+		).toBe('Work: 1 unavailable to launch, 1 unavailable to close')
+	})
 	it('counts everything that happened, failures included', () => {
 		expect(
 			scenarioRunSummaryMessage({

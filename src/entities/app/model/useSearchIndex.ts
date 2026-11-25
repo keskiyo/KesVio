@@ -9,7 +9,6 @@ import {
 	knownPackageGeneration,
 	subscribeKnownPackageIndex,
 } from '../lib/search/knownPackageIndex'
-import { selectSearchScopeCounts } from './catalogSelectors'
 
 export interface SearchIndex {
 	generation: number
@@ -17,7 +16,6 @@ export interface SearchIndex {
 	rankAppsByQuery: typeof rankAppsByQuery
 	rankAppsByQueryAndCategory: typeof rankAppsByQueryAndCategory
 	rankAppsByQueryTop: typeof rankAppsByQueryTop
-	selectSearchScopeCounts: typeof selectSearchScopeCounts
 }
 
 export function useSearchIndex(): SearchIndex {
@@ -33,7 +31,6 @@ export function useSearchIndex(): SearchIndex {
 			rankAppsByQuery,
 			rankAppsByQueryAndCategory,
 			rankAppsByQueryTop,
-			selectSearchScopeCounts,
 		}),
 		[generation],
 	)

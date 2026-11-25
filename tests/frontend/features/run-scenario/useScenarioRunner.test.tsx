@@ -81,6 +81,24 @@ function setup(options: {
 }
 
 describe('useScenarioRunner', () => {
+	it('reports unresolved launch and close entries', async () => {
+		const onFinished = vi.fn()
+		const { view } = setup({ apps: [], onFinished })
+		await act(() =>
+			view.result.current.run(
+				scenario({
+					launchIdentities: ['missing-launch'],
+					closeIdentities: ['missing-close'],
+				}),
+			),
+		)
+		expect(onFinished).toHaveBeenCalledWith(
+			expect.objectContaining({
+				missingLaunch: 1,
+				missingClose: 1,
+			}),
+		)
+	})
 	it.each([0, 1])(
 		'preserves unavailable close count alongside %i closed apps',
 		async count => {

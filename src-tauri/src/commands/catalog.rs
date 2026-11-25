@@ -26,6 +26,7 @@ pub(crate) struct CatalogSnapshot {
 pub(crate) struct CatalogScanResult {
     apps: Vec<CatalogAppDto>,
     generation: u64,
+    diagnostics: Option<cache::CatalogDiagnostics>,
 }
 
 impl From<crate::catalog::sync::ScanCommit> for CatalogScanResult {
@@ -33,6 +34,7 @@ impl From<crate::catalog::sync::ScanCommit> for CatalogScanResult {
         Self {
             apps: commit.apps.iter().map(CatalogAppDto::from).collect(),
             generation: commit.generation,
+            diagnostics: commit.diagnostics,
         }
     }
 }
@@ -52,6 +54,7 @@ pub(super) fn scan_result_sample(app: &crate::catalog::AppInfo) -> CatalogScanRe
     CatalogScanResult {
         apps: vec![CatalogAppDto::from(app)],
         generation: 7,
+        diagnostics: Some(cache::CatalogDiagnostics::default()),
     }
 }
 
@@ -214,10 +217,15 @@ mod tests {
             serde_json::to_value(CatalogScanResult::from(crate::catalog::sync::ScanCommit {
                 apps: vec![app],
                 generation: 7,
+                diagnostics: Some(cache::CatalogDiagnostics {
+                    unreachable_folders: 1,
+                    ..Default::default()
+                }),
             }))
             .unwrap();
 
         assert_eq!(json["generation"], 7);
+        assert_eq!(json["diagnostics"]["unreachableFolders"], 1);
         assert_eq!(json["apps"][0]["id"], "editor");
         for secret in [
             "TOP_SECRET_SCAN_LAUNCH_ARGUMENTS",

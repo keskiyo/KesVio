@@ -70,6 +70,36 @@ function renderPage(overrides: Partial<CatalogHealthPageProps> = {}) {
 }
 
 describe('CatalogHealthPage', () => {
+	it('does not claim unchecked sources are up to date when a folder is unreachable', () => {
+		renderPage({
+			diagnostics: diagnostics({
+				sources: [health({ state: 'unknown' })],
+				unreachableFolders: 1,
+			}),
+		})
+		expect(
+			screen
+				.getByRole('heading', { name: 'Catalog needs attention' })
+				.closest('section'),
+		).toHaveTextContent('Status unavailable')
+		expect(screen.queryByText(/all up to date/i)).not.toBeInTheDocument()
+	})
+	it.each([
+		['old scan without source details', []],
+		['source never scanned', [health({ state: 'never_run' })]],
+		['source with unknown status', [health({ state: 'unknown' })]],
+	])('does not report healthy sources for %s', (_label, sources) => {
+		renderPage({ diagnostics: diagnostics({ sources }) })
+		expect(
+			screen.getByRole('heading', { name: 'Source status unavailable' }),
+		).toBeInTheDocument()
+		expect(
+			screen.queryByText(
+				'Every catalog source answered on the last scan.',
+			),
+		).not.toBeInTheDocument()
+		expect(screen.queryByText(/all up to date/i)).not.toBeInTheDocument()
+	})
 	it('returns to More from a header that carries no count', async () => {
 		const { props } = renderPage()
 
@@ -131,6 +161,16 @@ describe('CatalogHealthPage', () => {
 		const statuses = screen.getByRole('list', { name: 'Source status' })
 		expect(within(statuses).getAllByRole('listitem')).toHaveLength(3)
 		expect(statuses).toHaveTextContent('Installed programsUp to date')
+	})
+
+	it('shows when scan folders were unreachable even though every source answered', () => {
+		renderPage({ diagnostics: diagnostics({ unreachableFolders: 1 }) })
+		expect(
+			screen.getByRole('heading', { name: 'Catalog needs attention' }),
+		).toBeInTheDocument()
+		expect(screen.getAllByRole('status')[0]).toHaveTextContent(
+			'1 scan folder could not be reached.',
+		)
 	})
 
 	// A source that could not answer is the one fact the page exists to show: it is named in
@@ -436,6 +476,28 @@ it('shows named catalog changes without claiming installation', () => {
 	expect(within(changes).getByText('Changed app')).toBeInTheDocument()
 	expect(within(changes).getByText('Old app')).toBeInTheDocument()
 	expect(changes).not.toHaveTextContent(/installed/i)
+})
+
+it('opens the exact current app from a scan change and leaves missing entries as text', async () => {
+	const onOpenChangedApp = vi.fn()
+	renderPage({
+		lastScanChanges: {
+			added: ['Same name', 'Gone'],
+			updated: [],
+			removed: ['Removed'],
+			addedIds: ['exact-id', 'gone-id'],
+			truncated: false,
+		},
+		availableChangeIds: ['exact-id'],
+		onOpenChangedApp,
+	})
+	await userEvent.click(
+		screen.getByRole('button', { name: 'Open information for Same name' }),
+	)
+	expect(onOpenChangedApp).toHaveBeenCalledWith('exact-id')
+	expect(
+		screen.queryByRole('button', { name: /Gone|Removed/ }),
+	).not.toBeInTheDocument()
 })
 
 it('explains unavailable and empty scan changes', () => {

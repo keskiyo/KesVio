@@ -52,12 +52,12 @@
 
 ## Interaction contracts at a glance
 
-Search results are grouped in category order, so the first card on screen is
-not always the best match; while a query has matches the header status reads
-`N matches · Enter opens <name>`, naming the ranked first result that **Enter**
-launches through the same path as a click (installers keep their
-confirmation). The name appears only once the ranked list has caught up with
-the typed query. Arrow keys move between launch targets by their position on
+Search results are grouped in category order. The **Enter** row above the results
+shows the full name of the highest-ranked launch target once ranking has caught
+up with the typed query. The header also announces the target to screen readers.
+**Enter** launches through the same path as a click, including installer
+confirmation. A disconnected drive is skipped when another ranked result is
+available. Arrow keys move between launch targets by their position on
 screen and step over a card that is still launching. Held Enter and Ctrl+Enter
 do not repeat a launch, and a pending launch blocks another search submission
 for the same application. The shared reservation is recorded in
@@ -147,6 +147,11 @@ Manual placement into Installers & Docs records the specific installer or docume
 
 ## Category presentation
 
+The All Apps publisher group treats Mozilla, Mozilla Corporation and Mozilla
+Foundation as one publisher. Installed Firefox, private browsing and portable
+Firefox stay separate launch targets within the Browsers group. When display
+names repeat, the portable entry carries a **Portable** label.
+
 Category delete buttons use the same reveal rule as Edit: hidden until the
 category is hovered or contains keyboard focus, with space reserved to avoid
 layout movement. Both remain visible on devices without hover; deletion still
@@ -229,7 +234,9 @@ Quick launcher and Scenario launcher remain fixed at **Ctrl+F**, **Ctrl+K** and
 
 Scan changes lists the names added, updated and removed by the latest catalog
 delta, bounded to 100 entries. An unavailable baseline is reported rather than
-inventing names. These are catalog changes, not proof of software installation.
+inventing names. Added and updated entries that still exist open their exact
+application information by catalog id. Removed or no longer available entries
+remain text. These are catalog changes, not proof of software installation.
 Applications on disconnected tracked volumes remain visible with a disabled
 launch control. A fully disconnected drive category shows one status beside its
 heading; elsewhere an unavailable app keeps its own status label. The existing-window
@@ -362,13 +369,14 @@ The brand block (`src/widgets/sidebar-navigation/ui/NavigationIdentity.tsx`) is
 the same in the sidebar and the drawer header: the logo and name form the
 **Go to All Apps** button, and the line under the name shows the running version
 read once by `src/app/model/useNavigationIdentity.ts`, or nothing while it is
-unknown. When an update is available that line becomes an accent
-**Update X available** pill that installs it on click and turns into a progress
-bar with the percentage while it runs
+unknown. When an update is available, wide windows put the
+**Update X available** pill on the sidebar version line. At widths below 1024
+CSS pixels, the pill sits at the left of the title bar so it stays visible
+with the drawer closed. Clicking it installs the update and shows progress
 ([Desktop operations](desktop-operations.md) owns the update flow). The pill is
-a sibling of the home button, not nested inside it, and it is absolutely
-positioned over the version line so the coarse-pointer 44 px minimum cannot grow
-it over the name. The Settings page header matches More: a gear icon, the
+a sibling of the home button in the sidebar. **Top** returns the viewport to the
+start and restores search focus when activated by keyboard. Its hover motion
+and smooth scrolling honor reduced motion. The Settings page header matches More: a gear icon, the
 **Settings** title and a one-line description, with no logo and no version; the
 brand block is the only place for both.
 
@@ -461,6 +469,9 @@ present for Windows Start Apps that resolve to a system file
 The App info dialog keeps only **Copy report**, so no action has two homes.
 
 ## Scenario launcher
+
+Scenario completion reports unresolved launch and close entries, including
+when every configured entry is unavailable.
 
 The scenario launcher is a root-level dialog rather than a page detail, reachable
 with Ctrl+Shift+K from any view and from that "View all" row. Settings names it
@@ -629,10 +640,12 @@ Modal layering: every dialog, the navigation drawer included, is
 `role="dialog" aria-modal="true"` and runs through `useModalDialog` (initial
 focus, focus trap, Escape, focus restoration, scroll lock). Only the **topmost**
 modal — the last `aria-modal` element in document order, which is the last one
-opened because dialogs portal to `body` — traps Tab or answers Escape
+opened in the appropriate portal host — traps Tab or answers Escape
 (`shared/lib/modalLayering.ts`), so a filter editor opened over the drawer keeps
 Shift+Tab inside itself and one Escape closes only the editor, returning focus
-to the drawer's **New filter** button. The same rule governs the window-wide
+to the drawer's **New filter** button. The publisher group and **App info**
+append to the same shell host at the same elevation. App info opens above the
+group, and Escape returns focus to the card menu button. The same rule governs the window-wide
 shortcuts in `src/app/model/useGlobalShortcuts.ts`: while a modal is open,
 **Ctrl+F**, **/** and **Ctrl+Z** do nothing, and **Ctrl+K** or
 **Ctrl+Shift+K** only close the launcher that owns them (its `data-shortcut`),

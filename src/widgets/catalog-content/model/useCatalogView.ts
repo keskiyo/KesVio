@@ -8,6 +8,7 @@ import {
 	joinHydrationIds,
 	type SavedFilter,
 	selectCatalogCounts,
+	selectSearchScopeCounts,
 	useSearchIndex,
 } from '../../../entities/app'
 import type { CategoryDefinition } from '../../../entities/category'
@@ -43,16 +44,6 @@ interface CatalogViewState extends CategorizedAppsState {
 export function useCatalogView(state: CatalogViewState) {
 	const { categorizedApps, isHidden, isFavorite } =
 		useCategorizedCatalog(state)
-	const visibleApps = useMemo(
-		() =>
-			filterVisibleApps(
-				categorizedApps,
-				state.activeView,
-				isHidden,
-				isFavorite,
-			),
-		[categorizedApps, state.activeView, isHidden, isFavorite],
-	)
 	const catalogApps = useMemo(
 		() =>
 			categorizedApps.filter(
@@ -82,8 +73,11 @@ export function useCatalogView(state: CatalogViewState) {
 	)
 	const deferredQuery = useDeferredValue(state.query)
 	const search = useSearchIndex()
-	const { activeFilter, scopedApps } = useSavedFilterScope(state, visibleApps)
-	const filteredApps = useMemo(
+	const { activeFilter, scopedApps } = useSavedFilterScope(
+		state,
+		categorizedApps,
+	)
+	const rankedApps = useMemo(
 		() =>
 			search.rankAppsByQueryAndCategory(
 				scopedApps,
@@ -92,18 +86,27 @@ export function useCatalogView(state: CatalogViewState) {
 			),
 		[scopedApps, deferredQuery, state.categories, search],
 	)
+	const filteredApps = useMemo(
+		() =>
+			filterVisibleApps(
+				rankedApps,
+				state.activeView,
+				isHidden,
+				isFavorite,
+			),
+		[rankedApps, state.activeView, isHidden, isFavorite],
+	)
 	const counts = useMemo(
 		() => selectCatalogCounts(categorizedApps, isHidden, isFavorite),
 		[categorizedApps, isHidden, isFavorite],
 	)
 	const searchScopeCounts = useMemo(
 		() =>
-			search.selectSearchScopeCounts(
-				categorizedApps,
-				deferredQuery,
-				state.hiddenAppIds,
+			selectSearchScopeCounts(
+				deferredQuery.trim() ? rankedApps : [],
+				isHidden,
 			),
-		[categorizedApps, deferredQuery, state.hiddenAppIds, search],
+		[rankedApps, deferredQuery, isHidden],
 	)
 	const morePreview = useMemo(
 		() =>

@@ -21,7 +21,17 @@ export function CatalogSources({ health, scanning }: CatalogSourcesProps) {
 				icon={Activity}
 				title="Catalog sources"
 				description={
-					<span role="status">{summaryText(summary, scanning)}</span>
+					<span role="status">
+						{summaryText(
+							summary,
+							scanning,
+							rows.some(
+								row =>
+									row.status === 'unknown' ||
+									row.status === 'not_scanned',
+							),
+						)}
+					</span>
 				}
 			/>
 			{rows.length > 0 && (
@@ -52,12 +62,18 @@ export function CatalogSources({ health, scanning }: CatalogSourcesProps) {
 	)
 }
 
-function summaryText(summary: SourceHealthSummary, scanning: boolean): string {
+function summaryText(
+	summary: SourceHealthSummary,
+	scanning: boolean,
+	unverified: boolean,
+): string {
 	if (summary.total === 0)
 		return scanning
 			? 'Scanning the configured sources…'
-			: 'No source has been scanned yet.'
+			: 'No source status available.'
 	if (scanning) return `Scanning ${summary.total} sources…`
+	if (unverified && summary.attention.length === 0)
+		return 'Some source statuses are unavailable.'
 	if (summary.attention.length === 0)
 		return `${summary.total} sources · all up to date`
 	return `${summary.attention.length} of ${summary.total} sources need attention`

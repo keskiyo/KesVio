@@ -195,8 +195,8 @@ would have to reintroduce it deliberately.
   already installed can use the local catalog offline.
 - The updater fetches the release manifest over HTTPS on startup (and from
   **Check updates** in Settings). The only update surface is the
-  **Update X available** pill that replaces the version under the KesVio name in
-  the sidebar and the drawer (`src/features/update-app/ui/UpdatePill.tsx`, see
+  **Update X available** pill in the sidebar on wide windows and in the title
+  bar on narrow windows (`src/features/update-app/ui/UpdatePill.tsx`, see
   [UI and workflows](ui-and-workflows.md)). One click downloads, verifies,
   installs and restarts; there is no confirmation dialog, no shell banner and no
   dismiss. Both were withdrawn together, and a version dismissed through the old

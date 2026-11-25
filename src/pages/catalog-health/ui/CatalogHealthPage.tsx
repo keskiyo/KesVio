@@ -11,6 +11,8 @@ import { LastScanPanel } from './LastScanPanel'
 export function CatalogHealthPage({
 	diagnostics,
 	lastScanChanges,
+	availableChangeIds,
+	onOpenChangedApp,
 	isRefreshing,
 	onRefresh,
 	onPreviewDiagnostics,
@@ -40,7 +42,11 @@ export function CatalogHealthPage({
 				<CatalogSources health={health} scanning={isRefreshing} />
 				<LastScanPanel diagnostics={diagnostics} />
 			</div>
-			<ScanChanges changes={lastScanChanges} />
+			<ScanChanges
+				changes={lastScanChanges}
+				availableIds={availableChangeIds}
+				onOpen={onOpenChangedApp}
+			/>
 			<p className="mt-8 mb-2 text-xs font-semibold tracking-[0.14em] text-(--text-muted) uppercase">
 				Advanced
 			</p>

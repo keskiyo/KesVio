@@ -749,6 +749,209 @@ describe('App', () => {
 		)
 	})
 
+	it('reveals the full ranked Enter target after typing from a scrolled catalog', async () => {
+		renderApp()
+		await screen.findByText('Steam')
+		const scroller = document.getElementById('catalog-scroll')!
+		scroller.scrollTop = 450
+		await userEvent.type(
+			screen.getByRole('textbox', { name: 'Search applications' }),
+			'code',
+		)
+		expect(
+			screen.getByRole('region', { name: 'Best match' }),
+		).toHaveTextContent('Visual Studio Code')
+		expect(scroller.scrollTo).toHaveBeenCalledWith({
+			top: 0,
+			behavior: 'instant',
+		})
+	})
+
+	it('offers another search scope next to the empty result and opens folder discovery for an absent app', async () => {
+		const tool = {
+			...apps[0]!,
+			name: 'Sample toolsuite',
+			visibilityClass: 'auxiliary',
+		}
+		renderApp({
+			getApps: vi.fn().mockResolvedValue({
+				apps: [...apps.slice(1), tool],
+				hasCache: true,
+			}),
+		})
+		await screen.findByText('Google Chrome')
+		const search = screen.getByRole('textbox', {
+			name: 'Search applications',
+		})
+		await userEvent.type(search, 'toolsuite')
+		const empty = screen.getByRole('region', { name: 'No apps found' })
+		await userEvent.click(
+			within(empty).getByRole('button', { name: '1 match in Tools' }),
+		)
+		expect(search).toHaveValue('toolsuite')
+		await userEvent.clear(search)
+		await userEvent.type(search, 'xyzaudit')
+		await userEvent.click(screen.getByText('Find missing app'))
+		expect(
+			screen.getByText(/Full scans include fixed drives/),
+		).toBeInTheDocument()
+		expect(
+			screen.getByText('No scan status available yet.'),
+		).toBeInTheDocument()
+		await userEvent.click(
+			screen.getByRole('button', { name: 'Configure scan folders' }),
+		)
+		expect(
+			await screen.findByRole('region', { name: 'Catalog' }),
+		).toHaveFocus()
+		expect(
+			document.getElementById('catalog-scroll')?.scrollTo,
+		).toHaveBeenCalledWith(expect.objectContaining({ behavior: 'instant' }))
+		expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled()
+	})
+
+	it('offers only other scopes with results under the active saved filter', async () => {
+		const tool = {
+			...apps[0]!,
+			name: 'Sample toolsuite',
+			visibilityClass: 'auxiliary',
+		}
+		const { store } = renderApp({
+			getApps: vi.fn().mockResolvedValue({
+				apps: [...apps.slice(1), tool],
+				hasCache: true,
+			}),
+		})
+		await screen.findByText('Google Chrome')
+		act(() => {
+			const result = store.getState().createSavedFilter('Work', {
+				...EMPTY_CRITERIA,
+				publishers: ['Microsoft'],
+			})
+			if (!result.ok) throw new Error(result.error)
+			store.getState().selectSavedFilter(result.id)
+		})
+		const search = screen.getByRole('textbox', {
+			name: 'Search applications',
+		})
+		await userEvent.type(search, 'toolsuite')
+		const empty = screen.getByRole('region', { name: 'No apps found' })
+		expect(
+			within(empty).queryByRole('button', { name: '1 match in Tools' }),
+		).not.toBeInTheDocument()
+		await userEvent.click(
+			within(empty).getByRole('button', { name: 'Clear filter' }),
+		)
+		expect(search).toHaveValue('toolsuite')
+		expect(
+			within(empty).getByRole('button', { name: '1 match in Tools' }),
+		).toBeInTheDocument()
+	})
+
+	it('offers results in another scope when the query matches a category name', async () => {
+		const { store } = renderApp()
+		await screen.findByText('Steam')
+		act(() => store.getState().setActiveView('favorites'))
+		await userEvent.type(
+			screen.getByRole('textbox', { name: 'Search applications' }),
+			'Development',
+		)
+		await userEvent.click(
+			screen.getByRole('button', { name: '1 match in All apps' }),
+		)
+		expect(
+			screen.getByRole('button', { name: 'Launch Visual Studio Code' }),
+		).toBeVisible()
+	})
+
+	it('puts App info on the newest overlay and restores focus to the group', async () => {
+		const grouped = apps.slice(0, 2).map(item => ({
+			...item,
+			category: 'browsers',
+			publisher: 'Test Publisher',
+		}))
+		renderApp({
+			getApps: vi
+				.fn()
+				.mockResolvedValue({ apps: grouped, hasCache: true }),
+		})
+		await userEvent.click(
+			await screen.findByRole('button', {
+				name: 'Test Publisher, 2 apps',
+			}),
+		)
+		const group = screen.getByRole('dialog', { name: 'Test Publisher' })
+		const manage = within(group).getByRole('button', {
+			name: 'Manage Steam',
+		})
+		await userEvent.click(manage)
+		await userEvent.click(
+			screen.getByRole('menuitem', { name: 'App info' }),
+		)
+		const info = screen.getByRole('dialog', { name: 'Steam information' })
+		expect(info.parentElement?.parentElement).toBe(
+			group.parentElement?.parentElement,
+		)
+		expect(
+			group.compareDocumentPosition(info) &
+				Node.DOCUMENT_POSITION_FOLLOWING,
+		).toBeTruthy()
+		await userEvent.keyboard('{Escape}')
+		expect(info).not.toBeInTheDocument()
+		expect(group).toBeInTheDocument()
+		expect(manage).toHaveFocus()
+	})
+
+	it('groups installed, private and portable Firefox as separate launch targets together', async () => {
+		const firefox = {
+			...apps[2]!,
+			id: 'firefox',
+			name: 'Firefox',
+			path: 'C:\\Menu\\Firefox.lnk',
+			publisher: 'Mozilla Corporation',
+			productName: 'Firefox',
+		}
+		const grouped = [
+			firefox,
+			{
+				...firefox,
+				id: 'private',
+				name: 'Private Browsing Firefox',
+				path: 'C:\\Menu\\Private Browsing.lnk',
+			},
+			{
+				...firefox,
+				id: 'portable',
+				path: 'D:\\Apps\\FirefoxPortable.exe',
+				sourceKind: 'portable',
+				publisher: 'Mozilla Foundation',
+			},
+			{
+				...firefox,
+				id: 'other',
+				path: 'D:\\Other\\Firefox.exe',
+				publisher: 'Different Publisher',
+			},
+		]
+		renderApp({
+			getApps: vi
+				.fn()
+				.mockResolvedValue({ apps: grouped, hasCache: true }),
+		})
+		await userEvent.click(
+			await screen.findByRole(
+				'button',
+				{ name: 'Firefox, 3 apps' },
+				{ timeout: 600 },
+			),
+		)
+		const group = screen.getByRole('dialog', { name: 'Firefox' })
+		expect(group.querySelectorAll('[data-app-id]')).toHaveLength(3)
+		expect(
+			within(group).getByText('FirefoxPortable.exe').parentElement,
+		).toHaveTextContent('Portable · FirefoxPortable.exe')
+	})
+
 	it('launches the best match from the search field and walks the cards with arrows', async () => {
 		const { client } = renderApp()
 		await screen.findByText('Steam')
@@ -813,7 +1016,9 @@ describe('App', () => {
 		const search = await screen.findByPlaceholderText('Search apps…')
 		await userEvent.type(search, 'chrome')
 		expect(screen.queryByText('Visual Studio Code')).not.toBeInTheDocument()
-		expect(screen.getByText('Google Chrome')).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Launch Google Chrome' }),
+		).toBeInTheDocument()
 	})
 
 	it('launches an application from its card', async () => {
@@ -868,7 +1073,9 @@ describe('App', () => {
 			screen.getByPlaceholderText('Search apps…'),
 			'visual',
 		)
-		expect(screen.getByText('Visual Studio Code')).toBeInTheDocument()
+		expect(
+			screen.getByRole('button', { name: 'Launch Visual Studio Code' }),
+		).toBeInTheDocument()
 	})
 
 	it('renders persisted category order with sidebar reorder controls', async () => {

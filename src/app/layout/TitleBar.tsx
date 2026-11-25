@@ -1,13 +1,20 @@
 import { Copy, Minus, Square, X } from 'lucide-react'
+import { UpdatePill, type UpdatePillProps } from '../../features/update-app'
 import { useWindowControls } from '../../shared/platform/window/useWindowControls'
 
-export function TitleBar() {
+export function TitleBar({ update }: { update?: UpdatePillProps | null }) {
 	const controls = useWindowControls()
 	return (
 		<div
 			data-tauri-drag-region
 			className="app-titlebar flex h-9 shrink-0 items-center justify-end pr-0.5 select-none"
 		>
+			{update && (
+				<UpdatePill
+					{...update}
+					className="mr-auto ml-2 max-w-[calc(100%-9rem)]"
+				/>
+			)}
 			<div className="flex items-center">
 				<button
 					type="button"

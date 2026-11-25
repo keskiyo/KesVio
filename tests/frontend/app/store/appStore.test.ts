@@ -1594,6 +1594,31 @@ describe('app store', () => {
 		dispose()
 	})
 
+	it('publishes a manual scan result to Catalog Health before the diagnostics event arrives', async () => {
+		const diagnostics: CatalogDiagnostics = {
+			completedAt: 2,
+			durationMs: 10,
+			mode: 'refresh',
+			totalApps: apps.length,
+			sourceCounts: {},
+			added: 0,
+			removed: 0,
+			updated: 0,
+			unreachableFolders: 1,
+		}
+		const store = createAppStore(
+			client({
+				refreshApps: vi
+					.fn()
+					.mockResolvedValue({ apps, generation: 1, diagnostics }),
+			}),
+			memoryStorage(),
+		)
+
+		await expect(store.getState().refresh()).resolves.toBe(diagnostics)
+		expect(store.getState().catalogDiagnostics).toBe(diagnostics)
+	})
+
 	// A source that has recovered must not read as failed again because the event from the
 	// earlier, failed scan arrived after the one from the scan that fixed it.
 	it('keeps the newest source health when diagnostics arrive out of order', async () => {

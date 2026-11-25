@@ -103,6 +103,7 @@ export interface CatalogSnapshot {
 export interface CatalogScanResult {
 	apps: AppInfo[]
 	generation: number
+	diagnostics?: CatalogDiagnostics | null
 }
 
 export type SourceHealthState =

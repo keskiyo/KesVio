@@ -6,12 +6,13 @@ import { CategoryList } from './CategoryList'
 import { EmptyState } from './EmptyState'
 import type { AppGridProps } from './types'
 
-export function CatalogGrid(props: AppGridProps) {
+export function CatalogGrid(props: AppGridProps & { emptySearch?: ReactNode }) {
 	if (props.activeView === 'favorites')
 		return (
 			<FavoritesGrid
 				apps={props.apps}
 				hasQuery={props.hasQuery}
+				emptySearch={props.emptySearch}
 				favoriteAppIds={props.favoriteAppIds}
 				favoriteScenarios={props.favoriteScenarios}
 				categories={props.categories}
@@ -32,6 +33,7 @@ export function CatalogGrid(props: AppGridProps) {
 			<HiddenGrid
 				apps={props.apps}
 				hasQuery={props.hasQuery}
+				emptySearch={props.emptySearch}
 				onBack={props.onBack}
 				favoriteAppIds={props.favoriteAppIds}
 				categories={props.categories}
@@ -53,6 +55,7 @@ export function CatalogGrid(props: AppGridProps) {
 			<AuxiliaryGrid
 				apps={props.apps}
 				hasQuery={props.hasQuery}
+				emptySearch={props.emptySearch}
 				onBack={props.onBack}
 				favoriteAppIds={props.favoriteAppIds}
 				categories={props.categories}
@@ -69,5 +72,6 @@ export function CatalogGrid(props: AppGridProps) {
 	if (props.activeView === 'installers_docs')
 		return <InstallersDocsGrid {...props} />
 	if (props.apps.length) return <CategoryList {...props} />
-	return <EmptyState hasQuery={props.hasQuery} />
+	return props.emptySearch ?? <EmptyState hasQuery={props.hasQuery} />
 }
+import type { ReactNode } from 'react'

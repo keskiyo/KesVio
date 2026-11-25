@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useModalDialog } from '../../../../shared/hooks/useModalDialog'
 import { AdditionalInformation } from './AdditionalInformation'
 import { AppIdentityHeader } from './AppIdentityHeader'
@@ -31,9 +32,9 @@ export function AppInfoDialog({
 	const hasKnownPackageInstallLocation =
 		app.sourceKind === 'msix' && Boolean(app.installLocation?.trim())
 	const hasPackageLaunchTarget = app.launchKind === 'app_user_model_id'
-	return (
+	return createPortal(
 		<div
-			className="motion-overlay fixed inset-0 z-400 grid place-items-center bg-[color-mix(in_oklab,var(--surface-canvas)_72%,transparent)] p-3 backdrop-blur-[3px] sm:p-5"
+			className="motion-overlay fixed inset-0 z-500 grid place-items-center bg-[color-mix(in_oklab,var(--surface-canvas)_72%,transparent)] p-3 backdrop-blur-[3px] sm:p-5"
 			onMouseDown={event => {
 				if (event.currentTarget === event.target) onClose()
 			}}
@@ -97,6 +98,7 @@ export function AppInfoDialog({
 					/>
 				</div>
 			</section>
-		</div>
+		</div>,
+		document.querySelector('.app-shell') ?? document.body,
 	)
 }

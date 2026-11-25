@@ -7,7 +7,7 @@ import {
 } from './sourceHealth'
 
 export type CatalogHealthState =
-	'no_diagnostics' | 'scanning' | 'attention' | 'healthy'
+	'no_diagnostics' | 'scanning' | 'attention' | 'unverified' | 'healthy'
 
 export interface CatalogHealthStatus {
 	state: CatalogHealthState
@@ -33,5 +33,18 @@ function healthState(
 ): CatalogHealthState {
 	if (scanning) return 'scanning'
 	if (!diagnostics) return 'no_diagnostics'
-	return summary.attention.length > 0 ? 'attention' : 'healthy'
+	if (
+		summary.attention.length > 0 ||
+		(diagnostics.unreachableFolders ?? 0) > 0
+	)
+		return 'attention'
+	if (
+		!diagnostics.sources?.length ||
+		diagnostics.sources.some(
+			source =>
+				source.state === 'never_run' || source.state === 'unknown',
+		)
+	)
+		return 'unverified'
+	return 'healthy'
 }

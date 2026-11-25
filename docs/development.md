@@ -189,7 +189,7 @@ to that. The installer, the signed update and tray clicks remain manual.
 `npm run test:e2e` drives the real window through WebDriver
 (`tests/e2e/smoke.e2e.mjs`, `node:test` plus `webdriverio`): the window opens,
 the startup scan of a fixture folder renders app cards, **Ctrl+F** selects the
-search field, a query makes the status name the match **Enter** would open and
+search field, a query makes the best-match row name the app **Enter** would open and
 **↓**/**↑** move between the field and the cards (Enter itself is not pressed,
 so no real program starts), a card's actions menu opens and closes, Settings lists the global
 shortcut, and the per-user and installed stores stay untouched. It reuses the

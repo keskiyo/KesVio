@@ -10,6 +10,7 @@ import { CatalogViewHeader } from '../CatalogViewHeader'
 export function FavoritesGrid({
 	apps,
 	hasQuery,
+	emptySearch,
 	favoriteAppIds,
 	categories,
 	categoryOrder,
@@ -32,25 +33,27 @@ export function FavoritesGrid({
 
 	if (!apps.length && !scenarioCount)
 		return (
-			<section className="grid min-h-[55vh] place-items-center text-center">
-				<div>
-					<Star
-						className="mx-auto mb-4"
-						size={38}
-						aria-hidden="true"
-					/>
-					<h2 className="text-lg font-semibold">
-						{hasQuery
-							? 'No matching favorites'
-							: 'No favorites yet'}
-					</h2>
-					<p className="mt-2 text-sm text-(--text-muted)">
-						{hasQuery
-							? 'Try a different search.'
-							: 'Use the star on an app or scenario card to add it here.'}
-					</p>
-				</div>
-			</section>
+			emptySearch ?? (
+				<section className="grid min-h-[55vh] place-items-center text-center">
+					<div>
+						<Star
+							className="mx-auto mb-4"
+							size={38}
+							aria-hidden="true"
+						/>
+						<h2 className="text-lg font-semibold">
+							{hasQuery
+								? 'No matching favorites'
+								: 'No favorites yet'}
+						</h2>
+						<p className="mt-2 text-sm text-(--text-muted)">
+							{hasQuery
+								? 'Try a different search.'
+								: 'Use the star on an app or scenario card to add it here.'}
+						</p>
+					</div>
+				</section>
+			)
 		)
 	return (
 		<section aria-labelledby="favorites-title">
@@ -97,11 +100,13 @@ export function FavoritesGrid({
 						))}
 					</div>
 				) : (
-					<p className="text-sm text-(--text-muted)">
-						{hasQuery
-							? 'No matching favorite apps.'
-							: 'Use the star on an app card to add apps here.'}
-					</p>
+					(emptySearch ?? (
+						<p className="text-sm text-(--text-muted)">
+							{hasQuery
+								? 'No matching favorite apps.'
+								: 'Use the star on an app card to add apps here.'}
+						</p>
+					))
 				)}
 			</section>
 		</section>

@@ -1,4 +1,4 @@
-KesVio 0.5.8 - third-party licenses
+KesVio 0.5.9 - third-party licenses
 ===============================================================================
 
 KesVio is distributed under the MIT License; see LICENSE. It also distributes the
@@ -243,7 +243,7 @@ Rust normal and build dependencies, x86_64-pc-windows-msvc (293)
       License:  MIT OR Apache-2.0
       Source:   https://github.com/rust-lang/cfg-if
       Text:     #23, #41
-  cookie 0.18.1
+  cookie 0.18.3
       License:  MIT OR Apache-2.0
       Source:   https://github.com/SergioBenitez/cookie-rs
       Text:     #43, #44
@@ -383,7 +383,7 @@ Rust normal and build dependencies, x86_64-pc-windows-msvc (293)
       License:  Zlib
       Source:   https://github.com/orlp/foldhash
       Text:     #71
-  form_urlencoded 1.2.2
+  form_urlencoded 1.2.3
       License:  MIT OR Apache-2.0
       Source:   https://github.com/servo/rust-url
       Text:     #23, #72
@@ -1085,7 +1085,7 @@ Rust normal and build dependencies, x86_64-pc-windows-msvc (293)
       License:  ISC
       Source:   https://github.com/briansmith/untrusted
       Text:     #180
-  url 2.5.8
+  url 2.5.9
       License:  MIT OR Apache-2.0
       Source:   https://github.com/servo/rust-url
       Text:     #23, #95
@@ -3632,7 +3632,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ===============================================================================
-[#43] LICENSE-APACHE - cookie 0.18.1
+[#43] LICENSE-APACHE - cookie 0.18.3
 ===============================================================================
 
                               Apache License
@@ -3839,7 +3839,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 ===============================================================================
-[#44] LICENSE-MIT - cookie 0.18.1
+[#44] LICENSE-MIT - cookie 0.18.3
 ===============================================================================
 
 Copyright (c) 2017 Sergio Benitez
@@ -6676,7 +6676,7 @@ the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 
 ===============================================================================
-[#72] LICENSE-MIT - form_urlencoded 1.2.2
+[#72] LICENSE-MIT - form_urlencoded 1.2.3
 ===============================================================================
 
 Copyright (c) 2013-2016 The rust-url developers

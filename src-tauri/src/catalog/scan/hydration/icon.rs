@@ -10,6 +10,14 @@ pub(super) struct HydratedIcon {
 }
 
 pub(super) fn hydrate_icon(app_data_dir: &Path, app: &AppInfo) -> HydratedIcon {
+    if app.target_availability.as_deref() == Some("target.unverifiable.unmounted_volume") {
+        if let Some(bytes) = icon_cache::read_offline_icon(app_data_dir, &app.id) {
+            return HydratedIcon {
+                data_url: Some(format!("data:image/png;base64,{}", STANDARD.encode(bytes))),
+                written_fingerprint: None,
+            };
+        }
+    }
     let mut candidates = icon_source_candidates(app);
     if candidates.is_empty() {
         candidates.push(app.path.clone());
@@ -117,6 +125,37 @@ fn is_hashed_image(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn disconnected_volume_uses_only_an_unambiguous_cached_icon() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut app = crate::app_state::cached_app("Offline", r"F:\Offline.exe");
+        app.id = "offline".into();
+        app.target_availability = Some("target.unverifiable.unmounted_volume".into());
+        icon_cache::write_icon(dir.path(), &app.id, &"a".repeat(64), b"first").unwrap();
+        assert_eq!(
+            hydrate_icon(dir.path(), &app).data_url,
+            Some(format!(
+                "data:image/png;base64,{}",
+                STANDARD.encode(b"first")
+            ))
+        );
+        icon_cache::write_icon(dir.path(), &app.id, &"b".repeat(64), b"second").unwrap();
+        assert_eq!(hydrate_icon(dir.path(), &app).data_url, None);
+    }
+
+    #[test]
+    fn connected_target_does_not_reuse_an_old_unmatched_icon() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut app = crate::app_state::cached_app(
+            "Missing",
+            &dir.path().join("missing.exe").to_string_lossy(),
+        );
+        app.id = "missing".into();
+        app.target_availability = Some("target.present".into());
+        icon_cache::write_icon(dir.path(), &app.id, &"a".repeat(64), b"old").unwrap();
+        assert_eq!(hydrate_icon(dir.path(), &app).data_url, None);
+    }
 
     #[test]
     fn a_cached_icon_the_shell_never_read_is_not_served_again() {

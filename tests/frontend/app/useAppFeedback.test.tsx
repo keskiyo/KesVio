@@ -34,6 +34,28 @@ function options(overrides: Partial<Parameters<typeof useAppFeedback>[0]>) {
 }
 
 describe('useAppFeedback', () => {
+	it('warns when a completed scan has no source details', async () => {
+		const onOpenCatalogHealth = vi.fn()
+		const { result } = renderHook(() =>
+			useAppFeedback({
+				...options({
+					onRefresh: vi.fn().mockResolvedValue({ sources: [] }),
+				}),
+				onOpenCatalogHealth,
+			}),
+		)
+		await act(() => result.current.refresh())
+		expect(toastWarning).toHaveBeenCalledWith(
+			'Catalog source status unavailable',
+			{
+				action: {
+					label: 'Catalog Health',
+					onClick: onOpenCatalogHealth,
+				},
+			},
+		)
+		expect(toastSuccess).not.toHaveBeenCalled()
+	})
 	it.each([0, 1])(
 		'warns when %i closed apps accompany an unavailable target',
 		closed => {
@@ -79,6 +101,33 @@ describe('useAppFeedback', () => {
 
 		expect(toastInfo).toHaveBeenCalledWith('Application scan cancelled')
 		expect(toastError).not.toHaveBeenCalled()
+	})
+
+	it('links a partial scan to Catalog Health without showing a full success', async () => {
+		const onOpenCatalogHealth = vi.fn()
+		const { result } = renderHook(() =>
+			useAppFeedback({
+				...options({
+					onRefresh: vi
+						.fn()
+						.mockResolvedValue({ unreachableFolders: 1 }),
+				}),
+				onOpenCatalogHealth,
+			}),
+		)
+
+		await act(() => result.current.refresh())
+
+		expect(toastWarning).toHaveBeenCalledWith(
+			'Catalog partially refreshed',
+			{
+				action: {
+					label: 'Catalog Health',
+					onClick: onOpenCatalogHealth,
+				},
+			},
+		)
+		expect(toastSuccess).not.toHaveBeenCalled()
 	})
 
 	it('does not infer scan cancellation from an untyped error message', async () => {

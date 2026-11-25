@@ -86,19 +86,22 @@ export function HiddenGrid(props: HiddenGridProps) {
 						/>
 					))}
 				</div>
-			) : props.hasQuery ? (
-				<ViewEmptyState
-					icon={SearchX}
-					title="No matching hidden apps"
-					description="Try a different search."
-				/>
 			) : (
-				<ViewEmptyState
-					icon={EyeOff}
-					title="Nothing is hidden"
-					description="All applications are currently visible in your catalog."
-					back={back}
-				/>
+				(props.emptySearch ??
+				(props.hasQuery ? (
+					<ViewEmptyState
+						icon={SearchX}
+						title="No matching hidden apps"
+						description="Try a different search."
+					/>
+				) : (
+					<ViewEmptyState
+						icon={EyeOff}
+						title="Nothing is hidden"
+						description="All applications are currently visible in your catalog."
+						back={back}
+					/>
+				)))
 			)}
 		</section>
 	)

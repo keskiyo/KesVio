@@ -42,8 +42,12 @@ export function catalogHealthLine(
 			return 'Refreshing catalog…'
 		case 'no_diagnostics':
 			return 'No scan data yet.'
+		case 'unverified':
+			return 'Source status unavailable.'
 		case 'attention': {
 			const attention = health.summary.attention.length
+			if (!attention && diagnostics?.unreachableFolders)
+				return `${countLabel(diagnostics.unreachableFolders, 'scan folder')} could not be reached.`
 			return `${countLabel(attention, 'catalog source')} ${attention === 1 ? 'needs' : 'need'} attention.`
 		}
 		case 'healthy':

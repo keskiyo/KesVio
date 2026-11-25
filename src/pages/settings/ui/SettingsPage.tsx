@@ -1,4 +1,5 @@
 import { Settings } from 'lucide-react'
+import { useEffect } from 'react'
 import {
 	type SettingsArea,
 	useSystemSettings,
@@ -12,6 +13,7 @@ import type { SettingsPageProps } from '../types'
 
 export function SettingsPage({
 	client,
+	onFocusCatalog,
 	density,
 	onSetDensity,
 	onForceFullScan,
@@ -40,6 +42,21 @@ export function SettingsPage({
 		forceFullScan,
 		resetCatalogCache,
 	} = useSystemSettings({ client, onForceFullScan, onResetCatalogCache })
+	useEffect(() => {
+		if (!onFocusCatalog) return
+		const section = document.getElementById('settings-catalog')
+		section?.focus({ preventScroll: true })
+		const viewport = section?.closest<HTMLElement>('#catalog-scroll')
+		if (section && viewport)
+			viewport.scrollTo({
+				top:
+					viewport.scrollTop +
+					section.getBoundingClientRect().top -
+					viewport.getBoundingClientRect().top,
+				behavior: 'instant',
+			})
+		onFocusCatalog()
+	}, [onFocusCatalog])
 	const areaError = (area: SettingsArea) =>
 		error && errorArea === area ? (
 			<p role="alert" className="mt-3 text-sm text-red-700">

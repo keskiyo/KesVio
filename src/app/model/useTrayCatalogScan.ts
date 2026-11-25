@@ -1,24 +1,28 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
+import type { CatalogDiagnostics } from '../../entities/app'
 import type { SystemClient } from '../../entities/system'
 import { toAppClientError } from '../../shared/api/tauri/errors'
+import { reportScanCompletion } from './useScanFeedback'
 
 interface TrayCatalogScanOptions {
 	systemClient: Pick<SystemClient, 'onTrayForceFullScan' | 'setTrayScanState'>
 	busy: boolean
-	onForceFullScan(): Promise<void>
+	onForceFullScan(): Promise<CatalogDiagnostics | null | void>
+	onOpenCatalogHealth?(): void
 }
 
 export function useTrayCatalogScan({
 	systemClient,
 	busy,
 	onForceFullScan,
+	onOpenCatalogHealth,
 }: TrayCatalogScanOptions) {
-	const current = useRef({ busy, onForceFullScan })
+	const current = useRef({ busy, onForceFullScan, onOpenCatalogHealth })
 	const pending = useRef(false)
 	const ready = useRef(false)
 	const stateQueue = useRef<Promise<void>>(Promise.resolve())
-	current.current = { busy, onForceFullScan }
+	current.current = { busy, onForceFullScan, onOpenCatalogHealth }
 	const sendState = useCallback(
 		(value: boolean) => {
 			stateQueue.current = stateQueue.current
@@ -42,8 +46,13 @@ export function useTrayCatalogScan({
 			pending.current = true
 			sendState(true)
 			try {
-				await current.current.onForceFullScan()
-				if (active) toast.success('Full application scan finished')
+				const diagnostics = await current.current.onForceFullScan()
+				if (active)
+					reportScanCompletion(
+						diagnostics,
+						current.current.onOpenCatalogHealth,
+						'Full application scan finished',
+					)
 			} catch (error) {
 				if (active) {
 					if (toAppClientError(error).code === 'SCAN_CANCELLED') {

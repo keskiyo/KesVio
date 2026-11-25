@@ -44,6 +44,23 @@
           "volumeId": "1a2b3c4d"
         }
       ],
+      "diagnostics": {
+        "added": 0,
+        "completedAt": 0,
+        "durationMs": 0,
+        "mode": "",
+        "removed": 0,
+        "sourceCounts": {},
+        "sources": [],
+        "targetAvailability": {
+          "byReason": {},
+          "keptByNewRule": 0
+        },
+        "totalApps": 0,
+        "unreachableFolders": 0,
+        "updated": 0,
+        "visibilityCounts": {}
+      },
       "generation": 7
     },
     "get_app_details": {
@@ -166,6 +183,23 @@
           "volumeId": "1a2b3c4d"
         }
       ],
+      "diagnostics": {
+        "added": 0,
+        "completedAt": 0,
+        "durationMs": 0,
+        "mode": "",
+        "removed": 0,
+        "sourceCounts": {},
+        "sources": [],
+        "targetAvailability": {
+          "byReason": {},
+          "keptByNewRule": 0
+        },
+        "totalApps": 0,
+        "unreachableFolders": 0,
+        "updated": 0,
+        "visibilityCounts": {}
+      },
       "generation": 7
     },
     "reset_catalog_cache": {
@@ -203,6 +237,23 @@
           "volumeId": "1a2b3c4d"
         }
       ],
+      "diagnostics": {
+        "added": 0,
+        "completedAt": 0,
+        "durationMs": 0,
+        "mode": "",
+        "removed": 0,
+        "sourceCounts": {},
+        "sources": [],
+        "targetAvailability": {
+          "byReason": {},
+          "keptByNewRule": 0
+        },
+        "totalApps": 0,
+        "unreachableFolders": 0,
+        "updated": 0,
+        "visibilityCounts": {}
+      },
       "generation": 7
     },
     "save_preferences_backup": true,

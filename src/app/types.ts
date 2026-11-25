@@ -6,7 +6,7 @@ import type { StaleCopyInfo, SystemClient } from '../entities/system'
 import type { AppFileActions } from '../features/app-actions'
 import type { SaveFilterResult } from '../features/manage-filters'
 import type { useScenarioRunner } from '../features/run-scenario'
-import type { useUpdater } from '../features/update-app'
+import type { UpdatePillProps, useUpdater } from '../features/update-app'
 import type { useCatalogView } from '../widgets/catalog-content'
 import type { useCatalogNavigation } from '../widgets/sidebar-navigation'
 import type { useAppDerivations } from './model/useAppDerivations'
@@ -32,6 +32,7 @@ export interface AppShellChromeProps {
 	activityLabel: string
 	preferencesPersisted: boolean
 	staleCopy: StaleCopyInfo | null
+	update?: UpdatePillProps | null
 	systemClient: Pick<SystemClient, 'openInstalledCopy'>
 	onDismissStaleCopy: () => void
 }
@@ -72,6 +73,7 @@ export interface AppDialogsProps {
 
 export interface AppViewsProps {
 	state: AppState
+	bestMatch: AppInfo | null
 	catalog: ReturnType<typeof useCatalogView>
 	derivations: ReturnType<typeof useAppDerivations>
 	navigation: ReturnType<typeof useCatalogNavigation>
@@ -80,6 +82,7 @@ export interface AppViewsProps {
 	updater: ReturnType<typeof useUpdater>
 	systemClient: SystemClient
 	onFirstScan(): Promise<void>
+	onForceFullScan(): Promise<void>
 	onRefreshCatalog(): Promise<void>
 	onOpenFolder(app: AppInfo): Promise<void>
 	fileActions: AppFileActions

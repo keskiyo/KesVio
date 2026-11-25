@@ -22,6 +22,7 @@ const STATE_ICON: Record<CatalogHealthState, LucideIcon> = {
 	attention: TriangleAlert,
 	scanning: LoaderCircle,
 	no_diagnostics: CircleDashed,
+	unverified: CircleDashed,
 }
 
 const STATE_TITLE: Record<CatalogHealthState, string> = {
@@ -29,6 +30,7 @@ const STATE_TITLE: Record<CatalogHealthState, string> = {
 	attention: 'Catalog needs attention',
 	scanning: 'Refreshing catalog…',
 	no_diagnostics: 'No scan data yet',
+	unverified: 'Source status unavailable',
 }
 
 export function CatalogHealthSummary({
@@ -61,7 +63,7 @@ export function CatalogHealthSummary({
 						role="status"
 						className="mt-1 text-sm leading-6 text-(--text-muted)"
 					>
-						{leadText(health)}
+						{leadText(health, diagnostics?.unreachableFolders ?? 0)}
 					</p>
 				</div>
 				<button
@@ -85,7 +87,10 @@ export function CatalogHealthSummary({
 	)
 }
 
-function leadText(health: CatalogHealthStatus): string {
+function leadText(
+	health: CatalogHealthStatus,
+	unreachableFolders: number,
+): string {
 	const { total, attention } = health.summary
 	switch (health.state) {
 		case 'no_diagnostics':
@@ -94,8 +99,17 @@ function leadText(health: CatalogHealthStatus): string {
 			return total > 0
 				? `Scanning ${countLabel(total, 'source')}…`
 				: 'Scanning the configured sources…'
-		case 'attention':
-			return `${attention.length} of ${countLabel(total, 'source')} need attention.`
+		case 'unverified':
+			return 'Some source statuses are unavailable. Refresh the catalog to check them.'
+		case 'attention': {
+			const sources = attention.length
+				? `${attention.length} of ${countLabel(total, 'source')} need attention.`
+				: ''
+			const folders = unreachableFolders
+				? `${countLabel(unreachableFolders, 'scan folder')} could not be reached.`
+				: ''
+			return [sources, folders].filter(Boolean).join(' ')
+		}
 		case 'healthy':
 			return total > 0
 				? 'Every catalog source answered on the last scan.'
@@ -111,13 +125,22 @@ function buildMetrics(
 	const sources: MetricTileProps =
 		health.state === 'scanning'
 			? { label: 'Sources', value: `${total} scanning…` }
-			: attention.length > 0
-				? {
-						label: 'Sources',
-						value: `${attention.length} of ${total} need attention`,
-						attention: true,
-					}
-				: { label: 'Sources', value: `${total} up to date` }
+			: health.state === 'unverified' ||
+				  (attention.length === 0 &&
+						(total === 0 ||
+							health.rows.some(
+								row =>
+									row.status === 'unknown' ||
+									row.status === 'not_scanned',
+							)))
+				? { label: 'Sources', value: 'Status unavailable' }
+				: attention.length > 0
+					? {
+							label: 'Sources',
+							value: `${attention.length} of ${total} need attention`,
+							attention: true,
+						}
+					: { label: 'Sources', value: `${total} up to date` }
 	return [
 		{ label: 'Applications', value: String(diagnostics.totalApps) },
 		sources,

@@ -8,29 +8,14 @@ import {
 	scenarioRunSummaryMessage,
 	type ScenarioRunSummary,
 } from '../../features/run-scenario'
+import { type ScanFeedbackOptions, useScanFeedback } from './useScanFeedback'
 
-interface AppFeedbackOptions {
+interface AppFeedbackOptions extends ScanFeedbackOptions {
 	onLaunch(app: AppInfo): Promise<void>
 	onOpenFolder(id: string): Promise<void>
 	onLaunchElevated?(app: AppInfo): Promise<void>
 	onCanLaunchElevated?(app: AppInfo): Promise<boolean>
-	onRefresh(): Promise<void>
-	onFullScan(): Promise<void>
 	onUndo(): { ok: true } | { ok: false; error: string }
-}
-
-async function reportScan(run: () => Promise<void>) {
-	try {
-		await run()
-		toast.success('Application list refreshed')
-	} catch (error) {
-		const { code } = toAppClientError(error)
-		if (code === 'SCAN_CANCELLED') {
-			toast.info('Application scan cancelled')
-		} else {
-			toast.error(`Could not refresh the application list (${code})`)
-		}
-	}
 }
 
 export function useAppFeedback({
@@ -40,6 +25,7 @@ export function useAppFeedback({
 	onCanLaunchElevated,
 	onRefresh,
 	onFullScan,
+	onOpenCatalogHealth,
 	onUndo,
 }: AppFeedbackOptions) {
 	const launch = useCallback(
@@ -130,8 +116,11 @@ export function useAppFeedback({
 		],
 	)
 
-	const refresh = useCallback(() => reportScan(onRefresh), [onRefresh])
-	const fullScan = useCallback(() => reportScan(onFullScan), [onFullScan])
+	const scanFeedback = useScanFeedback({
+		onRefresh,
+		onFullScan,
+		onOpenCatalogHealth,
+	})
 
 	const undo = useCallback(() => {
 		const result = onUndo()
@@ -144,6 +133,8 @@ export function useAppFeedback({
 		if (!message) return
 		const failed =
 			summary.launchFailed ||
+			summary.missingLaunch ||
+			summary.missingClose ||
 			summary.closeFailed ||
 			summary.blocked ||
 			summary.unavailable ||
@@ -156,8 +147,7 @@ export function useAppFeedback({
 		launch,
 		openFolder,
 		fileActions,
-		refresh,
-		fullScan,
+		...scanFeedback,
 		reportScenarioRun,
 		undo,
 	}

@@ -80,12 +80,15 @@ describe('search matches outside the current view', () => {
 
 	it('counts matches per area', () => {
 		expect(
-			selectSearchScopeCounts(everything, 'backup', ['buried']),
+			selectSearchScopeCounts(
+				rankAppsByQuery(everything, 'backup'),
+				marks(['buried']),
+			),
 		).toEqual({ all: 0, auxiliary: 1, hidden: 1, installersDocs: 1 })
 	})
 
-	it('reports nothing without a query', () => {
-		expect(selectSearchScopeCounts(everything, '   ', ['buried'])).toEqual({
+	it('reports zeroes without matching records', () => {
+		expect(selectSearchScopeCounts([], marks(['buried']))).toEqual({
 			all: 0,
 			auxiliary: 0,
 			hidden: 0,
@@ -96,7 +99,9 @@ describe('search matches outside the current view', () => {
 	// The main catalog is a scope like any other, so a narrowed view can point back at it. Which
 	// area to leave out is the reader's current view, and that belongs to the hint, not here.
 	it('counts the main catalog as a scope of its own', () => {
-		expect(selectSearchScopeCounts(everything, 'steam', [])).toEqual({
+		expect(
+			selectSearchScopeCounts(rankAppsByQuery(everything, 'steam'), none),
+		).toEqual({
 			all: 1,
 			auxiliary: 0,
 			hidden: 0,
@@ -105,7 +110,7 @@ describe('search matches outside the current view', () => {
 	})
 
 	it('counts a hidden auxiliary tool once, as hidden', () => {
-		expect(selectSearchScopeCounts([tool], 'backup', ['tool'])).toEqual({
+		expect(selectSearchScopeCounts([tool], marks(['tool']))).toEqual({
 			all: 0,
 			auxiliary: 0,
 			hidden: 1,

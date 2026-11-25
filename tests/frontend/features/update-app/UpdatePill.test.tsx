@@ -18,6 +18,12 @@ function pill(phase: UpdateInstallPhase, progress: number | null = null) {
 }
 
 describe('UpdatePill', () => {
+	it('leaves unknown download progress indeterminate', () => {
+		pill('downloading', null)
+		expect(screen.getByRole('progressbar')).not.toHaveAttribute(
+			'aria-valuenow',
+		)
+	})
 	// The update dialog was withdrawn: the pill itself starts the download, so one click must
 	// install without any confirmation step in between.
 	it('installs the available update on the first click', async () => {
@@ -28,6 +34,14 @@ describe('UpdatePill', () => {
 		)
 
 		expect(onInstall).toHaveBeenCalledOnce()
+	})
+
+	it('shows a download icon with an accessible update action', () => {
+		pill('idle')
+		const button = screen.getByRole('button', {
+			name: 'Update 0.5.4 available',
+		})
+		expect(button.querySelector('.lucide-download')).toBeInTheDocument()
 	})
 
 	it('turns into a progress bar with the download percentage', () => {

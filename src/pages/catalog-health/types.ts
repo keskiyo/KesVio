@@ -8,6 +8,8 @@ import type {
 
 export interface CatalogHealthPageProps {
 	lastScanChanges?: CatalogScanChanges | null
+	availableChangeIds?: string[]
+	onOpenChangedApp?(id: string): void
 	diagnostics: CatalogDiagnostics | null
 	isRefreshing: boolean
 	onRefresh(): Promise<void>

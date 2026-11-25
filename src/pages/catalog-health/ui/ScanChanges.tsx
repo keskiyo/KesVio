@@ -3,9 +3,14 @@ import { SECTION_SURFACE } from '../data'
 
 export function ScanChanges({
 	changes,
+	availableIds,
+	onOpen,
 }: {
 	changes?: CatalogScanChanges | null
+	availableIds?: string[]
+	onOpen?(id: string): void
 }) {
+	const available = new Set(availableIds ?? [])
 	const groups =
 		changes &&
 		([
@@ -34,11 +39,36 @@ export function ScanChanges({
 								<div key={label} className="mt-3 min-w-0">
 									<h3 className="font-semibold">{label}</h3>
 									<ul className="mt-1 list-inside list-disc break-words">
-										{names.map((name, index) => (
-											<li key={`${index}-${name}`}>
-												{name}
-											</li>
-										))}
+										{names.map((name, index) => {
+											const id =
+												label === 'Added'
+													? changes?.addedIds?.[index]
+													: label === 'Updated'
+														? changes?.updatedIds?.[
+																index
+															]
+														: undefined
+											return (
+												<li key={`${index}-${name}`}>
+													{id &&
+													available.has(id) &&
+													onOpen ? (
+														<button
+															type="button"
+															aria-label={`Open information for ${name}`}
+															className="rounded text-(--accent-strong) underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-(--accent)"
+															onClick={() =>
+																onOpen(id)
+															}
+														>
+															{name}
+														</button>
+													) : (
+														name
+													)}
+												</li>
+											)
+										})}
 									</ul>
 								</div>
 							),

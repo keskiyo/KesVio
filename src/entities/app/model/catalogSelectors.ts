@@ -4,7 +4,6 @@ import {
 	INSTALLERS_DOCS_CATEGORY,
 	isCatalogArtifact,
 } from '../lib/catalogArtifacts'
-import { filterAppsByQuery } from '../lib/catalogSearch'
 import type { AppInfo, AppView } from './app.types'
 
 export type AppPredicate = (app: AppInfo) => boolean
@@ -53,39 +52,18 @@ export interface SearchScopeCounts {
 	installersDocs: number
 }
 
-const NO_SCOPE_MATCHES: SearchScopeCounts = {
-	all: 0,
-	auxiliary: 0,
-	hidden: 0,
-	installersDocs: 0,
-}
-
 export function selectSearchScopeCounts(
-	categorized: AppInfo[],
-	query: string,
-	hiddenAppIds: string[],
+	matches: AppInfo[],
+	isHidden: AppPredicate,
 ): SearchScopeCounts {
-	if (!query.trim()) return NO_SCOPE_MATCHES
-	const hidden = new Set(hiddenAppIds)
-	const buckets: Record<keyof SearchScopeCounts, AppInfo[]> = {
-		all: [],
-		auxiliary: [],
-		hidden: [],
-		installersDocs: [],
+	const counts = { all: 0, auxiliary: 0, hidden: 0, installersDocs: 0 }
+	for (const app of matches) {
+		if (isHidden(app)) counts.hidden += 1
+		else if (isCatalogArtifact(app)) counts.installersDocs += 1
+		else if (app.visibilityClass === 'auxiliary') counts.auxiliary += 1
+		else counts.all += 1
 	}
-	for (const app of categorized) {
-		if (hidden.has(app.id)) buckets.hidden.push(app)
-		else if (isCatalogArtifact(app)) buckets.installersDocs.push(app)
-		else if (app.visibilityClass === 'auxiliary')
-			buckets.auxiliary.push(app)
-		else buckets.all.push(app)
-	}
-	return {
-		all: filterAppsByQuery(buckets.all, query).length,
-		auxiliary: filterAppsByQuery(buckets.auxiliary, query).length,
-		hidden: filterAppsByQuery(buckets.hidden, query).length,
-		installersDocs: filterAppsByQuery(buckets.installersDocs, query).length,
-	}
+	return counts
 }
 
 export function selectRecentApps(

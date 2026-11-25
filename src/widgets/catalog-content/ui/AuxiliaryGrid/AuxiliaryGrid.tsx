@@ -97,19 +97,22 @@ export function AuxiliaryGrid(props: AuxiliaryGridProps) {
 						/>
 					</div>
 				</>
-			) : props.hasQuery ? (
-				<ViewEmptyState
-					icon={SearchX}
-					title="No matching auxiliary tools"
-					description="Try a different search."
-				/>
 			) : (
-				<ViewEmptyState
-					icon={Wrench}
-					title="No auxiliary tools found"
-					description="KesVio did not find helper executables in the current catalog."
-					back={back}
-				/>
+				(props.emptySearch ??
+				(props.hasQuery ? (
+					<ViewEmptyState
+						icon={SearchX}
+						title="No matching auxiliary tools"
+						description="Try a different search."
+					/>
+				) : (
+					<ViewEmptyState
+						icon={Wrench}
+						title="No auxiliary tools found"
+						description="KesVio did not find helper executables in the current catalog."
+						back={back}
+					/>
+				)))
 			)}
 		</section>
 	)

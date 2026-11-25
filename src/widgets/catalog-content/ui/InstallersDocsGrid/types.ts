@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { AppInfo } from '../../../../entities/app'
 import type {
 	AppCategory,
@@ -10,6 +11,7 @@ export interface InstallersDocsGridProps {
 	apps: AppInfo[]
 	installedApps: AppInfo[]
 	hasQuery: boolean
+	emptySearch?: ReactNode
 	categories: CategoryDefinition[]
 	categoryOrder: AppCategory[]
 	onBack(): void
@@ -25,7 +27,7 @@ export interface InstallersDocsGridProps {
 
 export interface ArtifactSectionProps extends Omit<
 	InstallersDocsGridProps,
-	'apps' | 'installedApps' | 'hasQuery' | 'onBack'
+	'apps' | 'installedApps' | 'hasQuery' | 'emptySearch' | 'onBack'
 > {
 	icon: LucideIcon
 	title: string

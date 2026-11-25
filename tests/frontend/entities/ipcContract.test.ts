@@ -119,10 +119,11 @@ describe('IPC wire contract', () => {
 			)
 		})
 
-		it('describes every scan result as records plus the generation that made them', () => {
+		it('describes every scan result with its records, generation and diagnostics', () => {
 			const declared: Required<CatalogScanResult> = {
 				apps: [],
 				generation: 0,
+				diagnostics: null,
 			}
 			for (const command of [
 				'refresh_apps',

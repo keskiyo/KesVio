@@ -9,7 +9,7 @@ const hint = () =>
 
 export function useDriveScanOffers(
 	client: SystemClient,
-	refresh: () => Promise<void>,
+	refresh: () => Promise<unknown>,
 ) {
 	useEffect(() => {
 		if (!client.getUntrackedRemovableDrives || !client.onVolumesChanged)

@@ -1,6 +1,7 @@
 import type {
 	AppInfo,
 	AppView,
+	CatalogDiagnostics,
 	SearchScopeCounts,
 } from '../../../../entities/app'
 import type {
@@ -15,6 +16,9 @@ export interface AppGridProps {
 	installedApps: AppInfo[]
 	isLoading: boolean
 	hasQuery: boolean
+	bestMatch?: AppInfo | null
+	diagnostics?: CatalogDiagnostics | null
+	isRefreshing?: boolean
 	activeView: AppView
 	categoryOrder: AppCategory[]
 	categories: CategoryDefinition[]
@@ -23,6 +27,8 @@ export interface AppGridProps {
 	favoriteScenarios: FavoriteScenariosPanel
 	searchScopeCounts: SearchScopeCounts
 	onSelectView(view: AppView): void
+	onClearFilter?(): void
+	onConfigureFolders?(): void
 	onBack(): void
 	onToggleCategory(category: AppCategory): void
 	onToggleFavorite(id: string): void

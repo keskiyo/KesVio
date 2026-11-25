@@ -2,50 +2,40 @@ KesVio is a local-first Windows app catalog for finding, organizing, and launchi
 
 ## Highlights
 
-KesVio 0.5.8 makes large catalogs easier to browse with automatic application groups, offers to scan newly connected removable drives, and keeps saved portable catalogs available while a drive is disconnected. Settings, scrolling, scan progress, and diagnostics receive focused reliability fixes.
+KesVio 0.5.9 makes missing applications easier to investigate, keeps update notices visible in compact windows, and improves catalog navigation, application groups, and scan feedback.
 
 ## Added
 
-- **Application groups in All Apps.** Applications from the same publisher share a compact group card within their category. Open it to see the applications and their usual actions. Product names such as LibreOffice and Battle.net identify supported groups. Other catalog views keep their existing organization.
-- **Removable-drive discovery.** Connecting an untracked removable drive offers to choose a folder for application scanning. The offer also appears for drives already connected when KesVio starts. Choosing **Not now** explains how to add the folder later in Settings.
-- **Last-scan changes.** Catalog health shows applications added, removed, or updated by the latest scan.
-- **Back to top.** A compact **Top** control appears in the catalog header after scrolling and returns smoothly to the beginning.
+- **Find missing app.** When a search has no matches, open Catalog Health or scan-folder settings and review the latest health or scan status and learn how exclusions and scan limits affect discovery.
+- **Scan change details.** Open application information directly from added and updated entries in the latest scan changes when the entry is still available.
 
 ## Changed
 
-- **Disconnected portable catalogs stay visible.** A saved drive category remains available for browsing while its drive is absent. One status beside the category identifies the disconnected drive; its applications cannot launch and it cannot receive moved applications until it returns.
-- **Disconnected drives in navigation.** The sidebar and drawer mark disconnected drive categories with a muted accent and a status label. Their position can still be reordered, including with the keyboard.
-- **Clearer settings and recent activity.** Settings navigation stays within its own scroll area, shortcut controls adapt to narrow windows, and related recent entries are collected together.
-- **Calmer application groups.** Groups use compact icon previews and smooth opening and closing. Clicking outside a group closes it.
+- **Update notice in compact windows.** The update control appears in the title bar when the navigation drawer is closed; wider windows keep it in the sidebar. Download progress remains clear when the total size is unknown.
+- **Search and navigation.** Empty search results offer matches in other catalog sections and allow clearing an active filter. The Enter target is displayed above the results, and keyboard launch skips disconnected applications when another match is available.
+- **Application groups.** Mozilla publisher variants are grouped together, and portable Firefox is distinguished when names repeat.
+- **Back to top.** The control has a clearer boundary and a subtle hover animation that respects reduced-motion settings.
 
 ## Fixed
 
-- Long scan-folder paths and drive labels stay within Settings panels and scenario cards at narrow window widths. Recently added entries use spacing instead of repeated horizontal dividers.
-
-- Escape dismisses a card's menu before its application group, preserving the group and returning focus to the menu trigger.
-- An open Settings page receives folder changes saved through removable-drive offers, preventing a later discovery change from overwriting the added folder.
-
-- Category delete controls follow the Edit button's hover and keyboard-focus reveal, keeping category headers quieter without shifting their layout.
-
-- Moving an application from a group no longer sends the catalog back to the top through focus restoration. Opening its action menu no longer scrolls the catalog behind the dialog.
-- Group dialogs no longer briefly show a scrollbar caused by individual card entrance animations.
-- Portable scans report visited folders during a long root scan instead of leaving progress unchanged at the initial root count. Diagnostics include portable-root work counters.
-- Diagnostic log segments are collected in numeric sequence within each process.
-- Window-state persistence, shutdown coordination, and catalog refresh handling have additional regression coverage.
+- App info opens above an application group, with focus returned to the group when it closes.
+- Previously cached icons can remain visible for applications on disconnected drives.
+- Scan feedback and Catalog Health provide clearer information about unavailable sources, disconnected folders, and recent changes.
+- Scenario results report configured applications that could not be resolved for launching or closing.
+- Catalog and Settings navigation, focus restoration, and narrow-window layouts receive reliability improvements.
 
 ## Maintenance
 
-- Updated the previously selected frontend and Tauri dependencies, refreshed the Windows dependency license inventory, and retained the existing updater verification and security boundaries.
-- Updated the README and technical guidance for application groups, removable-drive scanning, disconnected catalogs, diagnostics, and release verification.
+- Updated the locked Rust dependencies cookie, url, and form_urlencoded and refreshed bundled license records.
 
 ## Install
 
-1. Download `KesVio_0.5.8_x64-setup.exe`.
-2. Run it. The installer needs no administrator rights and installs for the current user into `%LOCALAPPDATA%\KesVio`; another folder can be selected. The installer is not Authenticode-signed, so Windows SmartScreen may show a reputation warning.
+1. Download `KesVio_0.5.9_x64-setup.exe` after this version is published.
+2. Run the installer. It installs for the current user and allows another destination. It is not Authenticode-signed, so Windows SmartScreen may show a reputation warning.
 3. If Microsoft Edge WebView2 is missing, its bootstrapper downloads it from Microsoft and requires internet access.
 
-Updating from 0.5.7 is available through the update notice or **Settings → Check updates** once this release is published. Preferences and the saved catalog are preserved.
+Updating from 0.5.8 is available through the update notice or **Settings → Check updates** after publication. Preferences and the saved catalog are preserved.
 
 ## Verification
 
-Release assets include `SHA256SUMS.txt`, the updater signature, provenance attestation, and `KesVio_0.5.8_sbom.cdx.json`. Compare the installer hash with `Get-FileHash KesVio_0.5.8_x64-setup.exe -Algorithm SHA256`. Verify provenance with `gh attestation verify KesVio_0.5.8_x64-setup.exe --repo keskiyo/KesVio`.
+Release assets include `SHA256SUMS.txt`, the updater signature, provenance attestation, and `KesVio_0.5.9_sbom.cdx.json`. Compare the installer hash with `Get-FileHash KesVio_0.5.9_x64-setup.exe -Algorithm SHA256`. Verify provenance with `gh attestation verify KesVio_0.5.9_x64-setup.exe --repo keskiyo/KesVio`.

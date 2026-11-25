@@ -9,12 +9,13 @@ export function AppShellChrome({
 	activityLabel,
 	preferencesPersisted,
 	staleCopy,
+	update,
 	systemClient,
 	onDismissStaleCopy,
 }: AppShellChromeProps) {
 	return (
 		<>
-			<TitleBar />
+			<TitleBar update={update} />
 			{staleCopy && (
 				<StaleCopyBanner
 					installedVersion={staleCopy.installedVersion}

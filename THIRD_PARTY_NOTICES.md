@@ -59,7 +59,7 @@ This inventory describes KesVio v0.5.8, verified on 2026-11-04 against the insta
 | cc | 1.2.64 | MIT OR Apache-2.0 | https://github.com/rust-lang/cc-rs | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | cfb | 0.14.0 | MIT | https://github.com/mdsteele/rust-cfb | Retain the upstream license and required attribution notice. |
 | cfg-if | 1.0.4 | MIT OR Apache-2.0 | https://github.com/rust-lang/cfg-if | Retain Apache-2.0 license text and any applicable NOTICE file. |
-| cookie | 0.18.1 | MIT OR Apache-2.0 | https://github.com/SergioBenitez/cookie-rs | Retain Apache-2.0 license text and any applicable NOTICE file. |
+| cookie | 0.18.3 | MIT OR Apache-2.0 | https://github.com/SergioBenitez/cookie-rs | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | cpufeatures | 0.2.17 | MIT OR Apache-2.0 | https://github.com/RustCrypto/utils | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | crc32fast | 1.5.0 | MIT OR Apache-2.0 | https://github.com/srijs/rust-crc32fast | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | crossbeam-channel | 0.5.15 | MIT OR Apache-2.0 | https://github.com/crossbeam-rs/crossbeam | Retain Apache-2.0 license text and any applicable NOTICE file. |
@@ -94,7 +94,7 @@ This inventory describes KesVio v0.5.8, verified on 2026-11-04 against the insta
 | flate2 | 1.1.9 | MIT OR Apache-2.0 | https://github.com/rust-lang/flate2-rs | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | fnv | 1.0.7 | Apache-2.0 / MIT | https://github.com/servo/rust-fnv | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | foldhash | 0.2.0 | Zlib | https://github.com/orlp/foldhash | Retain the upstream license and required attribution notice. |
-| form_urlencoded | 1.2.2 | MIT OR Apache-2.0 | https://github.com/servo/rust-url | Retain Apache-2.0 license text and any applicable NOTICE file. |
+| form_urlencoded | 1.2.3 | MIT OR Apache-2.0 | https://github.com/servo/rust-url | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | futures-channel | 0.3.32 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | futures-core | 0.3.32 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | futures-macro | 0.3.32 | MIT OR Apache-2.0 | https://github.com/rust-lang/futures-rs | Retain Apache-2.0 license text and any applicable NOTICE file. |
@@ -268,7 +268,7 @@ This inventory describes KesVio v0.5.8, verified on 2026-11-04 against the insta
 | unicode-ident | 1.0.24 | (MIT OR Apache-2.0) AND Unicode-3.0 | https://github.com/dtolnay/unicode-ident | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | unicode-segmentation | 1.13.3 | MIT OR Apache-2.0 | https://github.com/unicode-rs/unicode-segmentation | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | untrusted | 0.9.0 | ISC | https://github.com/briansmith/untrusted | Retain the upstream license and required attribution notice. |
-| url | 2.5.8 | MIT OR Apache-2.0 | https://github.com/servo/rust-url | Retain Apache-2.0 license text and any applicable NOTICE file. |
+| url | 2.5.9 | MIT OR Apache-2.0 | https://github.com/servo/rust-url | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | urlpattern | 0.6.0 | MIT | https://github.com/denoland/rust-urlpattern | Retain the upstream license and required attribution notice. |
 | utf-8 | 0.7.6 | MIT OR Apache-2.0 | https://github.com/SimonSapin/rust-utf8 | Retain Apache-2.0 license text and any applicable NOTICE file. |
 | utf8_iter | 1.0.4 | Apache-2.0 OR MIT | https://github.com/hsivonen/utf8_iter | Retain Apache-2.0 license text and any applicable NOTICE file. |

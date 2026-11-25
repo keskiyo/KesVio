@@ -68,7 +68,11 @@ export function GroupDialog({
 										className="mt-1 truncate text-center text-xs text-(--text-muted)"
 										title={app.path}
 									>
-										{app.path.split(/[\\/]/).at(-1)}
+										{app.sourceKind === 'portable' &&
+											'Portable · '}
+										<span>
+											{app.path.split(/[\\/]/).at(-1)}
+										</span>
 									</p>
 								)}
 							</div>

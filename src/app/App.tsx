@@ -79,6 +79,19 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	const desktopNavigation = useDesktopNavigation()
 	const drawer = useDrawer(desktopNavigation)
 	const menuButtonRef = useRef<HTMLButtonElement>(null)
+	const navigation = useCatalogNavigation({
+		collapsedCategories: state.collapsedCategories,
+		activeView,
+		setActiveView: state.setActiveView,
+		toggleCategory: state.toggleCategory,
+		closeDrawer: drawer.close,
+		isCatalogReady: !isLoading && activeView === 'all',
+	})
+	const selectView = navigation.selectView
+	const openCatalogHealth = useCallback(
+		() => selectView('catalog_health'),
+		[selectView],
+	)
 	const feedback = useAppFeedback({
 		onLaunch: state.launch,
 		onOpenFolder: appsClient.openAppFolder,
@@ -88,19 +101,12 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		onCanLaunchElevated: appsClient.canLaunchElevated,
 		onRefresh: state.refresh,
 		onFullScan: state.forceFullScan,
+		onOpenCatalogHealth: openCatalogHealth,
 		onUndo: state.undo,
 	})
 	const dialogs = useCatalogDialogs({
 		systemClient,
 		onLaunch: feedback.launch,
-	})
-	const navigation = useCatalogNavigation({
-		collapsedCategories: state.collapsedCategories,
-		activeView,
-		setActiveView: state.setActiveView,
-		toggleCategory: state.toggleCategory,
-		closeDrawer: drawer.close,
-		isCatalogReady: !isLoading && activeView === 'all',
 	})
 	useRememberedView({ activeView, setActiveView: state.setActiveView })
 	useShortcutNotice({ systemClient, selectView: navigation.selectView })
@@ -133,7 +139,10 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 	const scrollToTop = () =>
 		catalogScrollRef.current?.scrollTo({
 			top: 0,
-			behavior: 'smooth',
+			behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)')
+				.matches
+				? 'instant'
+				: 'smooth',
 		})
 	const focusResults = useCallback(
 		() => focusFirstLaunchTarget(catalogScrollRef.current),
@@ -174,6 +183,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 		systemClient,
 		busy: isLoading || isRefreshing,
 		onForceFullScan: state.forceFullScan,
+		onOpenCatalogHealth: openCatalogHealth,
 	})
 	useTrayFavorites({
 		systemClient,
@@ -225,6 +235,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 					activityLabel={activity.label}
 					preferencesPersisted={preferencesPersisted}
 					staleCopy={staleCopy}
+					update={desktopNavigation ? null : identity.update}
 					systemClient={systemClient}
 					onDismissStaleCopy={dismissStaleCopy}
 				/>
@@ -247,7 +258,14 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 							isRefreshing={state.isRefreshing}
 							scanProgress={state.scanProgress}
 							activeFilter={activeFilterChip}
-							onQueryChange={search.changeQuery}
+							onQueryChange={value => {
+								if (catalogScrollRef.current?.scrollTop)
+									catalogScrollRef.current.scrollTo({
+										top: 0,
+										behavior: 'instant',
+									})
+								search.changeQuery(value)
+							}}
 							onRefresh={feedback.refresh}
 							onCancelScan={state.cancelScan}
 							menuButtonRef={menuButtonRef}
@@ -267,6 +285,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 						>
 							<AppViews
 								state={state}
+								bestMatch={keyboard.bestMatch}
 								catalog={catalog}
 								derivations={derivations}
 								navigation={navigation}
@@ -275,6 +294,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 								updater={updater}
 								systemClient={systemClient}
 								onFirstScan={feedback.fullScan}
+								onForceFullScan={feedback.confirmedFullScan}
 								onRefreshCatalog={feedback.refresh}
 								onOpenFolder={feedback.openFolder}
 								fileActions={feedback.fileActions}
@@ -287,7 +307,7 @@ export function App({ store, systemClient, appsClient }: AppProps) {
 						{...navigationProps}
 						open={drawer.open}
 						triggerRef={menuButtonRef}
-						identity={identity}
+						identity={{ version: identity.version, update: null }}
 						onGoHome={navigation.goHome}
 						onClose={drawer.close}
 						onExited={drawer.onExited}

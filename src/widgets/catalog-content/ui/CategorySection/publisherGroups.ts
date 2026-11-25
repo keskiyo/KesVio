@@ -4,6 +4,13 @@ export type PublisherItem =
 	| { kind: 'app'; app: AppInfo }
 	| { kind: 'group'; key: string; publisher: string; apps: AppInfo[] }
 
+function publisherKey(publisher: string | null): string {
+	const key = publisher?.trim().toLocaleLowerCase() ?? ''
+	if (key === 'mozilla corporation' || key === 'mozilla foundation')
+		return 'mozilla'
+	return key
+}
+
 export function publisherGroupLabel(
 	publisher: string,
 	apps: AppInfo[],
@@ -32,14 +39,20 @@ export function groupByPublisher(apps: AppInfo[]): PublisherItem[] {
 	for (const app of apps) {
 		const publisher = app.publisher?.trim()
 		if (!publisher) continue
-		const key = publisher.toLocaleLowerCase()
+		const key = publisherKey(publisher)
 		const group = groups.get(key)
 		if (group) group.apps.push(app)
-		else groups.set(key, { kind: 'group', key, publisher, apps: [app] })
+		else
+			groups.set(key, {
+				kind: 'group',
+				key,
+				publisher: key === 'mozilla' ? 'Mozilla' : publisher,
+				apps: [app],
+			})
 	}
 	const placed = new Set<string>()
 	return apps.flatMap<PublisherItem>(app => {
-		const key = app.publisher?.trim().toLocaleLowerCase()
+		const key = publisherKey(app.publisher)
 		const group = key ? groups.get(key) : undefined
 		if (!group || group.apps.length < 2)
 			return [{ kind: 'app' as const, app }]

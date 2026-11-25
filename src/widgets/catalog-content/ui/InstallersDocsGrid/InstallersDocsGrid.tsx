@@ -11,6 +11,7 @@ export function InstallersDocsGrid({
 	apps,
 	installedApps,
 	hasQuery,
+	emptySearch,
 	onBack,
 	...actions
 }: InstallersDocsGridProps) {
@@ -60,19 +61,22 @@ export function InstallersDocsGrid({
 						/>
 					)}
 				</div>
-			) : hasQuery ? (
-				<ViewEmptyState
-					icon={SearchX}
-					title="No matching installers or docs"
-					description="Try a different search."
-				/>
 			) : (
-				<ViewEmptyState
-					icon={Box}
-					title="No installers or docs found"
-					description="Refresh the catalog to scan supported locations."
-					back={back}
-				/>
+				(emptySearch ??
+				(hasQuery ? (
+					<ViewEmptyState
+						icon={SearchX}
+						title="No matching installers or docs"
+						description="Try a different search."
+					/>
+				) : (
+					<ViewEmptyState
+						icon={Box}
+						title="No installers or docs found"
+						description="Refresh the catalog to scan supported locations."
+						back={back}
+					/>
+				)))
 			)}
 		</section>
 	)

@@ -41,6 +41,7 @@ export interface CatalogDensityRowProps {
 
 export interface SettingsPageProps {
 	client: SystemClient
+	onFocusCatalog?(): void
 	density: CatalogDensity
 	onSetDensity(density: CatalogDensity): void
 	onForceFullScan?: () => Promise<void>

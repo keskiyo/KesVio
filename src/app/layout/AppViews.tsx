@@ -4,6 +4,7 @@ import { CatalogPage } from '../../pages/catalog'
 import { MorePage } from '../../pages/more'
 import { withDriveAvailability } from '../../entities/category'
 import type { AppViewsProps } from '../types'
+import { useDiscoveryNavigation } from '../model/useDiscoveryNavigation'
 import {
 	BackupRestorePage,
 	CatalogHealthPage,
@@ -13,6 +14,7 @@ import {
 
 export function AppViews({
 	state,
+	bestMatch,
 	catalog,
 	derivations,
 	navigation,
@@ -21,11 +23,14 @@ export function AppViews({
 	updater,
 	systemClient,
 	onFirstScan,
+	onForceFullScan,
 	onRefreshCatalog,
 	onOpenFolder,
 	fileActions,
 }: AppViewsProps) {
 	const [scanPromptDismissed, setScanPromptDismissed] = useState(false)
+	const { focusDiscovery, clearDiscoveryFocus, configureFolders } =
+		useDiscoveryNavigation(() => navigation.selectView('settings'))
 	const moveCategories = useMemo(
 		() => withDriveAvailability(state.categories, state.apps),
 		[state.apps, state.categories],
@@ -83,6 +88,13 @@ export function AppViews({
 				{state.activeView === 'catalog_health' && (
 					<CatalogHealthPage
 						lastScanChanges={state.lastScanChanges}
+						availableChangeIds={state.apps.map(app => app.id)}
+						onOpenChangedApp={id => {
+							const app = state.apps.find(
+								entry => entry.id === id,
+							)
+							if (app) dialogs.appInfo.open(app)
+						}}
 						diagnostics={state.catalogDiagnostics}
 						isRefreshing={state.isRefreshing}
 						onRefresh={onRefreshCatalog}
@@ -107,9 +119,12 @@ export function AppViews({
 				{state.activeView === 'settings' && (
 					<SettingsPage
 						client={systemClient}
+						onFocusCatalog={
+							focusDiscovery ? clearDiscoveryFocus : undefined
+						}
 						density={state.catalogDensity}
 						onSetDensity={state.setCatalogDensity}
-						onForceFullScan={state.forceFullScan}
+						onForceFullScan={onForceFullScan}
 						onResetCatalogCache={state.resetCatalogCache}
 						unclassifiedApps={derivations.unclassifiedApps}
 						categories={state.categories}
@@ -130,17 +145,23 @@ export function AppViews({
 							isScanning: state.isRefreshing,
 							onDismiss: () => setScanPromptDismissed(true),
 							onScan: onFirstScan,
-							onConfigureFolders: () =>
-								navigation.selectView('settings'),
+							onConfigureFolders: configureFolders,
 						}}
 						grid={{
 							apps: filteredApps,
 							installedApps: catalog.primaryApps,
 							isLoading: state.isLoading,
 							hasQuery: deferredQuery.trim().length > 0,
+							bestMatch,
+							diagnostics: state.catalogDiagnostics,
+							isRefreshing: state.isRefreshing,
 							activeView: state.activeView,
 							searchScopeCounts: catalog.searchScopeCounts,
 							onSelectView: navigation.selectView,
+							onConfigureFolders: configureFolders,
+							onClearFilter: state.activeSavedFilterId
+								? () => state.selectSavedFilter(null)
+								: undefined,
 							onBack: () => navigation.selectView('more'),
 							categoryOrder: state.categoryOrder,
 							categories: moveCategories,

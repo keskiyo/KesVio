@@ -80,6 +80,10 @@ export function useScenarioRunner({
 				scenarioName: scenario.name,
 				launched: 0,
 				launchFailed: 0,
+				...(toLaunch.missing
+					? { missingLaunch: toLaunch.missing }
+					: {}),
+				...(toClose.missing ? { missingClose: toClose.missing } : {}),
 				closed: 0,
 				notRunning: 0,
 				blocked: 0,

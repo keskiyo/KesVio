@@ -31,7 +31,7 @@ function statusText({
 		return `${scanProgress.stage}${scanProgress.location ? ` · ${scanProgress.location}` : ''}${scanProgress.totalRoots > 0 ? ` · ${scanProgress.completedRoots}/${scanProgress.totalRoots}` : ''}`
 	}
 	if (query.trim() && bestMatch) {
-		return `${countLabel(visibleCount, 'match')} · Enter opens ${bestMatch}`
+		return countLabel(visibleCount, 'match')
 	}
 	if (query.trim()) {
 		return `${countLabel(visibleCount, 'match')} in ${catalogCountText(primaryAppCount, auxiliaryToolCount)}`
@@ -59,6 +59,10 @@ export function Header({
 }: HeaderProps) {
 	const fallbackRef = useRef<HTMLInputElement>(null)
 	const searchRef = searchInputRef ?? fallbackRef
+	const enterTarget =
+		query.trim() && !(isRefreshing && scanProgress)
+			? searchLaunch?.bestMatch
+			: null
 	const status = statusText({
 		primaryAppCount,
 		auxiliaryToolCount,
@@ -95,9 +99,12 @@ export function Header({
 								role="status"
 								aria-live="polite"
 								aria-atomic="true"
-								className={`max-w-[70%] min-w-0 shrink-0 truncate text-xs ${isRefreshing ? 'text-violet-700' : 'text-(--text-muted)'}`}
+								className={`max-w-[70%] min-w-0 truncate text-xs ${isRefreshing ? 'text-violet-700' : 'text-(--text-muted)'}`}
 							>
 								{status}
+								{enterTarget && (
+									<span className="sr-only">{` · Enter opens ${enterTarget}`}</span>
+								)}
 							</p>
 							{activeFilter && (
 								<FilterChip filter={activeFilter} />
@@ -105,11 +112,22 @@ export function Header({
 							{onScrollToTop && (
 								<button
 									type="button"
-									onClick={onScrollToTop}
+									onClick={event => {
+										if (event.detail === 0)
+											searchRef.current?.focus({
+												preventScroll: true,
+											})
+										onScrollToTop()
+									}}
 									aria-label="Back to top"
-									className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-(--text-muted) focus-visible:outline-2 focus-visible:outline-(--accent)"
+									className="group ml-auto inline-flex shrink-0 items-center gap-1 rounded-md border border-(--border-neutral) px-2 py-0.5 text-xs text-(--text-muted) transition-colors hover:border-(--accent) hover:text-(--text-primary) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--accent)"
 								>
-									<ArrowUp size={14} aria-hidden="true" /> Top
+									<ArrowUp
+										size={14}
+										aria-hidden="true"
+										className="motion-safe:transition-transform motion-safe:group-hover:-translate-y-0.5"
+									/>
+									Top
 								</button>
 							)}
 						</div>

@@ -9,6 +9,8 @@ export interface ScenarioRunSummary {
 	scenarioName: string
 	launched: number
 	launchFailed: number
+	missingLaunch?: number
+	missingClose?: number
 	closed: number
 	notRunning: number
 	blocked: number

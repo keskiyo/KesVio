@@ -35,7 +35,11 @@ Sources are Start Menu shortcuts, uninstall registry entries, Start Apps and pac
 
 `SourceHealth` distinguishes **Up to date**, **Unavailable**, **Incomplete**, **Failed**, **Not scanned**, and **Scanning…**. A successful empty result is up to date, not unavailable. The store keeps the newest diagnostics by `completedAt`, so a late result cannot replace a newer recovery. Manual refresh uses the ordinary coordinator path; scoped retries are reserved for the retry scheduler.
 
-Background deltas update the catalog silently. Manual refresh reports its own result, while Catalog Health owns the durable source and last-scan account presented by the interface. The page layout is documented in [UI and workflows](ui-and-workflows.md#catalog-health-and-settings).
+Missing source details and unknown or never-run source states do not establish a healthy catalog. Catalog Health, search recovery, and manual scan feedback describe their status as unavailable; known failures and unreachable folders still take precedence.
+
+Background deltas update the catalog silently. Manual scans use diagnostics from their own result and report a partial refresh when a source needs attention or a folder was unreachable. The notification opens Catalog Health, which owns the source and last-scan detail. The page layout is documented in [UI and workflows](ui-and-workflows.md#catalog-health-and-settings).
+
+For an application on a disconnected volume, icon hydration may reuse its single cached icon by catalog id. Ambiguous or oversized cached entries are ignored. Connected targets continue to require the current source fingerprint.
 
 During a portable root walk the progress event reports the number of folders
 visited at most once per second. This is an activity count, not a percentage:

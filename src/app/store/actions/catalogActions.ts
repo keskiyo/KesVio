@@ -66,7 +66,9 @@ export function createCatalogActions({
 	async function runScan(scan: () => Promise<CatalogScanResult>) {
 		beginScan()
 		try {
-			commitScan(await scan())
+			const result = await scan()
+			commitScan(result)
+			return result.diagnostics ?? null
 		} finally {
 			endScan()
 		}
@@ -127,6 +129,10 @@ export function createCatalogActions({
 			...firstSeen,
 			hasCache: true,
 			catalogGeneration: scan.generation,
+			catalogDiagnostics: newerDiagnostics(
+				get().catalogDiagnostics,
+				scan.diagnostics,
+			),
 			lastScanChanges: order === 'newer' ? null : get().lastScanChanges,
 			scanChangesBaseline:
 				order === 'newer' && get().apps.length <= 10000

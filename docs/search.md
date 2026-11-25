@@ -72,6 +72,12 @@ docs are each a scope, and a view offers every scope except the one being read.
 Searching inside Favorites therefore points back at the rest of the catalog
 instead of ending at an empty grid. Each count equals what the destination will
 show once opened, so the number never disagrees with the view it leads to.
+When the active view has no matching apps, those actions appear inside the empty
+result. An active saved filter can be cleared there while retaining the query.
+With no matches in any scope, **Find missing app** offers Catalog Health and a
+direct jump to the scan folder settings. It also explains that configured
+exclusions and scan limits affect discovery, and shows the latest catalog health
+or current scan status.
 Typing into search from Settings, More or Scenarios switches to the catalog.
 Empty user categories are not rendered while a query is active. The command
 palette opened with an empty query lists favorites first, then the apps

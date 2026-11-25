@@ -173,6 +173,24 @@ describe('MorePage', () => {
 				preview={emptyPreview}
 				scenarioRun={runControl()}
 				onSelectView={vi.fn()}
+				catalogDiagnostics={{
+					...diagnostics([{ key: 'registry', state: 'fresh' }]),
+					unreachableFolders: 1,
+				}}
+				isRefreshing={false}
+			/>,
+		)
+		expect(card()).toHaveTextContent('1 scan folder could not be reached.')
+
+		rerender(
+			<MorePage
+				auxiliaryCount={0}
+				hiddenCount={0}
+				installersDocsCount={0}
+				scenarioCount={0}
+				preview={emptyPreview}
+				scenarioRun={runControl()}
+				onSelectView={vi.fn()}
 				catalogDiagnostics={diagnostics([
 					{ key: 'registry', state: 'stale' },
 					{ key: 'steam', state: 'stale' },

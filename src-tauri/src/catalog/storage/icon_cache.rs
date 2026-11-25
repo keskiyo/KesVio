@@ -5,6 +5,10 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
+mod offline;
+
+pub(crate) use offline::read_offline_icon;
+
 fn icons_dir(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("icons")
 }

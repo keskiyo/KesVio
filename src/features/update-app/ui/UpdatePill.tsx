@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { Download } from 'lucide-react'
 import {
 	isUpdateInstalling,
 	updateProgressLabel,
@@ -20,15 +21,18 @@ export function UpdatePill({
 }: UpdatePillProps) {
 	if (isUpdateInstalling(phase)) {
 		const label = updateProgressLabel(phase, progress)
-		const filled =
-			phase === 'downloading' && progress !== null ? progress : 100
+		const filled = phase === 'downloading' ? (progress ?? 0) : 100
 		return (
 			<div
 				role="progressbar"
 				aria-label={`Installing update ${version}`}
 				aria-valuemin={0}
 				aria-valuemax={100}
-				aria-valuenow={filled}
+				aria-valuenow={
+					phase === 'downloading' && progress === null
+						? undefined
+						: filled
+				}
 				aria-valuetext={label}
 				style={{ '--update-progress': `${filled}%` } as CSSProperties}
 				className={`${className} ${PILL} update-pill-progress w-40 border-(--accent)/45`}
@@ -49,10 +53,7 @@ export function UpdatePill({
 					: 'border-(--accent)/45 bg-(--accent)/22 hover:bg-(--accent)/32'
 			}`}
 		>
-			<span
-				aria-hidden="true"
-				className={`size-1.5 shrink-0 rounded-full ${failed ? 'bg-rose-400' : 'bg-(--accent-strong)'}`}
-			/>
+			<Download size={13} aria-hidden="true" className="shrink-0" />
 			<span className={LABEL}>
 				{failed
 					? `Retry update ${version}`

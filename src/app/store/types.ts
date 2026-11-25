@@ -79,8 +79,8 @@ export interface AppState {
 	deleteCategory(id: string): { ok: true } | { ok: false; error: string }
 	load(): Promise<void>
 	initialize(): Promise<() => void>
-	refresh(): Promise<void>
-	forceFullScan(): Promise<void>
+	refresh(): Promise<CatalogDiagnostics | null>
+	forceFullScan(): Promise<CatalogDiagnostics | null>
 	resetCatalogCache(): Promise<void>
 	clearIconCache(): Promise<void>
 	repairMissingIcons(): Promise<void>

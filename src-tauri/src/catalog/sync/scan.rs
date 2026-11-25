@@ -14,6 +14,7 @@ const WAIT_REPORT_INTERVAL: Duration = Duration::from_secs(5);
 pub(crate) struct ScanCommit {
     pub apps: Vec<AppInfo>,
     pub generation: u64,
+    pub diagnostics: Option<crate::catalog::cache::CatalogDiagnostics>,
 }
 
 fn synchronize_catalog_once(
@@ -50,6 +51,7 @@ fn publish_catalog(
     ScanCommit {
         apps: outcome.apps,
         generation: outcome.generation,
+        diagnostics: outcome.diagnostics,
     }
 }
 
@@ -154,6 +156,7 @@ mod tests {
         ScanCommit {
             apps: Vec::new(),
             generation: 7,
+            diagnostics: None,
         }
     }
 

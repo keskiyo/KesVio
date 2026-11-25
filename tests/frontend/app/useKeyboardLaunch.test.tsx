@@ -89,6 +89,23 @@ describe('useKeyboardLaunch', () => {
 		expect(input.onLaunch).not.toHaveBeenCalled()
 	})
 
+	it('offers the next ranked result when the best match is on a disconnected drive', () => {
+		const available = { ...code, id: 'available', name: 'Code available' }
+		const input = options({
+			results: [
+				{
+					...code,
+					targetAvailability: 'target.unverifiable.unmounted_volume',
+				},
+				available,
+			],
+		})
+		const { result } = renderHook(() => useKeyboardLaunch(input))
+		expect(result.current.searchLaunch.bestMatch).toBe('Code available')
+		result.current.searchLaunch.onSubmit(false)
+		expect(input.onLaunch).toHaveBeenCalledWith(available)
+	})
+
 	it('runs the best match as administrator on Ctrl+Enter', async () => {
 		const input = options()
 		const { result } = renderHook(() => useKeyboardLaunch(input))

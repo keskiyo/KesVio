@@ -380,8 +380,11 @@ it('records names from the latest delta and ignores duplicate and stale deltas',
 		upserted: [{ ...code, id: 'new', name: 'New app' }],
 	}
 	store.getState().applyDelta(delta)
+	expect(store.getState().lastScanChanges?.addedIds).toEqual(['new'])
 	expect(store.getState().lastScanChanges).toEqual({
 		added: ['New app'],
+		addedIds: ['new'],
+		updatedIds: [],
 		updated: [],
 		removed: ['Visual Studio Code'],
 		truncated: false,
@@ -413,6 +416,8 @@ it('uses the previous catalog when the response precedes its delta', async () =>
 	store.getState().applyDelta(delta)
 	expect(store.getState().lastScanChanges).toEqual({
 		added: ['New app'],
+		addedIds: ['new'],
+		updatedIds: [],
 		updated: [],
 		removed: ['Visual Studio Code'],
 		truncated: false,
@@ -445,6 +450,8 @@ it('keeps empty changes when the delta precedes the response', async () => {
 	await pending
 	expect(store.getState().lastScanChanges).toEqual({
 		added: [],
+		addedIds: [],
+		updatedIds: [],
 		updated: [],
 		removed: [],
 		truncated: false,
